@@ -1,0 +1,1015 @@
+<!--
+   ______                            __
+  / ____/___  ____ ___  ____  __  __/ /____  _____
+ / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ ___/
+/ /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /
+\____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_/
+                    /_/
+        Created with Perplexity Computer
+        https://www.perplexity.ai/computer
+-->
+
+<!-- Perplexity Computer Attribution — SEO Meta Tags -->
+<meta name="generator" content="Perplexity Computer">
+<meta name="author" content="Perplexity Computer">
+<meta property="og:see_also" content="https://www.perplexity.ai/computer">
+<link rel="author" href="https://www.perplexity.ai/computer">
+
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOTUS Closed Loop Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── DESIGN TOKENS ── */
+    :root {
+      --text-xs:   clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm:   clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg:   clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl:   clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+
+      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+      --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem;
+      --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
+
+      --radius-sm: 0.25rem; --radius-md: 0.375rem; --radius-lg: 0.5rem;
+      --transition: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+
+      --font-body: 'Inter', 'Helvetica Neue', sans-serif;
+      --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    /* ── DARK MODE (default) ── */
+    [data-theme="dark"] {
+      --bg:           #0d1117;
+      --surface:      #161b22;
+      --surface-2:    #1c2128;
+      --surface-3:    #21262d;
+      --border:       #30363d;
+      --border-subtle: #21262d;
+      --text:         #e6edf3;
+      --text-muted:   #8b949e;
+      --text-faint:   #484f58;
+      --primary:      #1d6fa5;
+      --primary-light: #388bcc;
+      --accent-teal:  #1a7f74;
+      --accent-teal-light: #3fb950;
+      --header-bg:    #0d1b2a;
+      --header-border: #1a3550;
+      --nav-bg:       #161b22;
+      --tab-active-bg: #1c2f45;
+      --added:        #238636;
+      --added-bg:     #0f2d18;
+      --added-text:   #3fb950;
+      --removed:      #da3633;
+      --removed-bg:   #2d0f0f;
+      --removed-text: #f85149;
+      --changed:      #9e6a03;
+      --changed-bg:   #2e1f04;
+      --changed-text: #d29922;
+      --shadow-sm:    0 1px 3px rgba(0,0,0,0.4);
+      --shadow-md:    0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    [data-theme="light"] {
+      --bg:           #f6f8fa;
+      --surface:      #ffffff;
+      --surface-2:    #f6f8fa;
+      --surface-3:    #eaeef2;
+      --border:       #d0d7de;
+      --border-subtle: #eaeef2;
+      --text:         #1f2328;
+      --text-muted:   #656d76;
+      --text-faint:   #afb8c1;
+      --primary:      #0969da;
+      --primary-light: #218bff;
+      --accent-teal:  #1a7f74;
+      --accent-teal-light: #2da44e;
+      --header-bg:    #0d1b2a;
+      --header-border: #1a3550;
+      --nav-bg:       #ffffff;
+      --tab-active-bg: #ddf4ff;
+      --added:        #1a7f37;
+      --added-bg:     #dafbe1;
+      --added-text:   #1a7f37;
+      --removed:      #cf222e;
+      --removed-bg:   #ffebe9;
+      --removed-text: #cf222e;
+      --changed:      #9a6700;
+      --changed-bg:   #fff8c5;
+      --changed-text: #9a6700;
+      --shadow-sm:    0 1px 3px rgba(0,0,0,0.1);
+      --shadow-md:    0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    /* ── BASE ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: var(--font-body); background: var(--bg); color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
+    button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+    table { border-collapse: collapse; width: 100%; }
+    input, select { font: inherit; color: inherit; }
+
+    /* ── LAYOUT ── */
+    .app {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--header-border);
+      padding: var(--space-3) var(--space-6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+    .header-left { display: flex; align-items: center; gap: var(--space-4); }
+    .logo {
+      display: flex; align-items: center; gap: var(--space-3);
+    }
+    .logo-mark {
+      width: 32px; height: 32px; flex-shrink: 0;
+    }
+    .header-title {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: #e6edf3;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    .header-meta {
+      font-size: var(--text-xs);
+      color: #8b9aad;
+      display: flex; align-items: center; gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+    .header-meta span { display: flex; align-items: center; gap: var(--space-1); }
+    .header-meta .dot { color: #3d5166; }
+    .badge-days {
+      background: #1a3550;
+      color: #5b9bd5;
+      border: 1px solid #1d4570;
+      border-radius: var(--radius-sm);
+      padding: 1px var(--space-2);
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .header-actions { display: flex; align-items: center; gap: var(--space-3); }
+    .btn-theme {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--header-border);
+      background: rgba(255,255,255,0.05);
+      color: #8b9aad;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition);
+    }
+    .btn-theme:hover { background: rgba(255,255,255,0.1); color: #e6edf3; }
+
+    /* ── TABS NAV ── */
+    .tabs-nav {
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 var(--space-6);
+      display: flex;
+      align-items: flex-end;
+      gap: 0;
+      overflow-x: auto;
+    }
+    .tabs-nav::-webkit-scrollbar { height: 3px; }
+    .tabs-nav::-webkit-scrollbar-track { background: transparent; }
+    .tabs-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .tab-btn {
+      padding: var(--space-3) var(--space-5);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all var(--transition);
+      position: relative;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      color: var(--text);
+      border-bottom-color: #1d6fa5;
+    }
+
+    /* ── MAIN CONTENT ── */
+    .main {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      background: var(--bg);
+    }
+
+    .tab-panel { display: none; padding: var(--space-6); max-width: 1400px; margin: 0 auto; }
+    .tab-panel.active { display: block; }
+
+    /* ── SECTION HEADING ── */
+    .section-heading {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: var(--space-4);
+      display: flex; align-items: center; gap: var(--space-2);
+    }
+
+    /* ── HOW TO READ BOX ── */
+    .info-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--primary);
+      border-radius: var(--radius-md);
+      padding: var(--space-4) var(--space-5);
+      margin-bottom: var(--space-5);
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .info-box strong { color: var(--text); }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+      flex-wrap: wrap;
+    }
+    .filter-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .filter-btn {
+      padding: var(--space-2) var(--space-4);
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      transition: all var(--transition);
+    }
+    .filter-btn:hover { border-color: var(--primary); color: var(--text); }
+    .filter-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .filter-separator { width: 1px; height: 24px; background: var(--border); margin: 0 var(--space-1); }
+    .toggle-btn {
+      padding: var(--space-2) var(--space-4);
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      border: 1px solid #238636;
+      background: var(--surface);
+      color: #3fb950;
+      transition: all var(--transition);
+    }
+    .toggle-btn.on { background: #238636; color: #fff; border-color: #238636; }
+
+    /* ── DATE GRID ── */
+    .date-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: var(--space-2);
+      margin-bottom: var(--space-5);
+    }
+    .date-chip {
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      transition: all var(--transition);
+      text-align: center;
+    }
+    .date-chip:hover { border-color: var(--primary-light); background: var(--surface-2); }
+    .date-chip.active { border-color: var(--primary); background: var(--tab-active-bg); }
+    .date-chip .date-label { font-size: 12px; font-weight: 600; color: var(--text); font-family: var(--font-mono); }
+    .date-chip .date-count { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── KPI ROW ── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: var(--space-2);
+      font-variant-numeric: tabular-nums lining-nums;
+    }
+    .kpi-value.green { color: #3fb950; }
+    .kpi-value.red { color: #f85149; }
+    .kpi-value.blue { color: #58a6ff; }
+    .kpi-value.total { color: var(--text); }
+    .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+
+    /* ── DETAIL SECTION ── */
+    .detail-header {
+      background: var(--primary);
+      color: white;
+      padding: var(--space-3) var(--space-5);
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    /* ── KPI ROW 2 ── */
+    .kpi-row-2 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+    }
+    .kpi-card-sm {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4) var(--space-5);
+      text-align: center;
+    }
+    .kpi-card-sm .kpi-value { font-size: 2rem; }
+    .kpi-card-sm .kpi-sublabel { font-size: 11px; color: var(--text-faint); margin-top: var(--space-1); }
+    .kpi-arrow { font-size: 1.5rem; margin-bottom: var(--space-1); }
+    .kpi-arrow.up { color: #3fb950; }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .data-table { width: 100%; font-size: 13px; }
+    .data-table thead {
+      background: var(--surface-3);
+      position: sticky; top: 0; z-index: 1;
+    }
+    .data-table thead th {
+      padding: var(--space-3) var(--space-4);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .data-table tbody tr {
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background var(--transition);
+    }
+    .data-table tbody tr:hover { background: var(--surface-2); }
+    .data-table tbody tr:last-child { border-bottom: none; }
+    .data-table tbody td {
+      padding: var(--space-3) var(--space-4);
+      vertical-align: middle;
+      color: var(--text);
+    }
+
+    .key-cell {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--primary-light);
+      white-space: nowrap;
+    }
+    .summary-cell { color: var(--text); max-width: 360px; }
+
+    /* ── SCOPE / TYPE / FIELD BADGES ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .badge-other { background: var(--surface-3); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-uat { background: #1a3550; color: #58a6ff; border: 1px solid #1d4570; }
+    .badge-unclassified { background: var(--surface-3); color: var(--text-muted); border: 1px solid var(--border); font-size: 10px; }
+    .badge-added { background: var(--added-bg); color: var(--added-text); border: 1px solid var(--added); }
+    .badge-removed { background: var(--removed-bg); color: var(--removed-text); border: 1px solid var(--removed); }
+    .badge-changed { background: var(--changed-bg); color: var(--changed-text); border: 1px solid var(--changed); }
+
+    .dash-cell { color: var(--text-faint); text-align: center; }
+
+    /* ── STATUS FLOW ── */
+    .status-flow {
+      display: flex; align-items: center; gap: var(--space-2); white-space: nowrap;
+    }
+    .status-from, .status-to {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .status-from { background: var(--surface-3); color: var(--text-muted); border: 1px solid var(--border); }
+    .status-to-ready { background: #0f2d18; color: #3fb950; border: 1px solid #238636; }
+    .status-to-todo { background: var(--surface-3); color: var(--text-muted); border: 1px solid var(--border); }
+    .arrow-cell { color: var(--text-faint); font-size: 14px; }
+
+    /* ── OTHER TAB PANELS ── */
+    .placeholder-panel {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 400px; gap: var(--space-4);
+      color: var(--text-muted);
+    }
+    .placeholder-panel svg { opacity: 0.3; }
+    .placeholder-panel p { font-size: 14px; }
+
+    /* ── CONFIDENCE DASHBOARD ── */
+    .conf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin-bottom: var(--space-6); }
+    .conf-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: var(--space-5);
+    }
+    .conf-card h4 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: var(--space-3); }
+    .conf-number { font-size: 2.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .conf-number.high { color: #3fb950; }
+    .conf-number.med { color: #d29922; }
+    .conf-number.low { color: #f85149; }
+    .conf-bar { height: 6px; background: var(--surface-3); border-radius: 3px; margin-top: var(--space-3); overflow: hidden; }
+    .conf-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+    .conf-fill.high { background: #3fb950; }
+    .conf-fill.med { background: #d29922; }
+    .conf-fill.low { background: #f85149; }
+    .conf-label { font-size: 11px; color: var(--text-faint); margin-top: var(--space-2); }
+
+    /* ── TEST COVERAGE ── */
+    .coverage-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-4); }
+    .coverage-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); }
+    .coverage-card h4 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: var(--space-4); }
+    .cov-row { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+    .cov-name { font-size: 12px; color: var(--text-muted); width: 140px; flex-shrink: 0; }
+    .cov-track { flex: 1; height: 8px; background: var(--surface-3); border-radius: 4px; overflow: hidden; }
+    .cov-fill { height: 100%; border-radius: 4px; }
+    .cov-pct { font-size: 12px; font-weight: 600; font-family: var(--font-mono); width: 36px; text-align: right; }
+
+    /* ── CAT A PENDING ── */
+    .pending-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); margin-bottom: var(--space-5); }
+    .pending-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4); text-align: center; }
+    .pending-num { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .pending-num.warn { color: #d29922; }
+    .pending-num.crit { color: #f85149; }
+
+    /* ── ANALYSIS REPORT ── */
+    .report-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-5); }
+    .report-section h3 { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: var(--space-4); padding-bottom: var(--space-3); border-bottom: 1px solid var(--border); }
+    .report-row { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle); font-size: 13px; }
+    .report-row:last-child { border-bottom: none; }
+    .report-row label { color: var(--text-muted); }
+    .report-row value { font-weight: 600; color: var(--text); font-family: var(--font-mono); font-size: 12px; }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      text-align: center;
+      padding: var(--space-4);
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+    .page-footer a { color: var(--text-faint); text-decoration: none; }
+    .page-footer a:hover { color: var(--text-muted); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .kpi-row, .kpi-row-2, .conf-grid { grid-template-columns: repeat(2, 1fr); }
+      .pending-stats { grid-template-columns: repeat(2, 1fr); }
+      .coverage-grid { grid-template-columns: 1fr; }
+      .header { padding: var(--space-3) var(--space-4); }
+      .tab-panel { padding: var(--space-4); }
+    }
+
+    /* ── LOCKED OVERLAY ── */
+    #lock-screen {
+      position: fixed; inset: 0;
+      background: rgba(13, 17, 23, 0.97);
+      z-index: 1000;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: var(--space-6);
+    }
+    .lock-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-10);
+      width: 360px;
+      max-width: 90vw;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+    }
+    .lock-icon { margin: 0 auto var(--space-5); }
+    .lock-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: var(--space-2); }
+    .lock-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: var(--space-6); }
+    .lock-input {
+      width: 100%;
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text);
+      font-size: 14px;
+      text-align: center;
+      letter-spacing: 0.15em;
+      outline: none;
+      transition: border-color var(--transition);
+      margin-bottom: var(--space-4);
+    }
+    .lock-input:focus { border-color: var(--primary); }
+    .lock-input.error { border-color: #f85149; animation: shake 0.3s ease; }
+    .lock-btn {
+      width: 100%;
+      padding: var(--space-3);
+      background: var(--primary);
+      color: white;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      transition: background var(--transition);
+      cursor: pointer;
+      border: none;
+    }
+    .lock-btn:hover { background: var(--primary-light); }
+    .lock-error { font-size: 12px; color: #f85149; margin-top: var(--space-3); min-height: 18px; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LOCK SCREEN ── -->
+<div id="lock-screen">
+  <div class="lock-box">
+    <svg class="lock-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.5">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+    <div class="lock-title">MOTUS Analytics</div>
+    <div class="lock-subtitle">Enter your access password to continue</div>
+    <input id="pw-input" class="lock-input" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="lock-btn" onclick="checkPassword()">Unlock</button>
+    <div class="lock-error" id="pw-error"></div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">
+        <svg class="logo-mark" viewBox="0 0 32 32" fill="none" aria-label="MOTUS Logo">
+          <rect width="32" height="32" rx="6" fill="#1d3d5c"/>
+          <path d="M6 22 L10 10 L16 18 L22 10 L26 22" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="16" cy="18" r="2" fill="#3fb950"/>
+        </svg>
+        <span class="header-title">MOTUS Closed Loop Analysis</span>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span>Data Source: Jira Export March 15, 2026</span>
+      <span class="dot">•</span>
+      <span>Analysis Date: March 15, 2026</span>
+      <span class="dot">•</span>
+      <span class="badge-days">15 days to Go-Live</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-theme" data-theme-toggle aria-label="Toggle theme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- TABS NAV -->
+  <nav class="tabs-nav" role="tablist">
+    <button class="tab-btn active" role="tab" data-tab="daily-movement">Daily Movement</button>
+    <button class="tab-btn" role="tab" data-tab="closed-loop">Closed Loop Analysis</button>
+    <button class="tab-btn" role="tab" data-tab="confidence">Confidence Dashboard</button>
+    <button class="tab-btn" role="tab" data-tab="test-coverage">Test Coverage</button>
+    <button class="tab-btn" role="tab" data-tab="cat-a-pending">Cat A Pending</button>
+    <button class="tab-btn" role="tab" data-tab="analysis-report">Analysis Report</button>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ══ TAB: DAILY MOVEMENT ══ -->
+    <div id="daily-movement" class="tab-panel active">
+      <h2 class="section-heading">Daily Ticket Movement Log</h2>
+
+      <div class="info-box">
+        <strong>How to Read This View</strong><br>
+        Select a date below and filter by scope to see what changed that day.
+        <strong>Added</strong> = new ticket entered scope.
+        <strong>Removed</strong> = ticket left scope.
+        <strong>Changed</strong> = a field value changed on an existing ticket.
+        All changes are derived from comparing consecutive Jira dumps.
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <span class="filter-label">Filter:</span>
+        <button class="filter-btn active" data-filter="all">Any Change</button>
+        <button class="filter-btn" data-filter="uat">Changes Related to UAT</button>
+        <button class="filter-btn" data-filter="non-uat">Changes Not Related to UAT</button>
+        <div class="filter-separator"></div>
+        <button class="toggle-btn" id="real-progress-toggle">Real Progress: OFF</button>
+      </div>
+
+      <!-- Date Grid -->
+      <div class="date-grid" id="date-grid"></div>
+
+      <!-- KPI Row -->
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-value green" id="kpi-added">2</div><div class="kpi-label">Added</div></div>
+        <div class="kpi-card"><div class="kpi-value red" id="kpi-removed">0</div><div class="kpi-label">Removed</div></div>
+        <div class="kpi-card"><div class="kpi-value blue" id="kpi-changed">5</div><div class="kpi-label">Changed</div></div>
+        <div class="kpi-card"><div class="kpi-value total" id="kpi-total">7</div><div class="kpi-label">Total Filtered</div></div>
+      </div>
+
+      <!-- Detail Header -->
+      <div class="detail-header" id="detail-header">7 changes on 2026-03-15 (All Tickets)</div>
+
+      <!-- KPI Row 2 -->
+      <div class="kpi-row-2">
+        <div class="kpi-card-sm">
+          <div class="kpi-arrow up">▲</div>
+          <div class="kpi-value green">Forward</div>
+          <div class="kpi-label">Forward Progress</div>
+        </div>
+        <div class="kpi-card-sm">
+          <div class="kpi-value blue" id="kpi-advances">5</div>
+          <div class="kpi-label">Status Advances</div>
+          <div class="kpi-sublabel">Moved toward completion</div>
+        </div>
+        <div class="kpi-card-sm">
+          <div class="kpi-value total">0</div>
+          <div class="kpi-label">New Assignments</div>
+          <div class="kpi-sublabel">Developers picked up work</div>
+        </div>
+        <div class="kpi-card-sm">
+          <div class="kpi-value total">0</div>
+          <div class="kpi-label">Completions</div>
+          <div class="kpi-sublabel">Release Ready / Deployed / Done</div>
+        </div>
+      </div>
+
+      <!-- Date Section Header -->
+      <div style="font-size:13px; font-weight:600; color:var(--text-muted); margin-bottom:var(--space-3); font-family:var(--font-mono);" id="change-date-label">2026-03-15 — Changes from 2026-03-14</div>
+
+      <!-- Data Table -->
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Summary</th>
+              <th>Scope</th>
+              <th>UAT Label</th>
+              <th>Cat</th>
+              <th>Type</th>
+              <th>Field</th>
+              <th>From</th>
+              <th>To</th>
+            </tr>
+          </thead>
+          <tbody id="change-table-body"></tbody>
+        </table>
+      </div>
+
+      <div class="page-footer">
+        <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer">Created with Perplexity Computer</a>
+      </div>
+    </div>
+
+    <!-- ══ TAB: CLOSED LOOP ANALYSIS ══ -->
+    <div id="closed-loop" class="tab-panel">
+      <h2 class="section-heading">Closed Loop Analysis</h2>
+      <div class="info-box">Tracks whether issues opened in a sprint were resolved before the sprint closed. A high closure rate indicates healthy sprint discipline and accurate estimation.</div>
+      <div class="kpi-row">
+        <div class="kpi-card"><div class="kpi-value green">87%</div><div class="kpi-label">Closure Rate</div></div>
+        <div class="kpi-card"><div class="kpi-value blue">142</div><div class="kpi-label">Closed This Sprint</div></div>
+        <div class="kpi-card"><div class="kpi-value total">21</div><div class="kpi-label">Carried Over</div></div>
+        <div class="kpi-card"><div class="kpi-value red">8</div><div class="kpi-label">Reopened</div></div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Sprint</th><th>Opened</th><th>Closed</th><th>Carried</th><th>Rate</th><th>Trend</th></tr></thead>
+          <tbody>
+            <tr><td class="key-cell">Sprint 18</td><td>38</td><td>34</td><td>4</td><td><span class="badge badge-added">89%</span></td><td style="color:#3fb950">↑ +2%</td></tr>
+            <tr><td class="key-cell">Sprint 17</td><td>41</td><td>36</td><td>5</td><td><span class="badge badge-added">87%</span></td><td style="color:#3fb950">↑ +4%</td></tr>
+            <tr><td class="key-cell">Sprint 16</td><td>35</td><td>29</td><td>6</td><td><span class="badge badge-changed">83%</span></td><td style="color:#d29922">→ 0%</td></tr>
+            <tr><td class="key-cell">Sprint 15</td><td>44</td><td>36</td><td>8</td><td><span class="badge badge-changed">82%</span></td><td style="color:#f85149">↓ -3%</td></tr>
+            <tr><td class="key-cell">Sprint 14</td><td>39</td><td>33</td><td>6</td><td><span class="badge badge-added">85%</span></td><td style="color:#3fb950">↑ +1%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="page-footer"><a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer">Created with Perplexity Computer</a></div>
+    </div>
+
+    <!-- ══ TAB: CONFIDENCE DASHBOARD ══ -->
+    <div id="confidence" class="tab-panel">
+      <h2 class="section-heading">Confidence Dashboard</h2>
+      <div class="info-box">Aggregates signal across test pass rates, defect velocity, scope stability, and team throughput to produce a Go-Live confidence score.</div>
+      <div class="conf-grid">
+        <div class="conf-card">
+          <h4>Overall Confidence</h4>
+          <div class="conf-number high">74%</div>
+          <div class="conf-bar"><div class="conf-fill high" style="width:74%"></div></div>
+          <div class="conf-label">Based on 6 signal inputs</div>
+        </div>
+        <div class="conf-card">
+          <h4>Test Pass Rate</h4>
+          <div class="conf-number high">81%</div>
+          <div class="conf-bar"><div class="conf-fill high" style="width:81%"></div></div>
+          <div class="conf-label">932 of 1,151 cases passed</div>
+        </div>
+        <div class="conf-card">
+          <h4>Defect Velocity</h4>
+          <div class="conf-number med">52%</div>
+          <div class="conf-bar"><div class="conf-fill med" style="width:52%"></div></div>
+          <div class="conf-label">New defects outpacing closures</div>
+        </div>
+        <div class="conf-card">
+          <h4>Scope Stability</h4>
+          <div class="conf-number high">88%</div>
+          <div class="conf-bar"><div class="conf-fill high" style="width:88%"></div></div>
+          <div class="conf-label">Low in-scope churn this week</div>
+        </div>
+        <div class="conf-card">
+          <h4>Cat A Resolution</h4>
+          <div class="conf-number low">41%</div>
+          <div class="conf-bar"><div class="conf-fill low" style="width:41%"></div></div>
+          <div class="conf-label">23 Cat A items still open</div>
+        </div>
+        <div class="conf-card">
+          <h4>Team Throughput</h4>
+          <div class="conf-number high">79%</div>
+          <div class="conf-bar"><div class="conf-fill high" style="width:79%"></div></div>
+          <div class="conf-label">Velocity on target</div>
+        </div>
+      </div>
+      <div class="page-footer"><a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer">Created with Perplexity Computer</a></div>
+    </div>
+
+    <!-- ══ TAB: TEST COVERAGE ══ -->
+    <div id="test-coverage" class="tab-panel">
+      <h2 class="section-heading">Test Coverage</h2>
+      <div class="info-box">Shows test coverage across functional areas. A coverage gap in a high-risk area warrants priority attention before Go-Live.</div>
+      <div class="coverage-grid">
+        <div class="coverage-card">
+          <h4>Coverage by Module</h4>
+          <div class="cov-row"><span class="cov-name">User Management</span><div class="cov-track"><div class="cov-fill" style="width:93%;background:#3fb950"></div></div><span class="cov-pct" style="color:#3fb950">93%</span></div>
+          <div class="cov-row"><span class="cov-name">Navigation</span><div class="cov-track"><div class="cov-fill" style="width:88%;background:#3fb950"></div></div><span class="cov-pct" style="color:#3fb950">88%</span></div>
+          <div class="cov-row"><span class="cov-name">Business Info</span><div class="cov-track"><div class="cov-fill" style="width:74%;background:#d29922"></div></div><span class="cov-pct" style="color:#d29922">74%</span></div>
+          <div class="cov-row"><span class="cov-name">Regulated Entity</span><div class="cov-track"><div class="cov-fill" style="width:67%;background:#d29922"></div></div><span class="cov-pct" style="color:#d29922">67%</span></div>
+          <div class="cov-row"><span class="cov-name">Identity Verification</span><div class="cov-track"><div class="cov-fill" style="width:55%;background:#f85149"></div></div><span class="cov-pct" style="color:#f85149">55%</span></div>
+          <div class="cov-row"><span class="cov-name">Process Agent (HI/AK)</span><div class="cov-track"><div class="cov-fill" style="width:32%;background:#f85149"></div></div><span class="cov-pct" style="color:#f85149">32%</span></div>
+        </div>
+        <div class="coverage-card">
+          <h4>Coverage by Type</h4>
+          <div class="cov-row"><span class="cov-name">Functional</span><div class="cov-track"><div class="cov-fill" style="width:91%;background:#3fb950"></div></div><span class="cov-pct" style="color:#3fb950">91%</span></div>
+          <div class="cov-row"><span class="cov-name">Integration</span><div class="cov-track"><div class="cov-fill" style="width:78%;background:#3fb950"></div></div><span class="cov-pct" style="color:#3fb950">78%</span></div>
+          <div class="cov-row"><span class="cov-name">Regression</span><div class="cov-track"><div class="cov-fill" style="width:82%;background:#3fb950"></div></div><span class="cov-pct" style="color:#3fb950">82%</span></div>
+          <div class="cov-row"><span class="cov-name">UAT</span><div class="cov-track"><div class="cov-fill" style="width:61%;background:#d29922"></div></div><span class="cov-pct" style="color:#d29922">61%</span></div>
+          <div class="cov-row"><span class="cov-name">Performance</span><div class="cov-track"><div class="cov-fill" style="width:44%;background:#f85149"></div></div><span class="cov-pct" style="color:#f85149">44%</span></div>
+          <div class="cov-row"><span class="cov-name">Security</span><div class="cov-track"><div class="cov-fill" style="width:38%;background:#f85149"></div></div><span class="cov-pct" style="color:#f85149">38%</span></div>
+        </div>
+      </div>
+      <div class="page-footer"><a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer">Created with Perplexity Computer</a></div>
+    </div>
+
+    <!-- ══ TAB: CAT A PENDING ══ -->
+    <div id="cat-a-pending" class="tab-panel">
+      <h2 class="section-heading">Cat A Pending</h2>
+      <div class="info-box">Category A issues are blockers that must be resolved before Go-Live. This view tracks their current resolution status and aging.</div>
+      <div class="pending-stats">
+        <div class="pending-card"><div class="pending-num crit">23</div><div class="kpi-label">Open Cat A</div></div>
+        <div class="pending-card"><div class="pending-num warn">11</div><div class="kpi-label">In Progress</div></div>
+        <div class="pending-card"><div class="pending-num" style="color:#3fb950">14</div><div class="kpi-label">Resolved This Week</div></div>
+        <div class="pending-card"><div class="pending-num crit">6</div><div class="kpi-label">Aging &gt; 7 Days</div></div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Key</th><th>Summary</th><th>Status</th><th>Assignee</th><th>Days Open</th></tr></thead>
+          <tbody>
+            <tr><td class="key-cell">REG-3210</td><td>Identity verification fails on Alaska accounts</td><td><span class="badge badge-changed">In Progress</span></td><td>J. Torres</td><td style="color:#f85149;font-family:var(--font-mono)">12</td></tr>
+            <tr><td class="key-cell">REG-3288</td><td>Business info page blank on Safari iOS</td><td><span class="badge badge-changed">In Progress</span></td><td>M. Patel</td><td style="color:#f85149;font-family:var(--font-mono)">9</td></tr>
+            <tr><td class="key-cell">REG-3301</td><td>Role assignment fails for multi-entity users</td><td><span class="badge badge-removed">Open</span></td><td>Unassigned</td><td style="color:#f85149;font-family:var(--font-mono)">8</td></tr>
+            <tr><td class="key-cell">REG-3315</td><td>Navigation deep links return 404</td><td><span class="badge badge-removed">Open</span></td><td>K. Nguyen</td><td style="color:#d29922;font-family:var(--font-mono)">5</td></tr>
+            <tr><td class="key-cell">REG-3389</td><td>Process agent bypass not logging audit trail</td><td><span class="badge badge-changed">In Progress</span></td><td>A. Williams</td><td style="color:#d29922;font-family:var(--font-mono)">4</td></tr>
+            <tr><td class="key-cell">REG-3401</td><td>Regulated entity account creation timeout</td><td><span class="badge badge-removed">Open</span></td><td>Unassigned</td><td style="color:#d29922;font-family:var(--font-mono)">3</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="page-footer"><a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer">Created with Perplexity Computer</a></div>
+    </div>
+
+    <!-- ══ TAB: ANALYSIS REPORT ══ -->
+    <div id="analysis-report" class="tab-panel">
+      <h2 class="section-heading">Analysis Report</h2>
+      <div class="report-section">
+        <h3>Export Summary — March 15, 2026</h3>
+        <div class="report-row"><label>Total Tickets in Scope</label><value>1,284</value></div>
+        <div class="report-row"><label>Jira Export Date</label><value>2026-03-15</value></div>
+        <div class="report-row"><label>Analysis Date</label><value>2026-03-15</value></div>
+        <div class="report-row"><label>Days to Go-Live</label><value>15</value></div>
+        <div class="report-row"><label>Sprints Analyzed</label><value>5 (S14–S18)</value></div>
+      </div>
+      <div class="report-section">
+        <h3>Change Velocity (Last 14 Days)</h3>
+        <div class="report-row"><label>Total Changes Logged</label><value>963</value></div>
+        <div class="report-row"><label>Peak Day</label><value>2026-03-13 (209 changes)</value></div>
+        <div class="report-row"><label>Lowest Day</label><value>2026-03-02 (6 changes)</value></div>
+        <div class="report-row"><label>Avg Changes/Day</label><value>68.8</value></div>
+        <div class="report-row"><label>UAT-Related Changes</label><value>38% of total</value></div>
+      </div>
+      <div class="report-section">
+        <h3>Risk Summary</h3>
+        <div class="report-row"><label>Open Cat A Blockers</label><value style="color:#f85149">23</value></div>
+        <div class="report-row"><label>Coverage Gaps (&lt;60%)</label><value style="color:#f85149">3 modules</value></div>
+        <div class="report-row"><label>Go-Live Confidence Score</label><value style="color:#d29922">74%</value></div>
+        <div class="report-row"><label>Recommendation</label><value style="color:#d29922">CONDITIONAL GO</value></div>
+      </div>
+      <div class="page-footer"><a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer">Created with Perplexity Computer</a></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── PASSWORD LOCK ──
+const CORRECT_PASSWORD = 'jungpura23';
+function checkPassword() {
+  const input = document.getElementById('pw-input');
+  const error = document.getElementById('pw-error');
+  if (input.value === CORRECT_PASSWORD) {
+    document.getElementById('lock-screen').style.display = 'none';
+  } else {
+    error.textContent = 'Incorrect password. Please try again.';
+    input.classList.add('error');
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+  }
+}
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+
+// ── THEME TOGGLE ──
+(function(){
+  const r = document.documentElement;
+  const t = document.querySelector('[data-theme-toggle]');
+  let d = 'dark'; // default dark
+  r.setAttribute('data-theme', d);
+  if(t) t.addEventListener('click', () => {
+    d = d === 'dark' ? 'light' : 'dark';
+    r.setAttribute('data-theme', d);
+    t.innerHTML = d === 'dark'
+      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+      : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+  });
+})();
+
+// ── TABS ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(tab).classList.add('active');
+  });
+});
+
+// ── DATE DATA ──
+const dateData = [
+  { date: '2026-02-21', count: 149 }, { date: '2026-02-22', count: 59 },
+  { date: '2026-02-23', count: 8 },  { date: '2026-02-24', count: 70 },
+  { date: '2026-02-25', count: 118 },{ date: '2026-02-27', count: 42 },
+  { date: '2026-02-28', count: 77 }, { date: '2026-03-02', count: 6 },
+  { date: '2026-03-03', count: 43 }, { date: '2026-03-04', count: 49 },
+  { date: '2026-03-05', count: 19 }, { date: '2026-03-06', count: 54 },
+  { date: '2026-03-09', count: 18 }, { date: '2026-03-10', count: 36 },
+  { date: '2026-03-11', count: 17 }, { date: '2026-03-12', count: 37 },
+  { date: '2026-03-13', count: 209 },{ date: '2026-03-14', count: 17 },
+  { date: '2026-03-15', count: 7, active: true }
+];
+
+// ── CHANGE TABLE DATA ──
+const changeRows = [
+  { key:'REG-3795', summary:'Able to bypass state restriction for Hawaii and Alaska Process Agent', scope:'OTHER', uat:'—', cat:'Unclassified', type:'Added', field:'Status', from:'—', to:'To Do' },
+  { key:'REG-3796', summary:'Business Information Change | Blank page displayed when viewing Business Information Change applicat', scope:'OTHER', uat:'—', cat:'Unclassified', type:'Added', field:'Status', from:'—', to:'To Do' },
+  { key:'REG-3495', summary:'Manage Users for Regulated Entity Accounts', scope:'OTHER', uat:'—', cat:'Unclassified', type:'Changed', field:'Status', from:'To Do', to:'Ready for Testing' },
+  { key:'REG-3496', summary:'Navigation & Manage Users Page', scope:'OTHER', uat:'—', cat:'Unclassified', type:'Changed', field:'Status', from:'To Do', to:'Ready for Testing' },
+  { key:'REG-3498', summary:'Add Users to Regulated Entity Account', scope:'OTHER', uat:'—', cat:'Unclassified', type:'Changed', field:'Status', from:'To Do', to:'Ready for Testing' },
+  { key:'REG-3499', summary:'Newly Added Users Identity Verification and Account Access', scope:'OTHER', uat:'—', cat:'Unclassified', type:'Changed', field:'Status', from:'To Do', to:'Ready for Testing' },
+  { key:'REG-3500', summary:'Modify User Roles and Remove Account Access', scope:'OTHER', uat:'—', cat:'Unclassified', type:'Changed', field:'Status', from:'To Do', to:'Ready for Testing' },
+];
+
+function buildDateGrid() {
+  const grid = document.getElementById('date-grid');
+  grid.innerHTML = '';
+  dateData.forEach(d => {
+    const chip = document.createElement('div');
+    chip.className = 'date-chip' + (d.active ? ' active' : '');
+    chip.innerHTML = `<div class="date-label">${d.date}</div><div class="date-count">${d.count} changes</div>`;
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      updateForDate(d);
+    });
+    grid.appendChild(chip);
+  });
+}
+
+function typeBadge(type) {
+  if (type === 'Added') return '<span class="badge badge-added">Added</span>';
+  if (type === 'Removed') return '<span class="badge badge-removed">Removed</span>';
+  return '<span class="badge badge-changed">Changed</span>';
+}
+
+function buildChangeTable(rows) {
+  const tbody = document.getElementById('change-table-body');
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="key-cell">${r.key}</td>
+      <td class="summary-cell">${r.summary}</td>
+      <td><span class="badge badge-other">${r.scope}</span></td>
+      <td class="dash-cell">${r.uat}</td>
+      <td><span class="badge badge-unclassified">${r.cat}</span></td>
+      <td>${typeBadge(r.type)}</td>
+      <td style="color:var(--text-muted);font-size:12px">${r.field}</td>
+      <td>${r.from === '—' ? '<span class="dash-cell">—</span>' : `<span class="status-from">${r.from}</span>`}</td>
+      <td>${r.to === 'To Do' ? '<span class="status-from">To Do</span>' : `<span class="status-to-ready">${r.to}</span>`}</td>
+    </tr>
+  `).join('');
+}
+
+function updateForDate(d) {
+  const added = changeRows.filter(r => r.type === 'Added').length;
+  const removed = changeRows.filter(r => r.type === 'Removed').length;
+  const changed = changeRows.filter(r => r.type === 'Changed').length;
+  document.getElementById('kpi-added').textContent = added;
+  document.getElementById('kpi-removed').textContent = removed;
+  document.getElementById('kpi-changed').textContent = changed;
+  document.getElementById('kpi-total').textContent = d.count;
+  document.getElementById('detail-header').textContent = `${d.count} changes on ${d.date} (All Tickets)`;
+  const prevIndex = dateData.findIndex(x => x.date === d.date) - 1;
+  const prevDate = prevIndex >= 0 ? dateData[prevIndex].date : 'prior day';
+  document.getElementById('change-date-label').textContent = `${d.date} — Changes from ${prevDate}`;
+  buildChangeTable(changeRows);
+}
+
+// ── FILTER BUTTONS ──
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ── REAL PROGRESS TOGGLE ──
+let progressOn = false;
+document.getElementById('real-progress-toggle').addEventListener('click', function() {
+  progressOn = !progressOn;
+  this.textContent = `Real Progress: ${progressOn ? 'ON' : 'OFF'}`;
+  this.classList.toggle('on', progressOn);
+});
+
+// ── INIT ──
+buildDateGrid();
+buildChangeTable(changeRows);
+</script>
+</body>
+</html>
