@@ -1,0 +1,971 @@
+<!--
+   ______                            __
+  / ____/___  ____ ___  ____  __  __/ /____  _____
+ / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ ___/
+/ /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /
+\____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_/
+                    /_/
+        Created with Perplexity Computer
+        https://www.perplexity.ai/computer
+-->
+
+<!-- Perplexity Computer Attribution — SEO Meta Tags -->
+<meta name="generator" content="Perplexity Computer">
+<meta name="author" content="Perplexity Computer">
+<meta property="og:see_also" content="https://www.perplexity.ai/computer">
+<link rel="author" href="https://www.perplexity.ai/computer">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DHS Opportunity Intelligence — RAG Qualification Matching</title>
+  <meta name="description" content="Changeis BD RAG Engine × APFS Pipeline — DHS opportunity match results against the Changeis qualifications corpus.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vm2-theme.css">
+
+  <style>
+    /* ── SCORE DISPLAY ── */
+    .score-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      border: 3px solid;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .score-display.green  { border-color: var(--green);  background: var(--green-bg); }
+    .score-display.amber  { border-color: var(--amber);  background: var(--amber-bg); }
+    .score-display.red    { border-color: var(--red);    background: var(--red-bg); }
+    .score-display .score-num  { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+    .score-display.green  .score-num { color: var(--green); }
+    .score-display.amber  .score-num { color: var(--amber); }
+    .score-display.red    .score-num { color: var(--red); }
+    .score-display .score-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── CARD HEADER LAYOUT ── */
+    .opp-header {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-5);
+      margin-bottom: var(--space-5);
+    }
+    .opp-header-info { flex: 1; min-width: 0; }
+    .opp-id {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-faint);
+      margin-bottom: var(--space-1);
+      letter-spacing: .05em;
+    }
+    .opp-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.02em;
+      margin-bottom: var(--space-3);
+      line-height: 1.3;
+    }
+    .opp-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+      margin-bottom: var(--space-3);
+    }
+    .opp-detail-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .opp-detail-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+    .opp-detail-item .label {
+      font-weight: 600;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: .06em;
+    }
+    .opp-detail-item .value {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ── ACCENT CARD ── override theme grid */
+    .vm2-card-inner.green-accent,
+    .vm2-card-inner.amber-accent,
+    .vm2-card-inner.red-accent {
+      display: block !important;
+      grid-template-columns: none !important;
+    }
+    .vm2-card-inner.green-accent { border-left: 4px solid var(--green); }
+    .vm2-card-inner.amber-accent { border-left: 4px solid var(--amber); }
+    .vm2-card-inner.red-accent   { border-left: 4px solid var(--red); }
+
+    /* ── SCORE CELL COLORING ── */
+    .score-green { color: var(--green); font-weight: 700; font-family: var(--font-mono); font-size: 13px; }
+    .score-amber { color: var(--amber); font-weight: 700; font-family: var(--font-mono); font-size: 13px; }
+    .score-red   { color: var(--red);   font-weight: 700; font-family: var(--font-mono); font-size: 13px; }
+
+    /* ── EXCERPT ── */
+    .excerpt-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.65;
+      white-space: pre-wrap;
+      overflow: hidden;
+      margin-bottom: var(--space-4);
+    }
+    .excerpt-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-faint);
+      margin-bottom: var(--space-2);
+    }
+
+    /* ── ASSESSMENT ── */
+    .assessment-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-4) var(--space-5);
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.65;
+      margin-bottom: var(--space-3);
+    }
+    .assessment-box .assessment-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-faint);
+      margin-bottom: var(--space-2);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .assessment-box .assessment-title svg {
+      opacity: .6;
+    }
+    .assessment-box strong { color: var(--text); }
+
+    /* ── LEGEND ROW ── */
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: center;
+      margin-bottom: var(--space-6);
+    }
+    .legend-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-faint);
+      margin-right: var(--space-1);
+    }
+
+    /* ── RANK BADGE ── */
+    .rank-circle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--surface-3);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ── REC PRIORITY ── */
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 2px 7px;
+      border-radius: var(--radius-sm);
+    }
+    .priority-p1 { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+    .priority-p2 { background: var(--blue-bg);  color: var(--blue);  border: 1px solid var(--blue-border); }
+    .priority-p3 { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+
+    /* ── OCARD TOP BAR ── */
+    .opp-rank-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-6);
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-faint);
+      font-weight: 600;
+      letter-spacing: .04em;
+    }
+    .opp-rank-bar .rank-label { display: flex; align-items: center; gap: var(--space-2); }
+
+    /* ── SECTION SPACING ── */
+    .section-block { margin-bottom: var(--space-8); }
+
+    /* ── TABLE SECTION LABEL MINI ── */
+    .mini-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-faint);
+      margin-bottom: var(--space-2);
+      margin-top: var(--space-5);
+    }
+
+    /* ── RESPONSIVE HEADER ── */
+    @media (max-width: 640px) {
+      .opp-header { flex-direction: column; }
+      .score-display { width: 72px; height: 72px; align-self: flex-start; }
+      .score-display .score-num { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─────────── HEADER ─────────── -->
+<header class="vm2-header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <!-- SVG logo mark -->
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="VM2 RAG Engine" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#1d6fa5" opacity=".15"/>
+      <rect x="1" y="1" width="26" height="26" rx="5.5" stroke="#1d6fa5" stroke-width="1"/>
+      <!-- RAG hexagon mark -->
+      <polygon points="14,4 20,8 20,16 14,20 8,16 8,8" fill="none" stroke="#58a6ff" stroke-width="1.5" stroke-linejoin="round"/>
+      <circle cx="14" cy="12" r="2.5" fill="#58a6ff"/>
+      <line x1="14" y1="14.5" x2="14" y2="20" stroke="#58a6ff" stroke-width="1.2"/>
+    </svg>
+    <span class="vm2-header-title">DHS Opportunity Intelligence — RAG Match</span>
+  </div>
+  <div class="vm2-header-meta">
+    <span>APFS Pipeline</span>
+    <span class="dot">·</span>
+    <span>5 Opportunities</span>
+    <span class="dot">·</span>
+    <span>March 2026</span>
+    <span class="dot">·</span>
+    <span class="badge badge-green">2 Strong ≥0.60</span>
+    <span class="badge badge-amber">2 Moderate 0.45–0.59</span>
+    <span class="badge badge-red">0 Weak</span>
+    <span class="dot">·</span>
+    <button class="btn-theme" data-theme-toggle aria-label="Toggle theme" title="Toggle light/dark mode">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ─────────── PAGE ─────────── -->
+<main class="vm2-page">
+
+  <!-- Page Title -->
+  <h1 class="vm2-page-title">DHS Opportunity Intelligence — RAG Qualification Matching</h1>
+  <p class="vm2-page-subtitle">Changeis BD RAG Engine × APFS Pipeline &nbsp;·&nbsp; March 21, 2026</p>
+
+  <!-- ─── KPI ROW ─── -->
+  <div class="vm2-kpi-row section-block">
+    <div class="vm2-kpi-card">
+      <div class="vm2-kpi-value" style="color:var(--blue)">5</div>
+      <div class="vm2-kpi-label">Opportunities Analyzed</div>
+    </div>
+    <div class="vm2-kpi-card">
+      <div class="vm2-kpi-value" style="color:var(--amber)">0.614</div>
+      <div class="vm2-kpi-label">Avg Match Score</div>
+    </div>
+    <div class="vm2-kpi-card">
+      <div class="vm2-kpi-value" style="font-size:1.1rem;color:var(--green);padding-top:6px">USCG<br>ALC</div>
+      <div class="vm2-kpi-label">Strongest Match</div>
+    </div>
+    <div class="vm2-kpi-card">
+      <div class="vm2-kpi-value" style="font-size:1rem;color:var(--purple);padding-top:8px;letter-spacing:-.01em">SOW · MTPR<br>TORFP · Corp</div>
+      <div class="vm2-kpi-label">Corpus Sources</div>
+    </div>
+  </div>
+
+  <!-- ─── METHODOLOGY ─── -->
+  <div class="vm2-info-box section-block" style="border-left-color:var(--blue);">
+    <strong>Methodology:</strong> Each opportunity was matched against the Changeis SCOAR task order corpus using the <strong>BD RAG Engine</strong> (Pinecone vector search + semantic scoring). Composite scores combine chunk-level similarity with coverage breadth. <strong>Scores above 0.60</strong> indicate strong alignment; <strong>0.45–0.60</strong> moderate; <strong>below 0.45</strong> indicates capability gaps requiring teaming or development.
+  </div>
+
+  <!-- ─── SCORING LEGEND ─── -->
+  <div class="legend-row">
+    <span class="legend-label">Scoring Legend</span>
+    <span class="badge badge-green">0.60+ &nbsp;Strong Match</span>
+    <span class="badge badge-amber">0.45–0.59 &nbsp;Moderate Match</span>
+    <span class="badge badge-red">Below 0.45 &nbsp;Weak Match</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- OPP 1: USCG Info Systems — 0.688 ●GREEN -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="vm2-section-label">Opportunity 1 of 5 — Strongest Match</div>
+
+  <div class="vm2-card">
+    <div class="opp-rank-bar">
+      <span class="rank-label">
+        <span class="badge badge-green">STRONG MATCH</span>
+        <span style="margin-left:4px">Rank #1 by RAG Score</span>
+      </span>
+      <span style="font-family:var(--font-mono);letter-spacing:.04em">F2026072250</span>
+    </div>
+    <div class="vm2-card-inner green-accent">
+      <div class="vm2-card-body" style="width:100%">
+        <div class="opp-header">
+          <div class="score-display green">
+            <span class="score-num">0.688</span>
+            <span class="score-label">RAG Score</span>
+          </div>
+          <div class="opp-header-info">
+            <div class="opp-id">APFS F2026072250</div>
+            <div class="opp-title">USCG Information Systems Division Professional Services</div>
+            <div class="opp-meta">
+              <span class="badge badge-blue">USCG/ALC</span>
+              <span class="badge badge-green">Over $100M</span>
+              <span class="badge badge-amber">VETS 2</span>
+              <span class="badge badge-purple">NAICS 541512</span>
+            </div>
+            <div class="opp-detail-row">
+              <div class="opp-detail-item"><span class="label">Sol Date</span><span class="value">03/30/2026</span></div>
+              <div class="opp-detail-item"><span class="label">Vehicle</span><span class="value">VETS 2</span></div>
+              <div class="opp-detail-item"><span class="label">Contact</span><span class="value">USCG/ALC</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mini-label">Match Results — Top 5 Corpus Hits</div>
+        <div class="vm2-table-wrap">
+          <table class="vm2-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Task Order</th>
+                <th>Score</th>
+                <th>Client(s)</th>
+                <th>Doc Types</th>
+                <th>Chunks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="rank-circle">1</span></td>
+                <td><span class="key">FAA_CLMRS</span></td>
+                <td><span class="score-green">0.688</span></td>
+                <td><span class="muted">FAA</span></td>
+                <td><span class="muted">SOW</span></td>
+                <td><span class="mono">10</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">2</span></td>
+                <td><span class="key">V3132057</span></td>
+                <td><span class="score-amber">0.471</span></td>
+                <td><span class="muted">DOT · FAA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">4</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">3</span></td>
+                <td><span class="key">V3202050</span></td>
+                <td><span class="score-amber">0.467</span></td>
+                <td><span class="muted">DOT · FAA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">4</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">4</span></td>
+                <td><span class="key">V3112005</span></td>
+                <td><span class="score-amber">0.465</span></td>
+                <td><span class="muted">DOT · FAA · FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">4</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">5</span></td>
+                <td><span class="key">V3132063</span></td>
+                <td><span class="score-red">0.441</span></td>
+                <td><span class="muted">Volpe</span></td>
+                <td><span class="muted">TORFP</span></td>
+                <td><span class="mono">3</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mini-label">Key Qualification Excerpt — FAA_CLMRS (best match)</div>
+        <div class="vm2-info-box" style="border-left-color:var(--green);font-family:var(--font-mono);font-size:12px;">
+          "C.2.14.1 Administrative Support Services — and resolutions, and update office records, databases and files for assigned programs, · Reproduce and assemble program materials; establish and maintain program files; track administrative support actions; and coordinate intra-and inter-office activi..."
+        </div>
+
+        <div class="assessment-box">
+          <div class="assessment-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+            Strategic Assessment
+          </div>
+          <strong>Strongest match in this pipeline</strong> — FAA CLMRS ERP and supply chain management directly parallel USCG ALC aviation logistics information systems needs. Changeis can position as a proven DOT/FAA enterprise systems integrator with direct aviation logistics experience. VETS 2 vehicle aligns with Changeis small-business set-aside positioning.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- OPP 2: USCIS ODOS 3.1 — 0.634 ●GREEN -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="vm2-section-label" style="margin-top:var(--space-6)">Opportunity 2 of 5</div>
+
+  <div class="vm2-card">
+    <div class="opp-rank-bar">
+      <span class="rank-label">
+        <span class="badge badge-green">STRONG MATCH</span>
+        <span style="margin-left:4px">Rank #2 by RAG Score</span>
+      </span>
+      <span style="font-family:var(--font-mono);letter-spacing:.04em">F2024066162</span>
+    </div>
+    <div class="vm2-card-inner green-accent">
+      <div class="vm2-card-body" style="width:100%">
+        <div class="opp-header">
+          <div class="score-display green">
+            <span class="score-num">0.634</span>
+            <span class="score-label">RAG Score</span>
+          </div>
+          <div class="opp-header-info">
+            <div class="opp-id">APFS F2024066162</div>
+            <div class="opp-title">USCIS Outcome-Based Delivery and DevOps Services 3.1 (ODOS 3.1)</div>
+            <div class="opp-meta">
+              <span class="badge badge-blue">USCIS</span>
+              <span class="badge badge-green">Over $100M</span>
+              <span class="badge badge-amber">GSA Schedule</span>
+              <span class="badge badge-purple">NAICS 541512</span>
+            </div>
+            <div class="opp-detail-row">
+              <div class="opp-detail-item"><span class="label">Sol Date</span><span class="value">01/16/2026</span></div>
+              <div class="opp-detail-item"><span class="label">Vehicle</span><span class="value">GSA Schedule</span></div>
+              <div class="opp-detail-item"><span class="label">Contact</span><span class="value">USCIS</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mini-label">Match Results — Top 5 Corpus Hits</div>
+        <div class="vm2-table-wrap">
+          <table class="vm2-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Task Order</th>
+                <th>Score</th>
+                <th>Client(s)</th>
+                <th>Doc Types</th>
+                <th>Chunks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="rank-circle">1</span></td>
+                <td><span class="key">V3132151</span></td>
+                <td><span class="score-green">0.634</span></td>
+                <td><span class="muted">Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">18</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">2</span></td>
+                <td><span class="key">V3132057</span></td>
+                <td><span class="score-amber">0.536</span></td>
+                <td><span class="muted">DOT · FAA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">7</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">3</span></td>
+                <td><span class="key">FMCSA_URS</span></td>
+                <td><span class="score-amber">0.533</span></td>
+                <td><span class="muted">FMCSA</span></td>
+                <td><span class="muted">OTHER</span></td>
+                <td><span class="mono">5</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">4</span></td>
+                <td><span class="key">FAA_CLMRS</span></td>
+                <td><span class="score-red">0.448</span></td>
+                <td><span class="muted">FAA</span></td>
+                <td><span class="muted">SOW</span></td>
+                <td><span class="mono">3</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">5</span></td>
+                <td><span class="key">CORPORATE</span></td>
+                <td><span class="score-red">0.404</span></td>
+                <td><span class="muted">DOT · FAA · FMCSA</span></td>
+                <td><span class="muted">OTHER</span></td>
+                <td><span class="mono">2</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mini-label">Key Qualification Excerpt — V3132151 (best match)</div>
+        <div class="vm2-info-box" style="border-left-color:var(--green);font-family:var(--font-mono);font-size:12px;">
+          "SCOAR TASK ORDER — -engineering (BPR) and digital services development. This work directly supports the customer agency's customer centric modernization and digital services development efforts. C.2 PURPOSE — The contractor shall provide technical assistance, business requirement analysis, agile d..."
+        </div>
+
+        <div class="assessment-box">
+          <div class="assessment-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+            Strategic Assessment
+          </div>
+          <strong>Strong DevOps and agile alignment</strong> through SCOAR task orders, with 18 matched chunks indicating deep corpus coverage. CI/CD, cloud AWS, and modernization experience from DOT/Volpe work maps directly to USCIS ODOS 3.1 requirements. <strong>Evaluation is underway</strong> — this is a near-term priority for proposal positioning on the GSA Schedule vehicle.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- OPP 3: USCIS PLANXS II — 0.628 ●GREEN -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="vm2-section-label" style="margin-top:var(--space-6)">Opportunity 3 of 5</div>
+
+  <div class="vm2-card">
+    <div class="opp-rank-bar">
+      <span class="rank-label">
+        <span class="badge badge-green">STRONG MATCH</span>
+        <span style="margin-left:4px">Rank #3 by RAG Score</span>
+      </span>
+      <span style="font-family:var(--font-mono);letter-spacing:.04em">F2025068410</span>
+    </div>
+    <div class="vm2-card-inner green-accent">
+      <div class="vm2-card-body" style="width:100%">
+        <div class="opp-header">
+          <div class="score-display green">
+            <span class="score-num">0.628</span>
+            <span class="score-label">RAG Score</span>
+          </div>
+          <div class="opp-header-info">
+            <div class="opp-id">APFS F2025068410</div>
+            <div class="opp-title">USCIS Predictive Lake Analytics Next-Gen eXchange Services (PLANXS) II</div>
+            <div class="opp-meta">
+              <span class="badge badge-blue">USCIS</span>
+              <span class="badge badge-green">Over $100M</span>
+              <span class="badge badge-amber">GSA Schedule</span>
+              <span class="badge badge-purple">NAICS 541512</span>
+            </div>
+            <div class="opp-detail-row">
+              <div class="opp-detail-item"><span class="label">Sol Date</span><span class="value">03/17/2026</span></div>
+              <div class="opp-detail-item"><span class="label">Vehicle</span><span class="value">GSA Schedule</span></div>
+              <div class="opp-detail-item"><span class="label">Contact</span><span class="value">USCIS</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mini-label">Match Results — Top 5 Corpus Hits</div>
+        <div class="vm2-table-wrap">
+          <table class="vm2-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Task Order</th>
+                <th>Score</th>
+                <th>Client(s)</th>
+                <th>Doc Types</th>
+                <th>Chunks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="rank-circle">1</span></td>
+                <td><span class="key">V3132355</span></td>
+                <td><span class="score-green">0.628</span></td>
+                <td><span class="muted">FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW</span></td>
+                <td><span class="mono">15</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">2</span></td>
+                <td><span class="key">V3132140</span></td>
+                <td><span class="score-green">0.603</span></td>
+                <td><span class="muted">FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">8</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">3</span></td>
+                <td><span class="key">V3132249</span></td>
+                <td><span class="score-amber">0.566</span></td>
+                <td><span class="muted">FMCSA · NHTSA · Volpe</span></td>
+                <td><span class="muted">AWARD · MTPR · OTHER · SOW</span></td>
+                <td><span class="mono">8</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">4</span></td>
+                <td><span class="key">CORPORATE</span></td>
+                <td><span class="score-red">0.421</span></td>
+                <td><span class="muted">DOT · FAA · FMCSA · FTA · NHTSA · Volpe</span></td>
+                <td><span class="muted">OTHER</span></td>
+                <td><span class="mono">3</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">5</span></td>
+                <td><span class="key">V3132014</span></td>
+                <td><span class="score-red">0.394</span></td>
+                <td><span class="muted">DOT · FAA · FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW</span></td>
+                <td><span class="mono">3</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mini-label">Key Qualification Excerpt — V3132355 (best match)</div>
+        <div class="vm2-info-box" style="border-left-color:var(--green);font-family:var(--font-mono);font-size:12px;">
+          "C.5 REQUIRED TASKS AND DELIVERABLES — at data users. Work will involve large datasets from diverse sources, including the Motor Carrier Management Information System, Licensing and Insurance (L&I) system, Drug and Alcohol Clearinghouse, and Enforcement Management Information System, and will require..."
+        </div>
+
+        <div class="assessment-box">
+          <div class="assessment-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+            Strategic Assessment
+          </div>
+          <strong>Strong data analytics and BI alignment</strong> — two top-3 corpus hits score above 0.60, with 15 + 8 chunks matched from FMCSA data science work. Tableau, data validation, large multi-source dataset analysis, and analytical studies experience directly transfers from FMCSA work. <strong>Imminent solicitation</strong> (03/17/2026) makes this a priority response; GSA Schedule vehicle eases competitive access.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- OPP 4: CBP Cyber Security — 0.569 ●AMBER -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="vm2-section-label" style="margin-top:var(--space-6)">Opportunity 4 of 5</div>
+
+  <div class="vm2-card">
+    <div class="opp-rank-bar">
+      <span class="rank-label">
+        <span class="badge badge-amber">MODERATE MATCH</span>
+        <span style="margin-left:4px">Rank #4 by RAG Score</span>
+      </span>
+      <span style="font-family:var(--font-mono);letter-spacing:.04em">F2025070806</span>
+    </div>
+    <div class="vm2-card-inner amber-accent">
+      <div class="vm2-card-body" style="width:100%">
+        <div class="opp-header">
+          <div class="score-display amber">
+            <span class="score-num">0.569</span>
+            <span class="score-label">RAG Score</span>
+          </div>
+          <div class="opp-header-info">
+            <div class="opp-id">APFS F2025070806</div>
+            <div class="opp-title">CBP Cyber Security Operations Support (Recompete)</div>
+            <div class="opp-meta">
+              <span class="badge badge-blue">CBP/OIT</span>
+              <span class="badge badge-green">Over $100M</span>
+              <span class="badge badge-amber">Alliant 2</span>
+              <span class="badge badge-purple">NAICS 541519</span>
+            </div>
+            <div class="opp-detail-row">
+              <div class="opp-detail-item"><span class="label">Sol Date</span><span class="value">03/01/2026</span></div>
+              <div class="opp-detail-item"><span class="label">Vehicle</span><span class="value">Alliant 2</span></div>
+              <div class="opp-detail-item"><span class="label">Contact</span><span class="value">CBP/OIT</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mini-label">Match Results — Top 5 Corpus Hits</div>
+        <div class="vm2-table-wrap">
+          <table class="vm2-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Task Order</th>
+                <th>Score</th>
+                <th>Client(s)</th>
+                <th>Doc Types</th>
+                <th>Chunks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="rank-circle">1</span></td>
+                <td><span class="key">V3132012</span></td>
+                <td><span class="score-amber">0.569</span></td>
+                <td><span class="muted">DOT · FAA · FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">8</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">2</span></td>
+                <td><span class="key">V3132127</span></td>
+                <td><span class="score-amber">0.503</span></td>
+                <td><span class="muted">DOT · FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">6</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">3</span></td>
+                <td><span class="key">V3132168</span></td>
+                <td><span class="score-amber">0.502</span></td>
+                <td><span class="muted">DOT · FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW</span></td>
+                <td><span class="mono">6</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">4</span></td>
+                <td><span class="key">V3132051</span></td>
+                <td><span class="score-red">0.448</span></td>
+                <td><span class="muted">DOT · FAA · FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">4</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">5</span></td>
+                <td><span class="key">V3132057</span></td>
+                <td><span class="score-red">0.447</span></td>
+                <td><span class="muted">DOT · FAA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">4</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mini-label">Key Qualification Excerpt — V3132012 (best match)</div>
+        <div class="vm2-info-box" style="border-left-color:var(--amber);font-family:var(--font-mono);font-size:12px;">
+          "C.1 BACKGROUND — to induce compliance in the motor carrier industry. The Office of Compliance manages the Agency's Compliance, Safety, Accountability (CSA) Program as well as the New Entrant program. The Volpe Center has supported this office for over 20 years. C.2 PURPOSE — The contractor shall provid..."
+        </div>
+
+        <div class="assessment-box">
+          <div class="assessment-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Strategic Assessment
+          </div>
+          <strong>Moderate match</strong> — compliance monitoring, data analytics, and federal program management capabilities transfer well, but the RAG corpus lacks dedicated cybersecurity (SOC, SIEM, threat intel) content. <strong>A cybersecurity-specific teaming partner is required</strong> to bridge the gap. Alliant 2 vehicle eligibility should be confirmed before investing BD resources.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- OPP 5: ICE Cyber Defense — 0.553 ●AMBER -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="vm2-section-label" style="margin-top:var(--space-6)">Opportunity 5 of 5</div>
+
+  <div class="vm2-card">
+    <div class="opp-rank-bar">
+      <span class="rank-label">
+        <span class="badge badge-amber">MODERATE MATCH</span>
+        <span style="margin-left:4px">Rank #5 by RAG Score</span>
+      </span>
+      <span style="font-family:var(--font-mono);letter-spacing:.04em">F2025071938</span>
+    </div>
+    <div class="vm2-card-inner amber-accent">
+      <div class="vm2-card-body" style="width:100%">
+        <div class="opp-header">
+          <div class="score-display amber">
+            <span class="score-num">0.553</span>
+            <span class="score-label">RAG Score</span>
+          </div>
+          <div class="opp-header-info">
+            <div class="opp-id">APFS F2025071938</div>
+            <div class="opp-title">ICE Cyber Defense and Intelligence Support Services Recompete</div>
+            <div class="opp-meta">
+              <span class="badge badge-blue">ICE/M&amp;A/CIO</span>
+              <span class="badge badge-green">Over $100M</span>
+              <span class="badge badge-amber">NITAAC CIO-SP3</span>
+              <span class="badge badge-purple">NAICS 541512</span>
+            </div>
+            <div class="opp-detail-row">
+              <div class="opp-detail-item"><span class="label">Sol Date</span><span class="value">05/01/2026</span></div>
+              <div class="opp-detail-item"><span class="label">Vehicle</span><span class="value">NITAAC CIO-SP3</span></div>
+              <div class="opp-detail-item"><span class="label">Contact</span><span class="value">ICE/M&amp;A/CIO</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mini-label">Match Results — Top 5 Corpus Hits</div>
+        <div class="vm2-table-wrap">
+          <table class="vm2-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Task Order</th>
+                <th>Score</th>
+                <th>Client(s)</th>
+                <th>Doc Types</th>
+                <th>Chunks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="rank-circle">1</span></td>
+                <td><span class="key">V3132012</span></td>
+                <td><span class="score-amber">0.553</span></td>
+                <td><span class="muted">DOT · FAA · FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">8</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">2</span></td>
+                <td><span class="key">V3132051</span></td>
+                <td><span class="score-amber">0.547</span></td>
+                <td><span class="muted">DOT · FAA · FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">8</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">3</span></td>
+                <td><span class="key">V3132057</span></td>
+                <td><span class="score-red">0.430</span></td>
+                <td><span class="muted">DOT · FAA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW · TORFP</span></td>
+                <td><span class="mono">4</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">4</span></td>
+                <td><span class="key">V3132172</span></td>
+                <td><span class="score-red">0.429</span></td>
+                <td><span class="muted">FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW</span></td>
+                <td><span class="mono">4</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank-circle">5</span></td>
+                <td><span class="key">V3132249</span></td>
+                <td><span class="score-red">0.427</span></td>
+                <td><span class="muted">FMCSA · Volpe</span></td>
+                <td><span class="muted">AWARD · OTHER · SOW</span></td>
+                <td><span class="mono">4</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mini-label">Key Qualification Excerpt — V3132012 (best match)</div>
+        <div class="vm2-info-box" style="border-left-color:var(--amber);font-family:var(--font-mono);font-size:12px;">
+          "C.1 BACKGROUND — to induce compliance in the motor carrier industry. The Office of Compliance manages the Agency's Compliance, Safety, Accountability (CSA) Program as well as the New Entrant program. The Volpe Center has supported this office for over 20 years. C.2 PURPOSE — The contractor shall provid..."
+        </div>
+
+        <div class="assessment-box">
+          <div class="assessment-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Strategic Assessment
+          </div>
+          <strong>Moderate match with profile similar to CBP Cyber</strong> — security analytics, federal program monitoring, and compliance capabilities are present in the corpus but no dedicated cyber defense (FISMA, SIEM, intrusion detection) content surfaces. <strong>CIO-SP3 vehicle access must be confirmed</strong>, and a specialized cyber defense teaming partner is essential before committing resources to this pursuit.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SUMMARY: PURSUIT PRIORITIZATION -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="vm2-section-label" style="margin-top:var(--space-8)">Pursuit Prioritization</div>
+
+  <div class="vm2-rec-box">
+    <h3>Strategic Pursuit Prioritization — Ranked by BD Fit</h3>
+
+    <div class="vm2-rec-item">
+      <div class="vm2-rec-num">1</div>
+      <div class="vm2-rec-text">
+        <strong>USCG Information Systems Division (F2026072250)</strong>
+        &nbsp;<span class="priority-badge priority-p1">P1 · PURSUE</span>&nbsp;
+        <span class="badge badge-green" style="font-size:10px">0.688</span>
+        <br>Highest RAG score in pipeline. FAA CLMRS ERP and aviation logistics experience is a direct USCG ALC parallel. VETS 2 set-aside vehicle favors Changeis positioning. Solicitation open 03/30/2026 — <strong>submit BD intake immediately.</strong>
+      </div>
+    </div>
+
+    <div class="vm2-rec-item">
+      <div class="vm2-rec-num">2</div>
+      <div class="vm2-rec-text">
+        <strong>USCIS ODOS 3.1 (F2024066162)</strong>
+        &nbsp;<span class="priority-badge priority-p1">P1 · PURSUE</span>&nbsp;
+        <span class="badge badge-green" style="font-size:10px">0.634</span>
+        <br>Strong DevOps/agile match — 18 matched chunks demonstrate broad corpus coverage. GSA Schedule vehicle provides accessible on-ramp. Evaluation underway; pipeline positioning and capability brief needed now.
+      </div>
+    </div>
+
+    <div class="vm2-rec-item">
+      <div class="vm2-rec-num">3</div>
+      <div class="vm2-rec-text">
+        <strong>USCIS PLANXS II (F2025068410)</strong>
+        &nbsp;<span class="priority-badge priority-p1">P1 · PURSUE</span>&nbsp;
+        <span class="badge badge-green" style="font-size:10px">0.628</span>
+        <br>Strong data analytics and BI alignment with two top-3 hits above 0.60. FMCSA large-dataset analytical work is directly relevant to USCIS immigration fraud detection analytics. Solicitation 03/17/2026 — <strong>imminent; prioritize capture.</strong>
+      </div>
+    </div>
+
+    <div class="vm2-rec-item">
+      <div class="vm2-rec-num">4</div>
+      <div class="vm2-rec-text">
+        <strong>CBP Cyber Security Operations (F2025070806)</strong>
+        &nbsp;<span class="priority-badge priority-p2">P2 · TEAM</span>&nbsp;
+        <span class="badge badge-amber" style="font-size:10px">0.569</span>
+        <br>Large deal (&gt;$100M) but requires a dedicated cybersecurity teaming partner to address SOC/SIEM/threat intel gaps. Alliant 2 vehicle eligibility must be confirmed. Pursue as sub or through a prime with existing CBP/OIT cyber incumbency.
+      </div>
+    </div>
+
+    <div class="vm2-rec-item">
+      <div class="vm2-rec-num">5</div>
+      <div class="vm2-rec-text">
+        <strong>ICE Cyber Defense and Intelligence (F2025071938)</strong>
+        &nbsp;<span class="priority-badge priority-p3">P3 · MONITOR</span>&nbsp;
+        <span class="badge badge-amber" style="font-size:10px">0.553</span>
+        <br>Similar profile and gaps to CBP Cyber. CIO-SP3 access needed; specialized cyber defense teaming required. Longer runway (05/01/2026 solicitation) allows time to evaluate teaming options before committing BD investment.
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ─────────── FOOTER ─────────── -->
+<footer class="vm2-footer">
+  <div style="margin-bottom:6px">
+    Generated by VM2 &nbsp;·&nbsp; RAG Engine: <a href="https://changeis-bd-rag-production.up.railway.app" target="_blank" rel="noopener">changeis-bd-rag-production.up.railway.app</a> &nbsp;·&nbsp; March 21, 2026 &nbsp;·&nbsp; <strong style="color:var(--text-muted)">Changeis Confidential</strong>
+  </div>
+  <div>
+    <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer" style="color:var(--text-faint)">Created with Perplexity Computer</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const r = document.documentElement;
+  const t = document.querySelector('[data-theme-toggle]');
+  let d = 'dark';
+  r.setAttribute('data-theme', d);
+  if (t) t.addEventListener('click', function() {
+    d = d === 'dark' ? 'light' : 'dark';
+    r.setAttribute('data-theme', d);
+    t.title = d === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+  });
+})();
+</script>
+
+</body>
+</html>
