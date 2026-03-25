@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM2 System Architecture — Varun Malhotra</title>
+<style>
+/* ── Design Tokens ── */
+:root {
+    --bg: #ffffff;
+    --bg-alt: #f7f7f7;
+    --bg-code: #f4f4f4;
+    --text: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --text-muted: #999999;
+    --accent: #c53a3a;
+    --accent-hover: #a82e2e;
+    --border: #e5e5e5;
+    --border-light: #f0f0f0;
+    --font-serif: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, Georgia, serif;
+    --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+    --content-width: 860px;
+    --teal: #008B8B;
+    --green: #2D7D4A;
+    --purple: #6B4C9A;
+    --orange: #D97D2A;
+    --navy: #1B2A4A;
+    --callout-bg: #E8F4F8;
+}
+
+[data-theme="dark"] {
+    --bg: #1a1a1a;
+    --bg-alt: #242424;
+    --bg-code: #2a2a2a;
+    --text: #e5e5e5;
+    --text-secondary: #a0a0a0;
+    --text-muted: #707070;
+    --accent: #e05555;
+    --accent-hover: #f06666;
+    --border: #333333;
+    --border-light: #2a2a2a;
+    --callout-bg: #1e2e3a;
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ── Top Bar ── */
+.topbar {
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: var(--content-width);
+    margin: 0 auto;
+}
+.topbar-brand {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+.topbar-right { display: flex; align-items: center; gap: 1rem; }
+.topbar-date {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+.theme-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    transition: border-color 0.2s;
+}
+.theme-toggle:hover { border-color: var(--text-secondary); }
+
+/* ── Page Container ── */
+.page {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+}
+
+/* ── Typography ── */
+h1 {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+h2 {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--accent);
+}
+h3 {
+    font-family: var(--font-sans);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+h4 {
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-top: 1.2rem;
+    margin-bottom: 0.4rem;
+}
+.subtitle {
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+}
+p { margin-bottom: 1rem; }
+ul, ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+li { margin-bottom: 0.3rem; }
+
+/* ── Callout Box ── */
+.callout {
+    background: var(--callout-bg);
+    border-left: 4px solid var(--teal);
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+    border-radius: 0 4px 4px 0;
+}
+.callout-title {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+}
+.callout p { margin-bottom: 0.4rem; }
+.callout p:last-child { margin-bottom: 0; }
+
+/* ── Tables ── */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.92rem;
+}
+thead th {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #fff;
+    background: var(--navy);
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+}
+td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: top;
+}
+tbody tr:nth-child(even) { background: var(--bg-alt); }
+[data-theme="dark"] thead th { background: #2a3a5a; }
+
+/* ── Code Blocks ── */
+code {
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    background: var(--bg-code);
+    padding: 0.15rem 0.35rem;
+    border-radius: 3px;
+}
+pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+pre code {
+    background: none;
+    padding: 0;
+}
+
+/* ── Diagram Box ── */
+.diagram-box {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.8;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+/* ── Badge ── */
+.badge {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 12px;
+    white-space: nowrap;
+    display: inline-block;
+}
+.badge-green { background: #d1fae5; color: #065f46; }
+.badge-blue { background: #e8f0fe; color: #1a56db; }
+.badge-orange { background: #fef3c7; color: #92400e; }
+.badge-red { background: #fee2e2; color: #b91c1c; }
+.badge-purple { background: #ede9fe; color: #5b21b6; }
+[data-theme="dark"] .badge-green { background: #064e3b; color: #6ee7b7; }
+[data-theme="dark"] .badge-blue { background: #1e3a5f; color: #93bbfc; }
+[data-theme="dark"] .badge-orange { background: #44370a; color: #fcd34d; }
+[data-theme="dark"] .badge-red { background: #450a0a; color: #fca5a5; }
+[data-theme="dark"] .badge-purple { background: #2e1065; color: #c4b5fd; }
+
+/* ── Section Numbers ── */
+.section-num {
+    color: var(--accent);
+    font-weight: 700;
+    margin-right: 0.3rem;
+}
+
+/* ── TOC ── */
+.toc {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0 2rem;
+}
+.toc-title {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.6rem;
+    color: var(--text);
+}
+.toc a {
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    display: block;
+    padding: 0.2rem 0;
+    transition: color 0.2s;
+}
+.toc a:hover { color: var(--accent); }
+.toc .indent { margin-left: 1.25rem; }
+
+/* ── Footer ── */
+.footer {
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-light);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* ── Print ── */
+@media print {
+    .topbar, .theme-toggle { display: none; }
+    .page { padding: 0; }
+    h2 { break-before: page; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+    .page { padding: 1.5rem 1rem; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.2rem; }
+    pre { font-size: 0.78rem; }
+    .diagram-box { font-size: 0.72rem; }
+}
+</style>
+</head>
+<body>
+
+<nav class="topbar">
+    <span class="topbar-brand">VM2 &middot; Perplexity Computer</span>
+    <div class="topbar-right">
+        <span class="topbar-date">Architecture Document</span>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">&#9684;</button>
+    </div>
+</nav>
+
+<main class="page">
+
+<h1>VM2 System Architecture</h1>
+<p class="subtitle">Complete technical reference for the VM2 automated task pipeline &middot; March 25, 2026</p>
+
+<div class="toc">
+    <div class="toc-title">Table of Contents</div>
+    <a href="#overview">1. System Overview</a>
+    <a href="#components">2. Component Architecture</a>
+    <a class="indent" href="#railway">2.1 Railway Hosting &amp; Auth</a>
+    <a class="indent" href="#github">2.2 GitHub Repository</a>
+    <a class="indent" href="#gmail-pipeline">2.3 Gmail Task Pipeline</a>
+    <a class="indent" href="#cron-system">2.4 Scheduled Automation (Crons)</a>
+    <a class="indent" href="#dropbox">2.5 Dropbox Backup</a>
+    <a class="indent" href="#todoist">2.6 Todoist Task Tracking</a>
+    <a class="indent" href="#index">2.7 Index Generator</a>
+    <a href="#data-flow">3. Data Flow &amp; Lifecycle</a>
+    <a href="#security">4. Security Model</a>
+    <a href="#file-conventions">5. File &amp; Naming Conventions</a>
+    <a href="#brand-style">6. Brand &amp; Design Standards</a>
+    <a href="#cron-schedule">7. Cron Schedule Reference</a>
+    <a href="#env-config">8. Environment &amp; Configuration</a>
+    <a href="#debugging">9. Debugging &amp; Troubleshooting</a>
+    <a href="#test-suite">10. Test Suite Reference</a>
+    <a href="#migration-history">11. Migration History</a>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="overview"><span class="section-num">1.</span> System Overview</h2>
+
+<p>VM2 is an automated task pipeline that receives work instructions via email, executes them through Perplexity Computer AI agents, and publishes HTML deliverables to a password-protected web portal. The system runs continuously with hourly email monitoring, nightly compliance audits, and weekly digests.</p>
+
+<div class="diagram-box">
+┌──────────────────────────────────────────────────────────────────────────┐
+│                        VM2 SYSTEM ARCHITECTURE                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────┐     ┌──────────────────────┐     ┌──────────────────┐
+  │   GMAIL     │────▶│  PERPLEXITY COMPUTER │────▶│  GITHUB REPO     │
+  │ vm2.viru@   │     │  (Hourly Cron)       │     │  VM2-P-Taskers   │
+  │ gmail.com   │     │                      │     │  (main branch)   │
+  └─────────────┘     │  ┌────────────────┐  │     └────────┬─────────┘
+                      │  │ Task Subagent  │  │              │
+  ┌─────────────┐     │  │ (per email)    │  │     ┌────────▼─────────┐
+  │  TODOIST    │◀───▶│  └────────────────┘  │     │  RAILWAY         │
+  │  VM2 Label  │     │                      │     │  (Docker/nginx)  │
+  └─────────────┘     │  ┌────────────────┐  │     │  Basic Auth:     │
+                      │  │ Compliance     │  │     │  vm2 / ******    │
+  ┌─────────────┐     │  │ Audit (Nightly)│  │     └──────────────────┘
+  │  DROPBOX    │◀────│  └────────────────┘  │
+  │  V M2/      │     │                      │     ┌──────────────────┐
+  │  VM2-main/  │     │  ┌────────────────┐  │     │  DELIVERABLES    │
+  │  VM2-P/     │     │  │ Auto-Helper    │  │     │  index.html      │
+  └─────────────┘     │  │ (Daily)        │  │     │  98 HTML files   │
+                      │  └────────────────┘  │     │  Dockerfile      │
+                      │                      │     │  nginx.conf      │
+                      │  ┌────────────────┐  │     │  entrypoint.sh   │
+                      │  │ Weekly Digest  │  │     └──────────────────┘
+                      │  │ (Saturday)     │  │
+                      │  └────────────────┘  │
+                      └──────────────────────┘
+</div>
+
+<div class="callout">
+    <div class="callout-title">Key Architecture Decision</div>
+    <p>As of March 2026, all client-side StaticCrypt encryption has been removed. Password protection is handled server-side by nginx basic auth on Railway. This eliminates the double-login problem and simplifies the entire pipeline.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="components"><span class="section-num">2.</span> Component Architecture</h2>
+
+<!-- 2.1 Railway -->
+<h3 id="railway">2.1 Railway Hosting &amp; Authentication</h3>
+
+<p>The deliverables portal is hosted on Railway using a custom Docker container built on <code>nginx:alpine</code>. Authentication is handled entirely server-side.</p>
+
+<table>
+<thead><tr><th>Property</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Platform</td><td>Railway (us-west2)</td></tr>
+<tr><td>Builder</td><td>Dockerfile</td></tr>
+<tr><td>Base Image</td><td><code>nginx:alpine</code></td></tr>
+<tr><td>Port</td><td>8080 (internal), mapped by Railway</td></tr>
+<tr><td>Auth Method</td><td>nginx <code>auth_basic</code> with <code>.htpasswd</code></td></tr>
+<tr><td>Username</td><td><code>vm2</code> (env var: <code>VM2_AUTH_USERNAME</code>)</td></tr>
+<tr><td>Password</td><td>Stored in <code>VM2_AUTH_PASSWORD</code> env var</td></tr>
+<tr><td>Auto-deploy</td><td>Yes — pushes to <code>main</code> trigger rebuild</td></tr>
+</tbody>
+</table>
+
+<h4>How Auth Works at Runtime</h4>
+<ol>
+    <li><code>entrypoint.sh</code> runs at container startup</li>
+    <li>Reads <code>VM2_AUTH_USERNAME</code> and <code>VM2_AUTH_PASSWORD</code> from environment</li>
+    <li>Generates <code>/etc/nginx/.htpasswd</code> using <code>openssl passwd -apr1</code></li>
+    <li>Starts nginx with <code>auth_basic</code> pointing to that file</li>
+    <li>Every request requires HTTP Basic Auth — one login, no second prompt</li>
+</ol>
+
+<h4>Dockerfile</h4>
+<pre><code>FROM nginx:alpine
+RUN apk add --no-cache openssl
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+COPY . /usr/share/nginx/html/
+RUN rm -f /usr/share/nginx/html/Dockerfile \
+    /usr/share/nginx/html/nginx.conf \
+    /usr/share/nginx/html/entrypoint.sh \
+    /usr/share/nginx/html/.staticrypt.json \
+    /usr/share/nginx/html/.gitignore
+EXPOSE 8080
+ENTRYPOINT ["/entrypoint.sh"]</code></pre>
+
+<h4>nginx.conf</h4>
+<pre><code>server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    auth_basic "VM2 Deliverables";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~* \.(css|js|png|jpg|gif|ico|svg|woff|woff2)$ {
+        expires 7d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+
+    gzip on;
+    gzip_types text/html text/css application/javascript text/plain;
+    gzip_min_length 256;
+}</code></pre>
+
+<h4>entrypoint.sh</h4>
+<pre><code>#!/bin/sh
+USERNAME="${VM2_AUTH_USERNAME:-vm2}"
+PASSWORD="${VM2_AUTH_PASSWORD:-97harry23!}"
+echo "${USERNAME}:$(openssl passwd -apr1 "${PASSWORD}")" > /etc/nginx/.htpasswd
+echo "VM2 auth configured for user: ${USERNAME}"
+exec nginx -g "daemon off;"</code></pre>
+
+<!-- 2.2 GitHub -->
+<h3 id="github">2.2 GitHub Repository</h3>
+
+<table>
+<thead><tr><th>Property</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Repository</td><td><code>VM-CodeRock/VM2-P-Taskers</code></td></tr>
+<tr><td>Branch</td><td><code>main</code></td></tr>
+<tr><td>GitHub Pages</td><td>Disabled (was active pre-migration)</td></tr>
+<tr><td>Auth</td><td><code>api_credentials=["github"]</code> in Perplexity Computer</td></tr>
+<tr><td>Auto-deploy</td><td>Railway watches <code>main</code> branch</td></tr>
+</tbody>
+</table>
+
+<h4>Repository Structure</h4>
+<pre><code>VM2-P-Taskers/
+├── index.html                    # Auto-generated deliverables portal
+├── Dockerfile                    # Railway container definition
+├── nginx.conf                    # nginx server configuration
+├── entrypoint.sh                 # Auth setup script
+├── vm2-theme.css                 # (legacy, unused)
+├── *.html                        # ~98 deliverable files
+├── cron-tracking/                # State files for cron dedup
+├── session-backups/              # Session backup markdown files
+├── deliverables/                 # (legacy subfolder)
+├── audit-cron-state.json         # Compliance audit tracking
+├── autohelper-cron-state.json    # Auto-helper tracking
+├── digest-cron-state.json        # Weekly digest tracking
+└── gmail-cron-state.json         # Gmail intake tracking</code></pre>
+
+<!-- 2.3 Gmail -->
+<h3 id="gmail-pipeline">2.3 Gmail Task Pipeline</h3>
+
+<p>The Gmail pipeline is the primary task intake mechanism. Varun sends an email to <code>vm2.viru@gmail.com</code> with "VM2" in the subject or body, and the system automatically executes the instructions.</p>
+
+<h4>Email Processing Flow</h4>
+<ol>
+    <li>Hourly cron fires (weekdays, 8:29 AM to 7:29 PM AST)</li>
+    <li>Searches Gmail for emails containing "VM2" without the <code>vm2-done</code> label</li>
+    <li>Checks <code>state.json</code> for previously processed email IDs (dedup)</li>
+    <li>For each new task email:
+        <ul>
+            <li>Parses subject (task title) and body (instructions)</li>
+            <li>Derives a logical task name (3-6 words, title case)</li>
+            <li>Spawns a dedicated subagent via <code>run_subagent</code></li>
+        </ul>
+    </li>
+    <li>Each subagent independently:
+        <ul>
+            <li>Executes the task per email instructions</li>
+            <li>Creates an HTML deliverable in Changeis brand style</li>
+            <li>Pushes plain HTML to GitHub</li>
+            <li>Updates <code>index.html</code></li>
+            <li>Saves a copy to Dropbox</li>
+            <li>Creates/completes a Todoist task</li>
+        </ul>
+    </li>
+    <li>Replies to the original email thread with a completion summary</li>
+    <li>Updates tracking state for deduplication</li>
+</ol>
+
+<div class="callout">
+    <div class="callout-title">Deduplication Mechanism</div>
+    <p>The Gmail connector cannot apply labels programmatically. Deduplication relies on a tracking file at <code>/home/user/workspace/cron_tracking/aa619acf/state.json</code> that stores processed email IDs. The <code>vm2-done</code> label in Gmail serves as a secondary visual indicator only.</p>
+</div>
+
+<!-- 2.4 Crons -->
+<h3 id="cron-system">2.4 Scheduled Automation (Crons)</h3>
+
+<p>The system runs 6 recurring scheduled tasks managed by Perplexity Computer. See <a href="#cron-schedule">Section 7</a> for the complete schedule.</p>
+
+<table>
+<thead><tr><th>Task</th><th>Purpose</th><th>Frequency</th></tr></thead>
+<tbody>
+<tr><td>Gmail Task Intake</td><td>Scan for new task emails, execute tasks</td><td>Hourly (weekdays)</td></tr>
+<tr><td>Nightly Compliance Audit</td><td>Verify all rules followed, auto-fix violations</td><td>4x/week (Sun, Mon, Wed, Fri)</td></tr>
+<tr><td>Daily Auto-Helper</td><td>Generate Todoist task overview page</td><td>Daily</td></tr>
+<tr><td>Weekly Digest</td><td>Summarize week's deliverables, create git tag</td><td>Saturdays</td></tr>
+<tr><td>Monthly Dropbox Integrity</td><td>Verify all files backed up to Dropbox</td><td>1st of month</td></tr>
+<tr><td>CCC Cardio Tennis</td><td>Check tennis schedule, update calendar</td><td>Sundays</td></tr>
+</tbody>
+</table>
+
+<!-- 2.5 Dropbox -->
+<h3 id="dropbox">2.5 Dropbox Backup</h3>
+
+<table>
+<thead><tr><th>Property</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Backup Path</td><td><code>V M2/VM2-main-folder/VM2-P/</code></td></tr>
+<tr><td>Frequency</td><td>Every deliverable + monthly integrity check</td></tr>
+<tr><td>Connector</td><td>Dropbox (Perplexity Computer integration)</td></tr>
+<tr><td>File Format</td><td>Plain HTML copies of all deliverables</td></tr>
+</tbody>
+</table>
+
+<!-- 2.6 Todoist -->
+<h3 id="todoist">2.6 Todoist Task Tracking</h3>
+
+<table>
+<thead><tr><th>Property</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Label</td><td><code>VM2</code> — applied to all VM2 tasks</td></tr>
+<tr><td>Completion Label</td><td><code>vm2-done</code> — applied when task is complete</td></tr>
+<tr><td>Connector</td><td><code>todoist__pipedream</code></td></tr>
+<tr><td>Used By</td><td>Gmail intake (create tasks), Auto-Helper (read tasks), Compliance audit (verify labels)</td></tr>
+</tbody>
+</table>
+
+<!-- 2.7 Index Generator -->
+<h3 id="index">2.7 Index Generator</h3>
+
+<p>The <code>build_index.py</code> script auto-generates <code>index.html</code> from the list of HTML files in the repo. It provides search, type filtering, date range, sorting, and dark/light toggle.</p>
+
+<h4>Type Mapping Rules</h4>
+<p>Files are categorized by regex matching against the filename slug. The rules are order-dependent — the first match wins. This is critical because generic patterns like <code>brief</code> would incorrectly match <code>daily-brief</code> if checked first.</p>
+
+<table>
+<thead><tr><th>Pattern</th><th>Type</th><th>Badge</th></tr></thead>
+<tbody>
+<tr><td><code>act-iac-events</code></td><td>Monitoring</td><td><span class="badge badge-green">Monitoring</span></td></tr>
+<tr><td><code>faa-daily-on-sam|faa-sam-daily</code></td><td>SAM Scan</td><td><span class="badge badge-orange">SAM Scan</span></td></tr>
+<tr><td><code>vm2-auto-helper</code></td><td>Auto-Helper</td><td><span class="badge badge-green">Auto-Helper</span></td></tr>
+<tr><td><code>compliance-audit</code></td><td>Compliance</td><td><span class="badge badge-green">Compliance</span></td></tr>
+<tr><td><code>changeis-daily-brief|daily-brief</code></td><td>Daily Brief</td><td><span class="badge badge-green">Daily Brief</span></td></tr>
+<tr><td><code>research|review|analysis</code></td><td>Research Brief</td><td><span class="badge badge-blue">Research Brief</span></td></tr>
+<tr><td><code>jd|job-descriptions</code></td><td>HR</td><td><span class="badge badge-orange">HR</span></td></tr>
+<tr><td><code>calendar|tennis|golf</code></td><td>Calendar</td><td><span class="badge badge-purple">Calendar</span></td></tr>
+<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">... 30+ additional rules (see build_index.py)</td></tr>
+</tbody>
+</table>
+
+<h4>Index Features</h4>
+<ul>
+    <li>Full-text search across all deliverable titles</li>
+    <li>Type filter pills (click to toggle, multi-select)</li>
+    <li>Date range filtering with From/To inputs</li>
+    <li>Column sorting (Date, Title, Type)</li>
+    <li>Dark/light theme toggle with localStorage persistence</li>
+    <li>Responsive design for mobile devices</li>
+    <li>Stats row showing total counts by type</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="data-flow"><span class="section-num">3.</span> Data Flow &amp; Lifecycle</h2>
+
+<h3>Task Lifecycle (Email to Published Deliverable)</h3>
+
+<div class="diagram-box">
+Email Received                Perplexity Computer              Published
+─────────────                ────────────────────             ──────────
+
+1. Email arrives              2. Cron detects email           6. Railway auto-deploys
+   at vm2.viru@                  (hourly check)                  from git push
+   gmail.com                                                     
+                              3. Subagent spawned              7. User accesses via
+                                 for task execution               vm2 / password
+                                                                  (one-time login)
+                              4. HTML deliverable
+                                 generated (Changeis          8. Dropbox backup
+                                 brand style)                    confirmed
+
+                              5. Git push to main:
+                                 - deliverable.html
+                                 - index.html updated
+                                 
+                              5b. Todoist task created         9. Compliance audit
+                                  with VM2 label                  verifies all rules
+                                  
+                              5c. Email reply sent             10. Weekly digest
+                                  with summary                     aggregates stats
+</div>
+
+<h3>Audit &amp; Integrity Flow</h3>
+
+<div class="diagram-box">
+Nightly (Sun, Mon, Wed, Fri)    Monthly (1st)         Weekly (Saturday)
+───────────────────────────     ──────────────         ─────────────────
+
+1. Clone repo                   1. Clone repo          1. Clone repo
+2. Check git log for            2. List all HTML       2. Review week's git log
+   today's commits                 files in repo       3. Generate digest HTML
+3. For each new file:           3. For each file:      4. Push to GitHub
+   - In index? (auto-fix)         - In Dropbox?        5. Create git tag
+   - Plain HTML? (auto-fix)       - Upload if             v2026-WXX
+   - In Dropbox? (auto-fix)         missing            6. Dropbox backup
+   - Todoist label? (check)     4. Report totals
+4. Generate compliance
+   report HTML
+5. Push to repo
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="security"><span class="section-num">4.</span> Security Model</h2>
+
+<table>
+<thead><tr><th>Layer</th><th>Mechanism</th><th>Details</th></tr></thead>
+<tbody>
+<tr><td>Web Access</td><td>nginx Basic Auth</td><td>Server-side; credentials never in repo</td></tr>
+<tr><td>Credential Storage</td><td>Railway env vars</td><td><code>VM2_AUTH_USERNAME</code>, <code>VM2_AUTH_PASSWORD</code></td></tr>
+<tr><td>Password Generation</td><td><code>openssl passwd -apr1</code></td><td>Generated at container startup, stored in <code>/etc/nginx/.htpasswd</code></td></tr>
+<tr><td>GitHub Access</td><td>Perplexity Computer tokens</td><td><code>api_credentials=["github"]</code></td></tr>
+<tr><td>Security Headers</td><td>nginx</td><td><code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: SAMEORIGIN</code></td></tr>
+<tr><td>HTML Files</td><td>Plain text, no encryption</td><td>StaticCrypt removed March 2026</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+    <div class="callout-title">Why StaticCrypt Was Removed</div>
+    <p>The original system used StaticCrypt to encrypt each HTML file client-side, requiring a password to decrypt in the browser. This created a double-login problem (HTTP basic auth + StaticCrypt password prompt) and added significant complexity to the pipeline. With Railway handling auth server-side, client-side encryption is redundant and was eliminated.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="file-conventions"><span class="section-num">5.</span> File &amp; Naming Conventions</h2>
+
+<h3>Filename Format</h3>
+<pre><code>{slug}-{YYYY}-{MM}-{DD}.html
+
+Examples:
+  motus-executive-brief-2026-03-25.html
+  faa-swim-research-2026-03-18.html
+  compliance-audit-2026-03-25.html
+  vm2-auto-helper-2026-03-25.html
+  weekly-digest-2026-03-22.html</code></pre>
+
+<h3>Excluded from Index</h3>
+<ul>
+    <li><code>index.html</code> — the portal itself</li>
+    <li><code>kanban.html</code> — legacy Kanban board (if present)</li>
+</ul>
+
+<h3>Non-HTML Files in Repo</h3>
+<table>
+<thead><tr><th>File</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>Dockerfile</code></td><td>Container build definition</td></tr>
+<tr><td><code>nginx.conf</code></td><td>Web server configuration</td></tr>
+<tr><td><code>entrypoint.sh</code></td><td>Runtime auth setup</td></tr>
+<tr><td><code>vm2-theme.css</code></td><td>Legacy shared theme (unused)</td></tr>
+<tr><td><code>*.json</code></td><td>Cron tracking state files</td></tr>
+<tr><td><code>session-backups/</code></td><td>Session backup markdown files</td></tr>
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="brand-style"><span class="section-num">6.</span> Brand &amp; Design Standards</h2>
+
+<p>All deliverables follow the VM2 variant of the Changeis style, optimized for web delivery:</p>
+
+<table>
+<thead><tr><th>Property</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Primary Font</td><td>Charter (serif), Georgia fallback</td></tr>
+<tr><td>Sans Font</td><td>system-ui, Segoe UI, Roboto</td></tr>
+<tr><td>Mono Font</td><td>SF Mono, Menlo, Consolas</td></tr>
+<tr><td>Accent Color</td><td><code>#c53a3a</code> <span style="display:inline-block;width:12px;height:12px;background:#c53a3a;border-radius:2px;vertical-align:middle;margin-left:4px;"></span></td></tr>
+<tr><td>Max Content Width</td><td>860px</td></tr>
+<tr><td>Theme</td><td>Dark/light toggle, localStorage persistence</td></tr>
+<tr><td>Top Bar</td><td>"VM2 &middot; Perplexity Computer" branding</td></tr>
+</tbody>
+</table>
+
+<h3>Required Design Elements</h3>
+<ul>
+    <li>Top bar with brand name and theme toggle</li>
+    <li>Clean serif typography for body text</li>
+    <li>Sans-serif for UI elements, labels, badges</li>
+    <li>Callout boxes with teal left border on ice-blue background</li>
+    <li>Tables with navy header row, alternating row colors</li>
+    <li>Responsive layout that works on mobile</li>
+    <li>Print stylesheet that hides nav elements</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="cron-schedule"><span class="section-num">7.</span> Cron Schedule Reference</h2>
+
+<table>
+<thead><tr><th>Task</th><th>Cron ID</th><th>UTC Schedule</th><th>AST Equivalent</th></tr></thead>
+<tbody>
+<tr>
+    <td>Gmail Task Intake</td>
+    <td><code>6a1f1c3b</code></td>
+    <td><code>29 12-23 * * 1-5</code></td>
+    <td>8:29 AM – 7:29 PM, Mon–Fri</td>
+</tr>
+<tr>
+    <td>Nightly Compliance Audit</td>
+    <td><code>4e4d5950</code></td>
+    <td><code>0 2 * * 0,1,3,5</code></td>
+    <td>10:00 PM, Sun/Mon/Wed/Fri</td>
+</tr>
+<tr>
+    <td>Daily Todoist Auto-Helper</td>
+    <td><code>d56ab3fd</code></td>
+    <td><code>0 11 * * *</code></td>
+    <td>7:00 AM daily</td>
+</tr>
+<tr>
+    <td>Weekly Digest &amp; Git Tag</td>
+    <td><code>479625ea</code></td>
+    <td><code>0 12 * * 6</code></td>
+    <td>8:00 AM Saturday</td>
+</tr>
+<tr>
+    <td>Monthly Dropbox Integrity</td>
+    <td><code>c0d442b2</code></td>
+    <td><code>0 13 1 * *</code></td>
+    <td>9:00 AM, 1st of month</td>
+</tr>
+<tr>
+    <td>CCC Cardio Tennis</td>
+    <td><code>8703d440</code></td>
+    <td><code>0 12 * * 0</code></td>
+    <td>8:00 AM Sunday</td>
+</tr>
+</tbody>
+</table>
+
+<div class="callout">
+    <div class="callout-title">Timezone Note</div>
+    <p>All cron schedules are stored in UTC. Varun operates in AST (UTC-4). The conversions above reflect this offset. During daylight saving (ADT = UTC-3), all times shift one hour earlier in local time.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="env-config"><span class="section-num">8.</span> Environment &amp; Configuration</h2>
+
+<h3>Railway Environment Variables</h3>
+<table>
+<thead><tr><th>Variable</th><th>Purpose</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td><code>VM2_AUTH_USERNAME</code></td><td>HTTP Basic Auth username</td><td><code>vm2</code></td></tr>
+<tr><td><code>VM2_AUTH_PASSWORD</code></td><td>HTTP Basic Auth password</td><td>(set in Railway dashboard)</td></tr>
+</tbody>
+</table>
+
+<h3>Perplexity Computer Credentials</h3>
+<table>
+<thead><tr><th>Credential</th><th>Usage</th></tr></thead>
+<tbody>
+<tr><td><code>api_credentials=["github"]</code></td><td>All <code>git</code> and <code>gh</code> CLI commands</td></tr>
+<tr><td>Gmail connector (<code>gcal</code>)</td><td>Email search and reply</td></tr>
+<tr><td>Dropbox connector</td><td>File upload and verification</td></tr>
+<tr><td>Todoist connector (<code>todoist__pipedream</code>)</td><td>Task creation and label management</td></tr>
+</tbody>
+</table>
+
+<h3>Local Workspace Paths</h3>
+<table>
+<thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>/home/user/workspace/VM2-P-Taskers/</code></td><td>Cloned repo working copy</td></tr>
+<tr><td><code>/home/user/workspace/build_index.py</code></td><td>Index generator script</td></tr>
+<tr><td><code>/home/user/workspace/cron_tracking/</code></td><td>Cron state files (dedup, counters)</td></tr>
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="debugging"><span class="section-num">9.</span> Debugging &amp; Troubleshooting</h2>
+
+<h3>Common Issues &amp; Resolutions</h3>
+
+<table>
+<thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+<tbody>
+<tr>
+    <td>Double password prompt (browser asks twice)</td>
+    <td>File was re-encrypted by an old cron</td>
+    <td>Check for <code>staticrypt-html</code> class in HTML files; decrypt and push plain version</td>
+</tr>
+<tr>
+    <td>Deliverable missing from index</td>
+    <td>Index not rebuilt after push</td>
+    <td>Run <code>build_index.py</code> and push updated <code>index.html</code></td>
+</tr>
+<tr>
+    <td>Railway shows old version</td>
+    <td>Deploy may still be in progress</td>
+    <td>Check Railway dashboard for deploy status; pushes trigger auto-deploy within 1-2 min</td>
+</tr>
+<tr>
+    <td>Gmail task processed twice</td>
+    <td>State file lost or reset</td>
+    <td>Check <code>state.json</code> for the email ID; add manually if missing</td>
+</tr>
+<tr>
+    <td>Git push rejected (merge conflict)</td>
+    <td>Concurrent cron pushed while you were working</td>
+    <td><code>git pull --rebase origin main</code> then push again</td>
+</tr>
+<tr>
+    <td>Missing from Dropbox</td>
+    <td>Upload step failed silently</td>
+    <td>Monthly integrity check will catch it; or upload manually via Dropbox connector</td>
+</tr>
+<tr>
+    <td>Old crons still firing</td>
+    <td>Previous session crons not deleted</td>
+    <td>List all crons, delete duplicates by cron ID</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Diagnostic Commands</h3>
+
+<h4>Check for Encrypted Files</h4>
+<pre><code># Should return 0 results — any match is a violation
+grep -rl 'staticrypt-html' /home/user/workspace/VM2-P-Taskers/*.html</code></pre>
+
+<h4>Verify All Files Start with DOCTYPE</h4>
+<pre><code># Every HTML file should start with &lt;!DOCTYPE html&gt;
+for f in /home/user/workspace/VM2-P-Taskers/*.html; do
+  head -c 15 "$f" | grep -qv '&lt;!DOCTYPE' &amp;&amp; echo "BAD: $f"
+done</code></pre>
+
+<h4>Count Deliverables vs Index Entries</h4>
+<pre><code># These numbers should match
+echo "Files: $(ls *.html | grep -v index | grep -v kanban | wc -l)"
+echo "Index rows: $(grep -c '&lt;tr data-type' index.html)"</code></pre>
+
+<h4>Check Recent Git Activity</h4>
+<pre><code>cd /home/user/workspace/VM2-P-Taskers
+git log --oneline --since="24 hours ago"</code></pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="test-suite"><span class="section-num">10.</span> Test Suite Reference</h2>
+
+<p>A comprehensive test suite (<code>vm2-tests.sh</code>) is maintained alongside this document. It validates all system invariants and can be run on-demand or integrated into cron workflows.</p>
+
+<h3>Test Categories</h3>
+
+<table>
+<thead><tr><th>Category</th><th>Tests</th><th>What It Validates</th></tr></thead>
+<tbody>
+<tr>
+    <td><span class="badge badge-red">Encryption</span></td>
+    <td>2 tests</td>
+    <td>No StaticCrypt remnants in any HTML file; all files start with <code>&lt;!DOCTYPE</code></td>
+</tr>
+<tr>
+    <td><span class="badge badge-blue">Index Integrity</span></td>
+    <td>3 tests</td>
+    <td>Every HTML file has an index entry; index is valid HTML; row count matches file count</td>
+</tr>
+<tr>
+    <td><span class="badge badge-green">File Integrity</span></td>
+    <td>3 tests</td>
+    <td>No empty files; all files are valid UTF-8; no binary padding artifacts</td>
+</tr>
+<tr>
+    <td><span class="badge badge-orange">Config</span></td>
+    <td>3 tests</td>
+    <td>Dockerfile, nginx.conf, entrypoint.sh exist and contain expected directives</td>
+</tr>
+<tr>
+    <td><span class="badge badge-purple">Naming</span></td>
+    <td>2 tests</td>
+    <td>All files follow <code>slug-YYYY-MM-DD.html</code> convention; no spaces or uppercase</td>
+</tr>
+<tr>
+    <td><span class="badge badge-blue">Railway</span></td>
+    <td>1 test</td>
+    <td>Health check against the live Railway URL (if reachable)</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Running the Tests</h3>
+<pre><code># Run all tests
+bash /home/user/workspace/VM2-P-Taskers/vm2-tests.sh
+
+# Run from within the repo
+cd /home/user/workspace/VM2-P-Taskers
+bash vm2-tests.sh
+
+# Output: PASS/FAIL for each test, summary at end</code></pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="migration-history"><span class="section-num">11.</span> Migration History</h2>
+
+<h3>March 25, 2026 — StaticCrypt to Railway Migration</h3>
+
+<p>The VM2 system was migrated from client-side StaticCrypt encryption + GitHub Pages to server-side nginx Basic Auth on Railway.</p>
+
+<h4>What Changed</h4>
+<table>
+<thead><tr><th>Before</th><th>After</th></tr></thead>
+<tbody>
+<tr><td>GitHub Pages hosting</td><td>Railway Docker hosting</td></tr>
+<tr><td>StaticCrypt encryption (per-file)</td><td>nginx Basic Auth (server-side)</td></tr>
+<tr><td>Double login (HTTP + StaticCrypt)</td><td>Single login (HTTP Basic Auth only)</td></tr>
+<tr><td>3 different passwords across files</td><td>1 unified password</td></tr>
+<tr><td>Client-side decryption in browser</td><td>Plain HTML served directly</td></tr>
+<tr><td>Complex cron encryption step</td><td>Simple git push</td></tr>
+</tbody>
+</table>
+
+<h4>Migration Steps Executed</h4>
+<ol>
+    <li>Phase 1: Decrypted all 95 encrypted HTML files using custom Node.js decryptor (PBKDF2 3-round with UTF-8 salt). Passwords used: <code>97harry23!</code> (93 files), <code>jungpura23</code> (~15 files), <code>changeis2026</code> (2 files). Two files were double-encrypted.</li>
+    <li>Phase 2: Auto-generated new <code>index.html</code> with <code>build_index.py</code> — 16 type categories, search, pills, date range, sort, dark/light toggle.</li>
+    <li>Phase 3: Created <code>Dockerfile</code>, <code>nginx.conf</code>, <code>entrypoint.sh</code> for Railway.</li>
+    <li>Phase 4: Committed and pushed. Resolved merge conflict from concurrent cron push.</li>
+    <li>Phase 5: Recreated all 6 crons with updated instructions (no encryption). Updated <code>vm2-gmail-tasks</code> skill v2→v3, <code>vm2-wrapup</code> skill v1→v2.</li>
+    <li>Phase 6: Disabled GitHub Pages via API. Fixed post-deploy re-encryption from old cron.</li>
+</ol>
+
+<h4>StaticCrypt Decryption Algorithm (Historical Reference)</h4>
+<pre><code>// 3-round PBKDF2 derivation — salt is UTF-8 string bytes, NOT hex-decoded
+Round 1: PBKDF2(password, UTF8(salt), 1000 iterations, SHA-1)    → hex string
+Round 2: PBKDF2(round1_hex, UTF8(salt), 14000 iterations, SHA-256) → hex string
+Round 3: PBKDF2(round2_hex, UTF8(salt), 585000 iterations, SHA-256) → 32 bytes
+
+// Then AES-256-CBC decrypt
+iv  = encrypted_blob[0..16]
+data = encrypted_blob[16..]
+AES-256-CBC(key=round3, iv=iv, data=data) → decrypted HTML</code></pre>
+
+</main>
+
+<footer class="footer">
+    VM2 &middot; Powered by Perplexity Computer &middot; Varun Malhotra &middot; Changeis Inc. &middot; March 2026
+</footer>
+
+<script>
+function toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('vm2-theme', next);
+}
+(function() {
+    const saved = localStorage.getItem('vm2-theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+})();
+</script>
+</body>
+</html>
