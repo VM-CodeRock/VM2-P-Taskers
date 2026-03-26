@@ -86,7 +86,7 @@
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + TODOIST_TOKEN
+        'X-Todoist-Token': TODOIST_TOKEN
       },
       body: JSON.stringify({
         content: taskContent,
