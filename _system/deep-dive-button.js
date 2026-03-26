@@ -12,9 +12,9 @@
 (function() {
   'use strict';
 
-  // API endpoint — injected at page generation time
-  // Falls back to Todoist REST API if server unavailable
-  const TODOIST_API = 'https://api.todoist.com/rest/v2/tasks';
+  // API endpoint — uses same-origin proxy to avoid CORS
+  // Proxy: /api/todoist/ -> https://api.todoist.com/rest/v2/
+  const TODOIST_API = '/api/todoist/tasks';
   const TODOIST_TOKEN = window.__VM2_TODOIST_TOKEN || '';
   const VM2_OPP_LABEL_ID = '2183369880';
 
