@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<!--
+   ______                            __
+  / ____/___  ____ ___  ____  __  __/ /____  _____
+ / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ ___/
+/ /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /
+\____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_/
+                    /_/
+        Created with Perplexity Computer
+        https://www.perplexity.ai/computer
+-->
+
+<!-- Perplexity Computer Attribution — SEO Meta Tags -->
+<meta name="generator" content="Perplexity Computer">
+<meta name="author" content="Perplexity Computer">
+<meta property="og:see_also" content="https://www.perplexity.ai/computer">
+<link rel="author" href="https://www.perplexity.ai/computer">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todoist API Key Setup — VM2</title>
+<style>
+  :root {
+    --accent: #c53a3a;
+    --accent-light: #e05555;
+    --accent-dim: rgba(197, 58, 58, 0.12);
+    --todoist-red: #db4035;
+    --todoist-red-light: rgba(219, 64, 53, 0.12);
+    --green: #2d7d4a;
+    --green-light: rgba(45, 125, 74, 0.12);
+    --blue: #2563eb;
+    --blue-light: rgba(37, 99, 235, 0.1);
+    --font-serif: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, Georgia, serif;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+  }
+
+  [data-theme="dark"] {
+    --bg: #0f1117;
+    --bg-surface: #181c26;
+    --bg-card: #1e2230;
+    --bg-card-hover: #242840;
+    --border: #2a2f42;
+    --border-light: #343a52;
+    --text-primary: #e8eaf0;
+    --text-secondary: #8b91a8;
+    --text-muted: #5a5f75;
+    --topbar-bg: #0d1020;
+  }
+
+  [data-theme="light"] {
+    --bg: #f5f5f2;
+    --bg-surface: #ffffff;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f8f8f6;
+    --border: #e0e0da;
+    --border-light: #ebebea;
+    --text-primary: #1a1a1a;
+    --text-secondary: #555555;
+    --text-muted: #888888;
+    --topbar-bg: #1a1a2e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-serif);
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.65;
+    font-size: 16px;
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    background: var(--topbar-bg);
+    border-bottom: 2px solid var(--accent);
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+    gap: 12px;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .topbar-label {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .topbar-title {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: #d0d4e8;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-date {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    color: #6070a0;
+    margin-left: 8px;
+    white-space: nowrap;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .theme-toggle {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: #c0c4d8;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: background 0.2s, border-color 0.2s;
+    white-space: nowrap;
+  }
+
+  .theme-toggle:hover {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.22);
+  }
+
+  /* LAYOUT */
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* HERO */
+  .hero {
+    margin-bottom: 44px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.25;
+    margin-bottom: 14px;
+  }
+
+  .hero-subtitle {
+    font-size: 17px;
+    color: var(--text-secondary);
+    max-width: 640px;
+    line-height: 1.6;
+  }
+
+  /* STATUS BANNER */
+  .status-banner {
+    background: var(--green-light);
+    border: 1px solid rgba(45, 125, 74, 0.3);
+    border-left: 4px solid var(--green);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 36px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .status-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .status-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    line-height: 1.55;
+  }
+
+  .status-text strong {
+    color: var(--text-primary);
+    display: block;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  /* SECTION */
+  .section {
+    margin-bottom: 44px;
+  }
+
+  h2 {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h3 {
+    font-family: var(--font-serif);
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    margin-top: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  h3:first-child { margin-top: 0; }
+
+  p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    line-height: 1.65;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 16px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-light);
+  }
+
+  .card-title {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-body {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* STEPS */
+  .steps {
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 0 16px;
+    position: relative;
+  }
+
+  .step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 23px;
+    top: 48px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .step-number {
+    counter-increment: step;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 4px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 2px 8px rgba(197, 58, 58, 0.35);
+  }
+
+  .step-content {
+    padding-bottom: 28px;
+  }
+
+  .step-title {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    padding-top: 8px;
+  }
+
+  .step-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  /* LINK / URL BLOCK */
+  .url-block {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #7ab3f0;
+    word-break: break-all;
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .url-block a {
+    color: #7ab3f0;
+    text-decoration: none;
+  }
+
+  .url-block a:hover {
+    color: #a8ccf5;
+    text-decoration: underline;
+  }
+
+  /* MOCK SCREENSHOT */
+  .mock-screen {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 14px 0;
+    font-family: var(--font-sans);
+  }
+
+  .mock-titlebar {
+    background: var(--topbar-bg);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mock-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .mock-dot.red { background: #ff5f57; }
+  .mock-dot.yellow { background: #ffbd2e; }
+  .mock-dot.green { background: #28c840; }
+
+  .mock-url {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: #7a85a8;
+    margin-left: 8px;
+  }
+
+  .mock-body {
+    padding: 20px 24px;
+  }
+
+  .mock-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  .mock-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-light);
+    gap: 16px;
+  }
+
+  .mock-row:last-child { border-bottom: none; }
+
+  .mock-row-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .mock-row-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .mock-row-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .token-blur {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    filter: blur(4px);
+    user-select: none;
+    letter-spacing: 0.05em;
+  }
+
+  .copy-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+  }
+
+  /* STORAGE OPTIONS */
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .options-grid { grid-template-columns: 1fr; }
+  }
+
+  .option-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .option-card.recommended {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(197, 58, 58, 0.2), 0 4px 16px rgba(197, 58, 58, 0.08);
+  }
+
+  .option-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-family: var(--font-sans);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+  }
+
+  .option-badge.neutral {
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  .option-title {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .option-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    line-height: 1.55;
+  }
+
+  .pro-con {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pro-con-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 12px;
+    font-family: var(--font-sans);
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+
+  .pro-con-item .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+
+  .pro-con-item .dot.pro { background: var(--green); }
+  .pro-con-item .dot.con { background: var(--accent); }
+  .pro-con-item .dot.neutral { background: var(--text-muted); }
+
+  /* CALLOUT */
+  .callout {
+    background: var(--accent-dim);
+    border: 1px solid rgba(197, 58, 58, 0.25);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+  }
+
+  .callout-title {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-light);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .callout-body {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .callout.info {
+    background: var(--blue-light);
+    border-color: rgba(37, 99, 235, 0.3);
+    border-left-color: var(--blue);
+  }
+
+  .callout.info .callout-title { color: #7ab3f0; }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: #0d1020;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #a8b5d8;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+
+  [data-theme="light"] .code-block {
+    background: #1a1a2e;
+  }
+
+  .code-comment { color: #5a6080; }
+  .code-key { color: #7ab3f0; }
+  .code-value { color: #7ec87e; }
+  .code-string { color: #f0c070; }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-sans);
+  }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .footer-links a {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--accent); }
+
+  .footer-copy {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .footer-copy a {
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+
+  .footer-copy a:hover { color: var(--accent); }
+
+  /* TAG */
+  .tag {
+    display: inline-block;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 2px 7px;
+    letter-spacing: 0.04em;
+  }
+
+  .tag.todoist {
+    background: var(--todoist-red-light);
+    border-color: rgba(219, 64, 53, 0.3);
+    color: #f07070;
+  }
+
+  /* SUMMARY TABLE */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    margin-top: 14px;
+  }
+
+  .summary-table th {
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 9px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .summary-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table td:first-child { color: var(--text-primary); font-weight: 600; }
+  .summary-table td strong { color: var(--text-primary); }
+
+  /* PILL STATUS */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+  }
+
+  .pill.active {
+    background: var(--green-light);
+    color: #5cc888;
+    border: 1px solid rgba(45, 125, 74, 0.3);
+  }
+
+  .pill.active::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #5cc888;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .pill.info {
+    background: var(--blue-light);
+    color: #7ab3f0;
+    border: 1px solid rgba(37, 99, 235, 0.3);
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-label">VM2</span>
+    <span class="topbar-title">Todoist API Key Setup</span>
+    <span class="topbar-date">March 26, 2026</span>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">☀ Light</button>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">Todoist Automation</div>
+    <h1>Your Todoist API Key</h1>
+    <p class="hero-subtitle">Where your API key lives, how to get it, and how to make it available everywhere you need it — including Perplexity Computer, Claude Code, and other tools.</p>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-banner">
+    <div class="status-icon">✅</div>
+    <div class="status-text">
+      <strong>You're already connected — no setup required for Perplexity Computer</strong>
+      Your Todoist account is linked via Pipedream, which handles authentication automatically. Perplexity Computer can read, create, and update tasks right now with no API key required from you. This document explains where to find the key if you want to use it elsewhere.
+    </div>
+  </div>
+
+  <!-- PART 1: WHERE IS IT -->
+  <div class="section">
+    <h2>Part 1 — Where Your API Key Lives</h2>
+
+    <p>Your Todoist API key (also called a "personal token") lives in one place on the Todoist website. It's a long string of letters and numbers that acts like a password for apps and scripts.</p>
+
+    <h3>📍 Location in Todoist</h3>
+    <p>Navigate to Todoist → Settings → Integrations → Developer tab. The page URL is:</p>
+
+    <div class="url-block">
+      🔗 <a href="https://app.todoist.com/app/settings/integrations/developer" target="_blank" rel="noopener">https://app.todoist.com/app/settings/integrations/developer</a>
+    </div>
+
+    <p>On that page you'll see a section called <strong>API token</strong>. It looks like this:</p>
+
+    <!-- MOCK UI -->
+    <div class="mock-screen">
+      <div class="mock-titlebar">
+        <div class="mock-dot red"></div>
+        <div class="mock-dot yellow"></div>
+        <div class="mock-dot green"></div>
+        <div class="mock-url">app.todoist.com/app/settings/integrations/developer</div>
+      </div>
+      <div class="mock-body">
+        <div class="mock-section-label">Developer</div>
+        <div class="mock-row">
+          <div>
+            <div class="mock-row-label">API token</div>
+            <div class="mock-row-desc">Used to access the Todoist API. Keep this secret — it gives full access to your account.</div>
+          </div>
+          <div class="mock-row-right">
+            <span class="token-blur">a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6</span>
+            <button class="copy-btn">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:13px; color: var(--text-muted); font-family: var(--font-sans);">↑ The actual token is shown clearly (not blurred) on your real settings page. The blur above is for security.</p>
+  </div>
+
+  <!-- PART 2: HOW TO GET IT -->
+  <div class="section">
+    <h2>Part 2 — Step-by-Step: Getting Your API Token</h2>
+    <p>Five simple steps to copy your API token from Todoist.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <div class="step-title">Open Todoist in your browser</div>
+          <div class="step-desc">Go to <strong>todoist.com</strong> and make sure you're logged in as varunm24@gmail.com.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <div class="step-title">Open Settings</div>
+          <div class="step-desc">Click your profile picture or avatar in the top-right corner, then click <strong>Settings</strong> from the dropdown.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <div class="step-title">Go to Integrations → Developer</div>
+          <div class="step-desc">In the left sidebar of Settings, click <strong>Integrations</strong>. Then click the <strong>Developer</strong> tab at the top of that page.</div>
+          <div class="url-block">
+            🔗 <a href="https://app.todoist.com/app/settings/integrations/developer" target="_blank" rel="noopener">app.todoist.com/app/settings/integrations/developer</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <div class="step-title">Find "API token"</div>
+          <div class="step-desc">You'll see a section labeled <strong>API token</strong>. Your personal token is shown there — a long string of about 40 characters.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <div class="step-title">Click "Copy to clipboard"</div>
+          <div class="step-desc">Click the copy button next to the token. It's now ready to paste anywhere you need it. Treat it like a password — don't share it publicly.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PART 3: CURRENT STATE -->
+  <div class="section">
+    <h2>Part 3 — Current State of Your Todoist Access</h2>
+
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>Tool / Platform</th>
+          <th>Access Method</th>
+          <th>Status</th>
+          <th>What You Can Do</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Perplexity Computer</td>
+          <td>Pipedream connector<br><span style="font-size:11px; color: var(--text-muted);">source_id: todoist__pipedream</span></td>
+          <td><span class="pill active">Active</span></td>
+          <td>Create, search, update, complete tasks. No API key needed.</td>
+        </tr>
+        <tr>
+          <td>Claude Code</td>
+          <td>Needs API key in environment variable</td>
+          <td><span class="pill info">Setup needed</span></td>
+          <td>Full API access if you set <code style="font-family: var(--font-mono); font-size: 11px;">TODOIST_API_TOKEN</code> as an env var.</td>
+        </tr>
+        <tr>
+          <td>Zapier / Make</td>
+          <td>OAuth or API key</td>
+          <td><span class="pill info">Case by case</span></td>
+          <td>Most automation platforms support Todoist natively via OAuth — same as Pipedream.</td>
+        </tr>
+        <tr>
+          <td>Custom scripts</td>
+          <td>API key in code or env</td>
+          <td><span class="pill info">Manual setup</span></td>
+          <td>Paste the token as a variable or environment secret when building scripts.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PART 4: WHERE TO STORE IT -->
+  <div class="section">
+    <h2>Part 4 — Where to Store It So "Multiple Places Have Access"</h2>
+
+    <p>You asked how to save the API key in a "global place" so multiple tools can use it. Here are your options, from simplest to most technical:</p>
+
+    <div class="options-grid">
+
+      <div class="option-card recommended">
+        <div class="option-badge">★ Recommended</div>
+        <div class="option-title">Perplexity Computer Memory</div>
+        <div class="option-desc">Tell Perplexity Computer to remember your API token. Every future session automatically has it available.</div>
+        <div class="pro-con">
+          <div class="pro-con-item"><span class="dot pro"></span> Zero setup — works immediately</div>
+          <div class="pro-con-item"><span class="dot pro"></span> Every Perplexity session has it</div>
+          <div class="pro-con-item"><span class="dot pro"></span> You can ask "what's my Todoist token?"</div>
+          <div class="pro-con-item"><span class="dot con"></span> Only accessible inside Perplexity Computer</div>
+        </div>
+      </div>
+
+      <div class="option-card">
+        <div class="option-badge neutral">Good for developers</div>
+        <div class="option-title">Environment Variables</div>
+        <div class="option-desc">Set <code style="font-family: var(--font-mono); font-size: 11px;">TODOIST_API_TOKEN</code> in your system or shell profile. Available to all terminal-based tools.</div>
+        <div class="pro-con">
+          <div class="pro-con-item"><span class="dot pro"></span> Works in Claude Code, scripts, terminals</div>
+          <div class="pro-con-item"><span class="dot pro"></span> Industry standard approach</div>
+          <div class="pro-con-item"><span class="dot con"></span> Requires a one-time terminal setup</div>
+          <div class="pro-con-item"><span class="dot con"></span> Different setup on Mac vs Windows</div>
+        </div>
+      </div>
+
+      <div class="option-card">
+        <div class="option-badge neutral">Already done</div>
+        <div class="option-title">Pipedream Connector</div>
+        <div class="option-desc">Your Todoist is already connected via Pipedream for Perplexity Computer. This handles auth automatically — no token management needed.</div>
+        <div class="pro-con">
+          <div class="pro-con-item"><span class="dot pro"></span> Already working right now</div>
+          <div class="pro-con-item"><span class="dot pro"></span> Secure OAuth — no raw token stored</div>
+          <div class="pro-con-item"><span class="dot con"></span> Only works inside Perplexity Computer</div>
+        </div>
+      </div>
+
+      <div class="option-card">
+        <div class="option-badge neutral">Most flexible</div>
+        <div class="option-title">Password Manager / .env File</div>
+        <div class="option-desc">Store the token in 1Password, Bitwarden, or a local <code style="font-family: var(--font-mono); font-size: 11px;">.env</code> file that any project can load.</div>
+        <div class="pro-con">
+          <div class="pro-con-item"><span class="dot pro"></span> Works across any tool or project</div>
+          <div class="pro-con-item"><span class="dot pro"></span> Centrally managed and auditable</div>
+          <div class="pro-con-item"><span class="dot con"></span> Slightly more setup involved</div>
+          <div class="pro-con-item"><span class="dot neutral"></span> Best if you use many dev tools</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RECOMMENDATION CALLOUT -->
+    <div class="callout">
+      <div class="callout-title">★ Recommendation for Varun</div>
+      <p class="callout-body">
+        <strong>For Perplexity Computer use only:</strong> Your Pipedream connector already works — no extra steps needed. You can also ask Perplexity to store the token in memory for quick reference across sessions.<br><br>
+        <strong>For Claude Code or other dev tools:</strong> Copy your token from the Todoist Developer settings page and set it as an environment variable named <code style="font-family: var(--font-mono); font-size: 11px;">TODOIST_API_TOKEN</code>. This is a one-time, 2-minute setup.
+      </p>
+    </div>
+  </div>
+
+  <!-- PART 5: HOW TO SET ENV VAR -->
+  <div class="section">
+    <h2>Part 5 — Setting Up the Environment Variable (If Needed)</h2>
+    <p>Only do this if you want to use your Todoist API key in Claude Code or other tools outside of Perplexity Computer. This is a one-time setup.</p>
+
+    <h3>On Mac (Terminal)</h3>
+    <p>Open Terminal and run this command, replacing <code style="font-family: var(--font-mono); font-size: 12px;">YOUR_TOKEN_HERE</code> with the token you copied from Todoist:</p>
+    <div class="code-block">
+<span class="code-comment"># Add to your shell profile (runs once)</span><br>
+<span class="code-key">echo</span> <span class="code-string">'export TODOIST_API_TOKEN="YOUR_TOKEN_HERE"'</span> >> ~/.zshrc<br>
+<span class="code-key">source</span> ~/.zshrc<br>
+<br>
+<span class="code-comment"># Verify it works</span><br>
+<span class="code-key">echo</span> $TODOIST_API_TOKEN
+    </div>
+
+    <h3>On Windows (PowerShell)</h3>
+    <div class="code-block">
+<span class="code-comment"># Set for current session</span><br>
+<span class="code-key">$env:TODOIST_API_TOKEN</span> = <span class="code-string">"YOUR_TOKEN_HERE"</span><br>
+<br>
+<span class="code-comment"># Set permanently (persists after restart)</span><br>
+<span class="code-key">[System.Environment]::SetEnvironmentVariable</span>(<span class="code-string">"TODOIST_API_TOKEN"</span>, <span class="code-string">"YOUR_TOKEN_HERE"</span>, <span class="code-string">"User"</span>)
+    </div>
+
+    <div class="callout info">
+      <div class="callout-title">ℹ How Claude Code uses it</div>
+      <p class="callout-body">Once set, Claude Code can access your token automatically when writing scripts that call the Todoist API. You never have to paste the token into code — Claude just references <code style="font-family: var(--font-mono); font-size: 11px;">os.environ["TODOIST_API_TOKEN"]</code> or <code style="font-family: var(--font-mono); font-size: 11px;">process.env.TODOIST_API_TOKEN</code>.</p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <hr class="divider">
+  <div class="footer">
+    <div class="footer-links">
+      <a href="https://app.todoist.com/app/settings/integrations/developer" target="_blank" rel="noopener">Todoist Developer Settings</a>
+      <a href="https://developer.todoist.com/rest/v2/#overview" target="_blank" rel="noopener">Todoist API Docs</a>
+      <a href="portal.html">VM2 Portal</a>
+      <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener">Perplexity Computer</a>
+    </div>
+    <p class="footer-copy">
+      VM2 Deliverable — Todoist API Key Setup — March 2026<br>
+      Sources: <a href="https://developer.todoist.com/rest/v2/#overview" target="_blank" rel="noopener">Todoist REST API v2 Docs</a>, <a href="https://app.todoist.com/app/settings/integrations/developer" target="_blank" rel="noopener">Todoist Developer Settings</a><br>
+      <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener">Created with Perplexity Computer</a>
+    </p>
+  </div>
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '☽ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '☀ Light';
+    }
+  }
+</script>
+
+</body>
+</html>
