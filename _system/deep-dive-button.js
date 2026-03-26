@@ -13,9 +13,9 @@
   'use strict';
 
   // API endpoint — uses same-origin proxy to avoid CORS
-  // Proxy: /api/todoist/ -> https://api.todoist.com/rest/v2/
+  // Proxy: /api/todoist/ -> https://api.todoist.com/api/v1/
+  // Auth is handled server-side by nginx (no token needed in JS)
   const TODOIST_API = '/api/todoist/tasks';
-  const TODOIST_TOKEN = window.__VM2_TODOIST_TOKEN || '';
   const VM2_OPP_LABEL_ID = '2183369880';
 
   // Dedup tracker — solicitation numbers already requested this session
@@ -85,8 +85,7 @@
     const response = await fetch(TODOIST_API, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'X-Todoist-Token': TODOIST_TOKEN
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         content: taskContent,
@@ -139,10 +138,6 @@
     btn.style.opacity = '0.7';
 
     try {
-      if (!TODOIST_TOKEN) {
-        throw new Error('API token not configured. Use the Todoist quick-add link below instead.');
-      }
-
       const result = await createTodoistTask(metadata);
 
       // Success
