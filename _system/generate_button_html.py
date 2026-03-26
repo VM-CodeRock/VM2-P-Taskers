@@ -120,11 +120,18 @@ def generate_deep_dive_ready_badge(deliverable_url):
     )
 
 
-def generate_page_script(todoist_token=''):
-    """Generate the <script> block to embed at the bottom of the page."""
+def generate_page_script(todoist_token=None):
+    """Generate the <script> block to embed at the bottom of the page.
+    
+    Token resolution order:
+    1. Explicit todoist_token argument
+    2. VM2_TODOIST_TOKEN environment variable
+    3. Empty string (falls back to todoist.com/add Quick Add links)
+    """
+    token = todoist_token or os.environ.get('VM2_TODOIST_TOKEN', '')
     return f'''
 <script>
-window.__VM2_TODOIST_TOKEN = '{todoist_token}';
+window.__VM2_TODOIST_TOKEN = '{token}';
 </script>
 <script>
 {open(os.path.join(os.path.dirname(__file__), 'deep-dive-button.js')).read()}
