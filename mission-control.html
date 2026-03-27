@@ -310,19 +310,14 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
     background: #1e2a3a;
     color: #60a5fa;
 }
-.vm2done-badge {
-    font-family: var(--font-sans);
-    font-size: 0.65rem;
-    font-weight: 600;
-    background: #f0faf4;
-    color: #22c55e;
-    padding: 0.1rem 0.4rem;
-    border-radius: 4px;
-    white-space: nowrap;
+.recurring-section {
+    border-top: 1px solid var(--border-light);
+    margin-top: 0.5rem;
 }
-[data-theme="dark"] .vm2done-badge {
-    background: #0a2e14;
-    color: #4ade80;
+.recurring-section summary::-webkit-details-marker { display: none; }
+.recurring-section summary::marker { content: ''; }
+.recurring-list {
+    padding-top: 0.25rem;
 }
 
 /* ── Deliverable Table ── */
@@ -668,7 +663,7 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 
     <!-- NEXT — Todoist Tasks -->
     <div class="section">
-        <div class="section-label">Next — Todoist Tasks</div>
+        <div class="section-label">Next — Awaiting Execution</div>
         <div id="todoistTasks">
             <div class="skeleton-row"><div class="skeleton"></div><div class="skeleton"></div></div>
             <div class="skeleton-row"><div class="skeleton"></div><div class="skeleton"></div></div>
@@ -926,13 +921,13 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const body = await res.json();
             const raw = Array.isArray(body) ? body : (body.results || []);
-            // Filter out completed/deleted tasks, and non-recurring vm2-done tasks
-            // Recurring tasks with vm2-done stay — vm2 handled a past cycle but it recurs
+            // All VM2-labeled tasks are a queue for Perplexity Computer execution.
+            // vm2-done = already executed (hide). For recurring tasks, vm2-done means
+            // current cycle is handled — hide until Todoist advances the due date.
             todoistTasks = raw.filter(t => {
                 if (t.checked || t.is_deleted) return false;
                 const labels = (t.labels || []).map(l => l.toLowerCase());
-                const isRecurring = t.due?.is_recurring === true;
-                if (labels.includes('vm2-done') && !isRecurring) return false;
+                if (labels.includes('vm2-done')) return false;
                 return true;
             });
             connectorStatus.todoist = true;
@@ -978,17 +973,25 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
             return;
         }
         if (!todoistTasks.length) {
-            el.innerHTML = '<div class="empty-state">No VM2 tasks found in Todoist.</div>';
+            el.innerHTML = '<div class="empty-state">No tasks awaiting execution. Queue is clear.</div>';
             return;
         }
 
         const now = new Date();
         const todayStr = now.toISOString().slice(0, 10);
+
+        // Separate recurring tasks (birthdays, automated checks) from one-time work
+        const actionable = [];
+        const recurring = [];
+        todoistTasks.forEach(t => {
+            if (t.due?.is_recurring) recurring.push(t);
+            else actionable.push(t);
+        });
+
         const overdue = [];
         const today = [];
         const upcoming = [];
-
-        todoistTasks.forEach(t => {
+        actionable.forEach(t => {
             const due = t.due?.date || '';
             if (!due) { upcoming.push(t); return; }
             if (due < todayStr) overdue.push(t);
@@ -1004,32 +1007,62 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
             return 'p4';
         }
 
+        function renderTaskRow(t, isOverdue) {
+            const due = t.due?.date || '';
+            const dueDisplay = due ? new Date(due + 'T00:00:00').toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
+            const todoistUrl = t.url || ('https://app.todoist.com/app/task/' + t.id);
+            return `<div class="task-row">
+                <span class="priority-icon ${priorityClass(t.priority)}"></span>
+                ${isOverdue ? '<span class="overdue-badge">⚠ overdue</span>' : ''}
+                <span class="task-name">${esc(t.content)}</span>
+                <span class="task-due ${isOverdue ? 'overdue' : ''}">${esc(dueDisplay)}</span>
+                <a class="task-link" href="${esc(todoistUrl)}" target="_blank" rel="noopener">Open →</a>
+            </div>`;
+        }
+
         function renderGroup(label, tasks, isOverdue) {
             if (!tasks.length) return '';
             let html = `<div class="task-group-label ${isOverdue ? 'overdue' : ''}">${esc(label)} (${tasks.length})</div>`;
-            tasks.forEach(t => {
-                const due = t.due?.date || '';
-                const dueDisplay = due ? new Date(due + 'T00:00:00').toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
-                const todoistUrl = t.url || ('https://app.todoist.com/app/task/' + t.id);
-                const isRecurring = t.due?.is_recurring === true;
-                const labels = (t.labels || []).map(l => l.toLowerCase());
-                const isVm2Done = labels.includes('vm2-done');
-                html += `<div class="task-row">
-                    <span class="priority-icon ${priorityClass(t.priority)}"></span>
-                    ${isOverdue ? '<span class="overdue-badge">⚠ overdue</span>' : ''}
-                    ${isRecurring ? '<span class="recurring-badge">↻ recurring</span>' : ''}
-                    ${isVm2Done ? '<span class="vm2done-badge">✓ vm2-done</span>' : ''}
-                    <span class="task-name">${esc(t.content)}</span>
-                    <span class="task-due ${isOverdue ? 'overdue' : ''}">${esc(dueDisplay)}</span>
-                    <a class="task-link" href="${esc(todoistUrl)}" target="_blank" rel="noopener">Open →</a>
-                </div>`;
-            });
+            tasks.forEach(t => { html += renderTaskRow(t, isOverdue); });
             return html;
         }
 
-        el.innerHTML = renderGroup('Overdue', overdue, true) +
-                        renderGroup('Due Today', today, false) +
-                        renderGroup('Upcoming', upcoming, false);
+        let html = renderGroup('Overdue', overdue, true) +
+                   renderGroup('Due Today', today, false) +
+                   renderGroup('Upcoming', upcoming, false);
+
+        if (!actionable.length) {
+            html += '<div class="empty-state" style="padding:var(--space-sm) 0;">No one-time tasks awaiting execution.</div>';
+        }
+
+        // Recurring tasks in a collapsible section
+        if (recurring.length) {
+            // Sort recurring: overdue first, then by due date
+            recurring.sort((a, b) => (a.due?.date || '').localeCompare(b.due?.date || ''));
+            const recurOverdue = recurring.filter(t => t.due?.date && t.due.date < todayStr);
+            const recurOther = recurring.filter(t => !t.due?.date || t.due.date >= todayStr);
+
+            html += `<details class="recurring-section">
+                <summary class="task-group-label" style="cursor:pointer; list-style:none; display:flex; align-items:center; gap:0.4rem; padding-top:0.75rem;">
+                    <span style="transition:transform 0.2s; display:inline-block;" class="recurring-arrow">▸</span>
+                    Recurring Tasks (${recurring.length})
+                </summary>
+                <div class="recurring-list">`;
+            recurOverdue.forEach(t => { html += renderTaskRow(t, true); });
+            recurOther.forEach(t => { html += renderTaskRow(t, false); });
+            html += '</div></details>';
+        }
+
+        el.innerHTML = html;
+
+        // Toggle arrow on details open/close
+        const details = el.querySelector('details.recurring-section');
+        if (details) {
+            details.addEventListener('toggle', () => {
+                const arrow = details.querySelector('.recurring-arrow');
+                if (arrow) arrow.style.transform = details.open ? 'rotate(90deg)' : '';
+            });
+        }
     }
 
     function renderRecentDeliverables() {
