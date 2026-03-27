@@ -896,7 +896,14 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
             });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const body = await res.json();
-            todoistTasks = Array.isArray(body) ? body : (body.results || []);
+            const raw = Array.isArray(body) ? body : (body.results || []);
+            // Filter out tasks already handled by VM2 (vm2-done label) or marked checked
+            todoistTasks = raw.filter(t => {
+                if (t.checked || t.is_deleted) return false;
+                const labels = (t.labels || []).map(l => l.toLowerCase());
+                if (labels.includes('vm2-done')) return false;
+                return true;
+            });
             connectorStatus.todoist = true;
         } catch (e) {
             todoistTasks = [];
