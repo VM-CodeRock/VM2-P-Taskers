@@ -891,11 +891,12 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
             return;
         }
         try {
-            const res = await fetch('https://api.todoist.com/rest/v2/tasks?label=' + encodeURIComponent(config.todoist.vm2_label || 'VM2'), {
+            const res = await fetch('https://api.todoist.com/api/v1/tasks?label=' + encodeURIComponent(config.todoist.vm2_label || 'VM2'), {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             if (!res.ok) throw new Error('HTTP ' + res.status);
-            todoistTasks = await res.json();
+            const body = await res.json();
+            todoistTasks = Array.isArray(body) ? body : (body.results || []);
             connectorStatus.todoist = true;
         } catch (e) {
             todoistTasks = [];
@@ -971,7 +972,7 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
             tasks.forEach(t => {
                 const due = t.due?.date || '';
                 const dueDisplay = due ? new Date(due + 'T00:00:00').toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
-                const todoistUrl = t.url || ('https://todoist.com/showTask?id=' + t.id);
+                const todoistUrl = t.url || ('https://app.todoist.com/app/task/' + t.id);
                 html += `<div class="task-row">
                     <span class="priority-icon ${priorityClass(t.priority)}"></span>
                     ${isOverdue ? '<span class="overdue-badge">⚠ overdue</span>' : ''}
