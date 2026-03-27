@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Control — Implementation Plan · VM2 · 2026-03-27</title>
+<style>
+/* ── Design Tokens ── */
+:root {
+  --bg: #ffffff;
+  --bg-alt: #f7f7f7;
+  --bg-code: #f4f4f4;
+  --text: #1a1a1a;
+  --text-secondary: #5a5a5a;
+  --text-muted: #999;
+  --accent: #c53a3a;
+  --accent-hover: #a82e2e;
+  --accent-light: #fdf0f0;
+  --border: #e5e5e5;
+  --border-light: #f0f0f0;
+  --font-serif: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, Georgia, serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  --max-w: 860px;
+  --radius: 4px;
+}
+[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --bg-alt: #242424;
+  --bg-code: #2a2a2a;
+  --text: #e5e5e5;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666;
+  --accent: #e05555;
+  --accent-hover: #f06666;
+  --accent-light: #2a1a1a;
+  --border: #333;
+  --border-light: #2a2a2a;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.25s, color 0.25s;
+}
+
+/* ── Topbar ── */
+.topbar {
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.topbar-brand {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.topbar-meta {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 0.68rem;
+  font-family: var(--font-sans);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Hero ── */
+.hero {
+  max-width: var(--max-w);
+  margin: 3rem auto 0;
+  padding: 0 1.5rem;
+}
+.hero-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+}
+.hero h1 {
+  font-family: var(--font-serif);
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+.hero-sub {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  max-width: 680px;
+  margin-bottom: 1.5rem;
+}
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 2rem;
+}
+.tag {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 2px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.tag-accent { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+
+/* ── Phase Summary Bar ── */
+.phase-bar {
+  max-width: var(--max-w);
+  margin: 0 auto 2.5rem;
+  padding: 0 1.5rem;
+}
+.phase-track {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.phase-cell {
+  padding: 0.85rem 1rem;
+  background: var(--bg-alt);
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+.phase-cell:last-child { border-right: none; }
+.phase-cell.active { background: var(--accent); }
+.phase-cell.active .phase-label,
+.phase-cell.active .phase-name { color: #fff; }
+.phase-cell.active .phase-time { color: rgba(255,255,255,0.8); }
+.phase-label {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.2rem;
+}
+.phase-name {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+.phase-time {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+/* ── Main Content ── */
+.content {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 1.5rem 4rem;
+}
+
+/* ── Section Headers ── */
+.section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border);
+}
+.section:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+.section-num {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+.section h2 {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  line-height: 1.25;
+}
+.section-intro {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  max-width: 700px;
+}
+
+/* ── Sub-sections ── */
+h3 {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 1.75rem 0 0.5rem;
+}
+h4 {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  margin: 1.25rem 0 0.35rem;
+}
+p { margin-bottom: 0.9rem; }
+ul, ol { padding-left: 1.4rem; margin-bottom: 0.9rem; }
+li { margin-bottom: 0.3rem; }
+strong { font-weight: 700; }
+
+/* ── Tables ── */
+.tbl-wrap { overflow-x: auto; margin: 1rem 0 1.5rem; }
+table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 0.82rem; }
+th {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  color: var(--text);
+}
+tr:nth-child(even) td { background: var(--bg-alt); }
+
+/* ── Code blocks ── */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1rem 0 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: var(--bg-code);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  padding: 1px 5px;
+  color: var(--text);
+}
+pre code { background: none; border: none; padding: 0; font-size: inherit; }
+
+/* ── Callouts ── */
+.callout {
+  background: var(--accent-light);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 0.85rem 1.1rem;
+  margin: 1.2rem 0;
+  font-size: 0.9rem;
+}
+.callout strong { color: var(--accent); }
+.callout-blue {
+  background: #f0f6ff;
+  border-left-color: #3b82f6;
+}
+[data-theme="dark"] .callout-blue { background: #0f1d3a; }
+.callout-blue strong { color: #3b82f6; }
+.callout-green {
+  background: #f0faf4;
+  border-left-color: #22c55e;
+}
+[data-theme="dark"] .callout-green { background: #0a2015; }
+.callout-green strong { color: #22c55e; }
+
+/* ── Component diagram ── */
+.arch-diagram {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin: 1rem 0 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.8;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--text);
+}
+
+/* ── Spec cards ── */
+.spec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+@media (max-width: 600px) { .spec-grid { grid-template-columns: 1fr; } }
+.spec-card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+}
+.spec-card-title {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+.spec-card ul { padding-left: 1.1rem; font-size: 0.84rem; }
+.spec-card li { margin-bottom: 0.2rem; }
+
+/* ── Metric cards ── */
+.metric-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin: 1rem 0 1.5rem;
+}
+@media (max-width: 640px) { .metric-row { grid-template-columns: 1fr 1fr; } }
+.metric-card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  text-align: center;
+}
+.metric-num {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+.metric-label {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Claude Code prompt box ── */
+.prompt-box {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin: 1.25rem 0;
+}
+.prompt-box pre {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #e6edf3;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.prompt-box-header {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #58a6ff;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid #30363d;
+}
+.copy-btn {
+  float: right;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 3px;
+  color: #8b949e;
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.copy-btn:hover { background: #30363d; color: #e6edf3; }
+
+/* ── Context section ── */
+#vm2-context {
+  max-width: var(--max-w);
+  margin: 4rem auto 0;
+  padding: 2rem 1.5rem;
+  border-top: 2px solid var(--border);
+}
+#vm2-context h2 {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+.ctx-block {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+/* ── Footer ── */
+.footer {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.footer a { color: var(--accent); text-decoration: none; }
+
+/* ── Wireframe ASCII ── */
+.wireframe {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--text);
+  margin: 0.75rem 0 1.5rem;
+}
+
+/* ── Timeline ── */
+.timeline { list-style: none; padding: 0; margin: 1rem 0 1.5rem; position: relative; }
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  background: var(--border);
+}
+.timeline li {
+  padding-left: 2.2rem;
+  margin-bottom: 1.1rem;
+  position: relative;
+}
+.timeline li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.timeline-head {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+.timeline-body {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <span class="topbar-brand">VM2 · Mission Control</span>
+  <div class="topbar-meta">
+    <span>Implementation Plan</span>
+    <span>2026-03-27</span>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark</button>
+  </div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-eyebrow">VM2 Deliverable · 2026-03-27</div>
+  <h1>Mission Control<br>Implementation Plan</h1>
+  <p class="hero-sub">A complete, developer-ready build specification for the VM2 Command Center — making agentic work visible, governable, and compounding across all four phases.</p>
+  <div class="hero-tags">
+    <span class="tag tag-accent">Implementation Plan</span>
+    <span class="tag">Architecture</span>
+    <span class="tag">Phase 1 MVP</span>
+    <span class="tag">Phase 2 Integrations</span>
+    <span class="tag">Phase 3 Governance</span>
+    <span class="tag">Phase 4 Analytics</span>
+    <span class="tag">Claude Code Prompt</span>
+  </div>
+</div>
+
+<!-- Phase Summary Bar -->
+<div class="phase-bar">
+  <div class="phase-track">
+    <div class="phase-cell active">
+      <div class="phase-label">Phase 1</div>
+      <div class="phase-name">MVP Dashboard</div>
+      <div class="phase-time">~6–8 hrs build</div>
+    </div>
+    <div class="phase-cell">
+      <div class="phase-label">Phase 2</div>
+      <div class="phase-name">Todoist + Deliverables</div>
+      <div class="phase-time">~4–5 hrs build</div>
+    </div>
+    <div class="phase-cell">
+      <div class="phase-label">Phase 3</div>
+      <div class="phase-name">Governance Layer</div>
+      <div class="phase-time">~5–7 hrs build</div>
+    </div>
+    <div class="phase-cell">
+      <div class="phase-label">Phase 4</div>
+      <div class="phase-name">Analytics</div>
+      <div class="phase-time">~4–6 hrs build</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="content">
+
+<!-- ── SECTION 1: Architecture & Tech Stack ── -->
+<div class="section">
+  <div class="section-num">Section 1</div>
+  <h2>Architecture &amp; Tech Stack</h2>
+  <p class="section-intro">Technology decisions for Mission Control, grounded in the existing VM2 infrastructure and zero-new-dependency philosophy.</p>
+
+  <h3>Core Technology Decision</h3>
+  <p><strong>Recommendation: Static HTML + Vanilla JS, served via existing Railway nginx.</strong></p>
+  <p>VM2 already has a production-grade setup at <code>vm2-p-taskers-production.up.railway.app</code> (nginx with basic auth) backed by the <code>VM-CodeRock/VM2-P-Taskers</code> GitHub repo. Mission Control should be a single HTML file — <code>mission-control.html</code> — that lives in that repo, just like every other VM2 deliverable. No Node server, no Python backend, no new Railway service.</p>
+
+  <div class="callout-blue callout">
+    <strong>Why static HTML wins here:</strong> Every existing VM2 deliverable is already a self-contained HTML file. Railway serves them reliably. Git is the deployment pipeline. No runtime, no CORS, no environment variables, no server to crash. The dashboard reads data via <code>fetch()</code> calls to co-located JSON files and the Todoist REST API. That's it.
+  </div>
+
+  <h4>When a Lightweight Server Would Make Sense (and Why It Doesn't Yet)</h4>
+  <p>A Node/Python backend becomes worthwhile only when Mission Control needs to: (1) write back to JSON files from the browser, (2) proxy authenticated API calls to hide secrets, or (3) run scheduled aggregation jobs that produce rollup JSON. None of these are Phase 1 requirements. If Phase 3 approvals require server-side state writes, revisit adding a lightweight Express endpoint as a second Railway service — but cross that bridge then.</p>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Concern</th>
+          <th>Decision</th>
+          <th>Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hosting</td>
+          <td>Existing Railway nginx</td>
+          <td>Already running, auth already configured, zero marginal cost</td>
+        </tr>
+        <tr>
+          <td>Deployment</td>
+          <td>Git push to main → auto-deploy</td>
+          <td>Same workflow as all 110+ existing deliverables</td>
+        </tr>
+        <tr>
+          <td>Runtime</td>
+          <td>Vanilla JS (no framework)</td>
+          <td>No build step, no node_modules, instant load</td>
+        </tr>
+        <tr>
+          <td>State persistence</td>
+          <td>JSON files in repo + localStorage for UI prefs</td>
+          <td>Version-controlled, readable, already the pattern VM2 uses</td>
+        </tr>
+        <tr>
+          <td>Todoist data</td>
+          <td>Todoist REST API v2 (client-side fetch)</td>
+          <td>API key stored in a config JSON file, not embedded in HTML</td>
+        </tr>
+        <tr>
+          <td>Deliverables index</td>
+          <td>Parse <code>portal.html</code> DOM via fetch + DOMParser</td>
+          <td>Single source of truth already maintained</td>
+        </tr>
+        <tr>
+          <td>Cron health</td>
+          <td>Read <code>/cron_tracking/*/state.json</code> via fetch</td>
+          <td>Files already exist; cron jobs already write them</td>
+        </tr>
+        <tr>
+          <td>Git log / activity</td>
+          <td>Pre-baked <code>activity.json</code> generated at git push time</td>
+          <td>Cannot run <code>git log</code> in browser; generate once per push</td>
+        </tr>
+        <tr>
+          <td>Styling</td>
+          <td>Charter serif, #c53a3a accent, dark/light toggle, 860px max</td>
+          <td>Consistent with all VM2 deliverables</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Component Diagram</h3>
+  <div class="arch-diagram">┌─────────────────────────────────────────────────────────────────┐
+│                      BROWSER (Mission Control)                  │
+│  ┌─────────────────┐  ┌──────────────┐  ┌──────────────────┐   │
+│  │  Dashboard Tab  │  │  Tasks Tab   │  │ Ops / Health Tab │   │
+│  │  Now/Next/      │  │  Kanban +    │  │ Cron status +    │   │
+│  │  Recent         │  │  Backlog     │  │ Connector health │   │
+│  └────────┬────────┘  └──────┬───────┘  └────────┬─────────┘   │
+│           │                  │                    │             │
+│           └──────────────────┼────────────────────┘             │
+│                              │                                   │
+│                    ┌─────────▼─────────┐                        │
+│                    │   Data Layer (JS) │                        │
+│                    │  fetch() + cache  │                        │
+│                    └────────┬──────────┘                        │
+└─────────────────────────────┼───────────────────────────────────┘
+                              │
+        ┌─────────────────────┼──────────────────────┐
+        │                     │                      │
+        ▼                     ▼                      ▼
+ ┌────────────┐    ┌────────────────────┐   ┌──────────────────┐
+ │ portal.html│    │ cron_tracking/     │   │  Todoist API v2  │
+ │ (same host)│    │ */state.json       │   │  REST (external) │
+ │            │    │ */runlog-*.json    │   │  label=VM2       │
+ │ DOMParser  │    │ _rollup.json       │   │  ?filter=        │
+ └────────────┘    └────────────────────┘   └──────────────────┘
+        │                     │
+        ▼                     ▼
+ ┌────────────────────────────────────────┐
+ │        Railway nginx (same origin)     │
+ │   vm2-p-taskers-production.up.railway  │
+ │   .app — serves all static files       │
+ │   Basic auth (already configured)      │
+ └────────────────────────────────────────┘
+        │
+        ▼
+ ┌────────────────────────────────────────┐
+ │     GitHub: VM-CodeRock/VM2-P-Taskers  │
+ │     main branch → auto-deploy          │
+ │     mission-control.html               │
+ │     _system/mc-config.json             │
+ │     _system/activity.json              │
+ │     cron_tracking/ (already in repo)   │
+ └────────────────────────────────────────┘</div>
+
+  <h3>File Structure</h3>
+  <pre>VM2-P-Taskers/
+├── mission-control.html          ← The dashboard (single file, all phases)
+├── portal.html                   ← Deliverables index (already exists)
+├── _system/
+│   ├── mc-config.json            ← API keys + cron registry + settings
+│   ├── activity.json             ← Pre-baked git log (generated at push time)
+│   └── mc-state.json             ← Approval queue, notes, pinned items
+├── cron_tracking/
+│   ├── 6a1f1c3b/state.json       ← Gmail intake cron state (already exists)
+│   ├── d56ab3fd/state.json       ← Auto-helper cron state (already exists)
+│   ├── aa619acf/state.json       ← (secondary cron state, already exists)
+│   └── .../                      ← Other crons added here
+└── Dockerfile                    ← Already exists, no changes needed</pre>
+
+  <div class="callout">
+    <strong>Key insight:</strong> The cron state JSON files already exist and are already written by the running cron jobs. Mission Control reads them — it doesn't create them. The dashboard is a consumer, not a producer, of VM2 operational state.
+  </div>
+</div>
+
+<!-- ── SECTION 2: Phase 1 MVP ── -->
+<div class="section">
+  <div class="section-num">Section 2</div>
+  <h2>Phase 1 MVP — Detailed Build Spec</h2>
+  <p class="section-intro">Everything needed to build and ship a working dashboard in one focused session. Scope is deliberately tight: read existing data, display it well, add dark mode and search.</p>
+
+  <div class="metric-row">
+    <div class="metric-card">
+      <div class="metric-num">1</div>
+      <div class="metric-label">HTML File</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-num">3</div>
+      <div class="metric-label">Tab Views</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-num">0</div>
+      <div class="metric-label">New Dependencies</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-num">~7h</div>
+      <div class="metric-label">Est. Build Time</div>
+    </div>
+  </div>
+
+  <h3>Pages / Views to Build</h3>
+
+  <div class="spec-grid">
+    <div class="spec-card">
+      <div class="spec-card-title">Tab 1 — Dashboard</div>
+      <ul>
+        <li><strong>Now:</strong> Cron health summary strip — each cron name, last run time, status dot (green/yellow/red)</li>
+        <li><strong>Next:</strong> Todoist tasks due today + overdue (VM2 label), sorted by priority</li>
+        <li><strong>Recent:</strong> Last 10 deliverables from portal.html, with type badge and date</li>
+      </ul>
+    </div>
+    <div class="spec-card">
+      <div class="spec-card-title">Tab 2 — Deliverables</div>
+      <ul>
+        <li>Full table from portal.html — date, title, type, link</li>
+        <li>Search box (filter by title/type)</li>
+        <li>Filter by type (chips)</li>
+        <li>Count badge showing total</li>
+        <li>Click row → open deliverable in new tab</li>
+      </ul>
+    </div>
+    <div class="spec-card">
+      <div class="spec-card-title">Tab 3 — Ops / Health</div>
+      <ul>
+        <li>Cron cards: each cron with name, last run, last success, run count, result, notes</li>
+        <li>Pending actions list from state.json</li>
+        <li>Connector health: Todoist (green if tasks fetch OK), GitHub (green if activity.json loads)</li>
+        <li>Raw state JSON accordion (for debugging)</li>
+      </ul>
+    </div>
+    <div class="spec-card">
+      <div class="spec-card-title">Global Chrome</div>
+      <ul>
+        <li>Topbar: "VM2 Mission Control" + date + refresh button + dark mode toggle</li>
+        <li>Tab nav (sticky)</li>
+        <li>Last-refreshed timestamp</li>
+        <li>Error banner if any data source fails to load</li>
+        <li>Auto-refresh every 5 minutes</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Data Model — mc-config.json</h3>
+  <pre>{
+  "todoist": {
+    "api_token": "YOUR_TODOIST_API_TOKEN",
+    "vm2_label_id": "YOUR_VM2_LABEL_ID",
+    "filter": "label:VM2 &amp; !completed"
+  },
+  "crons": [
+    {
+      "id": "6a1f1c3b",
+      "name": "Gmail Intake",
+      "description": "Hourly email triage — reads inbox, spawns VM2 tasks",
+      "schedule": "Hourly",
+      "state_file": "/cron_tracking/6a1f1c3b/state.json"
+    },
+    {
+      "id": "d56ab3fd",
+      "name": "VM2 Auto-Helper",
+      "description": "Daily auto-helper run — produces helper HTML deliverable",
+      "schedule": "Daily ~7am",
+      "state_file": "/cron_tracking/d56ab3fd/state.json"
+    },
+    {
+      "id": "aa619acf",
+      "name": "Secondary Intake",
+      "description": "Secondary email intake cron",
+      "schedule": "Hourly",
+      "state_file": "/cron_tracking/aa619acf/state.json"
+    }
+  ],
+  "portal_url": "/portal.html",
+  "activity_url": "/_system/activity.json",
+  "refresh_interval_ms": 300000
+}</pre>
+
+  <h3>Data Model — mc-state.json</h3>
+  <pre>{
+  "pinned_notes": [
+    {
+      "id": "note_001",
+      "text": "Opportunity Intel Brief HTML fix still pending",
+      "created": "2026-03-27",
+      "priority": "high"
+    }
+  ],
+  "approval_queue": [],
+  "last_updated": "2026-03-27T16:00:00-04:00"
+}</pre>
+
+  <h3>Data Model — activity.json</h3>
+  <p>Generated by a small shell script run as a git pre-push hook (or manually). Captures the last 30 commits as structured JSON:</p>
+  <pre>{
+  "generated_at": "2026-03-27T20:30:00Z",
+  "commits": [
+    {
+      "hash": "abc1234",
+      "date": "2026-03-27",
+      "message": "Add Mission Control Implementation Plan",
+      "files_changed": ["mission-control-impl-plan-2026-03-27.html", "portal.html"],
+      "author": "VM2 Computer"
+    }
+  ]
+}</pre>
+  <p>Generate with: <code>git log --pretty=format:'{"hash":"%h","date":"%ad","message":"%s","author":"%an"}' --date=short -30</code>, then add files-changed via <code>git diff-tree --no-commit-id -r --name-only</code>.</p>
+
+  <h3>UI Wireframes</h3>
+
+  <h4>Dashboard Tab (Tab 1)</h4>
+  <div class="wireframe">┌────────────────────────────────────────────────────────────────┐
+│ VM2 MISSION CONTROL                    🔄 Refresh  ☀/🌙 Toggle │
+│ ─────────────────────────────────────────────────────────────── │
+│ [Dashboard]  [Deliverables]  [Ops / Health]                     │
+├────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  NOW — Cron Health                                              │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ ● Gmail Intake    Run #85  Last: 4:32 PM  ✓ no_new_tasks│   │
+│  │ ● VM2 Auto-Helper  Daily   Last: 7:04 AM  ✓ generated   │   │
+│  │ ● Secondary Intake Run #52 Last: 2:48 PM  ✓ no_new_tasks│   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  NEXT — Due Today &amp; Overdue (from Todoist · VM2 label)         │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ ❗ Mission Control Build        Due today   [Open]       │   │
+│  │ ⚠  Opportunity Intel Brief Fix  Overdue 2d  [Open]      │   │
+│  │ ◦  Weekly Digest Review         Due tomorrow [Open]     │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  RECENT DELIVERABLES (last 10)                                  │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ Mar 27  WCF Transformation BD Response Pack  [BD] →     │   │
+│  │ Mar 27  VM2 System Guide                     [Guide] →  │   │
+│  │ Mar 27  Mission Control Impl Plan            [Arch] →   │   │
+│  │ Mar 26  Mission Control — VM2                [Arch] →   │   │
+│  │  ...                                                     │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  Last refreshed: 4:36 PM AST                                    │
+└────────────────────────────────────────────────────────────────┘</div>
+
+  <h4>Deliverables Tab (Tab 2)</h4>
+  <div class="wireframe">┌────────────────────────────────────────────────────────────────┐
+│  DELIVERABLES LIBRARY                         110 deliverables  │
+│  ─────────────────────────────────────────────────────────────  │
+│  🔍 Search titles...                                            │
+│  [All] [Research] [Architecture] [BD] [Events] [Operations]    │
+│  ─────────────────────────────────────────────────────────────  │
+│  Date    Title                                    Type     Link │
+│  Mar 27  WCF Transformation BD Response Pack  [BD]      →      │
+│  Mar 27  VM2 System Guide — Quick Reference   [Guide]   →      │
+│  Mar 27  Mission Control Impl Plan            [Arch]    →      │
+│  Mar 26  Mission Control — VM2                [Arch]    →      │
+│  Mar 26  Aliens.gov + UFO Documentary Brief   [Research]→      │
+│  ...                                                            │
+└────────────────────────────────────────────────────────────────┘</div>
+
+  <h4>Ops / Health Tab (Tab 3)</h4>
+  <div class="wireframe">┌────────────────────────────────────────────────────────────────┐
+│  OPS / HEALTH                                                   │
+│  ─────────────────────────────────────────────────────────────  │
+│  CRON JOBS                                                      │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │ GMAIL INTAKE               ● Healthy                   │    │
+│  │ Run #85 · Hourly           Last: Mar 27 4:32 PM AST    │    │
+│  │ Result: no_new_vm2_tasks   Emails checked: 5           │    │
+│  │ ▶ Pending actions (4)                         [Expand] │    │
+│  └────────────────────────────────────────────────────────┘    │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │ VM2 AUTO-HELPER             ● Healthy                  │    │
+│  │ Daily ~7am                  Last: Mar 26 7:04 AM UTC   │    │
+│  │ Generated: vm2-auto-helper-2026-03-26.html             │    │
+│  └────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  PENDING ACTIONS (needs_parent)                                 │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │ ● create_cardio_tennis_cron     needs_parent           │    │
+│  │ ● opportunity_intel_brief_fix   needs_parent           │    │
+│  │ ● ypo_kickoff_form_info_followup needs_parent          │    │
+│  └────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  CONNECTORS                                                     │
+│  ● Todoist API — Connected                                      │
+│  ● GitHub (portal.html read) — Connected                       │
+│  ● Cron State JSON — 3/3 loaded                                │
+└────────────────────────────────────────────────────────────────┘</div>
+
+  <h3>Integration Points</h3>
+
+  <h4>1. Deliverables from portal.html</h4>
+  <pre>// Fetch portal.html, parse table rows into structured objects
+async function loadDeliverables() {
+  const res = await fetch('/portal.html');
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const rows = doc.querySelectorAll('#tableBody tr');
+  return Array.from(rows).map(tr =&gt; ({
+    date: tr.dataset.date,
+    title: tr.querySelector('.col-title a')?.textContent?.trim(),
+    type: tr.dataset.type,
+    url: tr.querySelector('.col-link a')?.getAttribute('href')
+  })).filter(d =&gt; d.title);
+}</pre>
+
+  <h4>2. Cron Health from state.json files</h4>
+  <pre>// Read each cron's state.json; compute health status
+async function loadCronHealth(cronConfig) {
+  const results = await Promise.allSettled(
+    cronConfig.map(async cron =&gt; {
+      const res = await fetch(cron.state_file);
+      const state = await res.json();
+      const lastRun = new Date(state.last_run || state.last_run_utc);
+      const ageMinutes = (Date.now() - lastRun) / 60000;
+      return {
+        ...cron,
+        state,
+        lastRun,
+        status: ageMinutes &lt; 90 ? 'healthy' : ageMinutes &lt; 240 ? 'warning' : 'stale'
+      };
+    })
+  );
+  return results.map(r =&gt; r.status === 'fulfilled' ? r.value : { error: r.reason });
+}</pre>
+
+  <h4>3. Todoist Tasks via REST API</h4>
+  <pre>// Todoist API v2 — fetch active VM2 tasks
+async function loadTodoistTasks(config) {
+  const res = await fetch(
+    `https://api.todoist.com/rest/v2/tasks?label=${encodeURIComponent('VM2')}`,
+    { headers: { Authorization: `Bearer ${config.todoist.api_token}` } }
+  );
+  const tasks = await res.json();
+  const today = new Date().toISOString().split('T')[0];
+  return {
+    overdue: tasks.filter(t =&gt; t.due?.date &lt; today),
+    dueToday: tasks.filter(t =&gt; t.due?.date === today),
+    upcoming: tasks.filter(t =&gt; !t.due || t.due.date &gt; today)
+  };
+}</pre>
+
+  <div class="callout">
+    <strong>Security note on the Todoist API token:</strong> Storing the token in <code>_system/mc-config.json</code> means it is served as a plain file from Railway (behind basic auth). This is acceptable for a personal dashboard behind basic auth, but note that anyone with the Railway credentials can read the file. For Phase 3, move the token server-side or use a Railway environment variable with a proxy endpoint.
+  </div>
+
+  <h3>Estimated Build Time</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Task</th><th>Est. Hours</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>HTML shell + CSS (topbar, tabs, dark mode, design tokens)</td><td>1.5h</td></tr>
+        <tr><td>Dashboard tab (Now/Next/Recent widgets)</td><td>1.5h</td></tr>
+        <tr><td>Deliverables tab (table, search, filter chips)</td><td>1.0h</td></tr>
+        <tr><td>Ops/Health tab (cron cards, pending actions, connector health)</td><td>1.5h</td></tr>
+        <tr><td>Data layer (fetch, cache, error handling, auto-refresh)</td><td>1.0h</td></tr>
+        <tr><td>mc-config.json setup, activity.json generation script</td><td>0.5h</td></tr>
+        <tr><td>Testing, polish, deploy</td><td>0.5h</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>7.5h</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── SECTION 3: Phase 2 ── -->
+<div class="section">
+  <div class="section-num">Section 3</div>
+  <h2>Phase 2 — Todoist + Deliverables Integration</h2>
+  <p class="section-intro">Deepen the integrations: richer Todoist views, smarter deliverable parsing, full-text search, and a live activity feed from git history.</p>
+
+  <h3>Todoist Integration — Richer Task Views</h3>
+  <p>Phase 1 shows tasks by label. Phase 2 adds project grouping, sub-tasks, priority flags, and a Kanban column view. The Kanban uses Todoist sections as column definitions:</p>
+  <ul>
+    <li><strong>Backlog:</strong> Tasks with no due date or due &gt;3 days out</li>
+    <li><strong>In Progress:</strong> Tasks due within 3 days, or manually flagged with a <code>#in-progress</code> label</li>
+    <li><strong>Needs Approval:</strong> Tasks with a <code>#needs-approval</code> Todoist label (set by cron agents for gated actions)</li>
+    <li><strong>Done (recent):</strong> Completed tasks from the last 7 days via <code>GET /tasks?filter=completed&amp;since=...</code></li>
+  </ul>
+
+  <h4>Todoist API Endpoints Used (Phase 2)</h4>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Endpoint</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>GET /rest/v2/tasks?label=VM2</code></td><td>All active VM2 tasks</td></tr>
+        <tr><td><code>GET /rest/v2/projects</code></td><td>Project list for grouping</td></tr>
+        <tr><td><code>GET /rest/v2/sections?project_id=X</code></td><td>Sections for Kanban columns</td></tr>
+        <tr><td><code>GET /rest/v2/tasks?filter=label:VM2 &amp; completed</code></td><td>Recently completed tasks</td></tr>
+        <tr><td><code>GET /rest/v2/tasks/{id}/comments</code></td><td>Task audit notes (Phase 3)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Deliverables — Enhanced Parsing</h3>
+  <p>Phase 1 reads the basic table row. Phase 2 extracts richer metadata by fetching the individual deliverable HTML files and parsing their <code>&lt;meta&gt;</code> tags and first paragraph (for a summary snippet). This requires adding standard meta tags to new deliverables going forward:</p>
+  <pre>&lt;meta name="vm2-type" content="Architecture"&gt;
+&lt;meta name="vm2-tags" content="Mission Control, Dashboard, Planning"&gt;
+&lt;meta name="vm2-summary" content="Implementation plan for the VM2 Mission Control dashboard."&gt;</pre>
+  <p>The deliverables library then supports full-text search across titles, tags, and summaries — not just the table row text.</p>
+
+  <h3>Search Implementation</h3>
+  <p>Client-side fuzzy search using a minimal implementation (no library required for &lt;500 records). Index is built once on page load from the deliverables array:</p>
+  <pre>function searchDeliverables(query, deliverables) {
+  const q = query.toLowerCase().trim();
+  if (!q) return deliverables;
+  return deliverables.filter(d =&gt;
+    d.title?.toLowerCase().includes(q) ||
+    d.type?.toLowerCase().includes(q) ||
+    d.tags?.some(t =&gt; t.toLowerCase().includes(q)) ||
+    d.summary?.toLowerCase().includes(q)
+  );
+}</pre>
+
+  <h3>Activity Feed from Git Log</h3>
+  <p>A bash script runs as a GitHub Actions workflow (or locally before push) to generate <code>_system/activity.json</code>. The workflow triggers on every push to main:</p>
+  <pre># .github/workflows/gen-activity.yml
+name: Generate activity.json
+on: [push]
+jobs:
+  gen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with: { fetch-depth: 30 }
+      - name: Generate activity.json
+        run: |
+          python3 _system/gen_activity.py &gt; _system/activity.json
+          git config user.email "vm2.viru@gmail.com"
+          git config user.name "VM2 Computer"
+          git add _system/activity.json
+          git diff --staged --quiet || git commit -m "chore: update activity.json"
+          git push</pre>
+  <p>The <code>gen_activity.py</code> script outputs the last 30 commits as structured JSON with file counts, message, and date — displayed in the Dashboard as a "Recent Activity" feed.</p>
+</div>
+
+<!-- ── SECTION 4: Phase 3 ── -->
+<div class="section">
+  <div class="section-num">Section 4</div>
+  <h2>Phase 3 — Governance Layer</h2>
+  <p class="section-intro">Approval queues, audit trails, and permission profiles — making irreversible actions visible and gated before execution.</p>
+
+  <h3>The Core Problem Phase 3 Solves</h3>
+  <p>VM2 agents currently execute irreversible actions (send email, post to external services, create calendar events, make purchases) within the same session that detects the need. There is no pause-and-verify step. Phase 3 introduces a structured approval workflow that inserts a human checkpoint before any flagged action executes.</p>
+
+  <h3>Approval Queue Design</h3>
+  <p>When a cron or agent needs approval, it writes a pending approval record to <code>_system/mc-state.json</code> and stops. Mission Control displays the queue. Varun clicks Approve or Reject. A webhook (or the next cron run) reads the decision and acts.</p>
+
+  <h4>Approval Record Schema</h4>
+  <pre>{
+  "approval_queue": [
+    {
+      "id": "appr_20260327_001",
+      "created_at": "2026-03-27T16:00:00-04:00",
+      "requested_by": "gmail-intake-cron",
+      "action_type": "send_email",
+      "action_label": "Reply to YPO Kickoff form info thread",
+      "draft_content": "Hi Varun, to fill out the YPO form I used...",
+      "to": "varunm24@gmail.com",
+      "thread_id": "19d22219fe5fadc5",
+      "risk_level": "low",
+      "expires_at": "2026-03-28T16:00:00-04:00",
+      "status": "pending",
+      "decided_at": null,
+      "decision": null,
+      "decision_note": null
+    }
+  ]
+}</pre>
+
+  <h4>Approval UI</h4>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────────┐
+│  APPROVAL QUEUE                              2 pending          │
+│  ─────────────────────────────────────────────────────────────  │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ SEND EMAIL · Low risk               Mar 27 4:00 PM      │   │
+│  │ To: varunm24@gmail.com                                  │   │
+│  │ Re: YPO Kickoff form info                               │   │
+│  │ ─────────────────────────────────────────────────────── │   │
+│  │ Draft: "Hi Varun, to fill out the YPO form I used..."   │   │
+│  │                              [Approve ✓]  [Reject ✗]   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ CREATE CRON · Medium risk           Mar 27 3:30 PM      │   │
+│  │ Cardio Tennis Weekly Cron                               │   │
+│  │ Schedule: Every Sunday 8am ET                           │   │
+│  │ ─────────────────────────────────────────────────────── │   │
+│  │ Details: Check CCC calendar, check Outlook conflicts... │   │
+│  │                              [Approve ✓]  [Reject ✗]   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘</div>
+
+  <h3>Audit Trail Schema</h3>
+  <p>Every approval decision appends to <code>_system/audit-log.json</code> (append-only, never overwritten):</p>
+  <pre>{
+  "audit_log": [
+    {
+      "event_id": "evt_20260327_001",
+      "timestamp": "2026-03-27T16:15:00-04:00",
+      "event_type": "approval_decision",
+      "approval_id": "appr_20260327_001",
+      "decision": "approved",
+      "decided_by": "varun",
+      "decision_note": "",
+      "action_executed_at": "2026-03-27T16:16:00-04:00",
+      "action_result": "email_sent",
+      "thread_id": "19d22219fe5fadc5"
+    }
+  ]
+}</pre>
+
+  <h3>Permission Model</h3>
+  <p>Phase 3 introduces action-level risk classification. Each action type has a default risk level and a required approval mode:</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Action Type</th>
+          <th>Risk Level</th>
+          <th>Default Mode</th>
+          <th>Override</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>send_email (reply)</td><td>Low</td><td>Auto-approve (log only)</td><td>Per-thread flag</td></tr>
+        <tr><td>send_email (new, external)</td><td>Medium</td><td>Requires approval</td><td>Whitelist domain</td></tr>
+        <tr><td>create_calendar_event</td><td>Low</td><td>Auto-approve</td><td>Date range rules</td></tr>
+        <tr><td>create_cron</td><td>Medium</td><td>Requires approval</td><td>—</td></tr>
+        <tr><td>push_to_github</td><td>Low</td><td>Auto-approve</td><td>—</td></tr>
+        <tr><td>todoist_task (create)</td><td>Low</td><td>Auto-approve</td><td>—</td></tr>
+        <tr><td>purchase / payment</td><td>High</td><td>Requires approval + note</td><td>Amount threshold</td></tr>
+        <tr><td>delete_file / delete_task</td><td>High</td><td>Requires approval + note</td><td>—</td></tr>
+        <tr><td>external_web_post</td><td>High</td><td>Requires approval</td><td>Per-domain whitelist</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Implementation: How Agents Flag for Approval</h4>
+  <p>In Phase 3, cron agents are updated to call a shared function before executing flagged actions:</p>
+  <pre># Pseudocode for cron agent
+def execute_action(action_type, payload):
+    risk = PERMISSION_MAP[action_type]['risk']
+    if risk in ('medium', 'high'):
+        write_approval_request(action_type, payload)  # → mc-state.json
+        return "PENDING_APPROVAL"
+    else:
+        # Execute immediately, log to audit trail
+        result = execute(payload)
+        append_audit_log(action_type, payload, result)
+        return result</pre>
+
+  <div class="callout">
+    <strong>Phase 3 requires a minimal server component.</strong> The browser cannot write JSON files to the Railway filesystem. The cleanest approach: add a tiny Node.js Express endpoint (10 lines) as a second Railway service that accepts <code>POST /approve</code> and <code>POST /reject</code> and writes to <code>mc-state.json</code>. All read operations remain static.
+  </div>
+</div>
+
+<!-- ── SECTION 5: Phase 4 ── -->
+<div class="section">
+  <div class="section-num">Section 5</div>
+  <h2>Phase 4 — Analytics</h2>
+  <p class="section-intro">Throughput, cycle time, failure rates, credit usage, and impact mapping — turning VM2 operational data into compounding intelligence.</p>
+
+  <h3>Metrics to Track</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Definition</th>
+          <th>Data Source</th>
+          <th>Visualization</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Throughput</strong></td>
+          <td>Deliverables completed per week / month</td>
+          <td>portal.html dates</td>
+          <td>Bar chart (weekly)</td>
+        </tr>
+        <tr>
+          <td><strong>Cycle Time</strong></td>
+          <td>Time from email receipt to deliverable published (email_id → portal.html date)</td>
+          <td>state.json tasks_log + email timestamps</td>
+          <td>Scatter + median line</td>
+        </tr>
+        <tr>
+          <td><strong>Cron Success Rate</strong></td>
+          <td>% of cron runs with result ≠ error, per cron, per week</td>
+          <td>state.json run results</td>
+          <td>Stacked bar (green/yellow/red)</td>
+        </tr>
+        <tr>
+          <td><strong>Pending Action Age</strong></td>
+          <td>Days since pending_actions items were created with needs_parent status</td>
+          <td>state.json pending_actions</td>
+          <td>Table with age badges</td>
+        </tr>
+        <tr>
+          <td><strong>Deliverable Type Mix</strong></td>
+          <td>% breakdown by type (Research, BD, Architecture, Operations, etc.)</td>
+          <td>portal.html data-type attributes</td>
+          <td>Donut chart</td>
+        </tr>
+        <tr>
+          <td><strong>Approval Velocity</strong></td>
+          <td>Avg time from approval request to decision (Phase 3+)</td>
+          <td>audit-log.json</td>
+          <td>Time-series line</td>
+        </tr>
+        <tr>
+          <td><strong>Task Success Rate</strong></td>
+          <td>% of Todoist VM2 tasks completed vs. abandoned</td>
+          <td>Todoist API (completed tasks)</td>
+          <td>Gauge</td>
+        </tr>
+        <tr>
+          <td><strong>Credit Usage</strong></td>
+          <td>Estimated cost per session (if Computer exposes usage data)</td>
+          <td>Future: Computer API / session export</td>
+          <td>Line chart (cumulative)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Visualization Approach</h3>
+  <p>All charts built with <strong>Chart.js (CDN)</strong> — the one external dependency justified by Phase 4 analytics complexity. Chart.js is stable, well-documented, has no build step, and renders clean charts that match the VM2 design aesthetic with custom color overrides.</p>
+  <pre>&lt;!-- Add to &lt;head&gt; in Phase 4 --&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"&gt;&lt;/script&gt;</pre>
+  <p>Color palette aligned with VM2 brand: <code>#c53a3a</code> (primary), <code>#e8a0a0</code> (secondary), <code>#3b82f6</code> (info), <code>#22c55e</code> (success), <code>#f59e0b</code> (warning).</p>
+
+  <h3>Impact Mapping to Business Goals</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Business Goal</th>
+          <th>Proxy Metric</th>
+          <th>Target (starting point)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>BD Pipeline velocity</td><td>BD/Proposal deliverables per month</td><td>Baseline in Month 1</td></tr>
+        <tr><td>Operational reliability</td><td>Cron success rate &gt; 95%</td><td>Measure from Day 1</td></tr>
+        <tr><td>Knowledge compounding</td><td>Deliverables with reuse tags; template count</td><td>Track from Phase 2</td></tr>
+        <tr><td>Governance compliance</td><td>% of medium/high-risk actions approved before execution</td><td>100% target (Phase 3)</td></tr>
+        <tr><td>AI leverage ratio</td><td>Hours of work output / hours of Varun's input</td><td>Estimate from task log</td></tr>
+        <tr><td>Cycle time reduction</td><td>Median email-to-deliverable time, trending down</td><td>Measure from state.json tasks_log</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Analytics Tab Layout</h3>
+  <div class="wireframe">┌─────────────────────────────────────────────────────────────────┐
+│  ANALYTICS                              Week of Mar 23–27, 2026 │
+│  [This Week] [This Month] [All Time]                            │
+│  ─────────────────────────────────────────────────────────────  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────┐│
+│  │ Deliverables │ │  Cron Runs   │ │  Cycle Time  │ │ Pending││
+│  │  This Week   │ │  Success %   │ │   (Median)   │ │ Actions││
+│  │     12       │ │    98.2%     │ │    2.3 hrs   │ │   4    ││
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────┘│
+│                                                                  │
+│  Deliverables/Week ──────────────────────────────────────────  │
+│  ██ ████ ████ ████████ ████████████ ████████████████           │
+│  Mar 20  Mar 21  Mar 22  Mar 23     Mar 24      Mar 25–27      │
+│                                                                  │
+│  Type Mix ────────────────────────────────────────────────────  │
+│  ◉ Research 41%  ◉ BD 18%  ◉ Architecture 12%  ◉ Events 11%   │
+│                                                                  │
+│  Cron Health Timeline ────────────────────────────────────────  │
+│  [green bars showing daily run success rates per cron]         │
+└─────────────────────────────────────────────────────────────────┘</div>
+</div>
+
+<!-- ── SECTION 6: Claude Code Prompt ── -->
+<div class="section">
+  <div class="section-num">Section 6</div>
+  <h2>Claude Code / Developer Prompt</h2>
+  <p class="section-intro">A complete, paste-ready prompt to hand to Claude Code (or a developer) to build Phase 1. Copy the full block below.</p>
+
+  <div class="prompt-box">
+    <div class="prompt-box-header">
+      CLAUDE CODE — BUILD PROMPT: VM2 MISSION CONTROL PHASE 1
+      <button class="copy-btn" onclick="copyPrompt()">Copy</button>
+    </div>
+    <pre id="claude-prompt">You are building **VM2 Mission Control** — a command center dashboard for Varun Malhotra's
+Perplexity Computer agentic task system. Build Phase 1: a single HTML file that reads
+existing data sources and displays a live operational view.
+
+## CONTEXT
+
+Varun runs an AI task automation system called VM2 with:
+- ~110 deliverables published as HTML files on Railway (nginx basic auth)
+- 6 scheduled cron jobs that write state to JSON files
+- Todoist integration with a "VM2" label for task management
+- GitHub repo: VM-CodeRock/VM2-P-Taskers (auto-deploys to Railway on push to main)
+- Railway URL: https://vm2-p-taskers-production.up.railway.app/
+- The deliverables index is portal.html (NOT index.html)
+
+## DELIVERABLE
+
+Create one file: `mission-control.html` in the root of VM-CodeRock/VM2-P-Taskers.
+Also create `_system/mc-config.json` (data sources config).
+
+## STYLING — MANDATORY
+
+Use EXACTLY these styles (matches all VM2 deliverables):
+- Font: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, Georgia, serif
+- Accent color: #c53a3a (red)
+- Dark mode accent: #e05555
+- Max width: 860px (centered)
+- Dark/light mode toggle button in topbar
+- Background: #ffffff light / #1a1a1a dark
+- Border: #e5e5e5 light / #333 dark
+- Text secondary: #5a5a5a light / #a0a0a0 dark
+- Topbar: brand name "VM2 MISSION CONTROL" left, date + refresh + toggle right
+- Design tokens as CSS custom properties on :root and [data-theme="dark"]
+
+## ARCHITECTURE
+
+Single HTML file. No framework. No npm. No build step. Vanilla JS only.
+All data via fetch() — same-origin (Railway serves everything).
+
+## DATA SOURCES
+
+### 1. Deliverables — parse portal.html
+```javascript
+const res = await fetch('/portal.html');
+const html = await res.text();
+const doc = new DOMParser().parseFromString(html, 'text/html');
+const rows = doc.querySelectorAll('#tableBody tr');
+// Each row has: data-type, data-date attributes
+// .col-title a → title and href
+// .col-type .badge → type badge text
+// .col-link a → link href
+```
+
+### 2. Cron Health — read state.json files
+Fetch these files (already exist on Railway):
+- /cron_tracking/6a1f1c3b/state.json — Gmail Intake cron (hourly, run_number ~85)
+  Fields: last_run, run_number, result, emails_checked, vm2_tasks_found, pending_actions{}
+- /cron_tracking/d56ab3fd/state.json — VM2 Auto-Helper cron (daily)
+  Fields: last_run_utc, last_generated_files{html}, portal_updated
+- /cron_tracking/aa619acf/state.json — Secondary Intake cron (hourly)
+  Fields: last_run, run_number, result, emails_checked
+
+Health status logic:
+  age < 90 min → "healthy" (green dot)
+  age 90–240 min → "warning" (yellow dot)
+  age > 240 min → "stale" (red dot)
+
+### 3. Todoist Tasks — REST API
+Read API token from /_system/mc-config.json first.
+Endpoint: GET https://api.todoist.com/rest/v2/tasks?label=VM2
+Header: Authorization: Bearer {api_token}
+Show: overdue tasks, due today tasks, upcoming tasks
+Group by: overdue | due today | upcoming
+
+### 4. Config file — /_system/mc-config.json
+```json
+{
+  "todoist": {
+    "api_token": "REPLACE_WITH_TOKEN",
+    "vm2_label": "VM2"
+  },
+  "crons": [
+    {"id": "6a1f1c3b", "name": "Gmail Intake", "schedule": "Hourly",
+     "state_file": "/cron_tracking/6a1f1c3b/state.json"},
+    {"id": "d56ab3fd", "name": "VM2 Auto-Helper", "schedule": "Daily ~7am",
+     "state_file": "/cron_tracking/d56ab3fd/state.json"},
+    {"id": "aa619acf", "name": "Secondary Intake", "schedule": "Hourly",
+     "state_file": "/cron_tracking/aa619acf/state.json"}
+  ],
+  "portal_url": "/portal.html",
+  "refresh_interval_ms": 300000
+}
+```
+
+## VIEWS / TABS
+
+### Tab 1: Dashboard (default)
+Three sections stacked vertically:
+
+**NOW — Cron Health Strip**
+One row per cron. Columns: colored status dot | cron name | run # | last run (relative: "4 min ago") | result text
+Use color: green=#22c55e, yellow=#f59e0b, red=#ef4444
+
+**NEXT — Todoist Tasks**
+Show overdue tasks first (⚠ badge), then due today (◦), then upcoming.
+Each row: priority icon | task name | due date | [Open →] link to Todoist
+If Todoist API fails, show a graceful error message (not a crash).
+
+**RECENT — Last 10 Deliverables**
+From portal.html. Columns: date | title (linked) | type badge
+Type badge colors by category:
+  Research/Research Brief → background #f0f6ff, text #3b82f6
+  Architecture → background #fdf0f0, text #c53a3a
+  BD Pipeline/BD Response → background #f0faf4, text #22c55e
+  Operations/Guide → background #f5f0ff, text #7c3aed
+  Events/Planning → background #fff7ed, text #ea580c
+  All others → background #f7f7f7, text #5a5a5a
+
+### Tab 2: Deliverables
+Full searchable table of all portal.html deliverables.
+- Search input: filters by title as user types (debounce 200ms)
+- Type filter chips: [All] [Research] [Architecture] [BD] [Operations] [Events] — clicking filters to that type
+- Total count badge: "110 deliverables"
+- Table columns: Date | Title | Type | ↗ (open link)
+- Sort by date descending (newest first, which is the natural portal.html order)
+- If 0 results after filter: show "No deliverables match your search."
+
+### Tab 3: Ops / Health
+**Cron Cards**
+One card per cron. Show: name (large), schedule, status badge, last run timestamp,
+run number, result, emails/tasks checked. If state.json has pending_actions{},
+show a collapsible list of pending action descriptions.
+
+**Pending Actions**
+Aggregate pending_actions from ALL cron state files. Show each with:
+needs_parent badge | key name | description (truncated to 120 chars) | [Expand]
+
+**Connector Health**
+Simple status rows:
+- "Todoist API" — green if tasks loaded, red if failed
+- "portal.html" — green if deliverables loaded, red if failed
+- "Cron State Files" — "X/3 loaded" with individual statuses
+
+## GLOBAL BEHAVIOR
+
+- Tab state persisted in localStorage (key: "vm2-mc-active-tab")
+- Dark mode persisted in localStorage (key: "vm2-mc-theme"), default "light"
+- Auto-refresh every 5 minutes: re-fetch all data sources, update UI in place
+- "Last refreshed: [time]" in topbar, updates on each refresh
+- Manual refresh button in topbar: ⟳ (reload all data immediately)
+- Error handling: if a fetch fails, show a dismissible yellow banner (not crash)
+  "Warning: Could not load [source name]. Data may be stale."
+- Loading state: show skeleton shimmer or "Loading..." text while fetching
+
+## FOOTER
+
+```
+VM2 Mission Control · Phase 1 · 2026-03-27
+Prepared for: Varun Malhotra · vm2.viru@gmail.com
+Sources: portal.html · cron_tracking/*/state.json · Todoist API v2
+```
+
+## WHAT NOT TO DO
+
+- Do NOT use React, Vue, or any JS framework
+- Do NOT use npm / node_modules / build tools
+- Do NOT encrypt or use StaticCrypt
+- Do NOT modify index.html (use portal.html only)
+- Do NOT add server-side code in Phase 1
+- Do NOT embed the Todoist API token in the HTML — read it from mc-config.json
+- Do NOT use jQuery
+
+## DEPLOYMENT
+
+After creating the files:
+1. git config user.email "vm2.viru@gmail.com"
+2. git config user.name "VM2 Computer"
+3. git add mission-control.html _system/mc-config.json
+4. git commit -m "Add Mission Control Phase 1 dashboard"
+5. git push origin main
+
+Then update portal.html — add this row at the TOP of #tableBody:
+```html
+&lt;tr data-type="Architecture" data-date="2026-03-27"&gt;
+  &lt;td class="col-date"&gt;Mar 27&lt;/td&gt;
+  &lt;td class="col-title"&gt;&lt;a href="mission-control.html"&gt;Mission Control — Phase 1 Dashboard&lt;/a&gt;&lt;/td&gt;
+  &lt;td class="col-type"&gt;&lt;span class="badge badge-research"&gt;Architecture&lt;/span&gt;&lt;/td&gt;
+  &lt;td class="col-link"&gt;&lt;a href="mission-control.html" class="link-icon" title="Open"&gt;&amp;#x2197;&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+```
+
+Commit and push portal.html separately:
+```
+git add portal.html
+git commit -m "portal: add Mission Control Phase 1 to index"
+git push origin main
+```
+
+Dashboard will be live at: https://vm2-p-taskers-production.up.railway.app/mission-control.html</pre>
+  </div>
+</div>
+
+<!-- ── SECTION 7: Rollout Sequence ── -->
+<div class="section">
+  <div class="section-num">Rollout</div>
+  <h2>Recommended Rollout Sequence</h2>
+  <p class="section-intro">The sequence to go from zero to a fully operational Mission Control system.</p>
+
+  <ul class="timeline">
+    <li>
+      <div class="timeline-head">Day 1 — Phase 1 Build (7.5h)</div>
+      <div class="timeline-body">Use the Claude Code prompt in Section 6. Build <code>mission-control.html</code> and <code>_system/mc-config.json</code>. Add Todoist API token to config. Push and verify live at Railway URL. Add to portal.html.</div>
+    </li>
+    <li>
+      <div class="timeline-head">Day 2 — Phase 1 Validation (1h)</div>
+      <div class="timeline-body">Open the dashboard. Verify: all 3 cron cards load, Todoist tasks appear, deliverables table shows 110+ rows, search filters work, dark mode persists. Fix any fetch errors. Confirm auto-refresh fires.</div>
+    </li>
+    <li>
+      <div class="timeline-head">Week 2 — Phase 2 (4–5h)</div>
+      <div class="timeline-body">Add Kanban view, task detail panel, richer deliverable parsing with meta tags, and activity feed from git log. Create the GitHub Actions workflow for auto-generating <code>activity.json</code>.</div>
+    </li>
+    <li>
+      <div class="timeline-head">Week 3 — Phase 3 (5–7h)</div>
+      <div class="timeline-body">Add approval queue tab. Deploy a minimal Node.js approval-write endpoint as a second Railway service. Update cron agents to write to approval queue before executing medium/high-risk actions.</div>
+    </li>
+    <li>
+      <div class="timeline-head">Week 4–5 — Phase 4 (4–6h)</div>
+      <div class="timeline-body">Add Analytics tab. Add Chart.js from CDN. Build throughput chart, cron health timeline, type mix donut, cycle time scatter from existing state data. Define baseline targets for all impact metrics.</div>
+    </li>
+    <li>
+      <div class="timeline-head">Ongoing — Mission Control as Permanent Fixture</div>
+      <div class="timeline-body">Mission Control becomes the VM2 homepage — open it every morning. The auto-helper cron links new deliverables here. Pending actions surface here. Governance decisions happen here. The learning loop closes here.</div>
+    </li>
+  </ul>
+
+  <div class="callout-green callout">
+    <strong>Start with Phase 1 today.</strong> The Claude Code prompt in Section 6 is complete and self-contained. Every data source already exists. No new infrastructure needed. A working dashboard can be live within a single Claude Code session.
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<!-- #vm2-context -->
+<div id="vm2-context">
+  <h2>#vm2-context — Session Context — Mission Control Implementation Plan</h2>
+  <div class="ctx-block">
+Task: Mission Control Implementation Plan (2026-03-27)
+File: mission-control-impl-plan-2026-03-27.html
+Prior deliverable: mission-control-2026-03-26.html (4-phase recommendation stub)
+Email thread: 19d30e4130180d8a
+
+WHAT THIS SESSION DID:
+- Read prior Mission Control deliverable (2026-03-26) — confirmed it was a stub context
+- Read all cron state files: 6a1f1c3b (Gmail intake, run #85), d56ab3fd (auto-helper), aa619acf (secondary)
+- Read portal.html table structure to understand row format and existing badges
+- Read vm2-shared-instructions.md for brand standards and deployment workflow
+- Built comprehensive 6-section implementation plan covering:
+  1. Architecture &amp; Tech Stack (static HTML + vanilla JS decision rationale)
+  2. Phase 1 MVP (wireframes, data model, integration code, build estimate)
+  3. Phase 2 Todoist + Deliverables (Kanban, search, git activity feed)
+  4. Phase 3 Governance (approval queue, audit trail, permission model)
+  5. Phase 4 Analytics (metrics, Chart.js, impact mapping)
+  6. Claude Code prompt (complete paste-ready build spec)
+
+KEY DECISIONS:
+- Static HTML + vanilla JS (no server, no framework) for Phase 1–2
+- Phase 3 needs minimal Node endpoint for write-back (only then)
+- Todoist token in mc-config.json (not HTML), behind Railway basic auth
+- activity.json generated by GitHub Actions pre-baked (can't run git log in browser)
+- Portal.html parsed via DOMParser (same-origin fetch, no CORS)
+- Chart.js CDN only added in Phase 4 (justified, controlled)
+
+DATA SOURCES CONFIRMED:
+- /cron_tracking/6a1f1c3b/state.json: Gmail intake, last run 2026-03-27T20:32Z, run #85
+- /cron_tracking/d56ab3fd/state.json: auto-helper, last run 2026-03-26T11:04Z
+- /cron_tracking/aa619acf/state.json: secondary, last run 2026-03-22T14:48
+- /portal.html: #tableBody with data-type and data-date attrs, .col-title a, .col-link a
+- Todoist REST API v2: GET /tasks?label=VM2
+
+PENDING ACTIONS SURFACED FROM CRON STATE:
+- create_cardio_tennis_cron (needs_parent)
+- create_cardio_tennis_deliverable (needs_parent)
+- opportunity_intel_brief_fix (needs_parent)
+- ypo_kickoff_form_info_followup (needs_parent)
+
+OPEN QUESTIONS FOR NEXT SESSION:
+- What is the Todoist VM2 label ID? (needed for mc-config.json)
+- Should mission-control.html be the new portal default (link from index.html)?
+- Phase 3 server: separate Railway service or same service with added route?
+- Should cron state files be pushed to GitHub on each cron run (for version history)?
+
+Sources: portal.html · cron_tracking/*/state.json · vm2-shared-instructions.md
+         mission-control-2026-03-26.html · Todoist API docs
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <span>VM2 Mission Control Implementation Plan · 2026-03-27 · Varun Malhotra</span>
+  <span><a href="portal.html">← All Deliverables</a></span>
+</footer>
+
+<script>
+// Theme toggle
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('vm2-impl-theme', next);
+  document.querySelector('.theme-toggle').textContent = next === 'dark' ? 'Toggle Light' : 'Toggle Dark';
+}
+
+// Restore theme
+(function() {
+  const saved = localStorage.getItem('vm2-impl-theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    const btn = document.querySelector('.theme-toggle');
+    if (btn) btn.textContent = saved === 'dark' ? 'Toggle Light' : 'Toggle Dark';
+  }
+})();
+
+// Copy prompt
+function copyPrompt() {
+  const text = document.getElementById('claude-prompt').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+</script>
+</body>
+</html>
