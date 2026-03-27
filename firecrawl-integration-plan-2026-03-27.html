@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firecrawl Integration Plan — SAM.gov/APFS — March 27, 2026</title>
+<style>
+/* ── Design Tokens ── */
+:root {
+  --bg: #ffffff;
+  --bg-alt: #f7f7f7;
+  --bg-card: #ffffff;
+  --text: #1a1a1a;
+  --text-secondary: #555555;
+  --text-muted: #999999;
+  --accent: #c53a3a;
+  --accent-hover: #a82e2e;
+  --accent-light: #fdf0f0;
+  --navy: #1B2A4A;
+  --teal: #008B8B;
+  --green: #2D7D4A;
+  --blue: #1F4D78;
+  --border: #e5e5e5;
+  --border-light: #f0f0f0;
+  --font-serif: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, Georgia, serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  --content-width: 860px;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+}
+[data-theme="dark"] {
+  --bg: #141414;
+  --bg-alt: #1e1e1e;
+  --bg-card: #1e1e1e;
+  --text: #e5e5e5;
+  --text-secondary: #aaaaaa;
+  --text-muted: #666666;
+  --accent: #e05555;
+  --accent-hover: #f06666;
+  --accent-light: #2a1a1a;
+  --navy: #1a2a3d;
+  --border: #333333;
+  --border-light: #282828;
+  --shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.2s, color 0.2s;
+}
+
+/* ── Top Bar ── */
+.topbar {
+  background: var(--navy);
+  color: #fff;
+  padding: 0;
+}
+.topbar-inner {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.topbar-brand {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+.topbar-title {
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.topbar-sub {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-top: 3px;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.theme-toggle {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.85);
+  font-family: var(--font-sans);
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.theme-toggle:hover { background: rgba(255,255,255,0.2); }
+
+/* ── Page Layout ── */
+.page {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 36px 20px 64px;
+}
+
+/* ── Section Headers ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 48px 0 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--border);
+}
+.section-number {
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.section-title {
+  font-family: var(--font-sans);
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+/* ── Subsection headers ── */
+h3 {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--blue);
+  margin: 28px 0 10px;
+  letter-spacing: 0.02em;
+}
+[data-theme="dark"] h3 { color: #6fa8dc; }
+
+h4 {
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 20px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Body text ── */
+p {
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  font-size: 0.97rem;
+}
+p:last-child { margin-bottom: 0; }
+strong { color: var(--text); }
+
+/* ── Cards ── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.card-header {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-accent { border-left: 4px solid var(--accent); }
+.card-teal { border-left: 4px solid var(--teal); }
+.card-green { border-left: 4px solid var(--green); }
+.card-blue { border-left: 4px solid var(--blue); }
+.card-navy { border-left: 4px solid var(--navy); }
+
+/* ── Callout boxes ── */
+.callout {
+  background: var(--accent-light);
+  border: 1px solid rgba(197,58,58,0.2);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 16px 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.callout-label {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.callout-teal {
+  background: #e6f7f7;
+  border-color: rgba(0,139,139,0.25);
+}
+.callout-teal .callout-label { color: var(--teal); }
+[data-theme="dark"] .callout-teal { background: #0d2525; border-color: rgba(0,139,139,0.3); }
+.callout-green {
+  background: #e8f5ed;
+  border-color: rgba(45,125,74,0.25);
+}
+.callout-green .callout-label { color: var(--green); }
+[data-theme="dark"] .callout-green { background: #0d2018; border-color: rgba(45,125,74,0.3); }
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; margin: 14px 0 20px; border-radius: var(--radius); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+thead th {
+  background: var(--navy);
+  color: #fff;
+  padding: 10px 14px;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+tbody td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  vertical-align: top;
+  font-size: 0.875rem;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) td { background: var(--bg-alt); }
+tbody tr:hover td { background: var(--border-light); }
+
+/* ── Code blocks ── */
+.code-block {
+  background: #0d1117;
+  color: #e6edf3;
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  overflow-x: auto;
+  margin: 12px 0 20px;
+  position: relative;
+}
+[data-theme="dark"] .code-block { background: #0a0c10; }
+.code-label {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.code-comment { color: #8b949e; }
+.code-keyword { color: #ff7b72; }
+.code-string { color: #a5d6ff; }
+.code-value { color: #79c0ff; }
+.code-fn { color: #d2a8ff; }
+.code-var { color: #ffa657; }
+
+/* ── Steps / Numbered list ── */
+.steps { counter-reset: step-counter; list-style: none; padding: 0; margin: 12px 0; }
+.steps li {
+  counter-increment: step-counter;
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+  font-size: 0.93rem;
+  color: var(--text-secondary);
+}
+.steps li::before {
+  content: counter(step-counter);
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.steps li strong { color: var(--text); }
+
+/* ── Checklist ── */
+.checklist { list-style: none; padding: 0; margin: 12px 0; }
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: var(--bg-alt);
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+}
+.checklist li .check-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.checklist li strong { color: var(--text); }
+
+/* ── Badge pills ── */
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.badge-red { background: var(--accent); color: #fff; }
+.badge-teal { background: var(--teal); color: #fff; }
+.badge-green { background: var(--green); color: #fff; }
+.badge-blue { background: var(--blue); color: #fff; }
+.badge-navy { background: var(--navy); color: #fff; }
+.badge-gray { background: var(--bg-alt); color: var(--text-secondary); border: 1px solid var(--border); }
+
+/* ── Flow diagram ── */
+.flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+  margin: 16px 0;
+  row-gap: 10px;
+}
+.flow-node {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  min-width: 110px;
+}
+.flow-node.accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+.flow-node.teal { background: var(--teal); color: #fff; border-color: var(--teal); }
+.flow-node.green { background: var(--green); color: #fff; border-color: var(--green); }
+.flow-node.navy { background: var(--navy); color: #fff; border-color: var(--navy); }
+.flow-arrow {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  padding: 0 6px;
+}
+.flow-sub {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+/* ── Summary bar ── */
+.summary-bar {
+  background: var(--navy);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin-bottom: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.summary-stat { }
+.summary-label {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 2px;
+}
+.summary-value {
+  font-family: var(--font-sans);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+/* ── Divider ── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 32px 0;
+}
+
+/* ── What you need from Varun box ── */
+.varun-box {
+  background: linear-gradient(135deg, #1B2A4A 0%, #0d1829 100%);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin: 20px 0;
+}
+.varun-box-title {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.varun-box ul {
+  list-style: none;
+  padding: 0;
+}
+.varun-box ul li {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: rgba(255,255,255,0.85);
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.varun-box ul li:last-child { border-bottom: none; }
+.varun-box ul li::before {
+  content: "→";
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Compare table ── */
+.compare-better { color: var(--green); font-weight: 700; }
+.compare-same { color: var(--text-muted); }
+.compare-note { color: var(--accent); font-weight: 700; }
+
+/* ── Footer ── */
+.footer {
+  margin-top: 64px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── Phase timeline ── */
+.phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+.phase-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--bg-card);
+}
+.phase-num {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.phase-title {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.phase-body {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+/* ── Cost estimate grid ── */
+.cost-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 16px 0; }
+.cost-card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  text-align: center;
+}
+.cost-num {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1.1;
+}
+.cost-sub {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ── Context slug ── */
+.context-panel { margin-top: 40px; }
+.context-toggle {
+  width: 100%;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.context-toggle:hover { background: var(--border-light); }
+.context-body {
+  display: none;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  padding: 18px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  overflow-x: auto;
+}
+.context-body.open { display: block; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <div class="topbar-brand">VM2 · Changeis Inc · Integration Plan</div>
+      <div class="topbar-title">Firecrawl AI — SAM.gov/APFS Integration Plan</div>
+      <div class="topbar-sub">March 27, 2026 · Prepared for Varun Malhotra</div>
+    </div>
+    <div class="topbar-right">
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- Summary Bar -->
+  <div class="summary-bar">
+    <div class="summary-stat">
+      <div class="summary-label">Use Case</div>
+      <div class="summary-value">Daily Brief Enhancement</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Sources</div>
+      <div class="summary-value">SAM.gov + APFS</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Daily Credits Est.</div>
+      <div class="summary-value">~250–400 credits</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Recommended Plan</div>
+      <div class="summary-value">Standard ($83/mo)</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">MCP Available</div>
+      <div class="summary-value">Yes — Claude Code</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SECTION 1: CURRENT PIPELINE ANALYSIS
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="section-header">
+    <div class="section-number">SECTION 1</div>
+    <div class="section-title">Current SAM.gov / APFS Pipeline Analysis</div>
+  </div>
+
+  <p>Your daily brief is already a well-built, fully automated intelligence product. Before adding Firecrawl, it helps to understand exactly what the current pipeline does — and where Firecrawl creates genuine additional value versus where it would duplicate existing work.</p>
+
+  <h3>Current Data Flow</h3>
+
+  <div class="flow">
+    <div class="flow-node navy">SAM.gov<br><span class="flow-sub">Public API v2</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">RAG Engine<br><span class="flow-sub">Past perf. matching</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">Score &amp; Sort<br><span class="flow-sub">STRONG/MOD/LOW</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node accent">Daily Brief HTML<br><span class="flow-sub">Railway → portal.html</span></div>
+  </div>
+
+  <div class="flow" style="margin-top: 8px;">
+    <div class="flow-node teal">APFS DHS<br><span class="flow-sub">apfs-cloud.dhs.gov</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">RAG Engine<br><span class="flow-sub">Past perf. matching</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">Score &amp; Sort<br><span class="flow-sub">STRONG/MOD/LOW</span></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node accent">Daily Brief HTML<br><span class="flow-sub">Same output</span></div>
+  </div>
+
+  <h3>What the Pipeline Currently Produces</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Field Shown in Brief</th>
+          <th>Source</th>
+          <th>How It's Obtained</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Opportunity title + solicitation number</td>
+          <td>SAM.gov API / APFS</td>
+          <td>Direct API pull — <code>opportunitiesData[].title</code>, <code>solicitationNumber</code></td>
+        </tr>
+        <tr>
+          <td>Agency / org code</td>
+          <td>SAM.gov API</td>
+          <td><code>fullParentPathName</code> field from API response</td>
+        </tr>
+        <tr>
+          <td>NAICS code</td>
+          <td>SAM.gov API / APFS</td>
+          <td>Structured API field — no page loading required</td>
+        </tr>
+        <tr>
+          <td>Posted / modified dates</td>
+          <td>SAM.gov API</td>
+          <td>Structured API field — <code>postedDate</code>, <code>modifiedDate</code></td>
+        </tr>
+        <tr>
+          <td>Response deadline</td>
+          <td>SAM.gov API</td>
+          <td><code>responseDeadLine</code> field</td>
+        </tr>
+        <tr>
+          <td>RAG match score + best match</td>
+          <td>Internal RAG engine</td>
+          <td>Vector similarity against Changeis past performance corpus</td>
+        </tr>
+        <tr>
+          <td>APFS: Dollar range, contract vehicle</td>
+          <td>APFS forecast page</td>
+          <td>Fetched from apfs-cloud.dhs.gov/forecast/ table</td>
+        </tr>
+        <tr>
+          <td>APFS: Component, NAICS, POP dates</td>
+          <td>APFS forecast page</td>
+          <td>Fetched from apfs-cloud.dhs.gov/forecast/ table</td>
+        </tr>
+        <tr>
+          <td><strong>Opportunity description text</strong></td>
+          <td>SAM.gov detail page</td>
+          <td><strong>Currently not shown</strong> — only a link to the SAM.gov UI</td>
+        </tr>
+        <tr>
+          <td><strong>Attachments (SOW, RFP, PWS)</strong></td>
+          <td>SAM.gov detail page</td>
+          <td><strong>Currently manual</strong> — requires clicking into SAM.gov</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <div class="callout-label">Key Gap</div>
+    The current brief identifies opportunities accurately via API but shows <strong>no description text</strong> from the actual SAM.gov opportunity page. Every "Request Deep Dive" click currently triggers a separate manual investigation step. Firecrawl can fill this gap by extracting full description text at brief-generation time — enabling richer summaries and better RAG matching without human intervention.
+  </div>
+
+  <h3>Current Pipeline Strengths (Keep These)</h3>
+  <ul style="list-style: disc; padding-left: 20px; color: var(--text-secondary); font-size: 0.93rem; line-height: 1.9;">
+    <li>SAM.gov Public API v2 — structured data, zero rendering required, free with SAM.gov API key</li>
+    <li>APFS forecast table parsing — direct HTML parse of the public forecast page</li>
+    <li>RAG scoring engine — already working, already integrated into the output format</li>
+    <li>Todoist "Request Deep Dive" trigger — clean escalation path for human review</li>
+    <li>Railway deployment → GitHub push — automated publishing pipeline already operational</li>
+  </ul>
+
+  <h3>Current Pipeline Gaps (Firecrawl Targets)</h3>
+  <ul style="list-style: disc; padding-left: 20px; color: var(--text-secondary); font-size: 0.93rem; line-height: 1.9;">
+    <li>No opportunity description excerpt in brief cards — must click through to SAM.gov to read the scope</li>
+    <li>No attachment extraction (SOW/PWS/RFP) for STRONG-match opportunities</li>
+    <li>APFS page is JavaScript-rendered — current parsing may miss records that load dynamically</li>
+    <li>No auto-detection of new APFS records between full table refreshes</li>
+    <li>Deep dive briefs still require manual researcher effort to pull full opportunity text</li>
+  </ul>
+
+  <hr class="divider">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SECTION 2: FIRECRAWL INTEGRATION PLAN
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="section-header">
+    <div class="section-number">SECTION 2</div>
+    <div class="section-title">Firecrawl Integration Plan for SAM.gov / APFS</div>
+  </div>
+
+  <p>Firecrawl targets two specific gaps: extracting opportunity descriptions at scale from SAM.gov detail pages, and reliably parsing the JavaScript-heavy APFS forecast table. Below is the integration architecture.</p>
+
+  <h3>Use Case 1 — SAM.gov Opportunity Description Extraction</h3>
+
+  <div class="card card-accent">
+    <div class="card-header">
+      <span class="badge badge-red">HIGHEST VALUE</span>
+      Description Excerpts in Every Brief Card
+    </div>
+    <p style="font-size: 0.875rem;">SAM.gov's Public API returns a <code>description</code> field that is a <em>link</em> to the description, not the text itself. To get the actual scope text, you must fetch <code>https://api.sam.gov/prod/opportunities/v2/{noticeId}/description</code> — or load the detail page. Firecrawl's <code>/scrape</code> endpoint handles this with a Pydantic schema to extract structured opportunity data from that API endpoint, then injects a 2–3 sentence excerpt into each brief card. STRONG-match cards get full description + attachment links.</p>
+  </div>
+
+  <div class="code-label">Python — SAM.gov Description Extraction via Firecrawl</div>
+  <div class="code-block">
+<span class="code-comment"># pip install firecrawl-py pydantic</span>
+<span class="code-keyword">from</span> firecrawl <span class="code-keyword">import</span> FirecrawlApp
+<span class="code-keyword">from</span> pydantic <span class="code-keyword">import</span> BaseModel
+<span class="code-keyword">from</span> typing <span class="code-keyword">import</span> Optional, List
+<span class="code-keyword">import</span> os
+
+<span class="code-var">app</span> = FirecrawlApp(api_key=<span class="code-string">os.environ["FIRECRAWL_API_KEY"]</span>)
+
+<span class="code-comment"># Pydantic schema for structured opportunity data</span>
+<span class="code-keyword">class</span> <span class="code-fn">OpportunitySchema</span>(BaseModel):
+    title: str
+    description_excerpt: str          <span class="code-comment"># 2-3 sentence summary of scope</span>
+    set_aside_type: Optional[str]     <span class="code-comment"># e.g. "Small Business Set-Aside"</span>
+    place_of_performance: Optional[str]
+    estimated_value: Optional[str]
+    attachments: Optional[List[str]]  <span class="code-comment"># SOW/PWS/RFP download links</span>
+    contact_name: Optional[str]
+    contact_email: Optional[str]
+
+<span class="code-keyword">def</span> <span class="code-fn">get_opportunity_detail</span>(notice_id: str, sam_url: str) -> dict:
+    <span class="code-string">"""Extract structured data from a SAM.gov opportunity page."""</span>
+    result = app.scrape_url(
+        url=sam_url,
+        params={
+            <span class="code-string">"formats"</span>: [<span class="code-string">"extract"</span>],
+            <span class="code-string">"extract"</span>: {
+                <span class="code-string">"schema"</span>: OpportunitySchema.model_json_schema(),
+                <span class="code-string">"prompt"</span>: (
+                    <span class="code-string">"Extract the key procurement details from this SAM.gov "
+                    "opportunity page. For description_excerpt, write a concise "
+                    "2-sentence summary of what is being procured and the primary "
+                    "scope of work. Include all document attachment URLs."</span>
+                )
+            }
+        }
+    )
+    <span class="code-keyword">return</span> result[<span class="code-string">"extract"</span>]
+
+<span class="code-comment"># Usage: only run for STRONG-match opportunities to minimize credit use</span>
+<span class="code-keyword">for</span> opp <span class="code-keyword">in</span> strong_matches:
+    detail = get_opportunity_detail(opp[<span class="code-string">"noticeId"</span>], opp[<span class="code-string">"uiLink"</span>])
+    opp[<span class="code-string">"description_excerpt"</span>] = detail[<span class="code-string">"description_excerpt"</span>]
+    opp[<span class="code-string">"attachments"</span>] = detail[<span class="code-string">"attachments"</span>] or []
+  </div>
+
+  <h3>Use Case 2 — APFS JavaScript Table Reliable Extraction</h3>
+
+  <div class="card card-teal">
+    <div class="card-header">
+      <span class="badge badge-teal">JS RENDERING</span>
+      APFS apfs-cloud.dhs.gov/forecast/ — JavaScript-rendered table
+    </div>
+    <p style="font-size: 0.875rem;">The APFS public forecast page at <code>apfs-cloud.dhs.gov/forecast/</code> renders its data via JavaScript. Standard HTML parsing may see an empty table body (which is what a direct fetch returns). Firecrawl's <code>/scrape</code> endpoint runs a real browser engine (Fire-Engine) that waits for JS execution, ensuring all rows are captured. This replaces any brittle HTML parsing with a reliable structured extraction.</p>
+  </div>
+
+  <div class="code-label">Python — APFS Forecast Table Extraction via Firecrawl</div>
+  <div class="code-block">
+<span class="code-keyword">from</span> pydantic <span class="code-keyword">import</span> BaseModel
+<span class="code-keyword">from</span> typing <span class="code-keyword">import</span> List, Optional
+
+<span class="code-keyword">class</span> <span class="code-fn">APFSRecord</span>(BaseModel):
+    apfs_number: str
+    component: str
+    requirements_title: str
+    naics: Optional[str]
+    dollar_range: Optional[str]
+    contract_vehicle: Optional[str]
+    small_business_program: Optional[str]
+    anticipated_award_date: Optional[str]
+    estimated_solicitation_release: Optional[str]
+    period_of_performance_start: Optional[str]
+    period_of_performance_end: Optional[str]
+    place_of_performance_state: Optional[str]
+    contract_type: Optional[str]
+    primary_contact_email: Optional[str]
+
+<span class="code-keyword">class</span> <span class="code-fn">APFSForecast</span>(BaseModel):
+    records: List[APFSRecord]
+    total_count: int
+
+<span class="code-keyword">def</span> <span class="code-fn">fetch_apfs_forecast</span>() -> List[dict]:
+    <span class="code-string">"""Fetch all APFS forecast records via Firecrawl (handles JS rendering)."""</span>
+    result = app.scrape_url(
+        url=<span class="code-string">"https://apfs-cloud.dhs.gov/forecast/"</span>,
+        params={
+            <span class="code-string">"formats"</span>: [<span class="code-string">"extract"</span>],
+            <span class="code-string">"actions"</span>: [
+                {<span class="code-string">"type"</span>: <span class="code-string">"wait"</span>, <span class="code-string">"milliseconds"</span>: <span class="code-value">3000</span>}  <span class="code-comment"># wait for JS table render</span>
+            ],
+            <span class="code-string">"extract"</span>: {
+                <span class="code-string">"schema"</span>: APFSForecast.model_json_schema(),
+                <span class="code-string">"prompt"</span>: (
+                    <span class="code-string">"Extract all rows from the APFS Acquisition Forecast table. "
+                    "Capture every record with all available fields. Return "
+                    "total_count as the number of records found."</span>
+                )
+            }
+        }
+    )
+    <span class="code-keyword">return</span> result[<span class="code-string">"extract"</span>][<span class="code-string">"records"</span>]
+
+<span class="code-comment"># Compare against yesterday's cached results to find new/updated records</span>
+<span class="code-keyword">def</span> <span class="code-fn">find_new_apfs</span>(today: List[dict], yesterday: List[dict]) -> dict:
+    yesterday_ids = {r[<span class="code-string">"apfs_number"</span>] <span class="code-keyword">for</span> r <span class="code-keyword">in</span> yesterday}
+    new_records = [r <span class="code-keyword">for</span> r <span class="code-keyword">in</span> today <span class="code-keyword">if</span> r[<span class="code-string">"apfs_number"</span>] <span class="code-keyword">not in</span> yesterday_ids]
+    <span class="code-keyword">return</span> {<span class="code-string">"new"</span>: new_records, <span class="code-string">"total"</span>: len(today)}
+  </div>
+
+  <h3>Use Case 3 — Deep Dive Auto-Enrichment (STRONG Matches)</h3>
+
+  <div class="card card-green">
+    <div class="card-header">
+      <span class="badge badge-green">AUTOMATION</span>
+      Auto-Populate Deep Dive Briefs via Firecrawl /agent
+    </div>
+    <p style="font-size: 0.875rem;">When a "Request Deep Dive" is triggered in Todoist, Firecrawl's <code>/agent</code> endpoint can autonomously gather all supporting data — FPDS incumbent data, USASpending agency spend, and the full SAM.gov opportunity text — in a single agentic call. This replaces the current manual researcher step with an automated 2–3 minute enrichment run.</p>
+  </div>
+
+  <div class="code-label">Python — Deep Dive Auto-Enrichment</div>
+  <div class="code-block">
+<span class="code-comment"># /agent endpoint: describe the goal in plain English</span>
+<span class="code-keyword">def</span> <span class="code-fn">auto_deep_dive</span>(solicitation_number: str, title: str, agency: str, naics: str) -> dict:
+    result = app.agent(
+        prompt=<span class="code-fn">f</span><span class="code-string">"""
+        Research this federal procurement opportunity for Changeis Inc:
+
+        Solicitation: {solicitation_number}
+        Title: {title}
+        Agency: {agency}
+        NAICS: {naics}
+
+        Gather:
+        1. Full opportunity description from sam.gov/opp search
+        2. Current incumbent contractor from fpds.gov (search by solicitation number)
+        3. Agency spending in NAICS {naics} from usaspending.gov (last 3 years, top 5 contractors)
+        4. Any related upcoming DHS opportunities from apfs-cloud.dhs.gov/forecast/
+
+        Return all findings as structured data.
+        """</span>
+    )
+    <span class="code-keyword">return</span> result[<span class="code-string">"data"</span>]
+  </div>
+
+  <h3>Data Flow — Enhanced Pipeline with Firecrawl</h3>
+
+  <div class="flow" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+    <div style="display: flex; align-items: center; gap: 0; flex-wrap: wrap; row-gap: 6px;">
+      <div class="flow-node navy">SAM.gov API v2<br><span class="flow-sub">structured metadata</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node accent">Firecrawl /scrape<br><span class="flow-sub">descriptions (STRONG only)</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Enriched records<br><span class="flow-sub">title + excerpt + attachments</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">RAG Engine<br><span class="flow-sub">score against past perf.</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node green">Daily Brief<br><span class="flow-sub">richer cards</span></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0; flex-wrap: wrap; row-gap: 6px; margin-top: 4px;">
+      <div class="flow-node teal">APFS JS page<br><span class="flow-sub">via Firecrawl /scrape</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Diff vs. cache<br><span class="flow-sub">new/updated only</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">RAG Engine<br><span class="flow-sub">NAICS/component match</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node green">Daily Brief<br><span class="flow-sub">same output format</span></div>
+    </div>
+  </div>
+
+  <h3>Credit Cost Estimates</h3>
+
+  <div class="cost-grid">
+    <div class="cost-card">
+      <div class="cost-num">5</div>
+      <div class="cost-sub">credits/day<br>SAM.gov API (free, no Firecrawl needed)</div>
+    </div>
+    <div class="cost-card">
+      <div class="cost-num">17–25</div>
+      <div class="cost-sub">credits/day<br>STRONG matches (5 JSON extractions × 5 credits each)</div>
+    </div>
+    <div class="cost-card">
+      <div class="cost-num">5</div>
+      <div class="cost-sub">credits/day<br>APFS page (1 scrape × 5 credits for JSON/extract mode)</div>
+    </div>
+    <div class="cost-card">
+      <div class="cost-num">~250–400</div>
+      <div class="cost-sub">credits/day<br>Total including deep dives (if 10–20 triggered/day)</div>
+    </div>
+  </div>
+
+  <p style="font-size: 0.875rem; color: var(--text-muted);">At Standard plan (100,000 credits/month), daily usage of ~400 credits = ~12,400 credits/month — leaving 87,000+ credits of headroom for additional use cases or agent runs. Well within Standard tier at $83/month.</p>
+
+  <h3>What Firecrawl Does Better vs. Current Approach</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Current Approach</th>
+          <th>With Firecrawl</th>
+          <th>Verdict</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SAM.gov metadata (title, NAICS, dates)</td>
+          <td>Public API v2 — structured JSON</td>
+          <td>Same API (don't replace)</td>
+          <td><span class="compare-same">Same — keep API</span></td>
+        </tr>
+        <tr>
+          <td>Opportunity description text</td>
+          <td>Not extracted — link only</td>
+          <td>Firecrawl /scrape extracts full text</td>
+          <td><span class="compare-better">Better</span></td>
+        </tr>
+        <tr>
+          <td>APFS table extraction</td>
+          <td>Direct HTML parse — may miss JS rows</td>
+          <td>Firecrawl renders JS, extracts all rows</td>
+          <td><span class="compare-better">More reliable</span></td>
+        </tr>
+        <tr>
+          <td>RFP/SOW attachment links</td>
+          <td>Manual — click through SAM.gov</td>
+          <td>Extracted in same /scrape call</td>
+          <td><span class="compare-better">Better</span></td>
+        </tr>
+        <tr>
+          <td>Deep dive data gathering</td>
+          <td>Manual researcher session</td>
+          <td>Firecrawl /agent automates multi-source</td>
+          <td><span class="compare-better">Much better (saves 30 min/deep dive)</span></td>
+        </tr>
+        <tr>
+          <td>Rate limiting / anti-bot handling</td>
+          <td>Manual handling required</td>
+          <td>Fire-Engine handles automatically</td>
+          <td><span class="compare-better">Better</span></td>
+        </tr>
+        <tr>
+          <td>Cost</td>
+          <td>$0 (API is free)</td>
+          <td>~$83/month at Standard</td>
+          <td><span class="compare-note">Net new cost — evaluate ROI</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SECTION 3: OPERATIONALIZATION IN PERPLEXITY COMPUTER
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="section-header">
+    <div class="section-number">SECTION 3</div>
+    <div class="section-title">Operationalization in Perplexity Computer</div>
+  </div>
+
+  <p>This section gives you the exact plan to test Firecrawl inside this environment — the same Perplexity Computer session that runs your cron jobs, builds your daily brief, and pushes to Railway. The plan follows a parallel-run approach: Firecrawl enriches data alongside the existing pipeline before any cutover.</p>
+
+  <div class="varun-box">
+    <div class="varun-box-title">
+      <span style="font-size: 1.1rem;">📋</span>
+      What Varun Needs to Provide
+    </div>
+    <ul>
+      <li><strong>Firecrawl API Key</strong> — Sign up at <a href="https://firecrawl.dev" style="color:#e07070">firecrawl.dev</a> (free, no credit card for first 500 credits). Copy your API key from the dashboard. Provide it as: <code style="background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 3px;">FIRECRAWL_API_KEY=fc-your-key-here</code></li>
+      <li><strong>Credit decision</strong> — Start with the free tier (500 credits) to run the test. If validated, upgrade to Standard ($83/mo). Just let me know "activate standard plan" and I'll update the cron job config.</li>
+      <li><strong>Nothing else</strong> — The integration is fully within this Perplexity Computer environment. No new infrastructure, no new servers. I can install the Python library and update the daily brief generation script from here.</li>
+    </ul>
+  </div>
+
+  <h3>Step-by-Step Test Plan</h3>
+
+  <ol class="steps">
+    <li>
+      <div>
+        <strong>Sign up for Firecrawl free tier</strong><br>
+        Go to <a href="https://firecrawl.dev" style="color: var(--accent);">firecrawl.dev</a> → "Get Started" → create an account. No credit card required for the 500-credit free tier. Copy the API key from your dashboard (looks like <code>fc-abc123...</code>). Share it with me in a follow-up message.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>I install Firecrawl Python SDK in this environment</strong><br>
+        I'll run: <code>pip install firecrawl-py</code> in the workspace and verify the SDK is available. This takes under 30 seconds from here — no action required from you.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>I run the APFS extraction test</strong><br>
+        I'll run a one-time test scrape of <code>apfs-cloud.dhs.gov/forecast/</code> using Firecrawl and compare the row count vs. the current parser. This uses ~5 credits. I'll report back: "Firecrawl extracted X rows vs. current parser Y rows." You approve before continuing.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>I run the SAM.gov description extraction test</strong><br>
+        I'll pick 3 STRONG-match opportunities from today's brief and extract their full description text via Firecrawl /scrape with the Pydantic schema above. You'll see the excerpts and decide if the quality justifies the credit cost (~15 credits total for 3 extractions).
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>Parallel run for 3 days</strong><br>
+        I'll update the daily brief cron to run the existing pipeline as-is PLUS the Firecrawl enrichment in a shadow mode — Firecrawl runs, enriched data is cached, but the brief HTML is not yet changed. This lets us confirm data quality before it affects what you see.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>Brief format update</strong><br>
+        After 3 days of shadow runs, I'll update the brief card HTML to show: a 2-sentence scope excerpt for STRONG matches, attachment links (SOW/RFP) where available, and improved APFS data (full JS-rendered rows). You review one brief and approve the format.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>Upgrade to Standard plan and enable daily cron integration</strong><br>
+        Once validated, you upgrade to Standard ($83/mo, 100K credits). I update the cron job to include the Firecrawl enrichment step as a permanent part of the daily brief generation. Done.
+      </div>
+    </li>
+  </ol>
+
+  <h3>How Firecrawl Fits Into the Existing Cron Jobs</h3>
+
+  <div class="card card-blue">
+    <div class="card-header">Current Cron Architecture (from VM2 system)</div>
+    <p style="font-size: 0.875rem; margin-bottom: 8px;">Your daily brief runs on a cron job that: (1) queries SAM.gov API, (2) queries APFS, (3) runs RAG scoring, (4) generates HTML, (5) pushes to GitHub/Railway. Firecrawl inserts between steps 2 and 3:</p>
+    <div class="flow" style="flex-wrap: wrap; row-gap: 8px;">
+      <div class="flow-node" style="min-width: 90px; font-size: 0.75rem;">SAM API</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="min-width: 90px; font-size: 0.75rem;">APFS Parse</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node accent" style="min-width: 110px; font-size: 0.75rem;">NEW: Firecrawl<br>Enrichment</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="min-width: 90px; font-size: 0.75rem;">RAG Score</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node" style="min-width: 90px; font-size: 0.75rem;">Build HTML</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node green" style="min-width: 90px; font-size: 0.75rem;">Push Railway</div>
+    </div>
+  </div>
+
+  <h4>Cron Integration — Environment Variable Setup</h4>
+  <div class="code-block">
+<span class="code-comment"># Add to your Railway environment variables (Settings → Variables)</span>
+FIRECRAWL_API_KEY=<span class="code-string">fc-your-api-key-here</span>
+
+<span class="code-comment"># In the cron script, the enrichment step looks like:</span>
+<span class="code-keyword">import</span> os
+<span class="code-keyword">from</span> firecrawl <span class="code-keyword">import</span> FirecrawlApp
+
+<span class="code-var">FIRECRAWL_ENABLED</span> = os.environ.get(<span class="code-string">"FIRECRAWL_API_KEY"</span>) <span class="code-keyword">is not None</span>
+
+<span class="code-keyword">if</span> FIRECRAWL_ENABLED:
+    <span class="code-var">app</span> = FirecrawlApp(api_key=os.environ[<span class="code-string">"FIRECRAWL_API_KEY"</span>])
+    <span class="code-comment"># enrich STRONG matches only (saves credits)</span>
+    strong_enriched = [get_opportunity_detail(o[<span class="code-string">"noticeId"</span>], o[<span class="code-string">"uiLink"</span>])
+                       <span class="code-keyword">for</span> o <span class="code-keyword">in</span> opportunities <span class="code-keyword">if</span> o[<span class="code-string">"rag_score"</span>] >= <span class="code-value">0.65</span>]
+<span class="code-keyword">else</span>:
+    strong_enriched = []  <span class="code-comment"># falls back gracefully if no API key</span>
+  </div>
+
+  <h3>Testing Checklist</h3>
+
+  <ul class="checklist">
+    <li><span class="check-icon"></span><div><strong>APFS row count parity</strong> — Firecrawl extracts same or more rows than current parser. Expected: current parser may miss JS-loaded rows; Firecrawl should see 100% of records.</div></li>
+    <li><span class="check-icon"></span><div><strong>SAM.gov description quality</strong> — Extracted excerpts are coherent, relevant, and not boilerplate. Test: 3 STRONG matches from today's brief.</div></li>
+    <li><span class="check-icon"></span><div><strong>Credit consumption accuracy</strong> — Actual credits consumed in test run matches estimate (~25 credits for 3 STRONG extractions + 1 APFS page). Monitor from Firecrawl dashboard.</div></li>
+    <li><span class="check-icon"></span><div><strong>Graceful fallback</strong> — If Firecrawl API is unavailable, the brief still generates with the existing data. No hard dependency in the critical path.</div></li>
+    <li><span class="check-icon"></span><div><strong>Attachment link extraction</strong> — For STRONG matches that have SOW/RFP documents on SAM.gov, Firecrawl should return the download URLs. Test with a known opportunity that has attachments.</div></li>
+    <li><span class="check-icon"></span><div><strong>3-day parallel run produces no output regressions</strong> — Existing brief format unchanged; enriched data is additive only.</div></li>
+    <li><span class="check-icon"></span><div><strong>Monthly credit budget stays under 15,000 credits</strong> — At ~400/day + deep dives, should stay comfortably within Standard plan headroom.</div></li>
+  </ul>
+
+  <h3>Rollout Timeline</h3>
+
+  <div class="phases">
+    <div class="phase-card">
+      <div class="phase-num">Week 1 — Test</div>
+      <div class="phase-title">Free Tier Validation</div>
+      <div class="phase-body">Sign up (free), share API key with me. I run APFS + SAM.gov extraction tests. You review output quality. Uses ~50–100 of your 500 free credits.</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">Week 2 — Parallel</div>
+      <div class="phase-title">Shadow Mode Integration</div>
+      <div class="phase-body">Firecrawl runs alongside existing pipeline for 3 days. No UI change to the brief. Data quality confirmed. Upgrade to Standard if tests pass.</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">Week 3 — Live</div>
+      <div class="phase-title">Brief Format Update</div>
+      <div class="phase-body">STRONG match cards now show description excerpts and attachment links. APFS data fully JS-rendered. Brief quality noticeably improved.</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">Month 2+ — Expand</div>
+      <div class="phase-title">Deep Dive Automation</div>
+      <div class="phase-body">Firecrawl /agent auto-enriches Todoist deep dive tasks — FPDS incumbent data + USASpending + full opportunity text — in ~3 minutes per task.</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SECTION 4: CLAUDE CODE + FIRECRAWL SETUP
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="section-header">
+    <div class="section-number">SECTION 4</div>
+    <div class="section-title">Claude Code + Firecrawl MCP Setup</div>
+  </div>
+
+  <p>Firecrawl has an official MCP (Model Context Protocol) server that connects it directly to Claude Code. Once set up, any Claude Code session can fetch, extract, and search live web content — including SAM.gov pages — in real time during a conversation. This is separate from the cron pipeline: it's for on-demand research inside Claude Code sessions.</p>
+
+  <div class="callout callout-teal">
+    <div class="callout-label">What MCP gives you in Claude Code</div>
+    Once the Firecrawl MCP server is installed, Claude Code gains the ability to: fetch and read any live webpage in the session, search the web and return full page content (not just snippets), crawl multi-page sites, and extract structured data on demand — all within the same Claude Code conversation. You can simply ask "go read this SAM.gov page" and it works.
+  </div>
+
+  <h3>Prerequisites (what you need before starting)</h3>
+
+  <ul style="list-style: disc; padding-left: 20px; color: var(--text-secondary); font-size: 0.93rem; line-height: 1.9; margin-bottom: 16px;">
+    <li><strong>Node.js installed on your Mac</strong> — Claude Code requires Node.js. Check by opening Terminal and typing <code>node --version</code>. If you see a version number (e.g., <code>v20.x.x</code>), you're good. If not, download from <a href="https://nodejs.org" style="color: var(--accent);">nodejs.org</a> — click the LTS button.</li>
+    <li><strong>Claude Code installed</strong> — If you're using Claude Code, this is already done. If you need to install: <code>npm install -g @anthropic-ai/claude-code</code></li>
+    <li><strong>Firecrawl API key</strong> — Same key from Section 3. Free tier works for MCP testing.</li>
+  </ul>
+
+  <h3>Step-by-Step Setup (Claude Code MCP)</h3>
+
+  <ol class="steps">
+    <li>
+      <div>
+        <strong>Open Terminal on your Mac</strong><br>
+        Press <code>Cmd + Space</code>, type "Terminal", press Enter. You'll see a black or white window with a command prompt.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>Run the MCP install command</strong><br>
+        Type this command exactly (paste it in, then press Enter):
+        <div class="code-block" style="margin-top: 8px;">claude mcp add --transport stdio firecrawl -- <span class="code-value">env FIRECRAWL_API_KEY=fc-YOUR-KEY-HERE</span> npx -y firecrawl-mcp</div>
+        Replace <code>fc-YOUR-KEY-HERE</code> with your actual Firecrawl API key. This tells Claude Code where to find Firecrawl and how to authenticate.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>Verify it was added</strong><br>
+        Run: <code>claude mcp list</code><br>
+        You should see <code>firecrawl</code> appear in the list. If it does, setup is complete.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>Start a Claude Code session and test</strong><br>
+        Open a Claude Code session in any project folder. Type: <code>/mcp</code> inside the session to see connected tools. You should see Firecrawl listed. Then try: <em>"Use Firecrawl to fetch the current SAM.gov contract opportunities page and summarize what's there."</em>
+      </div>
+    </li>
+  </ol>
+
+  <h4>Alternative: Add to claude_desktop_config.json (if using Claude Desktop app)</h4>
+  <div class="code-block">
+<span class="code-comment">// File location: ~/Library/Application Support/Claude/claude_desktop_config.json</span>
+{
+  <span class="code-string">"mcpServers"</span>: {
+    <span class="code-string">"mcp-server-firecrawl"</span>: {
+      <span class="code-string">"command"</span>: <span class="code-string">"npx"</span>,
+      <span class="code-string">"args"</span>: [<span class="code-string">"-y"</span>, <span class="code-string">"firecrawl-mcp"</span>],
+      <span class="code-string">"env"</span>: {
+        <span class="code-string">"FIRECRAWL_API_KEY"</span>: <span class="code-string">"fc-YOUR-API-KEY-HERE"</span>,
+        <span class="code-string">"FIRECRAWL_CREDIT_WARNING_THRESHOLD"</span>: <span class="code-string">"500"</span>,
+        <span class="code-string">"FIRECRAWL_CREDIT_CRITICAL_THRESHOLD"</span>: <span class="code-string">"100"</span>
+      }
+    }
+  }
+}
+  </div>
+
+  <p style="font-size: 0.875rem; color: var(--text-muted);">To open this file on a Mac: in Finder, press <code>Cmd + Shift + G</code>, paste <code>~/Library/Application Support/Claude/</code>, and press Enter. If the file doesn't exist yet, create it with those contents.</p>
+
+  <h3>What Firecrawl Enables Inside Claude Code Sessions</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>What You Ask Claude Code</th>
+          <th>Firecrawl Tool Used</th>
+          <th>Credits</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>"Fetch and summarize this SAM.gov opportunity"</td>
+          <td>firecrawl_scrape</td>
+          <td>5 credits (JSON extract)</td>
+        </tr>
+        <tr>
+          <td>"Search for DHS IT contracts posted this week"</td>
+          <td>firecrawl_search</td>
+          <td>2 credits per 10 results</td>
+        </tr>
+        <tr>
+          <td>"Map all pages on apfs-cloud.dhs.gov"</td>
+          <td>firecrawl_map</td>
+          <td>1 credit/page</td>
+        </tr>
+        <tr>
+          <td>"Research this competitor and their past government wins"</td>
+          <td>firecrawl_search + firecrawl_scrape</td>
+          <td>~10–15 credits</td>
+        </tr>
+        <tr>
+          <td>"Crawl all recent FAA contract awards"</td>
+          <td>firecrawl_crawl</td>
+          <td>1 credit/page</td>
+        </tr>
+        <tr>
+          <td>"Go find the incumbent for solicitation X"</td>
+          <td>firecrawl_scrape (FPDS.gov)</td>
+          <td>5 credits</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Use Case Examples — Specific to Changeis / VM2</h3>
+
+  <div class="card card-accent" style="margin-bottom: 12px;">
+    <div class="card-header">Within a Claude Code session, you can now say:</div>
+    <ul style="list-style: disc; padding-left: 18px; color: var(--text-secondary); font-size: 0.875rem; line-height: 1.8;">
+      <li><em>"Use Firecrawl to fetch the full description for SAM.gov notice [paste URL] and tell me if Changeis has relevant past performance."</em></li>
+      <li><em>"Search for all FAA IT support opportunities posted in the last 7 days and show me the titles and deadlines."</em></li>
+      <li><em>"Crawl fpds.gov for the current incumbent on solicitation FA8604 and return the company name and contract value."</em></li>
+      <li><em>"Go to the APFS forecast page and extract all USCG records posted this month."</em></li>
+      <li><em>"Research [competitor name] on their website and GSA FPDS and tell me what federal contracts they hold."</em></li>
+    </ul>
+  </div>
+
+  <div class="callout callout-green">
+    <div class="callout-label">MCP vs. Cron — Which to Use When</div>
+    <strong>MCP (Claude Code sessions):</strong> Use for ad-hoc research, one-off deep dives, exploratory queries, competitive intel gathering. Real-time, interactive, on demand.<br><br>
+    <strong>Cron integration:</strong> Use for the daily brief enrichment — automated, scheduled, consistent. Runs even when you're not in a session.
+  </div>
+
+  <h3>Troubleshooting — Common Issues</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Problem</th>
+          <th>Cause</th>
+          <th>Fix</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>node: command not found</code></td>
+          <td>Node.js not installed</td>
+          <td>Download Node.js LTS from nodejs.org</td>
+        </tr>
+        <tr>
+          <td><code>firecrawl</code> not in <code>claude mcp list</code></td>
+          <td>Command didn't run correctly</td>
+          <td>Re-run the add command; check API key has no spaces</td>
+        </tr>
+        <tr>
+          <td>"Unauthorized" error from Firecrawl</td>
+          <td>Wrong or expired API key</td>
+          <td>Get a fresh key from firecrawl.dev dashboard → API Keys</td>
+        </tr>
+        <tr>
+          <td>"Credit limit reached"</td>
+          <td>Free tier 500 credits exhausted</td>
+          <td>Upgrade to Standard at firecrawl.dev/pricing</td>
+        </tr>
+        <tr>
+          <td>APFS returns empty table</td>
+          <td>Page needs longer JS wait time</td>
+          <td>Add <code>"actions": [{"type": "wait", "milliseconds": 5000}]</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Context / Session JSON -->
+  <div class="context-panel">
+    <button class="context-toggle" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.ctx-arrow').textContent = this.nextElementSibling.classList.contains('open') ? '▲' : '▼'">
+      Session Context (JSON) <span class="ctx-arrow">▼</span>
+    </button>
+    <div class="context-body">
+<pre>{
+  "task_name": "Firecrawl AI Follow-Up — SAM.gov/APFS Integration Plan",
+  "task_date": "2026-03-27",
+  "deliverable_file": "firecrawl-integration-plan-2026-03-27.html",
+  "version": 1,
+  "prior_deliverable": "firecrawl-ai-2026-03-27.html",
+  "related_deliverables": [
+    "firecrawl-ai-2026-03-27.html",
+    "vm2-system-guide-2026-03-27.html",
+    "changeis-daily-brief-2026-03-27.html"
+  ],
+  "key_findings": {
+    "current_pipeline": "SAM.gov Public API v2 + APFS HTML parse + RAG scoring engine. Descriptions not extracted — only links shown in brief cards.",
+    "firecrawl_value_add": [
+      "SAM.gov description text extraction for STRONG-match cards (5 credits/page with JSON extract)",
+      "APFS JS-rendered table reliable extraction (5 credits/page)",
+      "Deep dive auto-enrichment via /agent endpoint (FPDS + USASpending + full opportunity text)",
+      "Claude Code MCP for real-time on-demand research in sessions"
+    ],
+    "daily_credit_estimate": "250–400 credits/day (well within Standard 100K/month at ~$83/mo)",
+    "what_varun_must_provide": [
+      "Firecrawl API key (from firecrawl.dev — free tier has 500 one-time credits)",
+      "Credit plan decision (free for test, Standard $83/mo for production)"
+    ],
+    "claude_code_mcp_command": "claude mcp add --transport stdio firecrawl -- env FIRECRAWL_API_KEY=fc-YOUR-KEY npx -y firecrawl-mcp"
+  },
+  "approach": "Read prior Firecrawl research brief. Fetched daily brief HTML to understand current format (SAM.gov API + APFS + RAG scoring). Read _system/upgrade-daily-brief.py and cron pipeline scripts. Fetched SAM.gov public API docs (open.gsa.gov), APFS forecast page structure, Firecrawl MCP server GitHub README, Claude Code MCP docs (docs.anthropic.com). Built integration plan targeting the two specific gaps: description extraction and JS-rendered APFS parsing.",
+  "data_sources": [
+    "https://github.com/mendableai/firecrawl-mcp-server",
+    "https://docs.anthropic.com/en/docs/claude-code/mcp",
+    "https://open.gsa.gov/api/get-opportunities-public-api/",
+    "https://apfs-cloud.dhs.gov/forecast/",
+    "https://docs.firecrawl.dev/features/extract",
+    "/home/user/workspace/tool_calls/browser_task/output_mn9d2eu3.md",
+    "/home/user/workspace/VM2-P-Taskers/_system/upgrade-daily-brief.py",
+    "/home/user/workspace/VM2-P-Taskers/changeis-daily-brief-2026-03-27.html"
+  ]
+}</pre>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Changeis Confidential · Firecrawl Integration Plan · March 27, 2026</span>
+    <span>VM2 Computer · varunm24@gmail.com</span>
+  </div>
+
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('themeBtn');
+  if (html.getAttribute('data-theme') === 'light') {
+    html.setAttribute('data-theme', 'dark');
+    btn.textContent = '☀️ Light';
+  } else {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = '🌙 Dark';
+  }
+}
+</script>
+
+</body>
+</html>
