@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM2 Architecture Overhaul — Execution Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Charter:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --bg: #ffffff;
+    --bg-alt: #f7f8fa;
+    --bg-card: #ffffff;
+    --text: #222222;
+    --text-muted: #666666;
+    --text-light: #999999;
+    --border: #e0e0e0;
+    --callout-bg: #E8F4F8;
+    --callout-border: #008B8B;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #ffffff;
+    --table-alt: #F2F6FA;
+    --code-bg: #f4f4f7;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --hero-bg: #1B2A4A;
+    --hero-text: #ffffff;
+    --continue-bg: #1B2A4A;
+    --continue-text: #ffffff;
+    --context-bg: #f9f9fb;
+    --context-border: #d0d0d8;
+    --badge-bg: #c53a3a;
+    --badge-text: #ffffff;
+    --toggle-bg: rgba(255,255,255,0.15);
+    --toggle-text: rgba(255,255,255,0.9);
+    --status-pending: #e8a317;
+    --status-done: #2D7D4A;
+    --link: #1B2A4A;
+    --topbar-height: 52px;
+  }
+
+  [data-theme="dark"] {
+    --bg: #0f1117;
+    --bg-alt: #181a22;
+    --bg-card: #1a1c26;
+    --text: #e0e0e6;
+    --text-muted: #9999a8;
+    --text-light: #6e6e80;
+    --border: #2a2c3a;
+    --callout-bg: #152028;
+    --callout-border: #2a8a8a;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #ffffff;
+    --table-alt: #1e2030;
+    --code-bg: #1e2030;
+    --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    --hero-bg: #111827;
+    --hero-text: #e8e8ee;
+    --continue-bg: #111827;
+    --continue-text: #e8e8ee;
+    --context-bg: #181a22;
+    --context-border: #2a2c3a;
+    --link: #7daad4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Charter', Georgia, 'Times New Roman', serif;
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--navy);
+    height: var(--topbar-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-brand {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.4px;
+  }
+  .topbar-brand span { color: var(--red); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .theme-toggle {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    background: var(--toggle-bg);
+    color: var(--toggle-text);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-toggle:hover {
+    background: rgba(255,255,255,0.25);
+    color: #ffffff;
+  }
+
+  /* ── Container ── */
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    background: var(--hero-bg);
+    color: var(--hero-text);
+    padding: 56px 24px 48px;
+    text-align: center;
+    margin-bottom: 0;
+  }
+  .hero-inner { max-width: 860px; margin: 0 auto; }
+  .hero h1 {
+    font-family: 'Charter', Georgia, serif;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    line-height: 1.25;
+    color: var(--hero-text);
+  }
+  .hero .subtitle {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  [data-theme="dark"] .hero .subtitle { color: rgba(232,232,238,0.6); }
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+  }
+  [data-theme="dark"] .hero-meta { color: rgba(232,232,238,0.45); }
+  .badge {
+    display: inline-block;
+    background: var(--red);
+    color: #fff;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+
+  /* ── Sections ── */
+  .content { padding: 40px 0 60px; }
+
+  .section {
+    margin-bottom: 48px;
+  }
+  .section:last-child { margin-bottom: 0; }
+
+  h2 {
+    font-family: 'Charter', Georgia, serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--red);
+  }
+  [data-theme="dark"] h2 { color: #7daad4; }
+
+  h3 {
+    font-family: 'Charter', Georgia, serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-top: 28px;
+    margin-bottom: 8px;
+  }
+  [data-theme="dark"] h3 { color: #9ab8d4; }
+
+  h4 {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin-top: 20px;
+    margin-bottom: 6px;
+  }
+
+  p { margin-bottom: 14px; }
+
+  strong { font-weight: 700; }
+
+  a { color: var(--link); text-decoration: underline; }
+  a:hover { text-decoration: none; }
+
+  /* ── Tables ── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 16px 0 24px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    padding: 12px 16px;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 11px 16px;
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  tbody tr:hover { background: rgba(27,42,74,0.04); }
+  [data-theme="dark"] tbody tr:hover { background: rgba(125,170,212,0.06); }
+
+  .status-pending {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--status-pending);
+    background: rgba(232,163,23,0.1);
+    padding: 2px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  /* ── Callout ── */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 4px solid var(--callout-border);
+    border-radius: 0 8px 8px 0;
+    padding: 18px 22px;
+    margin: 20px 0 24px;
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+  .callout-title {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--callout-border);
+    margin-bottom: 6px;
+  }
+
+  .callout-red {
+    background: rgba(197,58,58,0.06);
+    border-left-color: var(--red);
+  }
+  .callout-red .callout-title { color: var(--red); }
+  [data-theme="dark"] .callout-red { background: rgba(197,58,58,0.12); }
+
+  .callout-navy {
+    background: rgba(27,42,74,0.05);
+    border-left-color: var(--navy);
+  }
+  .callout-navy .callout-title { color: var(--navy); }
+  [data-theme="dark"] .callout-navy {
+    background: rgba(125,170,212,0.08);
+    border-left-color: #7daad4;
+  }
+  [data-theme="dark"] .callout-navy .callout-title { color: #7daad4; }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    overflow-x: auto;
+    margin: 14px 0 20px;
+    color: var(--text);
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13.5px;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* ── Credential box ── */
+  .cred-box {
+    background: var(--navy);
+    color: #ffffff;
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 20px 0 24px;
+    font-size: 14px;
+    line-height: 1.8;
+    box-shadow: var(--shadow);
+  }
+  .cred-box .cred-title {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 10px;
+  }
+  .cred-box code {
+    background: rgba(255,255,255,0.12);
+    color: #ffd166;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .cred-label {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    display: inline-block;
+    min-width: 140px;
+  }
+
+  /* ── Lists ── */
+  ul, ol {
+    margin: 10px 0 16px 24px;
+  }
+  li {
+    margin-bottom: 6px;
+    line-height: 1.55;
+  }
+
+  /* ── Divider ── */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 36px 0;
+  }
+
+  /* ── Rule highlight ── */
+  .rule-box {
+    background: var(--navy);
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 16px 22px;
+    margin: 18px 0 24px;
+    font-family: 'Charter', Georgia, serif;
+    font-size: 16px;
+    font-weight: 700;
+    font-style: italic;
+    text-align: center;
+    letter-spacing: 0.2px;
+    line-height: 1.5;
+  }
+
+  /* ── Context Slug Section ── */
+  .context-section {
+    background: var(--context-bg);
+    border: 1px solid var(--context-border);
+    border-radius: 10px;
+    margin: 32px 0;
+    overflow: hidden;
+  }
+  .context-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px;
+    cursor: pointer;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    user-select: none;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    transition: background 0.2s;
+  }
+  .context-toggle:hover { background: rgba(0,0,0,0.03); }
+  [data-theme="dark"] .context-toggle:hover { background: rgba(255,255,255,0.03); }
+  .context-toggle .arrow {
+    transition: transform 0.3s;
+    font-size: 12px;
+  }
+  .context-toggle.open .arrow { transform: rotate(180deg); }
+  .context-body {
+    display: none;
+    padding: 0 22px 22px;
+  }
+  .context-body.visible { display: block; }
+  .context-body h4 {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin-top: 18px;
+    margin-bottom: 6px;
+  }
+  .context-body h4:first-child { margin-top: 0; }
+  .context-body ul {
+    margin: 4px 0 8px 20px;
+    font-size: 14px;
+  }
+  .context-body p {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .context-body .context-field-val {
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  /* ── Continue This Work Panel ── */
+  .continue-panel {
+    background: var(--continue-bg);
+    color: var(--continue-text);
+    border-radius: 12px;
+    padding: 32px 28px;
+    margin: 40px 0 32px;
+    box-shadow: var(--shadow);
+  }
+  .continue-panel h3 {
+    color: #ffffff;
+    font-size: 20px;
+    margin-top: 0;
+    margin-bottom: 6px;
+    border: none;
+  }
+  .continue-panel .continue-sub {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 24px;
+  }
+  .continue-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .continue-btn {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 22px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .btn-copy {
+    background: var(--red);
+    color: #ffffff;
+  }
+  .btn-copy:hover { background: #a83232; color: #ffffff; }
+  .btn-email {
+    background: rgba(255,255,255,0.12);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .btn-email:hover { background: rgba(255,255,255,0.2); color: #ffffff; }
+  .btn-todoist {
+    background: rgba(255,255,255,0.12);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .btn-todoist:hover { background: rgba(255,255,255,0.2); color: #ffffff; }
+  .btn-feedback {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 8px;
+    min-height: 18px;
+    transition: color 0.2s;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    background: var(--bg-alt);
+    border-top: 1px solid var(--border);
+    padding: 20px 24px;
+    text-align: center;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    color: var(--text-light);
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .hero { padding: 40px 16px 36px; }
+    .hero h1 { font-size: 24px; }
+    .container { padding: 0 16px; }
+    .continue-buttons { flex-direction: column; }
+    .continue-btn { justify-content: center; }
+    thead th, tbody td { padding: 9px 10px; font-size: 13px; }
+    .cred-box { padding: 18px 18px; }
+    .cred-label { min-width: auto; display: block; }
+  }
+</style>
+</head>
+<body data-theme="light">
+
+<!-- ── Topbar ── -->
+<nav class="topbar">
+  <div class="topbar-brand"><span>VM2</span> · Perplexity Computer</div>
+  <div class="topbar-right">
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<div class="hero">
+  <div class="hero-inner">
+    <div style="margin-bottom:18px;"><span class="badge">Architecture</span></div>
+    <h1>VM2 Architecture Overhaul — Execution Plan</h1>
+    <p class="subtitle">Session Isolation, Context Continuity, and Deliverables Index Integrity</p>
+    <div class="hero-meta">
+      <span>March 27, 2026</span>
+      <span>·</span>
+      <span>Prepared for Varun Malhotra</span>
+      <span>·</span>
+      <span>Changeis</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Content ── -->
+<div class="container">
+<div class="content">
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- Section 1: Current State & Problems -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>1. Current State &amp; Problems Identified</h2>
+  <p>A direct, unvarnished audit of what's broken. These seven issues compound each other — fixing them in isolation won't work. The architecture overhaul addresses all of them as a unified system.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:25%">Problem</th><th style="width:38%">Impact</th><th style="width:37%">Root Cause</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>portal.html vs index.html confusion</strong></td>
+          <td>Rogue sessions edit the wrong file; index.html is stale and encrypted</td>
+          <td>No permanent safeguard; old sessions predate the portal.html migration</td>
+        </tr>
+        <tr>
+          <td><strong>18 deliverables missing from portal.html</strong></td>
+          <td>Varun can't find 13% of his work in the index</td>
+          <td>Sessions that push files don't always update portal.html</td>
+        </tr>
+        <tr>
+          <td><strong>7 files encrypted with StaticCrypt</strong></td>
+          <td>Pages show password prompt instead of content behind Railway auth</td>
+          <td>Rogue sessions from before the Railway migration still encrypt</td>
+        </tr>
+        <tr>
+          <td><strong>index.html is StaticCrypt-encrypted</strong></td>
+          <td>The redirect stub itself is broken</td>
+          <td>Same rogue session issue</td>
+        </tr>
+        <tr>
+          <td><strong>Tasks execute as subagents, not separate sessions</strong></td>
+          <td>No way to return for follow-up; reasoning is lost when subagent dies</td>
+          <td><code>run_subagent</code> is used for execution; subagents aren't persistent sessions</td>
+        </tr>
+        <tr>
+          <td><strong>No context continuity between sessions</strong></td>
+          <td>Every follow-up starts from scratch, wastes tokens, loses prior reasoning</td>
+          <td>Deliverables contain only final output, not the reasoning chain</td>
+        </tr>
+        <tr>
+          <td><strong>No version tracking for updated deliverables</strong></td>
+          <td>Can't see history of how analysis evolved</td>
+          <td>No convention exists for versioning</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-red">
+    <div class="callout-title">Core Insight</div>
+    These aren't seven separate bugs — they're symptoms of one missing system: <strong>a self-documenting deliverable architecture where every output preserves its own context and registers itself in a single index.</strong>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- Section 2: Architecture Decisions -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>2. Architecture Decisions</h2>
+
+  <!-- 2A -->
+  <h3>2A. portal.html Is the Deliverables Index (Final)</h3>
+  <p><code>portal.html</code> is the one and only deliverables index. This is non-negotiable and permanent.</p>
+  <ul>
+    <li><strong>index.html</strong> becomes a permanent, immutable HTML redirect — <code>&lt;meta http-equiv="refresh" content="0;url=portal.html"&gt;</code> plus a JS fallback</li>
+    <li>index.html must <strong>NEVER</strong> be edited by any session — it contains zero content</li>
+    <li>nginx.conf already enforces: <code>location = /index.html { return 302 /portal.html; }</code></li>
+    <li>Memory and all skills updated to enforce this</li>
+  </ul>
+
+  <div class="callout callout-navy">
+    <div class="callout-title">Why Both?</div>
+    The nginx redirect handles HTTP traffic. The HTML redirect handles direct file opens and edge cases where nginx isn't in the path. Belt and suspenders.
+  </div>
+
+  <!-- 2B -->
+  <h3>2B. The Context Slug System</h3>
+  <p>Every deliverable HTML gets a <code>&lt;section id="vm2-context"&gt;</code> block containing structured JSON and human-readable text. This is the continuity mechanism.</p>
+
+  <h4>Schema</h4>
+  <pre>{
+  "task_name": "FBI ITSSS Competitive Analysis",
+  "task_date": "2026-03-26",
+  "deliverable_file": "fbi-itsss-analysis-2026-03-26.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/fbi-itsss-analysis-2026-03-26.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": ["deep-dive-faa-adip-2026-03-25.html"],
+  "original_instructions": "Analyze the FBI ITSSS-2 opportunity...",
+  "approach": "1. Pulled SAM.gov listing. 2. Ran RAG matching...",
+  "key_findings": [
+    "Leidos is incumbent at $47M ceiling",
+    "NAICS 541512 aligns with Changeis OASIS+ pool"
+  ],
+  "dead_ends": [
+    "Tried USAspending for subcontractor data — API returned no results"
+  ],
+  "assumptions": [
+    "Assumed full and open competition based on notice type"
+  ],
+  "open_questions": [
+    "What is Changeis's actual CPARS rating for relevant past performance?",
+    "Is there a teaming partner with FBI clearance?"
+  ],
+  "data_sources": [
+    "SAM.gov notice 693KA9-22-R-00002",
+    "FPDS.gov",
+    "USAspending.gov",
+    "Changeis BD RAG engine"
+  ],
+  "next_steps": [
+    "Identify teaming partners",
+    "Draft capability matrix",
+    "Prepare go/no-go brief for Varun"
+  ]
+}</pre>
+
+  <p>This is embedded as <strong>both</strong>:</p>
+  <ol>
+    <li>A hidden <code>&lt;script type="application/json" id="vm2-context-data"&gt;</code> tag — machine-readable for <code>fetch_url</code> ingestion</li>
+    <li>A visible, collapsible <strong>"Session Context"</strong> panel at the bottom of the page — human-readable for Varun</li>
+  </ol>
+
+  <!-- 2C -->
+  <h3>2C. The "Continue This Work" UI Block</h3>
+  <p>At the bottom of every deliverable, a styled panel with three action buttons:</p>
+
+  <ol>
+    <li><strong>Copy Follow-Up Prompt</strong> — copies to clipboard a pre-written prompt that points the next session to the context slug URL with instructions to read all prior reasoning, findings, dead ends, and open questions</li>
+    <li><strong>Email to VM2</strong> — <code>mailto:</code> link to <code>vm2.viru@gmail.com</code> with the subject and body pre-filled. The Gmail task pipeline picks this up and creates a new session.</li>
+    <li><strong>Create Todoist Follow-Up</strong> — POSTs to <code>/api/todoist/tasks</code> (the Railway nginx proxy) to create a labeled task with the context URL</li>
+  </ol>
+
+  <!-- 2D -->
+  <h3>2D. Version Tracking in portal.html</h3>
+  <p>When a deliverable is updated:</p>
+  <ul>
+    <li>New file uses convention: <code>slug-YYYY-MM-DD-v2.html</code> (or v3, etc.)</li>
+    <li>The new version's context slug references all prior versions in the <code>prior_versions</code> array</li>
+    <li>portal.html entry shows version badges with links to v1, v2, v3</li>
+    <li>Each version's context preserves the full chain of reasoning</li>
+  </ul>
+
+  <!-- 2E -->
+  <h3>2E. Session Isolation (Practical Reality)</h3>
+  <ul>
+    <li>Cron jobs use <code>run_subagent</code> internally — these are <strong>NOT</strong> revisitable sessions</li>
+    <li>The Gmail task pipeline creates separate Perplexity Computer sessions — this is the preferred path for trackable work</li>
+    <li>The Auto-Helper "Task VM2" email buttons are the right mechanism — they trigger the Gmail pipeline which creates proper sessions</li>
+    <li>For cron-produced deliverables (daily briefs, SAM scans), the context slug IS the continuity mechanism — paste the Railway URL into a new session to continue</li>
+  </ul>
+
+  <div class="rule-box">Every deliverable is self-contained with enough context to restart from where it left off. Sessions are ephemeral. Deliverables are permanent.</div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- Section 3: Execution Steps -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>3. Execution Steps</h2>
+  <p>Twelve steps to implement the full architecture overhaul. Each step is independently verifiable.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:5%">#</th><th style="width:22%">Step</th><th style="width:55%">Description</th><th style="width:18%">Status</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>Decrypt 6 encrypted files</td>
+          <td>Strip StaticCrypt from 6 Mar-27 files. If passwords fail, recover from git or re-execute tasks.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td>Replace index.html</td>
+          <td>Replace with permanent redirect stub: <code>&lt;meta http-equiv="refresh" content="0;url=portal.html"&gt;</code> + JS fallback. No table, no content, impossible to accidentally edit as an index.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td>Add 18 missing files to portal.html</td>
+          <td>Add proper <code>&lt;tr&gt;</code> rows with date, title, type badge, and link for all 18 missing deliverables. Fix the 1 broken link (VM2 Auto-Helper 03-27). Update stats counters.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td>Build context slug template</td>
+          <td>Create a reusable HTML/CSS/JS template for the context section + "Continue This Work" panel. Standardize the JSON schema.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>5</strong></td>
+          <td>Inject context stubs into 136 existing deliverables</td>
+          <td>For existing deliverables, add minimal context stubs (task name, date, type, filename, Railway URL). Full reasoning can't be reconstructed, but structural metadata and follow-up buttons will be there.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>6</strong></td>
+          <td>Update vm2-gmail-tasks skill</td>
+          <td>Add mandatory context slug generation to every task execution. Update portal.html (not index.html). Include task name, approach, findings, dead ends, open questions.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>7</strong></td>
+          <td>Update vm2-opp-deep-dive skill</td>
+          <td>Same: context slug mandatory on all deep dive deliverables and daily briefs. Update portal.html (not index.html).</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>8</strong></td>
+          <td>Update vm2-wrapup skill</td>
+          <td>Change compliance checks: verify portal.html (not index.html), check for context slugs, check for StaticCrypt violations.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>9</strong></td>
+          <td>Update morning-routine skill</td>
+          <td>Ensure daily executive agenda deliverables get context slugs and portal.html entries.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>10</strong></td>
+          <td>Update global memory</td>
+          <td>Store all new conventions: portal.html is index, index.html is redirect, context slug required, version tracking rules, passwords, Railway credentials.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>11</strong></td>
+          <td>Push everything to GitHub</td>
+          <td>Single commit with all changes. Verify Railway auto-deploys.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td><strong>12</strong></td>
+          <td>Verify on Railway</td>
+          <td>Browser test: confirm portal.html loads correctly behind basic auth (<code>vm2</code> / <code>97harry23!</code>), all links work, context slugs render, buttons function.</td>
+          <td><span class="status-pending">Pending</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- Section 4: Token Economics -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>4. Token Economics</h2>
+  <p>The context slug adds 3–8K tokens per deliverable. Here's the cost analysis showing why it pays for itself on the first follow-up.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Scenario</th><th style="text-align:right">Input Tokens</th><th style="text-align:right">Output Tokens</th><th style="text-align:right">Total Cost</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Follow-up <strong>WITH</strong> context slug</td>
+          <td style="text-align:right">~42K ($0.13)</td>
+          <td style="text-align:right">~15K ($0.23)</td>
+          <td style="text-align:right"><strong>~$0.36</strong></td>
+        </tr>
+        <tr>
+          <td>Follow-up <strong>WITHOUT</strong> context (from scratch)</td>
+          <td style="text-align:right">~30K ($0.09)</td>
+          <td style="text-align:right">~30K ($0.45)</td>
+          <td style="text-align:right"><strong>~$0.54</strong></td>
+        </tr>
+        <tr>
+          <td>Loading 3 related deliverables</td>
+          <td style="text-align:right">~51K ($0.15)</td>
+          <td style="text-align:right">~15K ($0.23)</td>
+          <td style="text-align:right"><strong>~$0.38</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Note</div>
+    Based on Claude Sonnet 4.6 pricing ($3/$15 per 1M tokens). The context slug costs ~3–4 cents to read but saves 2–3× in redundant output and tool calls. The real ROI is <strong>quality</strong>: a follow-up session that reads the context slug doesn't repeat dead ends or miss prior findings.
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- Section 5: Credentials Reference -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>5. Credentials Reference</h2>
+
+  <div class="cred-box">
+    <div class="cred-title">VM2 Infrastructure Credentials</div>
+    <div style="margin-bottom:6px;"><span class="cred-label">Railway URL:</span> <code>https://vm2-p-taskers-production.up.railway.app/</code></div>
+    <div style="margin-bottom:6px;"><span class="cred-label">Railway Auth:</span> username <code>vm2</code> &nbsp;/&nbsp; password <code>97harry23!</code></div>
+    <div style="margin-bottom:6px;"><span class="cred-label">GitHub Repo:</span> <code>vm-coderock/VM2-P-Taskers</code></div>
+    <div style="margin-bottom:6px;"><span class="cred-label">Todoist Token:</span> <code>0ac557ece28a1cd92b9635a8fbae56eec15887ad</code></div>
+    <div style="margin-bottom:6px;"><span class="cred-label">Gmail Intake:</span> <code>vm2.viru@gmail.com</code></div>
+    <div style="margin-bottom:0;"><span class="cred-label">Old Passwords:</span> <code>jungpura23</code>, <code>changeis2026</code> <span style="font-size:12px;color:rgba(255,255,255,0.45);">(deprecated)</span></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- Section 6: This Deliverable's Context Slug -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>6. The Context Slug as the First Deliverable</h2>
+  <p>This very page — <code>vm2-architecture-overhaul-plan-2026-03-27.html</code> — contains the first production context slug. It serves as both the real context record and the reference template for all future deliverables.</p>
+
+  <p>The machine-readable JSON is embedded in a hidden <code>&lt;script&gt;</code> tag below. The human-readable panel follows.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- Machine-Readable Context Slug (hidden) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "VM2 Architecture Overhaul Plan",
+  "task_date": "2026-03-27",
+  "deliverable_file": "vm2-architecture-overhaul-plan-2026-03-27.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-architecture-overhaul-plan-2026-03-27.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": ["vm2-architecture-2026-03-25.html"],
+  "original_instructions": "Varun asked for a comprehensive audit of all deliverables vs the index, then requested an architecture overhaul plan covering: 1) Resolve portal.html vs index.html conflict permanently, 2) Ensure every deliverable is logged in the index, 3) Design a context slug system so follow-up sessions get full memory of prior reasoning, 4) Make each task a separate session, 5) Include version tracking for updated deliverables.",
+  "approach": "1. Cloned vm-coderock/VM2-P-Taskers repo. 2. Discovered index.html is encrypted and stale (93 entries), portal.html is the real index (119 entries). 3. Identified 18 files missing from portal.html and 7 encrypted files. 4. Analyzed token economics for context loading. 5. Designed the context slug JSON schema. 6. Evaluated session isolation constraints (subagents vs sessions).",
+  "key_findings": [
+    "portal.html has 119 entries, 18 files missing",
+    "index.html is encrypted/stale, nginx redirects it to portal.html",
+    "6 files encrypted with unknown password (not jungpura23, changeis2026, or 97harry23!)",
+    "Deliverables today contain only final output, not reasoning chain",
+    "Context slug adds ~3-8K tokens per deliverable, costs ~3 cents to load",
+    "Subagents (run_subagent) are NOT persistent sessions — cannot be revisited"
+  ],
+  "dead_ends": [
+    "Attempted to decrypt 6 encrypted files with all 3 known passwords — none worked",
+    "StaticCrypt PBKDF2 with 600K iterations makes brute force impractical",
+    "Git history shows files were committed already encrypted — no plain version exists"
+  ],
+  "assumptions": [
+    "Claude Sonnet 4.6 is the primary model used for sessions",
+    "Railway auto-deploys from GitHub pushes",
+    "The Gmail task pipeline (vm2.viru@gmail.com) is the primary path for creating trackable sessions"
+  ],
+  "open_questions": [
+    "Should the 6 undecryptable files be re-executed or left as-is?",
+    "Should the Auto-Helper cron be restructured to only generate email buttons (no subagent execution)?",
+    "What is the originating session that encrypted these files?"
+  ],
+  "data_sources": [
+    "GitHub repo vm-coderock/VM2-P-Taskers",
+    "Railway nginx.conf",
+    "Claude API pricing (platform.claude.com)",
+    "VM2 skill files (vm2-gmail-tasks, vm2-opp-deep-dive, vm2-wrapup)"
+  ],
+  "next_steps": [
+    "Execute all 12 steps in the plan",
+    "Start with context slug template + index.html redirect (quick wins)",
+    "Update all skills with new global rules",
+    "Push to GitHub and verify"
+  ]
+}
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- Human-Readable Context Slug (collapsible) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="vm2-context">
+  <div class="context-section">
+    <button class="context-toggle" id="contextToggle" onclick="toggleContext()">
+      <span>▸ Session Context — VM2 Architecture Overhaul Plan</span>
+      <span class="arrow">▾</span>
+    </button>
+    <div class="context-body" id="contextBody">
+
+      <h4>Task</h4>
+      <p class="context-field-val"><strong>VM2 Architecture Overhaul Plan</strong> — March 27, 2026</p>
+      <p class="context-field-val">File: <code>vm2-architecture-overhaul-plan-2026-03-27.html</code> · Version 1</p>
+      <p class="context-field-val">Related: <code>vm2-architecture-2026-03-25.html</code></p>
+
+      <h4>Original Instructions</h4>
+      <p class="context-field-val">Varun asked for a comprehensive audit of all deliverables vs the index, then requested an architecture overhaul plan covering: (1) Resolve portal.html vs index.html conflict permanently, (2) Ensure every deliverable is logged in the index, (3) Design a context slug system so follow-up sessions get full memory of prior reasoning, (4) Make each task a separate session, (5) Include version tracking for updated deliverables.</p>
+
+      <h4>Approach</h4>
+      <ol style="font-size:14px;">
+        <li>Cloned vm-coderock/VM2-P-Taskers repo</li>
+        <li>Discovered index.html is encrypted and stale (93 entries), portal.html is the real index (119 entries)</li>
+        <li>Identified 18 files missing from portal.html and 7 encrypted files</li>
+        <li>Analyzed token economics for context loading</li>
+        <li>Designed the context slug JSON schema</li>
+        <li>Evaluated session isolation constraints (subagents vs sessions)</li>
+      </ol>
+
+      <h4>Key Findings</h4>
+      <ul>
+        <li>portal.html has 119 entries, 18 files missing</li>
+        <li>index.html is encrypted/stale, nginx redirects it to portal.html</li>
+        <li>6 files encrypted with unknown password (not jungpura23, changeis2026, or 97harry23!)</li>
+        <li>Deliverables today contain only final output, not reasoning chain</li>
+        <li>Context slug adds ~3–8K tokens per deliverable, costs ~3 cents to load</li>
+        <li>Subagents (<code>run_subagent</code>) are NOT persistent sessions — cannot be revisited</li>
+      </ul>
+
+      <h4>Dead Ends</h4>
+      <ul>
+        <li>Attempted to decrypt 6 encrypted files with all 3 known passwords — none worked</li>
+        <li>StaticCrypt PBKDF2 with 600K iterations makes brute force impractical</li>
+        <li>Git history shows files were committed already encrypted — no plain version exists</li>
+      </ul>
+
+      <h4>Assumptions</h4>
+      <ul>
+        <li>Claude Sonnet 4.6 is the primary model used for sessions</li>
+        <li>Railway auto-deploys from GitHub pushes</li>
+        <li>The Gmail task pipeline (vm2.viru@gmail.com) is the primary path for creating trackable sessions</li>
+      </ul>
+
+      <h4>Open Questions</h4>
+      <ul>
+        <li>Should the 6 undecryptable files be re-executed or left as-is?</li>
+        <li>Should the Auto-Helper cron be restructured to only generate email buttons (no subagent execution)?</li>
+        <li>What is the originating session that encrypted these files?</li>
+      </ul>
+
+      <h4>Data Sources</h4>
+      <ul>
+        <li>GitHub repo vm-coderock/VM2-P-Taskers</li>
+        <li>Railway nginx.conf</li>
+        <li>Claude API pricing (platform.claude.com)</li>
+        <li>VM2 skill files (vm2-gmail-tasks, vm2-opp-deep-dive, vm2-wrapup)</li>
+      </ul>
+
+      <h4>Next Steps</h4>
+      <ol style="font-size:14px;">
+        <li>Execute all 12 steps in the plan</li>
+        <li>Start with context slug template + index.html redirect (quick wins)</li>
+        <li>Update all skills with new global rules</li>
+        <li>Push to GitHub and verify</li>
+      </ol>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- Continue This Work Panel -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="continue-panel">
+  <h3>Continue This Work</h3>
+  <p class="continue-sub">Pick up exactly where this session left off. Choose your preferred method:</p>
+  <div class="continue-buttons">
+    <button class="continue-btn btn-copy" onclick="copyFollowUp()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3C3 2.44772 3.44772 2 4 2H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Copy Follow-Up Prompt
+    </button>
+    <a class="continue-btn btn-email" id="emailBtn" href="#">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1.5 5L8 9.5L14.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Email to VM2
+    </a>
+    <button class="continue-btn btn-todoist" onclick="createTodoist()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 8L7.5 10.5L11 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Create Todoist Follow-Up
+    </button>
+  </div>
+  <div class="btn-feedback" id="btnFeedback"></div>
+</div>
+
+</div><!-- /.content -->
+</div><!-- /.container -->
+
+<!-- ── Footer ── -->
+<div class="footer">
+  Changeis Confidential · VM2 Architecture Overhaul Plan · March 27, 2026 · VM2 Deliverable
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- JavaScript -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+  // ── Theme Toggle ──
+  function toggleTheme() {
+    const body = document.body;
+    const btn = document.getElementById('themeBtn');
+    if (body.getAttribute('data-theme') === 'dark') {
+      body.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      body.setAttribute('data-theme', 'dark');
+      btn.textContent = '◐ Light';
+    }
+    try { localStorage.setItem('vm2-theme', body.getAttribute('data-theme')); } catch(e) {}
+  }
+
+  // Restore saved theme
+  (function() {
+    try {
+      const saved = localStorage.getItem('vm2-theme');
+      if (saved === 'dark') {
+        document.body.setAttribute('data-theme', 'dark');
+        document.getElementById('themeBtn').textContent = '◐ Light';
+      }
+    } catch(e) {}
+  })();
+
+  // ── Context Slug Toggle ──
+  function toggleContext() {
+    const body = document.getElementById('contextBody');
+    const toggle = document.getElementById('contextToggle');
+    const isVisible = body.classList.contains('visible');
+    if (isVisible) {
+      body.classList.remove('visible');
+      toggle.classList.remove('open');
+      toggle.querySelector('span:first-child').textContent = '▸ Session Context — VM2 Architecture Overhaul Plan';
+    } else {
+      body.classList.add('visible');
+      toggle.classList.add('open');
+      toggle.querySelector('span:first-child').textContent = '▾ Session Context — VM2 Architecture Overhaul Plan';
+    }
+  }
+
+  // ── Copy Follow-Up Prompt ──
+  var FOLLOW_UP_PROMPT = 'Continue work on VM2 Architecture Overhaul Plan. Read the full context and prior analysis at https://vm2-p-taskers-production.up.railway.app/vm2-architecture-overhaul-plan-2026-03-27.html \u2014 the #vm2-context section has all prior reasoning, findings, data sources, dead ends, and open questions. Pick up exactly where the previous session left off.';
+
+  function copyFollowUp() {
+    var feedback = document.getElementById('btnFeedback');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(function() {
+        feedback.textContent = 'Copied to clipboard';
+        feedback.style.color = 'rgba(255,255,255,0.7)';
+        setTimeout(function() { feedback.textContent = ''; }, 3000);
+      }).catch(function() {
+        fallbackCopy();
+      });
+    } else {
+      fallbackCopy();
+    }
+  }
+
+  function fallbackCopy() {
+    var feedback = document.getElementById('btnFeedback');
+    var ta = document.createElement('textarea');
+    ta.value = FOLLOW_UP_PROMPT;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      feedback.textContent = 'Copied to clipboard';
+      feedback.style.color = 'rgba(255,255,255,0.7)';
+    } catch(e) {
+      feedback.textContent = 'Copy failed — please copy manually';
+      feedback.style.color = 'rgba(255,100,100,0.8)';
+    }
+    document.body.removeChild(ta);
+    setTimeout(function() { feedback.textContent = ''; }, 3000);
+  }
+
+  // ── Email to VM2 ──
+  (function() {
+    var subject = encodeURIComponent('VM2 \u2014 Follow-up: VM2 Architecture Overhaul Plan');
+    var body = encodeURIComponent(FOLLOW_UP_PROMPT + '\n\n[Add your new instructions here]');
+    var mailto = 'mailto:vm2.viru@gmail.com?subject=' + subject + '&body=' + body;
+    document.getElementById('emailBtn').href = mailto;
+  })();
+
+  // ── Create Todoist Follow-Up ──
+  function createTodoist() {
+    var feedback = document.getElementById('btnFeedback');
+    feedback.textContent = 'Creating Todoist task...';
+    feedback.style.color = 'rgba(255,255,255,0.6)';
+
+    var payload = {
+      content: 'Follow-up: VM2 Architecture Overhaul Plan',
+      description: 'Continue work. Context: https://vm2-p-taskers-production.up.railway.app/vm2-architecture-overhaul-plan-2026-03-27.html',
+      labels: ['vm2']
+    };
+
+    fetch('/api/todoist/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(res) {
+      if (res.ok) {
+        return res.json();
+      } else {
+        throw new Error('HTTP ' + res.status);
+      }
+    })
+    .then(function(data) {
+      feedback.textContent = 'Todoist task created successfully';
+      feedback.style.color = 'rgba(100,255,150,0.8)';
+      setTimeout(function() { feedback.textContent = ''; }, 4000);
+    })
+    .catch(function(err) {
+      feedback.textContent = 'Todoist error: ' + err.message;
+      feedback.style.color = 'rgba(255,100,100,0.8)';
+      setTimeout(function() { feedback.textContent = ''; }, 5000);
+    });
+  }
+</script>
+</body>
+</html>
