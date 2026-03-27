@@ -296,6 +296,35 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
     background: #451a1a;
 }
 
+.recurring-badge {
+    font-family: var(--font-sans);
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: #f0f6ff;
+    color: #3b82f6;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+[data-theme="dark"] .recurring-badge {
+    background: #1e2a3a;
+    color: #60a5fa;
+}
+.vm2done-badge {
+    font-family: var(--font-sans);
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: #f0faf4;
+    color: #22c55e;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+[data-theme="dark"] .vm2done-badge {
+    background: #0a2e14;
+    color: #4ade80;
+}
+
 /* ── Deliverable Table ── */
 .del-table {
     width: 100%;
@@ -897,11 +926,13 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const body = await res.json();
             const raw = Array.isArray(body) ? body : (body.results || []);
-            // Filter out tasks already handled by VM2 (vm2-done label) or marked checked
+            // Filter out completed/deleted tasks, and non-recurring vm2-done tasks
+            // Recurring tasks with vm2-done stay — vm2 handled a past cycle but it recurs
             todoistTasks = raw.filter(t => {
                 if (t.checked || t.is_deleted) return false;
                 const labels = (t.labels || []).map(l => l.toLowerCase());
-                if (labels.includes('vm2-done')) return false;
+                const isRecurring = t.due?.is_recurring === true;
+                if (labels.includes('vm2-done') && !isRecurring) return false;
                 return true;
             });
             connectorStatus.todoist = true;
@@ -980,9 +1011,14 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
                 const due = t.due?.date || '';
                 const dueDisplay = due ? new Date(due + 'T00:00:00').toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
                 const todoistUrl = t.url || ('https://app.todoist.com/app/task/' + t.id);
+                const isRecurring = t.due?.is_recurring === true;
+                const labels = (t.labels || []).map(l => l.toLowerCase());
+                const isVm2Done = labels.includes('vm2-done');
                 html += `<div class="task-row">
                     <span class="priority-icon ${priorityClass(t.priority)}"></span>
                     ${isOverdue ? '<span class="overdue-badge">⚠ overdue</span>' : ''}
+                    ${isRecurring ? '<span class="recurring-badge">↻ recurring</span>' : ''}
+                    ${isVm2Done ? '<span class="vm2done-badge">✓ vm2-done</span>' : ''}
                     <span class="task-name">${esc(t.content)}</span>
                     <span class="task-due ${isOverdue ? 'overdue' : ''}">${esc(dueDisplay)}</span>
                     <a class="task-link" href="${esc(todoistUrl)}" target="_blank" rel="noopener">Open →</a>
