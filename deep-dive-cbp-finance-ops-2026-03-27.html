@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: CBP Financial Management & Accounting Ops — VM2</title>
+<style>
+  :root {
+    --accent: #c53a3a;
+    --accent-dark: #a02e2e;
+    --dark: #1a1a1a;
+    --mid: #2d2d2d;
+    --light-bg: #f8f6f3;
+    --border: #e0dbd4;
+    --text: #1c1c1c;
+    --muted: #666;
+    --green: #2a7a3b;
+    --amber: #b45309;
+    --red: #c53a3a;
+    --blue: #1e4a8a;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: #f5f2ee;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    background: var(--dark);
+    color: #fff;
+    padding: 11px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar .brand { color: var(--accent); }
+  .topbar .date { color: #aaa; font-weight: 400; letter-spacing: 0.04em; }
+
+  /* LAYOUT */
+  .page-wrap { max-width: 980px; margin: 0 auto; padding: 36px 24px 64px; }
+
+  /* HEADER */
+  .brief-header {
+    padding: 36px 0 28px;
+    border-bottom: 3px solid var(--accent);
+    margin-bottom: 36px;
+  }
+  .brief-header .eyebrow {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .brief-header h1 {
+    font-family: "Charter", "Georgia", serif;
+    font-size: 2.1rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--dark);
+    margin-bottom: 12px;
+  }
+  .brief-header .subtitle {
+    font-size: 1.0rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .pill {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+  }
+  .pill.accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* SECTIONS */
+  .section {
+    margin-bottom: 44px;
+  }
+  .section-title {
+    font-family: "Charter", "Georgia", serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--dark);
+    border-left: 4px solid var(--accent);
+    padding-left: 14px;
+    margin-bottom: 18px;
+    line-height: 1.2;
+  }
+  .section-subtitle {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 8px;
+    margin-top: 20px;
+  }
+
+  /* EXEC SUMMARY BOX */
+  .exec-box {
+    background: var(--dark);
+    color: #f0ece6;
+    border-radius: 6px;
+    padding: 28px 32px;
+    margin-bottom: 18px;
+  }
+  .exec-box p { margin-bottom: 10px; line-height: 1.7; font-size: 0.97rem; }
+  .exec-box p:last-child { margin-bottom: 0; }
+  .exec-box strong { color: #f5c842; }
+
+  /* VERDICT BANNER */
+  .verdict-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #fff8e1;
+    border: 2px solid #f5c842;
+    border-radius: 6px;
+    padding: 18px 24px;
+    margin-bottom: 20px;
+  }
+  .verdict-icon {
+    font-size: 2.2rem;
+    line-height: 1;
+  }
+  .verdict-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+    font-weight: 700;
+  }
+  .verdict-text {
+    font-family: "Charter", "Georgia", serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--dark);
+  }
+
+  /* KEY FACTS GRID */
+  .facts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .fact-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+  }
+  .fact-card .label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 5px;
+  }
+  .fact-card .value {
+    font-size: 1.0rem;
+    font-weight: 700;
+    color: var(--dark);
+    line-height: 1.3;
+  }
+  .fact-card .value.accent { color: var(--accent); }
+  .fact-card .sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* TABLES */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.87rem;
+    background: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  thead { background: var(--dark); color: #fff; }
+  thead th {
+    padding: 11px 14px;
+    text-align: left;
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 700;
+  }
+  tbody tr:nth-child(even) { background: #faf8f5; }
+  tbody tr:hover { background: #f2ede6; }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-strong { background: #d4edda; color: #155724; }
+  .badge-moderate { background: #fff3cd; color: #856404; }
+  .badge-relevant { background: #cce5ff; color: #004085; }
+  .badge-low { background: #f8d7da; color: #721c24; }
+  .badge-go { background: #2a7a3b; color: #fff; }
+  .badge-nogo { background: var(--accent); color: #fff; }
+  .badge-cond { background: var(--amber); color: #fff; }
+  .badge-wosb { background: #7b2d8b; color: #fff; }
+
+  /* CAPABILITY MATRIX */
+  .cap-row td:first-child { font-weight: 600; }
+  .cap-check { color: var(--green); font-weight: 700; }
+  .cap-partial { color: var(--amber); font-weight: 700; }
+  .cap-gap { color: var(--red); font-weight: 700; }
+
+  /* SEED CARDS */
+  .seed-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    position: relative;
+    border-left: 4px solid var(--accent);
+  }
+  .seed-card .seed-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .seed-card .to-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .seed-card .to-title {
+    font-weight: 700;
+    color: var(--dark);
+    font-size: 0.95rem;
+    margin-top: 2px;
+  }
+  .seed-card .to-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .seed-card p {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: #333;
+  }
+  .score-badge {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 4px;
+    padding: 3px 9px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .score-badge.moderate { background: var(--amber); }
+  .score-badge.relevant { background: var(--blue); }
+
+  /* SIGNAL ITEMS */
+  .signal-list { list-style: none; padding: 0; }
+  .signal-list li {
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.9rem;
+  }
+  .signal-list li:last-child { border-bottom: none; }
+  .sig-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+  .sig-label { font-weight: 600; }
+
+  /* GO/NO-GO */
+  .gng-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .gng-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 20px;
+  }
+  .gng-card .gng-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .gng-card.go-card { border-top: 3px solid var(--green); }
+  .gng-card.go-card .gng-title { color: var(--green); }
+  .gng-card.risk-card { border-top: 3px solid var(--red); }
+  .gng-card.risk-card .gng-title { color: var(--red); }
+  .gng-card.watch-card { border-top: 3px solid var(--amber); }
+  .gng-card.watch-card .gng-title { color: var(--amber); }
+  .gng-card ul { list-style: none; padding: 0; }
+  .gng-card ul li {
+    font-size: 0.85rem;
+    padding: 5px 0;
+    border-bottom: 1px solid #f0ece6;
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.45;
+  }
+  .gng-card ul li::before {
+    content: "–";
+    position: absolute;
+    left: 0;
+    color: var(--muted);
+  }
+  .gng-card ul li:last-child { border-bottom: none; }
+
+  /* SCORE DIAL */
+  .score-summary {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .score-dial {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: conic-gradient(var(--amber) 0% 62%, #e5e1db 62%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .score-dial::after {
+    content: "";
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+  }
+  .score-dial-inner {
+    position: relative;
+    z-index: 1;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--amber);
+  }
+  .score-text .score-verdict {
+    font-family: "Charter", "Georgia", serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--dark);
+  }
+  .score-text .score-desc {
+    font-size: 0.87rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* NEXT ACTIONS */
+  .action-list { list-style: none; padding: 0; counter-reset: actions; }
+  .action-list li {
+    counter-increment: actions;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  .action-list li:last-child { border-bottom: none; }
+  .action-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .action-title { font-weight: 700; display: block; color: var(--dark); margin-bottom: 2px; }
+  .action-detail { color: var(--muted); font-size: 0.84rem; }
+  .action-due {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--accent);
+    background: #fdecea;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-top: 4px;
+    display: inline-block;
+  }
+
+  /* SOURCES */
+  .sources-list { list-style: none; padding: 0; }
+  .sources-list li {
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .sources-list li:last-child { border-bottom: none; }
+  .sources-list a {
+    color: var(--blue);
+    text-decoration: none;
+  }
+  .sources-list a:hover { text-decoration: underline; }
+  .src-label {
+    font-weight: 700;
+    color: var(--dark);
+    margin-right: 6px;
+  }
+
+  /* INCUMBENT PROFILE */
+  .incumbent-profile {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 600px) {
+    .incumbent-profile { grid-template-columns: 1fr; }
+    .brief-header h1 { font-size: 1.55rem; }
+    .topbar { flex-direction: column; gap: 4px; }
+  }
+  .profile-block {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 20px;
+  }
+  .profile-block .block-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .profile-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #f5f2ee;
+  }
+  .profile-row:last-child { border-bottom: none; }
+  .profile-row .key { color: var(--muted); }
+  .profile-row .val { font-weight: 600; color: var(--dark); text-align: right; }
+
+  /* LABOR RATE TREND */
+  .rate-trend {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-top: 8px;
+  }
+  .rate-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .rate-bar .bar {
+    width: 40px;
+    background: var(--accent);
+    border-radius: 3px 3px 0 0;
+    opacity: 0.8;
+  }
+  .rate-bar .yr { font-size: 0.68rem; color: var(--muted); font-weight: 700; }
+  .rate-bar .amt { font-size: 0.72rem; font-weight: 700; color: var(--dark); }
+
+  /* TIMELINE */
+  .timeline {
+    position: relative;
+    padding-left: 24px;
+  }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .tl-item {
+    position: relative;
+    padding-bottom: 18px;
+  }
+  .tl-item::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  .tl-date {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--accent);
+    margin-bottom: 2px;
+  }
+  .tl-text { font-size: 0.87rem; color: var(--dark); }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 30px 0;
+  }
+
+  /* FOOTNOTE */
+  .footnote {
+    font-size: 0.77rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 8px;
+  }
+
+  /* CALLOUT */
+  .callout {
+    background: #fff8e1;
+    border-left: 4px solid #f5c842;
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.88rem;
+    margin: 16px 0;
+    color: #4d3800;
+  }
+  .callout strong { font-weight: 700; }
+
+  .callout-red {
+    background: #fdecea;
+    border-left: 4px solid var(--accent);
+    color: #5c1111;
+  }
+
+  .callout-green {
+    background: #e6f4ea;
+    border-left: 4px solid var(--green);
+    color: #1a3d20;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span><span class="brand">VM2</span>&nbsp;·&nbsp;DEEP DIVE BRIEF</span>
+  <span class="date">March 27, 2026</span>
+</div>
+
+<div class="page-wrap">
+
+  <!-- HEADER -->
+  <div class="brief-header">
+    <div class="eyebrow">Opportunity Deep Dive · CBP Office of Finance</div>
+    <h1>CBP Financial Management &amp; Accounting Operations</h1>
+    <div class="subtitle">Recompete of Dextera contract GS02F0061X-70B01C21F00000644 · WOSB Set-Aside · NAICS 541611</div>
+    <div class="meta-pills">
+      <span class="pill accent">Up to $50M</span>
+      <span class="pill">Award ~Aug 2026</span>
+      <span class="pill">WOSB Set-Aside</span>
+      <span class="pill">NAICS 541611</span>
+      <span class="pill">4 Original Bidders</span>
+      <span class="pill">SAP ERP Modernization Signal</span>
+    </div>
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section">
+    <div class="section-title">Executive Summary</div>
+    <div class="exec-box">
+      <p>CBP's Office of Finance is preparing to recompete its <strong>$16M–$50M financial operations support contract</strong>, currently held by Dextera (Centreville, VA; WOSB) under delivery order 70B01C21F00000644. The contract provides accounting clerks and program analysts supporting CBP's Office of Finance in Indianapolis, IN, and expires <strong>August 7, 2026</strong>. HigherGov forecasts the recompete at up to $50M — a 2.6× growth from the original award — indicating an anticipated scope expansion.</p>
+      <p>A parallel sources sought notice (<strong>PR20156685</strong>, deadline March 30, 2026) signals CBP is actively modernizing its financial close process with a COTS SAP-integrated tool. This is a separate procurement (NAICS 541511, no set-aside) but directly informs the operational direction of the finance ops recompete: the workforce that currently executes manual close procedures will transition to supporting an automated, AI-enhanced ERP environment.</p>
+      <p>Changeis holds <strong>active CBP past performance</strong> — including a $20M OFAM Human Capital Program Support contract awarded November 2024 — and possesses SBA-certified EDWOSB status. Changeis is <strong>contract-vehicle ready</strong> via MAS (GS-10F-054BA, SIN 541611) and OASIS+. The primary gap is direct CBP Office of Finance financial management experience; however, Changeis's DOT/FAA/Volpe financial management task orders provide functional equivalence that can be argued in a competitive proposal. The recommendation is a <strong>conditional GO</strong> with immediate teaming outreach to GAP Solutions (Dextera's own subcontractor with CBP National Finance Center experience) and early WOSB set-aside confirmation.</p>
+    </div>
+  </div>
+
+  <!-- OPPORTUNITY OVERVIEW -->
+  <div class="section">
+    <div class="section-title">Opportunity Overview</div>
+
+    <div class="facts-grid">
+      <div class="fact-card">
+        <div class="label">Estimated Value</div>
+        <div class="value accent">Up to $50M</div>
+        <div class="sub">Base: $16M (Dextera incumbent)</div>
+      </div>
+      <div class="fact-card">
+        <div class="label">Expected Award</div>
+        <div class="value">August 2026</div>
+        <div class="sub">Contract expires Aug 7, 2026</div>
+      </div>
+      <div class="fact-card">
+        <div class="label">Set-Aside</div>
+        <div class="value">WOSB</div>
+        <div class="sub">Women-Owned Small Business</div>
+      </div>
+      <div class="fact-card">
+        <div class="label">NAICS / PSC</div>
+        <div class="value">541611 / R703</div>
+        <div class="sub">Admin &amp; General Mgmt Consulting / Accounting</div>
+      </div>
+      <div class="fact-card">
+        <div class="label">Incumbent</div>
+        <div class="value">Dextera Corp</div>
+        <div class="sub">Centreville, VA · WOSB</div>
+      </div>
+      <div class="fact-card">
+        <div class="label">Place of Performance</div>
+        <div class="value">Indianapolis, IN</div>
+        <div class="sub">46268 (CBP Finance Center)</div>
+      </div>
+      <div class="fact-card">
+        <div class="label">Original Bidders</div>
+        <div class="value">4 Offers</div>
+        <div class="sub">MAS Fair Opportunity Procedures</div>
+      </div>
+      <div class="fact-card">
+        <div class="label">Contract Vehicle</div>
+        <div class="value">MAS / OASIS+</div>
+        <div class="sub">Multiple Award Schedule or OASIS+</div>
+      </div>
+    </div>
+
+    <div class="section-subtitle">Scope Description</div>
+    <p style="font-size:0.92rem; margin-bottom:14px;">The contractor provides <strong>financial operations support services</strong> to CBP's Office of Finance — specifically deploying <strong>accounting clerks and program analysts</strong> across various functional areas. Based on the current contract labor data, this represents approximately <strong>44 FTEs</strong> (avg. 91,600 hours/year) with a blended billing rate that grew from $27.00/hr (2022) to $34.57/hr (2024), reflecting annual SCA wage determination increases and scope growth. The August 2023 modification adding 3 personnel for Forfeiture Fund work and the April 2025 addition of a Program Analyst indicate ongoing scope evolution.</p>
+
+    <div class="section-subtitle">Key Functional Areas (Inferred)</div>
+    <ul class="signal-list">
+      <li><span class="sig-icon">→</span><div><span class="sig-label">Financial Reporting &amp; Accounting:</span> Journal entries, account reconciliations, transaction matching, audit documentation aligned with OMB Circular A-123 and GAAP</div></li>
+      <li><span class="sig-icon">→</span><div><span class="sig-label">Budget Execution &amp; Funds Control:</span> Obligation tracking, funds availability, cancelling year fund code validation, status-of-funds reporting</div></li>
+      <li><span class="sig-icon">→</span><div><span class="sig-label">Forfeiture Fund Operations:</span> Specialized accounting for seized/forfeited assets — added scope Aug 2023</div></li>
+      <li><span class="sig-icon">→</span><div><span class="sig-label">SAP ERP Operations:</span> Pre-close/close steps, data entry and validation within CBP's SAP environment (S/4HANA or ECC)</div></li>
+      <li><span class="sig-icon">→</span><div><span class="sig-label">Program Analysis:</span> Financial program specialist duties — budget formulation, procurement support, variance analysis, management reporting</div></li>
+      <li><span class="sig-icon">→</span><div><span class="sig-label">Compliance &amp; Audit Support:</span> A-123 internal controls, external financial statement audit support, audit trail maintenance</div></li>
+    </ul>
+
+    <div class="section-subtitle">Related Opportunity: Financial Close Modernization Tool (SAM.gov PR20156685)</div>
+    <div class="callout">
+      <strong>SAP ERP Modernization Signal:</strong> CBP posted a Sources Sought (deadline March 30, 2026) for a COTS solution to automate its financial close — account reconciliations, journal entries, year-end close workflow, AI/ML anomaly detection, and OMB Circular A-123 compliance. Integration with <strong>SAP (S/4HANA or ECC)</strong> is the central technical requirement. This is a separate procurement (NAICS 541511, no set-aside, POC: Denise V. Thompson / denise.v.thompson@cbp.dhs.gov), but it means the next financial ops support contract will operate in an increasingly automated SAP environment. Competitors who can credibly describe both the people and the technology dimension will have an advantage.
+    </div>
+
+    <div class="section-subtitle">Procurement Timeline</div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-date">July 2021</div>
+        <div class="tl-text">Dextera awarded 70B01C21F00000644 — $15.9M potential, WOSB, 4 bidders</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">Aug 2022 – Aug 2025</div>
+        <div class="tl-text">4 option years exercised; scope expanded (Forfeiture Fund staff, Program Analyst added)</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">Oct 2025</div>
+        <div class="tl-text">Last modification — 30-day incremental funding, OY4 continuation</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">Mar 9, 2026</div>
+        <div class="tl-text">CBP posts Sources Sought for Financial Close Modernization Tool (SAP integration)</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">Mar 30, 2026</div>
+        <div class="tl-text">Capability Statement deadline for Financial Close Modernization Tool SS</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">~Q2–Q3 FY2026</div>
+        <div class="tl-text">Expected solicitation release for Financial Ops recompete (forecast: HigherGov/APFS)</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">August 2026</div>
+        <div class="tl-text">Incumbent contract expires · Expected recompete award</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAST PERFORMANCE MATRIX -->
+  <div class="section">
+    <div class="section-title">Past Performance Matrix</div>
+    <p style="font-size:0.87rem; color:var(--muted); margin-bottom:16px;">RAG retrieval against CBP Finance Ops requirements: 7 MODERATE matches (0.50–0.64), 2 RELEVANT matches (0.45–0.49). All matches are DOT/FAA/Volpe financial and administrative support task orders under master contract 6913G619D300021.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Task Order</th>
+          <th>Contract #</th>
+          <th>Client</th>
+          <th>Title / Scope</th>
+          <th>Score</th>
+          <th>Tier</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:600;">V1312005</td>
+          <td style="font-size:0.78rem;">6913G621F400036</td>
+          <td>DOT / FAA / Volpe</td>
+          <td>Financial Management Tools &amp; Budget Formulation Support — Task Budget Tool, Agreement Processing System, Budget Formulation Tools; operational support for Volpe Office of Financial Management automated finance applications</td>
+          <td style="font-weight:700;">0.636</td>
+          <td><span class="badge badge-moderate">Moderate</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">V3202050</td>
+          <td style="font-size:0.78rem;">6913G621F400030</td>
+          <td>DOT / FAA / Volpe</td>
+          <td>Administrative &amp; Financial Support (V320/340) — Program analysts, senior/middle/junior analysts; 7,467 LOE hours; budget execution, financial reporting, HR/contracts support</td>
+          <td style="font-weight:700;">0.628</td>
+          <td><span class="badge badge-moderate">Moderate</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">V1312003</td>
+          <td style="font-size:0.78rem;">6913G620F400023</td>
+          <td>DOT / FAA / Volpe</td>
+          <td>Financial Management Tools &amp; Support — Inter-Agency Agreement/Reimbursable Agreement (IAA/RA) tool, Delphi financial data processing, budget cycle support; Senior Specialist 835 hrs LOE</td>
+          <td style="font-weight:700;">0.616</td>
+          <td><span class="badge badge-moderate">Moderate</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">V3202004</td>
+          <td style="font-size:0.78rem;">6913G620F400035</td>
+          <td>DOT / FAA / Volpe</td>
+          <td>Financial Support (V320/V340) — Administrative and financial support to Volpe divisions; budget execution, management of division functions, financial reporting</td>
+          <td style="font-weight:700;">0.538</td>
+          <td><span class="badge badge-moderate">Moderate</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">V1312008</td>
+          <td style="font-size:0.78rem;">6913G623F40064N</td>
+          <td>DOT / Volpe</td>
+          <td>Finance Tools Maintenance Support — Operational support for Task Budget Tool, Agreement Processing System, Budget Formulation Tools; COOP-aligned financial application maintenance</td>
+          <td style="font-weight:700;">0.521</td>
+          <td><span class="badge badge-moderate">Moderate</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">V3412062</td>
+          <td style="font-size:0.78rem;">6913G623F40037N</td>
+          <td>FAA / Volpe</td>
+          <td>FAA Financial Support (SBS / Spectrum Engineering) — Financial support for FAA Surveillance and Broadcast Services, Second Level Engineering, Spectrum Engineering groups</td>
+          <td style="font-weight:700;">0.520</td>
+          <td><span class="badge badge-moderate">Moderate</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">V3412065</td>
+          <td style="font-size:0.78rem;">6913G623F40054N</td>
+          <td>FAA / Volpe</td>
+          <td>ATEPS Financial Support — Administrative and financial support for FAA Air Traffic Engineering Program Management Support contract; budget and financial management</td>
+          <td style="font-weight:700;">0.500</td>
+          <td><span class="badge badge-moderate">Moderate</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">V3412068</td>
+          <td style="font-size:0.78rem;">6913G624F40022N</td>
+          <td>FAA / Volpe</td>
+          <td>ATEPS Financial Support (continuation) — Same scope as V3412065; administrative and financial support for ATEPS program management</td>
+          <td style="font-weight:700;">0.500</td>
+          <td><span class="badge badge-relevant">Relevant</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">V33020050</td>
+          <td style="font-size:0.78rem;">6913G620F400051</td>
+          <td>DOT / FAA / Volpe</td>
+          <td>Financial &amp; Administrative Program Support (V330) — Track/analyze/report labor accounting for budget and financial accuracy; invitational travel, scheduling, financial corrections</td>
+          <td style="font-weight:700;">0.471</td>
+          <td><span class="badge badge-relevant">Relevant</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="section-subtitle">Capability-to-Requirement Mapping</div>
+    <table>
+      <thead>
+        <tr>
+          <th>CBP Finance Ops Requirement</th>
+          <th>Changeis Coverage</th>
+          <th>Evidence</th>
+          <th>Gap Flag</th>
+        </tr>
+      </thead>
+      <tbody class="cap-row">
+        <tr>
+          <td>Financial reporting &amp; reconciliation</td>
+          <td><span class="cap-check">✔ Strong</span></td>
+          <td>V1312003/V1312005: IAA/RA tool, Delphi data, financial close support at Volpe OFM</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Budget execution &amp; funds control</td>
+          <td><span class="cap-check">✔ Strong</span></td>
+          <td>V3202050/V3202004: 7,467 LOE hours, budget formulation &amp; execution across DOT/FAA divisions</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Program analysis (financial analysts)</td>
+          <td><span class="cap-check">✔ Strong</span></td>
+          <td>V3202050: Senior/Middle/Junior Analyst labor categories; CBP OFAM (70B01C24F00000787) capital planning &amp; data analytics reporting</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Accounting clerks / operations</td>
+          <td><span class="cap-partial">~ Partial</span></td>
+          <td>Volpe TOs cover financial support; Dextera's specific "accounting clerk" labor category is not matched in RAG</td>
+          <td>Staff augmentation model</td>
+        </tr>
+        <tr>
+          <td>SAP/ERP operations &amp; data entry</td>
+          <td><span class="cap-partial">~ Partial</span></td>
+          <td>Volpe used Delphi (federal ERP) and Microsoft Access-based financial tools; V1312003 covers Delphi data loading — analogous to SAP workflows</td>
+          <td>SAP-specific depth</td>
+        </tr>
+        <tr>
+          <td>Forfeiture Fund / revenue accounting</td>
+          <td><span class="cap-gap">✗ Gap</span></td>
+          <td>No RAG matches for forfeiture fund or customs revenue accounting; GAP Solutions has CBP National Finance Center revenue collection experience</td>
+          <td>Teaming priority</td>
+        </tr>
+        <tr>
+          <td>OMB A-123 / audit support</td>
+          <td><span class="cap-check">✔ Moderate</span></td>
+          <td>CBP OFAM contract involves OMB budget compliance; Volpe TOs include financial accuracy reporting; indirect coverage</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>DHS/CBP agency familiarity</td>
+          <td><span class="cap-check">✔ Strong</span></td>
+          <td>Active CBP OFAM contract (70B01C24F00000787, $20M); USCIS workforce analysis contract (2023); multiple DHS awards</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>WOSB set-aside eligibility</td>
+          <td><span class="cap-check">✔ Confirmed</span></td>
+          <td>SBA-certified EDWOSB (GSA eLibrary: 47QRCA24DW284); MAS SIN 541611 awarded</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>MAS contract vehicle (541611)</td>
+          <td><span class="cap-check">✔ Confirmed</span></td>
+          <td>MAS GS-10F-054BA, SIN 541611 active; OASIS+ 47QRCA24DW284 awarded</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CORPORATE EXPERIENCE SEEDS -->
+  <div class="section">
+    <div class="section-title">Corporate Experience Narrative Seeds</div>
+    <p style="font-size:0.87rem; color:var(--muted); margin-bottom:18px;">Proposal-ready narrative seeds for each qualifying past performance reference (&ge;0.50 composite score). Each maps directly to CBP Office of Finance requirements.</p>
+
+    <div class="seed-card">
+      <div class="seed-header">
+        <div>
+          <div class="to-label">Task Order V1312005 &nbsp;|&nbsp; DOT/FAA/Volpe</div>
+          <div class="to-title">Financial Management Tools &amp; Budget Formulation Support</div>
+          <div class="to-meta">Contract 6913G621F400036 &nbsp;·&nbsp; 16 matching chunks</div>
+        </div>
+        <span class="score-badge">0.636</span>
+      </div>
+      <p>Under the Volpe National Transportation Systems Center's Office of Financial Management, Changeis provided operational support for automated finance applications — including the Task Budget Tool, Agreement Processing System, and Budget Formulation Tools — directly mirroring the budget execution and financial systems support required by CBP's Office of Finance. Our team processed Delphi financial data loads into Access-based budget tools for each fiscal year cycle, prepared and reviewed budget formulation reports, and supported business process continuity under the Center's COOP plan — demonstrating the structured, compliance-driven financial operations methodology that CBP requires. This experience translates directly to CBP's SAP environment, where analogous workflows for funds control, obligation entry, and pre-close validation are executed at scale.</p>
+    </div>
+
+    <div class="seed-card">
+      <div class="seed-header">
+        <div>
+          <div class="to-label">Task Order V3202050 &nbsp;|&nbsp; DOT/FAA/Volpe</div>
+          <div class="to-title">Administrative &amp; Financial Support (V320/V340)</div>
+          <div class="to-meta">Contract 6913G621F400030 &nbsp;·&nbsp; 11 matching chunks</div>
+        </div>
+        <span class="score-badge moderate">0.628</span>
+      </div>
+      <p>Changeis deployed a multi-tier analyst team — spanning Professional Analysts, Senior Analysts, Middle Analysts, and Junior Analysts — to deliver 7,467 hours of administrative and financial support to Volpe's V320 and V340 divisions, with direct support to program management, budget execution, human resources, and contracts administration. This labor model precisely parallels the accounting clerks and program analysts staffing construct of the CBP Finance Ops contract, where Changeis must demonstrate the capacity to field and manage a diverse team of finance professionals across multiple functional areas simultaneously. Our track record managing multi-tier financial support teams with measurable throughput (invoice accuracy, deliverable timeliness) provides compelling proposal evidence for CBP's performance-based acquisition structure.</p>
+    </div>
+
+    <div class="seed-card">
+      <div class="seed-header">
+        <div>
+          <div class="to-label">Task Order V1312003 &nbsp;|&nbsp; DOT/FAA/Volpe</div>
+          <div class="to-title">Financial Management Tools &amp; Support</div>
+          <div class="to-meta">Contract 6913G620F400023 &nbsp;·&nbsp; 15 matching chunks</div>
+        </div>
+        <span class="score-badge moderate">0.616</span>
+      </div>
+      <p>Changeis supported the Volpe Center's Office of Financial Management in operating and maintaining its Inter-Agency/Reimbursable Agreement (IAA/RA) tool — the federal counterpart to CBP's treasury accounting and reimbursable billing systems — while also managing data pipelines from Delphi (the federal shared service ERP) into budget planning tools. This experience demonstrates Changeis's fluency with government ERP financial workflows, inter-agency financial transaction processing, and the precision required for federal fund accounting — all capabilities directly transferable to CBP's SAP-based environment where accurate posting of transactions across appropriation accounts, fund codes, and fiscal year boundaries is a mission-critical function.</p>
+    </div>
+
+    <div class="seed-card">
+      <div class="seed-header">
+        <div>
+          <div class="to-label">Task Order V3202004 &nbsp;|&nbsp; DOT/FAA/Volpe</div>
+          <div class="to-title">Financial Support (V320/V340 Divisions)</div>
+          <div class="to-meta">Contract 6913G620F400035 &nbsp;·&nbsp; 7 matching chunks</div>
+        </div>
+        <span class="score-badge moderate">0.538</span>
+      </div>
+      <p>Changeis provided administrative and financial support to multiple Volpe Center divisions simultaneously, ensuring smooth delivery of work and effective management of division-level financial functions. This multi-division, multi-program support model directly reflects the CBP Office of Finance environment, where accounting clerks and program analysts must support multiple financial functional areas concurrently — including budget execution, funds tracking, reporting, and compliance — while maintaining accuracy and timeliness. Changeis's proven ability to manage financial support across organizational boundaries without service disruption is a direct asset for CBP's complex, high-volume Office of Finance operations.</p>
+    </div>
+
+    <div class="seed-card">
+      <div class="seed-header">
+        <div>
+          <div class="to-label">CBP OFAM HCPS &nbsp;|&nbsp; DHS/CBP (Active)</div>
+          <div class="to-title">Human Capital Program Support — CBP Office of Facilities &amp; Asset Management</div>
+          <div class="to-meta">Award 70B01C24F00000787 &nbsp;·&nbsp; $20M &nbsp;·&nbsp; Awarded Nov 2024</div>
+        </div>
+        <span class="score-badge">Active CBP</span>
+      </div>
+      <p>Changeis currently holds an active $20M task order with CBP's Office of Facilities and Asset Management (OFAM), providing program and administrative management support to five OFAM divisions — including planning, programming, capital facility planning, data analytics reporting, financial planning for asset management, and OMB initiative support. This active CBP engagement demonstrates Changeis's cleared workforce, established CBP contracting relationships, and familiarity with CBP's internal programmatic and financial planning processes. The OFAM contract's overlap with the same awarding office (ADMINISTRATION FACILITIES TRAINING CONTRACTING DIVISION, 70B01C) as the Finance Ops recompete provides institutional knowledge of CBP's contracting processes, COR relationships, and deliverable standards.</p>
+    </div>
+
+    <div class="seed-card">
+      <div class="seed-header">
+        <div>
+          <div class="to-label">Task Orders V1312008 / V3412062 / V3412065 &nbsp;|&nbsp; FAA/Volpe</div>
+          <div class="to-title">Finance Tools Maintenance &amp; FAA Financial Support (Multiple)</div>
+          <div class="to-meta">Contracts 6913G623F40064N / 6913G623F40037N / 6913G623F40054N</div>
+        </div>
+        <span class="score-badge moderate">0.500–0.521</span>
+      </div>
+      <p>Across multiple sequential task orders, Changeis delivered financial application maintenance and operational financial support to FAA program groups — including Surveillance and Broadcast Services, Spectrum Engineering, and Air Traffic Engineering programs — demonstrating sustained financial operations support capacity over multi-year periods. These engagements establish that Changeis can maintain consistent, high-quality financial support across diverse program portfolios and technical environments, a capability directly applicable to CBP's Office of Finance, which supports multiple appropriation accounts, programs, and funding streams within a single integrated SAP environment.</p>
+    </div>
+  </div>
+
+  <!-- INCUMBENT & MARKET ANALYSIS -->
+  <div class="section">
+    <div class="section-title">Incumbent &amp; Market Analysis</div>
+
+    <div class="incumbent-profile">
+      <div class="profile-block">
+        <div class="block-title">Dextera Corporation — Incumbent Profile</div>
+        <div class="profile-row"><span class="key">Location</span><span class="val">Centreville / Leesburg, VA</span></div>
+        <div class="profile-row"><span class="key">Certifications</span><span class="val"><span class="badge badge-wosb">WOSB</span> &nbsp; SBA 8(a) graduated 2017</span></div>
+        <div class="profile-row"><span class="key">CAGE / UEI</span><span class="val">45S65 / GC77SM2AFMR9</span></div>
+        <div class="profile-row"><span class="key">Primary NAICS</span><span class="val">541611</span></div>
+        <div class="profile-row"><span class="key">Contract value</span><span class="val">$15.0M obligated / $19.1M potential</span></div>
+        <div class="profile-row"><span class="key">% Complete</span><span class="val">86% (as of Oct 2025)</span></div>
+        <div class="profile-row"><span class="key">Backlog</span><span class="val">$4.1M unfunded</span></div>
+        <div class="profile-row"><span class="key">Key subcontractor</span><span class="val">GAP Solutions ($896K, 2024)</span></div>
+        <div class="profile-row"><span class="key">SAM registration</span><span class="val">Active through Dec 2026</span></div>
+        <div class="profile-row"><span class="key">Self-description</span><span class="val">Program mgmt, records mgmt, QA; 50%+ admin support workforce</span></div>
+      </div>
+      <div class="profile-block">
+        <div class="block-title">Incumbent Contract Labor Trend</div>
+        <div class="profile-row"><span class="key">2022 FTEs</span><span class="val">39.7 FTE @ $26.97/hr blended</span></div>
+        <div class="profile-row"><span class="key">2023 FTEs</span><span class="val">44.0 FTE @ $30.02/hr blended</span></div>
+        <div class="profile-row"><span class="key">2024 FTEs</span><span class="val">44.1 FTE @ $34.57/hr blended</span></div>
+        <div class="profile-row"><span class="key">Hours/yr (stable)</span><span class="val">~91,500–91,650 hrs/year</span></div>
+        <div class="profile-row"><span class="key">Billing rate growth</span><span class="val">+28% from 2022–2024 (SCA-driven)</span></div>
+        <div class="profile-row"><span class="key">2023 scope add</span><span class="val">+3 FTEs Forfeiture Fund (Aug 2023)</span></div>
+        <div class="profile-row"><span class="key">2025 scope add</span><span class="val">+1 Program Analyst (Apr 2025)</span></div>
+        <div class="profile-row"><span class="key">Budget account</span><span class="val">070-0530 Ops &amp; Support / FLAP / 25.2</span></div>
+        <div class="profile-row"><span class="key">Awarding office</span><span class="val">70B01C Admin/Facilities/Training</span></div>
+
+        <div class="section-subtitle" style="margin-top:16px;">Blended Rate Trend</div>
+        <div class="rate-trend">
+          <div class="rate-bar">
+            <div class="bar" style="height:48px;"></div>
+            <div class="amt">$26.97</div>
+            <div class="yr">2022</div>
+          </div>
+          <div class="rate-bar">
+            <div class="bar" style="height:60px;"></div>
+            <div class="amt">$30.02</div>
+            <div class="yr">2023</div>
+          </div>
+          <div class="rate-bar">
+            <div class="bar" style="height:70px;"></div>
+            <div class="amt">$34.57</div>
+            <div class="yr">2024</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-subtitle" style="margin-top:20px;">Dextera Incumbent Strength Assessment</div>
+    <ul class="signal-list">
+      <li><span class="sig-icon">⚠</span><div><span class="sig-label">Relatively Weak Incumbent Profile:</span> Dextera's SAM capability statement is generic ("program management, records management, quality assurance") with no articulated financial management expertise. Total reported federal obligations (~$18M lifetime) suggest a very lean operation dependent on this single CBP contract for the majority of revenue.</div></li>
+      <li><span class="sig-icon">⚠</span><div><span class="sig-label">Subcontractor Reliance:</span> GAP Solutions received $896K in 2024 subcontracting, suggesting Dextera likely passes through a significant share of the workforce — potentially making their incumbent advantage more about transition risk than genuine technical differentiation.</div></li>
+      <li><span class="sig-icon">⚠</span><div><span class="sig-label">Deobligation History:</span> Multiple deobligation actions ($765K Feb 2024, $237K Jul 2023, $110K May 2023) suggest underspend vs. planned — potentially reflecting staffing challenges, attrition, or difficulty filling positions in Indianapolis.</div></li>
+      <li><span class="sig-icon">✓</span><div><span class="sig-label">5 Years of Institutional Knowledge:</span> Despite the above weaknesses, Dextera has 5 years of relationship capital with CBP's Office of Finance COR/CO and understands the functional requirements, personnel, and workflows in detail.</div></li>
+    </ul>
+  </div>
+
+  <!-- COMPETITIVE LANDSCAPE -->
+  <div class="section">
+    <div class="section-title">Competitive Landscape</div>
+
+    <div class="callout">
+      <strong>Key Insight:</strong> The original 2021 award drew 4 bidders via WOSB set-aside on MAS. The recompete is forecast at 2–3× the original value (~$50M), which will attract a wider field — potentially 6–8 offerors. CBP financial management WOSB specialists in the DHS ecosystem are well-documented by OrangeSlices AI and HigherGov.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Competitor / Team</th>
+          <th>Certifications</th>
+          <th>CBP Finance Relevance</th>
+          <th>Threat Level</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:600;">Dextera Corp (incumbent)</td>
+          <td><span class="badge badge-wosb">WOSB</span></td>
+          <td>5 years CBP Office of Finance; accounting clerks &amp; program analyst workforce in place; GAP Solutions sub</td>
+          <td style="color:var(--red);font-weight:700;">HIGH — Incumbent</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">GAP Solutions</td>
+          <td>Small Business</td>
+          <td>CBP National Finance Center client (revenue collection, financial reporting); currently Dextera sub — may compete or be targeted as sub by challengers</td>
+          <td style="color:var(--amber);font-weight:700;">MEDIUM — Target Sub</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">Chevo Consulting</td>
+          <td><span class="badge badge-wosb">WOSB</span></td>
+          <td>DHS/CBP enterprise support experience; active CBP portfolio; strong financial management capabilities</td>
+          <td style="color:var(--amber);font-weight:700;">MEDIUM–HIGH</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">Aalis Management Consulting</td>
+          <td><span class="badge badge-wosb">WOSB</span></td>
+          <td>DHS/CBP focused; management consulting; financial services background</td>
+          <td style="color:var(--amber);font-weight:700;">MEDIUM</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">Zantech / Catalina Solutions</td>
+          <td><span class="badge badge-wosb">WOSB</span></td>
+          <td>CBP-active WOSBs; broad management support experience; financial analyst capabilities</td>
+          <td style="color:var(--muted);font-weight:700;">LOW–MEDIUM</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">Changeis, Inc.</td>
+          <td><span class="badge badge-wosb">EDWOSB</span></td>
+          <td>Active CBP OFAM contract ($20M); DOT/FAA financial management past performance; MAS 541611 / OASIS+; DHS relationship</td>
+          <td style="color:var(--green);font-weight:700;">COMPETITOR — Prime or Sub</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="section-subtitle">Teaming Strategy Considerations</div>
+    <ul class="signal-list">
+      <li><span class="sig-icon">★</span><div><span class="sig-label">Priority Target — GAP Solutions:</span> Dextera's own subcontractor has direct CBP National Finance Center experience in financial management, accounting, and payroll. Recruiting GAP Solutions onto the Changeis team would simultaneously strengthen Changeis's proposal and weaken Dextera's.</div></li>
+      <li><span class="sig-icon">★</span><div><span class="sig-label">SAP/ERP Partner:</span> Given the Financial Close Modernization Tool signal, a sub with certified SAP FICO/S4 experience (e.g., a small business SAP partner) would differentiate the Changeis proposal in the technical approach.</div></li>
+      <li><span class="sig-icon">→</span><div><span class="sig-label">Indianapolis Presence:</span> Place of performance is Indianapolis (IN-05 district). A teaming partner with local presence and knowledge of the Indianapolis federal finance labor market would be advantageous for staffing assurance.</div></li>
+    </ul>
+  </div>
+
+  <!-- GO/NO-GO ASSESSMENT -->
+  <div class="section">
+    <div class="section-title">Go/No-Go Assessment</div>
+
+    <div class="score-summary">
+      <div class="score-dial">
+        <span class="score-dial-inner">62</span>
+      </div>
+      <div class="score-text">
+        <div class="verdict-label">Opportunity Score</div>
+        <div class="score-verdict">Conditional GO</div>
+        <div class="score-desc">Pursue with WOSB teaming confirmation and GAP Solutions outreach within 30 days</div>
+      </div>
+    </div>
+
+    <div class="verdict-banner">
+      <div class="verdict-icon">⚡</div>
+      <div>
+        <div class="verdict-label">Recommendation</div>
+        <div class="verdict-text">Conditional GO — Pursue as Prime with targeted teaming</div>
+      </div>
+    </div>
+
+    <div class="gng-grid">
+      <div class="gng-card go-card">
+        <div class="gng-title">Strengths (GO Factors)</div>
+        <ul>
+          <li>Changeis is SBA-certified EDWOSB — meets set-aside requirement as prime</li>
+          <li>Active CBP contract (OFAM, $20M, same awarding office 70B01C)</li>
+          <li>MAS vehicle GS-10F-054BA SIN 541611 — same vehicle as incumbent</li>
+          <li>OASIS+ awardee (47QRCA24DW284) — alternate vehicle option</li>
+          <li>7 MODERATE past performance matches (financial mgmt, budget execution, program analysis) at DOT/FAA/Volpe</li>
+          <li>$50M forecast = high strategic value, exceeds typical WOSB opportunity size</li>
+          <li>Incumbent weakness: Dextera is heavily subcontractor-dependent with staffing challenges indicated by repeated deobligations</li>
+          <li>NAICS 541611 — Changeis's core competency and primary revenue driver</li>
+        </ul>
+      </div>
+      <div class="gng-card risk-card">
+        <div class="gng-title">Risks (NO-GO Factors)</div>
+        <ul>
+          <li>No direct CBP Office of Finance (accounting/financial management) past performance yet — all matches are DOT/FAA analogues</li>
+          <li>No demonstrated SAP FICO operational experience in RAG corpus</li>
+          <li>Indianapolis place of performance requires local labor market knowledge and staffing infrastructure</li>
+          <li>Forfeiture Fund accounting is specialized — CBP-specific revenue collection gap</li>
+          <li>Incumbent has 5 years of deep institutional knowledge with COR/CO</li>
+          <li>Value growth to $50M may attract large WOSB challengers (Chevo, AMDEX) with stronger financial mgmt footprint</li>
+        </ul>
+      </div>
+      <div class="gng-card watch-card">
+        <div class="gng-title">Conditions &amp; Watch Items</div>
+        <ul>
+          <li>Confirm EDWOSB size eligibility: $50M contract may approach size standard thresholds — verify SBA size limit compliance</li>
+          <li>Monitor SAM.gov for formal solicitation release (Q2–Q3 FY2026)</li>
+          <li>Engage GAP Solutions before competitors do — they are the key teaming target</li>
+          <li>Determine if recompete stays on MAS or moves to OASIS+ — affects vehicle strategy</li>
+          <li>Assess whether scope expansion ($16M → $50M) reflects new functional areas or simple volume increase — shapes staffing plan</li>
+          <li>Track Financial Close Modernization Tool outcome — winner may become natural sub for financial ops</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout-green">
+      <strong>Bottom Line:</strong> Changeis is fully qualified to compete as prime under the WOSB set-aside. The combination of an active CBP contract, MAS 541611 vehicle, and EDWOSB certification creates a legitimate competitive position. The path to winning runs through: (1) teaming with GAP Solutions for CBP National Finance Center credibility and staffing depth, (2) developing a SAP-literate technical approach that addresses the modernization direction, and (3) a competitive labor rate structure for Indianapolis-based finance professionals.
+    </div>
+  </div>
+
+  <!-- NEXT ACTIONS -->
+  <div class="section">
+    <div class="section-title">Next Actions</div>
+    <ol class="action-list">
+      <li>
+        <div class="action-num">1</div>
+        <div>
+          <span class="action-title">Outreach to GAP Solutions</span>
+          <span class="action-detail">Contact GAP Solutions (gapsi.com) to explore teaming on the CBP Finance Ops recompete. GAP Solutions is Dextera's sub, has CBP National Finance Center financial management and accounting experience, and will be a highly sought teaming target. Early outreach is critical.</span>
+          <span class="action-due">Immediate — Before April 15, 2026</span>
+        </div>
+      </li>
+      <li>
+        <div class="action-num">2</div>
+        <div>
+          <span class="action-title">Submit Capability Statement for Financial Close Modernization Tool SS</span>
+          <span class="action-detail">Deadline March 30, 2026 — Submit to Denise V. Thompson (denise.v.thompson@cbp.dhs.gov). Even if Changeis is not pursuing the technology procurement directly, responding signals market presence to the CBP contracting office and provides intel on CBP's modernization direction.</span>
+          <span class="action-due">March 30, 2026 — Immediate</span>
+        </div>
+      </li>
+      <li>
+        <div class="action-num">3</div>
+        <div>
+          <span class="action-title">Confirm WOSB/EDWOSB Size Standard Eligibility at $50M</span>
+          <span class="action-detail">The $50M forecast is 3× the NAICS 541611 SBA revenue size standard. Verify that Changeis's annual revenues and joint venture structure (if applicable) remain within SBA size standard thresholds to avoid affiliation issues. Consult SBA regulations at 13 CFR Part 121.</span>
+          <span class="action-due">April 2026</span>
+        </div>
+      </li>
+      <li>
+        <div class="action-num">4</div>
+        <div>
+          <span class="action-title">SAM.gov Solicitation Watch — Monitor PR/RFP Release</span>
+          <span class="action-detail">Set automated alerts on SAM.gov for NAICS 541611 / agency 70B01C / WOSB set-aside. Also monitor DHS APFS for the formal forecast record for "CBP Financial Operations Support Services" to confirm anticipated vehicle, set-aside, and award date.</span>
+          <span class="action-due">Ongoing — Weekly</span>
+        </div>
+      </li>
+      <li>
+        <div class="action-num">5</div>
+        <div>
+          <span class="action-title">Identify SAP FICO / Federal Accounting Subcontractor</span>
+          <span class="action-detail">Research small businesses with SAP S/4HANA FICO and federal accounting implementation experience. A credible SAP sub will allow Changeis to speak directly to the CBP modernization direction in the technical approach, differentiating from incumbents who are focused on manual processes.</span>
+          <span class="action-due">April–May 2026</span>
+        </div>
+      </li>
+      <li>
+        <div class="action-num">6</div>
+        <div>
+          <span class="action-title">Indianapolis Labor Market Assessment</span>
+          <span class="action-detail">Assess availability of accounting clerks and financial program analysts in the Indianapolis metro market. Review current GS pay scales / SCA wage determinations for accounting labor categories (IN-05 district). Develop staffing plan assumptions for proposal pricing.</span>
+          <span class="action-due">May 2026</span>
+        </div>
+      </li>
+      <li>
+        <div class="action-num">7</div>
+        <div>
+          <span class="action-title">Draft Capture Plan &amp; Engage CBP Office of Finance</span>
+          <span class="action-detail">If OFAM COR/CO relationships permit, conduct pre-RFP market engagement to understand CBP's priorities for the recompete: pain points with current service, desired scope changes, and modernization expectations. Use the active OFAM contract as a relationship bridge into the CBP Finance community.</span>
+          <span class="action-due">May–June 2026</span>
+        </div>
+      </li>
+      <li>
+        <div class="action-num">8</div>
+        <div>
+          <span class="action-title">Develop Win Themes &amp; Price-to-Win Model</span>
+          <span class="action-detail">Based on Dextera's blended rate of $34.57/hr in 2024 and ~44 FTEs, model a competitive price-to-win that accounts for SCA increases (2025–2026), scope growth, and a realistic fringe/overhead structure. At $50M over 5 years, average annual value is $10M — a 43% increase over Dextera's average annual invoicing of ~$3.0M/year.</span>
+          <span class="action-due">June 2026</span>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- SOURCES -->
+  <div class="section">
+    <div class="section-title">Sources</div>
+    <ul class="sources-list">
+      <li><span class="src-label">1.</span> <a href="https://sam.gov/opp/6b814801e2e141d2be3ef72656569065/view" target="_blank">SAM.gov — Financial Close Modernization Tool Sources Sought (PR20156685)</a> · Posted Mar 9, 2026 · Deadline Mar 30, 2026</li>
+      <li><span class="src-label">2.</span> <a href="https://www.highergov.com/contract/GS02F0061X-70B01C21F00000644/" target="_blank">HigherGov — Contract 70B01C21F00000644, Dextera</a> · Award value $19.1M, WOSB, 4 bidders, Jul 2021–Aug 2026</li>
+      <li><span class="src-label">3.</span> <a href="https://orangeslices.ai/ten-dhs-cbp-expiring-tasks-expected-to-draw-a-crowd-in-2026/" target="_blank">OrangeSlices AI — Ten DHS CBP Expiring Tasks Expected to Draw a Crowd in 2026</a> · Aug 12, 2025</li>
+      <li><span class="src-label">4.</span> <a href="https://orangeslices.ai/two-dozen-dhs-cbp-expiring-tasks-expected-to-draw-interest-in-fy-2026/" target="_blank">OrangeSlices AI — Two Dozen DHS CBP Expiring Tasks Expected to Draw Interest in FY 2026</a> · Feb 20, 2025</li>
+      <li><span class="src-label">5.</span> <a href="https://console.sweetspotgov.com/opportunity/federal-contract/0189cfcb-60c8-56a0-8611-4e2d7a0143df" target="_blank">Sweetspot — Financial Close Modernization Tool Opportunity Analysis</a></li>
+      <li><span class="src-label">6.</span> <a href="https://changeis.com/news/changeis-inc-awarded-20m-dhs-cbp-human-capital-program-support-hcps-contract/" target="_blank">Changeis.com — Awarded $20M DHS CBP OFAM HCPS Contract</a> · Nov 13, 2024</li>
+      <li><span class="src-label">7.</span> <a href="https://orangeslices.ai/contract-award-20m-dhs-cbp-ofam-program-and-administrative-management-support/" target="_blank">OrangeSlices AI — $20M CBP OFAM Award: Changeis, Inc.</a> · Award ID 70B01C24F00000787</li>
+      <li><span class="src-label">8.</span> <a href="https://www.govconinabox.com/explore/contractors/profile/GC77SM2AFMR9" target="_blank">GovCon in a Box — Dextera Corp contractor profile</a> · Contract modification history 2022–2025</li>
+      <li><span class="src-label">9.</span> <a href="https://www.highergov.com/subcontract/GS02F0061X-70B01C21F00000644-S10056-0001_HSWJ7_2024/" target="_blank">HigherGov — Dextera/GAP Solutions Subcontract S10056-0001_HSWJ7_2024</a> · $896K, Jan 2024</li>
+      <li><span class="src-label">10.</span> <a href="https://www.gapsi.com/capabilities/business-operations/" target="_blank">GAP Solutions — Business Operations Capabilities</a> · CBP National Finance Center financial management</li>
+      <li><span class="src-label">11.</span> <a href="https://changeis.com/contract-vehicles/" target="_blank">Changeis — Contract Vehicles</a> · MAS GS-10F-054BA (SIN 541611), OASIS+ 47QRCA24DW284, FAA eFAST DTFAWA13A00026</li>
+      <li><span class="src-label">12.</span> <a href="https://www.gsaelibrary.gsa.gov/ElibMain/home.do/contractorInfo.do?contractNumber=47QRCA24DW284&contractorName=CHANGEIS%2C+INC.&executeQuery=YES" target="_blank">GSA eLibrary — Changeis EDWOSB/WOSB certification, OASIS+</a></li>
+      <li><span class="src-label">13.</span> <a href="https://orangeslices.ai/meet-15-dhs-cbp-focused-women-owned-small-businesses-making-noise-in-2023/" target="_blank">OrangeSlices AI — 15 DHS CBP-Focused Women-Owned Small Businesses</a> · Oct 2023</li>
+      <li><span class="src-label">14.</span> <a href="https://www.usaspending.gov/award/CONT_IDV_GS02F0061X_4732" target="_blank">USASpending — IDV to Dextera Corp GS02F0061X</a></li>
+      <li><span class="src-label">15.</span> <a href="https://apfs-cloud.dhs.gov/forecast/" target="_blank">DHS Acquisition Planning Forecast System (APFS)</a> · Public forecast list</li>
+      <li><span class="src-label">16.</span> Internal RAG corpus — Changeis task order documents: 6913G619D300021 (master contract), task orders V1312003/V1312005/V1312008/V3202004/V3202050/V3412062/V3412065/V3412068/V33020050</li>
+    </ul>
+
+    <p class="footnote" style="margin-top:16px;">This brief was generated by VM2 (Perplexity-powered) on March 27, 2026. All values derived from public government contracting databases (SAM.gov, USASpending, HigherGov, FPDS), Changeis internal RAG corpus, and OrangeSlices AI market intelligence. Forecasted values from HigherGov/DHS APFS are estimates and subject to change.</p>
+  </div>
+
+</div><!-- /page-wrap -->
+</body>
+</html>
