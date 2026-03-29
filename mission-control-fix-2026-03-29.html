@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Control Fix — Cron State File Loading — March 29, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --border-light: #E8E7E3;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --border-light: #2a2d35;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section p + p { margin-top: 10px; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  code {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    padding: 2px 6px; border-radius: 3px;
+    color: var(--text);
+  }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 12px 0;
+    color: var(--text);
+  }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0;
+    font-family: system-ui, sans-serif; font-size: 14px;
+  }
+  table thead tr { background: var(--table-header-bg); color: var(--table-header-text); }
+  table th { padding: 10px 14px; text-align: left; font-weight: 600; }
+  table td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+  table tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  .status-ok { color: #2a9d5c; font-weight: 600; }
+  .status-bad { color: var(--red); font-weight: 600; }
+  .status-warn { color: #d97706; font-weight: 600; }
+
+  .alert-box {
+    border-left: 4px solid var(--red);
+    background: var(--surface-alt);
+    padding: 14px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 15px;
+  }
+  .alert-box.ok {
+    border-left-color: #2a9d5c;
+  }
+
+  /* Context / Continue panels */
+  .context-section {
+    margin: 32px 0 0;
+    border: 1px solid var(--slug-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--slug-bg);
+  }
+  .context-toggle {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 14px 18px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none;
+    padding: 0 18px 16px;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .context-body.open { display: block; }
+
+  .continue-panel {
+    margin: 28px 0 32px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    margin-bottom: 4px; color: var(--text);
+  }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted);
+    font-family: system-ui, sans-serif;
+    margin-bottom: 16px;
+  }
+  .continue-btns { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 9px 18px; border-radius: 6px;
+    text-decoration: none; cursor: pointer; border: none;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; color: inherit; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-icon { font-size: 14px; }
+
+  .footer {
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    color: var(--text-faint);
+    padding: 32px 0 24px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1a1a1a; color: #fff;
+    padding: 10px 20px; border-radius: 8px;
+    font-family: system-ui, sans-serif; font-size: 13px;
+    opacity: 0; transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; z-index: 9999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-badge">Bug Fix · Architecture</div>
+    <h1>Mission Control — Cron State Fix</h1>
+    <div class="hero-sub">Why 0/3 cron state files were loading — root cause &amp; fix</div>
+    <div class="hero-date">March 29, 2026 · vm2.viru@gmail.com</div>
+  </div>
+
+  <!-- Root Cause -->
+  <div class="section">
+    <div class="section-header">Root Cause</div>
+    <div class="alert-box">
+      <strong>The cron IDs in <code>_system/mc-config.json</code> did not match any actual folder names in <code>/cron_tracking/</code>.</strong>
+    </div>
+    <p>The Mission Control dashboard fetches cron state from paths like <code>/cron_tracking/{id}/state.json</code> on the Railway server. The config file had placeholder IDs (<code>6a1f1c3b</code>, <code>d56ab3fd</code>, <code>aa619acf</code>) that were never created as actual directories. The fetch returned 404 for all three, causing the "0/3 loaded" display.</p>
+    <p>There was also a secondary issue: the actual cron state files live at <code>/home/user/workspace/cron_tracking/{name}/</code> in the Perplexity Computer workspace, but Railway only serves files that are inside the <code>VM2-P-Taskers</code> Git repo. The state files had never been copied into that repo.</p>
+  </div>
+
+  <!-- What Was Fixed -->
+  <div class="section">
+    <div class="section-header">What Was Fixed</div>
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Before</th><th>After</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>mc-config.json</code> cron IDs</td>
+          <td><code>6a1f1c3b</code>, <code>d56ab3fd</code>, <code>aa619acf</code> (non-existent)</td>
+          <td><code>gmail_intake</code>, <code>todoist_vm2</code>, <code>mats_motus</code></td>
+          <td class="status-ok">Fixed</td>
+        </tr>
+        <tr>
+          <td>Cron state folders in Railway repo</td>
+          <td>Not present</td>
+          <td><code>cron_tracking/gmail_intake/</code>, <code>cron_tracking/todoist_vm2/</code>, <code>cron_tracking/mats_motus/</code></td>
+          <td class="status-ok">Created</td>
+        </tr>
+        <tr>
+          <td>State files with <code>result</code> field</td>
+          <td>Missing <code>result</code> and <code>run_number</code> in some</td>
+          <td>All three state files have <code>result</code> and <code>run_number</code></td>
+          <td class="status-ok">Fixed</td>
+        </tr>
+        <tr>
+          <td>Gmail Intake cron display</td>
+          <td>0/3 loaded</td>
+          <td>3/3 loaded — Run #0, "0 tasks executed"</td>
+          <td class="status-ok">Will show after deploy</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Current Cron State (Snapshot) -->
+  <div class="section">
+    <div class="section-header">Current Cron State Snapshot (March 29, 2026)</div>
+    <table>
+      <thead>
+        <tr><th>Cron</th><th>ID</th><th>Schedule</th><th>Last Run</th><th>Run #</th><th>Result</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Gmail Intake</strong></td>
+          <td><code>gmail_intake</code></td>
+          <td>Hourly</td>
+          <td class="status-warn">Never (fresh reset)</td>
+          <td>0</td>
+          <td>0 tasks executed</td>
+        </tr>
+        <tr>
+          <td><strong>Todoist VM2 Helper</strong></td>
+          <td><code>todoist_vm2</code></td>
+          <td>Daily ~7am</td>
+          <td class="status-ok">2026-03-29 08:58 EDT</td>
+          <td>1</td>
+          <td>4 tasks executed</td>
+        </tr>
+        <tr>
+          <td><strong>MATS/MOTUS Daily Brief</strong></td>
+          <td><code>mats_motus</code></td>
+          <td>Daily ~6am</td>
+          <td class="status-ok">2026-03-29 11:00 UTC</td>
+          <td>1</td>
+          <td>Brief published</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="alert-box ok" style="margin-top:12px;">
+      <strong>After GitHub push and Railway redeploy:</strong> Mission Control will show 3/3 cron state files loaded with the data above.
+    </div>
+  </div>
+
+  <!-- Long-Term Fix -->
+  <div class="section">
+    <div class="section-header">Long-Term Fix — Auto-Sync State Files</div>
+    <p>The cron state files in <code>/home/user/workspace/cron_tracking/</code> are updated by each cron run but are NOT automatically pushed to GitHub. This means the Mission Control view will go stale until the next GitHub push.</p>
+    <p><strong>Recommended solution:</strong> Each cron job (Gmail intake, Todoist VM2, MATS/MOTUS) should copy its updated <code>state.json</code> into the corresponding <code>VM2-P-Taskers/cron_tracking/{name}/state.json</code> and push it to GitHub as part of its normal wrap-up. This is a one-line addition to each cron's existing GitHub push step.</p>
+    <p>This update has been noted in the Gmail intake cron's state file. The next cron sessions should implement this sync step.</p>
+  </div>
+
+  <!-- Files Changed -->
+  <div class="section">
+    <div class="section-header">Files Changed &amp; Pushed to GitHub</div>
+    <ul>
+      <li><code>_system/mc-config.json</code> — Updated cron IDs to match actual folder names</li>
+      <li><code>cron_tracking/gmail_intake/state.json</code> — Created; current Gmail Intake state</li>
+      <li><code>cron_tracking/todoist_vm2/state.json</code> — Created; current Todoist VM2 state (Run #1, 4 tasks executed)</li>
+      <li><code>cron_tracking/mats_motus/state.json</code> — Created; current MATS/MOTUS state (Run #1, brief published)</li>
+      <li><code>mission-control-fix-2026-03-29.html</code> — This deliverable</li>
+      <li><code>portal.html</code> — New entry added for this deliverable</li>
+    </ul>
+  </div>
+
+  <!-- Session Context JSON (hidden) -->
+  <script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Mission Control Cron State Fix",
+  "task_date": "2026-03-29",
+  "deliverable_file": "mission-control-fix-2026-03-29.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/mission-control-fix-2026-03-29.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [
+    "mission-control.html",
+    "mission-control-impl-plan-2026-03-27.html",
+    "mission-control-2026-03-26.html"
+  ],
+  "original_instructions": "VM2 Follow-Up: Why aren't we able to see the status of the cron state files? Cron State Files 0/3 loaded. Email from varunm24@hotmail.com on 2026-03-29.",
+  "approach": "Diagnosed the Mission Control dashboard's cron state file loading failure. Found two root causes: (1) mc-config.json had nonexistent cron IDs, (2) state.json files were never copied into the Railway-served Git repo. Fixed both issues by updating mc-config.json and creating the cron_tracking folders with current state snapshots.",
+  "key_findings": [
+    "mc-config.json had placeholder IDs (6a1f1c3b, d56ab3fd, aa619acf) that matched no actual directories",
+    "Cron state files live in workspace /cron_tracking/ but Railway only serves files inside VM2-P-Taskers Git repo",
+    "Three active crons: gmail_intake (Run #0), todoist_vm2 (Run #1, 4 tasks), mats_motus (Run #1, brief published)",
+    "Mission Control JS correctly reads last_run OR last_run_utc — field name mismatch not an issue"
+  ],
+  "dead_ends": [
+    "Considered modifying mission-control.html JS to use different paths — not needed, config fix was sufficient"
+  ],
+  "assumptions": [
+    "Railway will redeploy automatically after GitHub push",
+    "The cron_tracking folder names in workspace match what the cron jobs actually write to"
+  ],
+  "open_questions": [
+    "Should each cron automatically sync its state.json to VM2-P-Taskers/cron_tracking/ on each run?",
+    "Should Mission Control show deep_dive_monitor as a 4th cron?"
+  ],
+  "data_sources": [
+    "/home/user/workspace/VM2-P-Taskers/_system/mc-config.json",
+    "/home/user/workspace/cron_tracking/gmail_intake/state.json",
+    "/home/user/workspace/cron_tracking/todoist_vm2/state.json",
+    "/home/user/workspace/cron_tracking/8805274b/state.json",
+    "/home/user/workspace/VM2-P-Taskers/mission-control.html (line 868, 919 - fetch paths)"
+  ],
+  "next_steps": [
+    "Each cron job should copy its state.json into VM2-P-Taskers/cron_tracking/{name}/state.json as part of its GitHub push step",
+    "Consider adding deep_dive_monitor as a 4th entry in mc-config.json",
+    "Verify Mission Control shows 3/3 after Railway redeploy"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4.5",
+    "model_pricing": { "input_per_1m": 3.00, "output_per_1m": 15.00 },
+    "input_tokens_est": 25000,
+    "output_tokens_est": 5000,
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.15",
+    "cost_ceiling": "$0.26",
+    "notes": "File diagnosis and fix only — no external searches needed"
+  }
+}
+  </script>
+
+  <!-- Session Context (collapsible) -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">Original Instructions: "VM2 Follow-Up: VM2 Mission Control — Why aren't we able to see the status of the cron state files? Cron State Files 0/3 loaded"
+
+Approach: Inspected mc-config.json, found IDs didn't match any real folders. Checked workspace cron_tracking directories. Found correct names. Updated config, created folders, copied current state snapshots into Railway repo.
+
+Key Findings:
+- mc-config.json had IDs 6a1f1c3b, d56ab3fd, aa619acf — none exist as directories
+- Railway only serves files inside the VM2-P-Taskers git repo
+- Actual cron folders: gmail_intake, todoist_vm2, 8805274b (mats_motus)
+
+Dead Ends: Considered JS modifications — not needed.
+
+Assumptions: Railway auto-redeploys on git push. Folder names are stable.
+
+Open Questions:
+- Should crons auto-sync state.json to repo on each run?
+- Add deep_dive_monitor as 4th cron?
+
+Data Sources: mc-config.json, workspace cron_tracking folders, mission-control.html source (lines 868, 919)
+
+Next Steps:
+- Crons should sync state.json to VM2-P-Taskers/cron_tracking/{name}/ on each run
+- Verify 3/3 showing after Railway redeploy
+- Consider adding deep_dive_monitor to config</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · Mission Control Cron State Fix · March 29, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/mission-control-fix-2026-03-29.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on: Mission Control Cron State Fix
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Should each cron automatically sync its state.json to VM2-P-Taskers/cron_tracking/ on each run?
+- Should Mission Control show deep_dive_monitor as a 4th cron?
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    });
+  }
+
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: Mission Control Cron State Fix');
+  const emailBody = encodeURIComponent(`VM2\n\nContinue work on: Mission Control Cron State Fix\nDeliverable: ${DELIVERABLE_URL}\n\n[YOUR INSTRUCTIONS HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  const todoistTitle = encodeURIComponent('Follow up: Mission Control Cron State Fix');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
