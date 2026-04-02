@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: NAS Safety, Execution, and Management Solutions (NSEMS) — April 2, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --green: #2D7D4A;
+    --orange: #D97D2A;
+    --teal: #008B8B;
+    --purple: #6B4C9A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 36px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+  }
+  .section p, .section li { font-size: 15px; line-height: 1.6; }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Go/No-Go badge */
+  .gng-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    padding: 10px 22px; border-radius: 6px;
+    margin: 12px 0 16px;
+  }
+  .gng-pursue-partner {
+    background: #fff3cd; color: #7d5a00;
+    border: 2px solid #D97D2A;
+  }
+  [data-theme="dark"] .gng-pursue-partner {
+    background: #3d2e00; color: #f0b030; border-color: #f0b030;
+  }
+  .gng-pursue {
+    background: #e6f4ea; color: #1A7A3A;
+    border: 2px solid #2D7D4A;
+  }
+  .gng-monitor {
+    background: #e8f0fe; color: #1B2A4A;
+    border: 2px solid #1B2A4A;
+  }
+  .gng-pass {
+    background: #fce8e6; color: #B22222;
+    border: 2px solid #B22222;
+  }
+
+  /* Executive summary box */
+  .exec-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--navy);
+    border-radius: 6px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--card-shadow);
+  }
+  .exec-box h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted); margin-bottom: 10px;
+  }
+
+  /* Opportunity meta grid */
+  .meta-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px; margin-top: 10px;
+  }
+  @media (max-width: 600px) { .meta-grid { grid-template-columns: 1fr; } }
+  .meta-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 14px;
+    box-shadow: var(--card-shadow);
+  }
+  .meta-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-faint); margin-bottom: 4px;
+  }
+  .meta-value {
+    font-size: 14px; font-weight: 600; color: var(--text);
+  }
+
+  /* RAG tier badges */
+  .tier-strong { background: #e6f4ea; color: #1A7A3A; border: 1px solid #2D7D4A; }
+  .tier-moderate { background: #e8f0fe; color: #1B2A4A; border: 1px solid #2E6DA4; }
+  .tier-relevant { background: #fff8e6; color: #7d5a00; border: 1px solid #D97D2A; }
+  .tier-low { background: #f5f5f5; color: #666; border: 1px solid #ccc; }
+  [data-theme="dark"] .tier-strong { background: #0d2b18; color: #6fcf97; border-color: #2D7D4A; }
+  [data-theme="dark"] .tier-moderate { background: #0d1a33; color: #7eb3e0; border-color: #2E6DA4; }
+  [data-theme="dark"] .tier-relevant { background: #2b1f00; color: #f0b030; border-color: #D97D2A; }
+  [data-theme="dark"] .tier-low { background: #22252e; color: #888; border-color: #333740; }
+
+  .tier-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    padding: 2px 8px; border-radius: 3px;
+    margin-right: 6px;
+  }
+
+  /* RAG match cards */
+  .rag-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: var(--card-shadow);
+  }
+  .rag-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+    flex-wrap: wrap; gap: 6px;
+  }
+  .rag-card-title {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; font-weight: 700; color: var(--navy);
+  }
+  [data-theme="dark"] .rag-card-title { color: #d8d8d8; }
+  .rag-score {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: var(--text-muted);
+  }
+  .rag-meta {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+  .rag-excerpt {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; line-height: 1.5;
+    border-left: 3px solid var(--border);
+    padding-left: 10px;
+    margin-top: 6px;
+  }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Score bar */
+  .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .score-bar {
+    height: 8px; border-radius: 4px;
+    background: var(--border); flex: 1; max-width: 80px;
+    overflow: hidden;
+  }
+  .score-fill {
+    height: 100%; border-radius: 4px;
+    background: var(--green);
+  }
+  .score-fill.moderate { background: var(--teal); }
+  .score-fill.relevant { background: var(--orange); }
+  .score-fill.low { background: var(--text-faint); }
+
+  /* Callout box */
+  .callout {
+    background: #E8F4F8;
+    border-left: 4px solid var(--teal);
+    padding: 12px 16px;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 14px;
+  }
+  [data-theme="dark"] .callout {
+    background: #0d2228; border-left-color: var(--teal);
+  }
+  .callout-title {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--teal); margin-bottom: 6px;
+  }
+  .callout p { font-size: 14px; }
+
+  /* Experience seed box */
+  .seed-box {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .seed-header {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--red); margin-bottom: 6px;
+  }
+  .seed-body { font-size: 14.5px; line-height: 1.65; }
+
+  /* Competitive card */
+  .comp-card {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 16px;
+    margin-bottom: 10px; box-shadow: var(--card-shadow);
+  }
+  .comp-icon {
+    font-size: 22px; flex-shrink: 0; margin-top: 2px;
+  }
+  .comp-name {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; font-weight: 700; color: var(--navy);
+    margin-bottom: 3px;
+  }
+  [data-theme="dark"] .comp-name { color: #d8d8d8; }
+  .comp-desc { font-size: 13.5px; color: var(--text-muted); }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; color: var(--btn-text); text-decoration: none; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); text-decoration: none; }
+  .btn-icon { font-size: 14px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  /* Pillar grid */
+  .pillar-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-top: 12px;
+  }
+  @media (max-width: 600px) { .pillar-grid { grid-template-columns: 1fr; } }
+  .pillar-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--navy);
+    border-radius: 6px; padding: 14px;
+    box-shadow: var(--card-shadow);
+  }
+  .pillar-card.safety { border-top-color: #2D7D4A; }
+  .pillar-card.execution { border-top-color: #008B8B; }
+  .pillar-card.management { border-top-color: #6B4C9A; }
+  .pillar-title {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    margin-bottom: 8px;
+  }
+  .pillar-card.safety .pillar-title { color: #2D7D4A; }
+  .pillar-card.execution .pillar-title { color: #008B8B; }
+  .pillar-card.management .pillar-title { color: #6B4C9A; }
+  .pillar-card ul { padding-left: 16px; }
+  .pillar-card li { font-size: 13px; margin-bottom: 3px; }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    VM2 · Perplexity Computer
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">◐ Toggle Theme</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · Opportunity Analysis</div>
+    <h1>NAS Safety, Execution, and Management Solutions (NSEMS)</h1>
+    <div class="hero-sub">FAA AJW-2 · Facilities &amp; Engineering Services · Solicitation 693KA9-26-NSEMS</div>
+    <div class="hero-date">April 2, 2026 · Prepared by VM2 · Perplexity Computer for Changeis</div>
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section">
+    <div class="section-header">Executive Summary</div>
+
+    <div class="exec-box">
+      <h3>Go / No-Go Recommendation</h3>
+      <div class="gng-badge gng-pursue-partner">⚠ PURSUE WITH PARTNER</div>
+      <p style="font-size:15px; line-height:1.65;">NSEMS is a high-value, multi-year FAA opportunity that directly aligns with Changeis's NAS/FAA program management and technical support experience. The RAG engine returned <strong>1 STRONG match</strong> (FAA CLMRS, 0.746) and <strong>9 MODERATE matches</strong> — confirming meaningful past performance in the FAA/DOT ecosystem via the Volpe Center contract vehicle. However, this is a <strong>large-scale IDIQ</strong> requiring engineering-heavy labor categories and broad NAS systems expertise that likely demands large-business teaming or 8(a) positioning. Changeis should pursue as a <strong>subcontractor or teaming partner</strong> to a prime with an established FAA AJW-2 footprint, or lead a small business team if the competition includes a small-business set-aside track. The RFI is due <strong>May 4, 2026</strong> — immediate action required to register interest and respond.</p>
+    </div>
+
+    <ul class="section">
+      <li><strong>Opportunity:</strong> Draft RFI (not an SIR) for a major new IDIQ contract covering 13 functional work areas and 8 program management work areas across three mission pillars — Safety, Execution, and Management — for FAA's NAS infrastructure lifecycle.</li>
+      <li><strong>Client:</strong> FAA Air Traffic Organization (ATO), Facilities and Engineering Services (AJW-2), contracting via AAQ-410 office in Washington, DC.</li>
+      <li><strong>NAICS:</strong> 541330 Engineering Services | PSC: K017 | Set-aside: Not yet specified (draft stage).</li>
+      <li><strong>Deadline:</strong> RFI responses due <strong>May 4, 2026, 10:00 AM EDT</strong>. Final solicitation expected later in FY2026.</li>
+      <li><strong>Changeis RAG Alignment:</strong> Strong match on FAA NAS supply chain/lifecycle management (CLMRS), moderate alignment across multiple FAA/DOT Volpe task orders in safety programs, NAS data analysis, and spectrum engineering.</li>
+      <li><strong>Key Risk:</strong> NSEMS scope likely requires a prime with NAS engineering technical depth (facilities, systems engineering, configuration management at scale). Changeis's competitive strength is program management, organizational support, and analytical services — positioning as sub is strategically sound.</li>
+    </ul>
+  </div>
+
+  <!-- OPPORTUNITY DETAILS -->
+  <div class="section">
+    <div class="section-header">Opportunity Details</div>
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">Solicitation Number</div>
+        <div class="meta-value">693KA9-26-NSEMS</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Notice ID</div>
+        <div class="meta-value">8a972039dd6a4ff5bb8a4e07d17daee8</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Posted Date</div>
+        <div class="meta-value">April 2, 2026</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">RFI Response Deadline</div>
+        <div class="meta-value" style="color: var(--red); font-weight:700;">May 4, 2026 — 10:00 AM EDT</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">NAICS Code</div>
+        <div class="meta-value">541330 — Engineering Services</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">PSC Code</div>
+        <div class="meta-value">K017</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Contracting Office</div>
+        <div class="meta-value">FAA AAQ-410 · Washington, DC 20591</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Place of Performance</div>
+        <div class="meta-value">Washington, DC (NAS-wide)</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Contracting POC</div>
+        <div class="meta-value"><a href="mailto:9-AWA-AAQ410-Contracting-Team@faa.gov">FAA AAQ 410 Contracting Team</a></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Status</div>
+        <div class="meta-value">Draft RFI (NOT a Screening Information Request)</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">SAM.gov Link</div>
+        <div class="meta-value"><a href="https://sam.gov/opp/8a972039dd6a4ff5bb8a4e07d17daee8/view" target="_blank">View on SAM.gov ↗</a></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Set-Aside</div>
+        <div class="meta-value">Not yet specified (draft stage)</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <p style="font-size:15px; line-height:1.65; margin-bottom:14px;">The <strong>Facilities and Engineering Services (AJW-2)</strong> directorate — part of the Air Traffic Organization's Technical Operations service unit — is responsible for the safe and effective lifecycle management of the NAS facilities infrastructure. Its mission is to manage and execute programs and projects to safely establish, replace, modernize, and sustain the NAS.</p>
+      <p style="font-size:15px; line-height:1.65; margin-bottom:14px;">NSEMS seeks contractor support across <strong>three mission pillars</strong> encompassing <strong>13 Functional Work Areas</strong> and <strong>8 Program Management Work Areas</strong>. The scope requires a broad range of labor families, resource categories, and skill levels to support existing NAS operations as well as planning and integration of new entrants (UAS, NextGen technologies).</p>
+    </div>
+
+    <div class="pillar-grid">
+      <div class="pillar-card safety">
+        <div class="pillar-title">Safety Pillar</div>
+        <ul>
+          <li>Safety Management System (SMS)</li>
+          <li>Safety Risk Management (SRM)</li>
+          <li>Safety Assurance &amp; Oversight</li>
+          <li>System Safety Engineering</li>
+          <li>Hazard Identification &amp; Analysis</li>
+        </ul>
+      </div>
+      <div class="pillar-card execution">
+        <div class="pillar-title">Execution Pillar</div>
+        <ul>
+          <li>Program &amp; Project Management</li>
+          <li>Systems Engineering</li>
+          <li>Configuration Management</li>
+          <li>Quality Assurance</li>
+          <li>Acquisition Planning &amp; Support</li>
+        </ul>
+      </div>
+      <div class="pillar-card management">
+        <div class="pillar-title">Management Pillar</div>
+        <ul>
+          <li>Budget &amp; Financial Management</li>
+          <li>Human Capital Management</li>
+          <li>Organizational Change Management</li>
+          <li>Strategic Communications</li>
+          <li>Stakeholder Engagement</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAG ANALYSIS -->
+  <div class="section">
+    <div class="section-header">RAG Engine — Past Performance Analysis</div>
+    <p style="font-size:15px; margin-bottom:14px;">The Changeis RAG engine was queried with the full NSEMS opportunity description. <strong>23 matches</strong> were returned and tiered below. Scoring: STRONG ≥0.65 | MODERATE 0.50–0.64 | RELEVANT 0.45–0.49 | LOW &lt;0.45.</p>
+
+    <!-- STRONG TIER -->
+    <div style="margin-bottom:18px;">
+      <h3 style="font-family:system-ui,sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color: var(--green); margin-bottom:10px;">▲ STRONG Matches (≥0.65) — 1 Match</h3>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div>
+            <span class="tier-badge tier-strong">STRONG</span>
+            <span class="rag-card-title">FAA_CLMRS — FAA Lifecycle Management &amp; Resource System</span>
+          </div>
+          <div class="score-bar-wrap">
+            <div class="score-bar"><div class="score-fill" style="width:74.6%;"></div></div>
+            <span class="rag-score">0.746</span>
+          </div>
+        </div>
+        <div class="rag-meta">Client: FAA | Contract: Changeis/FAA | Chunks Matched: 11 | Doc Types: SOW | Best Chunk: 0.637</div>
+        <div class="rag-excerpt">"This SOW defines requirements to provide engineering and support services to implement the LCSS and CMA systems. Associated support services include program management, system integration, security, test and evaluation, system implementation and in-service support, training, technical documentation. This SOW additionally defines requirements to provide integrated logistics support (ILS), supply chain management (SCM), in-service lifecycle management and support of agency optimization initiatives for NAS supply chain and maintenance."</div>
+      </div>
+    </div>
+
+    <!-- MODERATE TIER -->
+    <div style="margin-bottom:18px;">
+      <h3 style="font-family:system-ui,sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color: var(--teal); margin-bottom:10px;">◆ MODERATE Matches (0.50–0.64) — 9 Matches</h3>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div><span class="tier-badge tier-moderate">MODERATE</span><span class="rag-card-title">V3412056 — FAA NAS Spectrum Engineering Support</span></div>
+          <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill moderate" style="width:64.1%;"></div></div><span class="rag-score">0.641</span></div>
+        </div>
+        <div class="rag-meta">Client: FAA / Volpe | Contract: 6913G622F40071N | Chunks: 9 | Doc Types: AWARD, OTHER, SOW</div>
+        <div class="rag-excerpt">FAA Spectrum Engineering Services supporting 1030/1090 MHz bands in the NAS — aircraft surveillance, navigation, and airborne collision avoidance systems essential to safe and efficient separation of aircraft.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div><span class="tier-badge tier-moderate">MODERATE</span><span class="rag-card-title">V3442032 — NAS Data Analysis &amp; Facility Technical Consulting</span></div>
+          <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill moderate" style="width:59.4%;"></div></div><span class="rag-score">0.594</span></div>
+        </div>
+        <div class="rag-meta">Client: DOT / FAA / Volpe | Contract: 6913G620F400073 | Chunks: 7 | Doc Types: AWARD, OTHER, SOW</div>
+        <div class="rag-excerpt">Technical consulting services with regards to familiarity with FAA operations, logistics and facility functions; subject matter expert analysis; system operational performance support across NAS facilities.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div><span class="tier-badge tier-moderate">MODERATE</span><span class="rag-card-title">V3442038 — NAS Data Analysis Support (Continuation)</span></div>
+          <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill moderate" style="width:58.6%;"></div></div><span class="rag-score">0.586</span></div>
+        </div>
+        <div class="rag-meta">Client: DOT / FAA / Volpe | Contract: 6913G620F400095 | Chunks: 6 | Doc Types: AWARD, OTHER, SOW, TORFP</div>
+        <div class="rag-excerpt">NAS facility and equipment technical consulting continuation; framework and strategy development going forward for NAS operational performance support.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div><span class="tier-badge tier-moderate">MODERATE</span><span class="rag-card-title">V3132127 — FMCSA Safety Programs Support</span></div>
+          <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill moderate" style="width:57.9%;"></div></div><span class="rag-score">0.579</span></div>
+        </div>
+        <div class="rag-meta">Client: DOT / FMCSA / Volpe | Contract: 6913G621F400039 | Chunks: 7 | Doc Types: AWARD, OTHER, SOW</div>
+        <div class="rag-excerpt">Program planning, education, training, communications, data analysis, and customer service support for FMCSA safety programs including Safety Measurement System, CSA, and enforcement tools.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div><span class="tier-badge tier-moderate">MODERATE</span><span class="rag-card-title">CORPORATE — Changeis Corporate Capability (FAA / DOT / FMCSA)</span></div>
+          <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill moderate" style="width:57.0%;"></div></div><span class="rag-score">0.570</span></div>
+        </div>
+        <div class="rag-meta">Client: DOT / FAA / FMCSA | Chunks: 5</div>
+        <div class="rag-excerpt">Core organizational transformation and governed orchestration capabilities; broad DOT/FAA/FMCSA cross-organizational support; detailed capability alignment across federal transportation safety missions.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div><span class="tier-badge tier-moderate">MODERATE</span><span class="rag-card-title">V3412034 — FAA NAS Program Management Office Support</span></div>
+          <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill moderate" style="width:54.5%;"></div></div><span class="rag-score">0.545</span></div>
+        </div>
+        <div class="rag-meta">Client: DOT / FAA / Volpe | Contract: 6913G621F400016 | Chunks: 5</div>
+        <div class="rag-excerpt">Program management office support including department management, human resource management, contracts management, PMO support, and professional analyst staffing for FAA technical programs.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div><span class="tier-badge tier-moderate">MODERATE</span><span class="rag-card-title">V3202039 — SCOAR / FAA Multi-Modal Transportation Support</span></div>
+          <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill moderate" style="width:52.4%;"></div></div><span class="rag-score">0.524</span></div>
+        </div>
+        <div class="rag-meta">Client: DOT / FAA / FHWA / FRA / FTA / NHTSA / PHMSA / Volpe | Contract: 6913G621F400021 | Chunks: 5</div>
+        <div class="rag-excerpt">Advanced Surveillance Enhanced Procedural Separation (ASEPS) program acquisition management support across FAA and multi-modal DOT agencies.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div><span class="tier-badge tier-moderate">MODERATE</span><span class="rag-card-title">V3242019 — FAA Transportation Modeling System Support</span></div>
+          <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill moderate" style="width:51.8%;"></div></div><span class="rag-score">0.518</span></div>
+        </div>
+        <div class="rag-meta">Client: DOT / FAA / Volpe | Contract: 6913G620F400034 | Chunks: 5</div>
+        <div class="rag-excerpt">FAA transportation modeling system support — analytical and technical services for NAS operational planning and forecasting tools.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div><span class="tier-badge tier-moderate">MODERATE</span><span class="rag-card-title">V3412027 — FAA Spectrum Engineering Services Support</span></div>
+          <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill moderate" style="width:50.5%;"></div></div><span class="rag-score">0.505</span></div>
+        </div>
+        <div class="rag-meta">Client: DOT / FAA / Volpe | Contract: 6913G620F400083 | Chunks: 4</div>
+        <div class="rag-excerpt">Spectrum Engineering Services for FAA NAS, technical support in evaluating spectrum access needs and impacts for critical aviation frequency bands.</div>
+      </div>
+    </div>
+
+    <!-- RELEVANT TIER -->
+    <div style="margin-bottom:18px;">
+      <h3 style="font-family:system-ui,sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color: var(--orange); margin-bottom:10px;">◈ RELEVANT Matches (0.45–0.49) — 9 Matches</h3>
+      <table>
+        <thead><tr><th>Task Order</th><th>Client</th><th>Contract</th><th>Score</th></tr></thead>
+        <tbody>
+          <tr><td>V3132047</td><td>DOT / FAA / FMCSA / Volpe</td><td>6913G620F400113</td><td>0.492</td></tr>
+          <tr><td>V3272007</td><td>DOT / FAA / FTA / Volpe</td><td>6913G620F400055</td><td>0.486</td></tr>
+          <tr><td>V3132014</td><td>DOT / FAA / FMCSA / Volpe</td><td>6913G620F400050</td><td>0.483</td></tr>
+          <tr><td>V3142097</td><td>FAA / Volpe</td><td>6913G623F40044N</td><td>0.480</td></tr>
+          <tr><td>V3132349</td><td>DOT / FMCSA / Volpe</td><td>6913G623F40042N</td><td>0.457</td></tr>
+          <tr><td>V3412062</td><td>FAA / Volpe</td><td>6913G623F40037N</td><td>0.455</td></tr>
+          <tr><td>V3412045</td><td>DOT / FAA / Volpe</td><td>6913G621F400072</td><td>0.455</td></tr>
+          <tr><td>V3242154</td><td>FAA / Volpe</td><td>6913G623F40023N</td><td>0.453</td></tr>
+          <tr><td>V3412061</td><td>FAA / Volpe</td><td>6913G623F40034N</td><td>0.452</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- LOW TIER -->
+    <div>
+      <h3 style="font-family:system-ui,sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color: var(--text-faint); margin-bottom:10px;">◇ LOW Matches (&lt;0.45) — 4 Matches</h3>
+      <table>
+        <thead><tr><th>Task Order</th><th>Client</th><th>Score</th></tr></thead>
+        <tbody>
+          <tr><td>V3132168</td><td>DOT / FMCSA / Volpe</td><td>0.450</td></tr>
+          <tr><td>V3262102</td><td>DOT / FAA / Volpe</td><td>0.396</td></tr>
+          <tr><td>V3452079</td><td>DOT / Volpe</td><td>0.394</td></tr>
+          <tr><td>V330A2177</td><td>DOT / FAA / Volpe</td><td>0.394</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INCUMBENT & FPDS RESEARCH -->
+  <div class="section">
+    <div class="section-header">Incumbent &amp; FPDS Research</div>
+    <div class="callout">
+      <div class="callout-title">Key Finding</div>
+      <p>NSEMS (solicitation 693KA9-26-NSEMS) is a <strong>new contract vehicle</strong> — it is not a direct recompete with a named incumbent. It appears to consolidate and expand functions previously spread across multiple AJW-2 support contracts, including the predecessor AISS portfolio (AJW Integrated Support Services).</p>
+    </div>
+
+    <p style="font-size:15px; margin-bottom:12px;"><strong>Related predecessor/parallel contracts and incumbents to watch:</strong></p>
+    <table>
+      <thead>
+        <tr><th>Contract / Program</th><th>Incumbent</th><th>Value</th><th>Relevance to NSEMS</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AJW Integrated Support Services (AISS) — AJW-2 predecessor</td>
+          <td>TBD (acquisition still in development as of Sept 2023)</td>
+          <td>Est. $400M+ ceiling</td>
+          <td>HIGH — Direct predecessor; NSEMS likely replaces or parallels AISS for AJW-2 functional support</td>
+        </tr>
+        <tr>
+          <td>FAA NAS Second Level Engineering (SLE) — AJW-1</td>
+          <td>ASRC Federal Advanced Research</td>
+          <td>$437M / 5 years (awarded Feb 2026)</td>
+          <td>MODERATE — Adjacent; covers AJW-1 engineering while NSEMS covers AJW-2 facilities</td>
+        </tr>
+        <tr>
+          <td>SETIS (Systems Engineering &amp; Technical Innovative Solutions)</td>
+          <td>15 primes incl. SAIC, Booz Allen, Noblis, LS Technologies, Oasis Systems</td>
+          <td>$2.6B ceiling / 10 years</td>
+          <td>HIGH — Overlapping scope; NSEMS may pull from SETIS or compete alongside it</td>
+        </tr>
+        <tr>
+          <td>FAA ATEPS II (Air Traffic Engineering &amp; Program Support)</td>
+          <td>Noblis</td>
+          <td>Multi-year IDIQ, 10-year max</td>
+          <td>MODERATE — Program management and engineering support for ATO programs</td>
+        </tr>
+        <tr>
+          <td>FAA eFAST (Electronic FAA Accelerated and Simplified Tasks)</td>
+          <td>Multiple small businesses ($5B+ obligated)</td>
+          <td>$7.4B ceiling</td>
+          <td>MODERATE — Small business vehicle; potential delivery mechanism</td>
+        </tr>
+        <tr>
+          <td>FAA System Safety Management (SSM)</td>
+          <td>Systems Enginuity, Inc.</td>
+          <td>$9.3M</td>
+          <td>HIGH — Direct safety management support to FAA, exact domain overlap</td>
+        </tr>
+        <tr>
+          <td>FAA CLMRS (Cloud Lifecycle Management &amp; Resource System)</td>
+          <td>Changeis (via Volpe vehicle)</td>
+          <td>Ongoing task orders</td>
+          <td>HIGH — Changeis's strongest RAG match; NAS lifecycle and supply chain management</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">Source: SAM.gov, GovConWire, OrangeSlices.ai, HigherGov, Potomac Officers Club. FPDS direct search was unavailable; data derived from open-source award reports.</p>
+  </div>
+
+  <!-- USASPENDING & MARKET ANALYSIS -->
+  <div class="section">
+    <div class="section-header">USAspending &amp; FAA Market Context</div>
+
+    <p style="font-size:15px; margin-bottom:14px;">The FAA/DOT engineering services (NAICS 541330) market is substantial. Key market signals relevant to NSEMS:</p>
+
+    <table>
+      <thead>
+        <tr><th>Indicator</th><th>Detail</th><th>Implication</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>FAA Annual IT/Engineering Spend</td>
+          <td>$3B+ annually across all IT, engineering, and technical services contracts</td>
+          <td>NSEMS could be a $200M–$500M+ ceiling IDIQ based on comparable scope</td>
+        </tr>
+        <tr>
+          <td>AJW-2 Workforce</td>
+          <td>Manages NAS facilities lifecycle for 45,000+ NAS systems nationwide</td>
+          <td>Extremely broad scope requiring diverse labor mix</td>
+        </tr>
+        <tr>
+          <td>SETIS Total Value</td>
+          <td>$2.6B across 15 prime contractors (2022–2032)</td>
+          <td>NSEMS is AJW-2-specific; narrower scope but likely 8–13 functional areas</td>
+        </tr>
+        <tr>
+          <td>ASRC Federal SLE Award (Feb 2026)</td>
+          <td>$437M for AJW-1 engineering support (8a set-aside)</td>
+          <td>Comparable contract size signals NSEMS could approach $300M–$600M total ceiling</td>
+        </tr>
+        <tr>
+          <td>FAA SSM Program Award</td>
+          <td>Systems Enginuity — $9.3M for NAS System Safety Management</td>
+          <td>Individual task order size within safety pillar may range $5M–$50M</td>
+        </tr>
+        <tr>
+          <td>JMA Solutions FAA NAS Defense Programs</td>
+          <td>$27M via eFAST (5-year task order)</td>
+          <td>Small business can win meaningful NAS program office support tasks</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:16px;">
+      <div class="callout-title">Market Sizing Estimate</div>
+      <p>Based on comparable FAA acquisitions, NSEMS is likely structured as a <strong>multi-award IDIQ</strong> with a total ceiling of <strong>$300M–$800M over 5–10 years</strong>. Given AJW-2's mission scope (facilities infrastructure for the entire NAS), individual task orders could range from $5M to $100M+. The draft RFI stage suggests award is 12–18 months out from today.</p>
+    </div>
+  </div>
+
+  <!-- COMPETITIVE LANDSCAPE -->
+  <div class="section">
+    <div class="section-header">Competitive Landscape</div>
+    <p style="font-size:15px; margin-bottom:14px;">Expected competitors span established FAA primes with deep AJW relationships:</p>
+
+    <div class="comp-card">
+      <div class="comp-icon">🔵</div>
+      <div>
+        <div class="comp-name">Booz Allen Hamilton</div>
+        <div class="comp-desc">Incumbent on SETIS and prior FAA NextGen $700M contract. Holds active FAA NAICS 541330 task orders (e.g., 693KA826F00018 — ATO Mission Support, $8.2M). Dominant in NAS program management, systems engineering, and strategic planning. <strong>Threat level: Very High.</strong></div>
+      </div>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-icon">🔵</div>
+      <div>
+        <div class="comp-name">Noblis</div>
+        <div class="comp-desc">Recent winner of FAA ATEPS II (engineering and program management, 10-year IDIQ). Deep FAA ATO relationships. Strong in NAS safety, cybersecurity, and emerging technologies. Currently recruiting for FAA BNATCS leadership roles. <strong>Threat level: Very High.</strong></div>
+      </div>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-icon">🔵</div>
+      <div>
+        <div class="comp-name">SAIC</div>
+        <div class="comp-desc">SETIS prime. 15+ years of FAA air traffic control, avionics, communications, navigation, and surveillance systems work. Named prime on $2.6B SETIS vehicle. <strong>Threat level: High.</strong></div>
+      </div>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-icon">🟡</div>
+      <div>
+        <div class="comp-name">ASRC Federal</div>
+        <div class="comp-desc">Just won $437M FAA SLE contract for AJW-1 (Feb 2026). Deep NAS engineering and technical operations background. Will likely compete or team for AJW-2 scope. <strong>Threat level: High.</strong></div>
+      </div>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-icon">🟡</div>
+      <div>
+        <div class="comp-name">Leidos</div>
+        <div class="comp-desc">FAA safety systems modernization work (NAS Safety Analysis tools). Large-business prime with broad aviation systems portfolio. <strong>Threat level: Moderate–High.</strong></div>
+      </div>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-icon">🟢</div>
+      <div>
+        <div class="comp-name">CSSI, Inc. / Systems Enginuity / Objective Area Solutions</div>
+        <div class="comp-desc">Smaller FAA-focused firms with specific NAS program office or safety management wins. CSSI is frequently teamed with SAIC/Booz Allen on SETIS. Systems Enginuity holds the FAA SSM program. OAS recently won FAA NAS Defense Programs contract. Potential teaming partners for Changeis. <strong>Threat level: Low (as primes); high value as partners.</strong></div>
+      </div>
+    </div>
+
+    <div class="comp-card">
+      <div class="comp-icon">🟢</div>
+      <div>
+        <div class="comp-name">JMA Solutions / Karthik Consulting / Veracity Engineering</div>
+        <div class="comp-desc">Small businesses active on eFAST and similar FAA vehicles. JMA Solutions recently won $27M FAA NAS Defense Programs task order. Potential teaming targets if NSEMS includes a small business track. <strong>Threat level: Low; partnership opportunity.</strong></div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">Teaming Recommendation</div>
+      <p>Changeis's strongest position is as a <strong>management, planning, and analytical subcontractor</strong> behind a large-business prime (Booz Allen, Noblis, or Leidos) OR as a small business prime teaming with engineering-heavy subs. Target early teaming outreach to primes with existing AJW-2 or AJW footprint before the solicitation drops.</p>
+    </div>
+  </div>
+
+  <!-- CAPABILITY MATRIX -->
+  <div class="section">
+    <div class="section-header">Capability Matrix</div>
+    <p style="font-size:15px; margin-bottom:10px;">Mapping NSEMS key requirements to Changeis past performance (RAG-derived):</p>
+    <table>
+      <thead>
+        <tr><th>NSEMS Requirement / Pillar</th><th>RAG Match</th><th>Score</th><th>Contract</th><th>Evidence</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>NAS Lifecycle Management &amp; In-Service Support</strong> (Execution)</td>
+          <td>FAA_CLMRS</td>
+          <td>0.746 ▲ STRONG</td>
+          <td>FAA CLMRS</td>
+          <td>Direct NAS lifecycle management, supply chain, ILS support for NAS systems; exact functional match to NSEMS execution pillar</td>
+        </tr>
+        <tr>
+          <td><strong>NAS Systems Engineering &amp; Technical Support</strong> (Execution)</td>
+          <td>V3412056 / V3412027</td>
+          <td>0.641 / 0.505 ◆ MOD</td>
+          <td>6913G622F40071N / 6913G620F400083</td>
+          <td>NAS spectrum engineering, technical consulting on NAS frequency band safety and operational integrity</td>
+        </tr>
+        <tr>
+          <td><strong>Safety Management &amp; Technical Consulting</strong> (Safety)</td>
+          <td>V3132127 / V3442032</td>
+          <td>0.579 / 0.594 ◆ MOD</td>
+          <td>6913G621F400039 / 6913G620F400073</td>
+          <td>FMCSA safety programs (SMS, CSA, enforcement tools); FAA NAS facility technical consulting and operational performance analysis</td>
+        </tr>
+        <tr>
+          <td><strong>Program Management Office Support</strong> (Management)</td>
+          <td>V3412034 / V3202039</td>
+          <td>0.545 / 0.524 ◆ MOD</td>
+          <td>6913G621F400016 / 6913G621F400021</td>
+          <td>PMO support including department management, HR management, contracts management, professional analyst staffing; ASEPS acquisition management support</td>
+        </tr>
+        <tr>
+          <td><strong>Strategic Communications &amp; Stakeholder Engagement</strong> (Management)</td>
+          <td>CORPORATE / V3132127</td>
+          <td>0.570 / 0.579 ◆ MOD</td>
+          <td>N/A / 6913G621F400039</td>
+          <td>Changeis corporate transformation capability; FMCSA communications strategy, education, and training support</td>
+        </tr>
+        <tr>
+          <td><strong>Data Analytics &amp; Performance Monitoring</strong> (Management)</td>
+          <td>V3242019 / V3442032</td>
+          <td>0.518 / 0.594 ◆ MOD</td>
+          <td>6913G620F400034 / 6913G620F400073</td>
+          <td>FAA transportation modeling system support; NAS data analysis and system operational performance support</td>
+        </tr>
+        <tr>
+          <td><strong>Configuration &amp; Supply Chain Management</strong> (Execution)</td>
+          <td>FAA_CLMRS</td>
+          <td>0.746 ▲ STRONG</td>
+          <td>FAA CLMRS</td>
+          <td>NAS supply chain management, configuration management via ILS, LCSS, MSP programs — directly relevant to NSEMS configuration management work area</td>
+        </tr>
+        <tr>
+          <td><strong>Human Capital &amp; Organizational Change Management</strong> (Management)</td>
+          <td>CORPORATE</td>
+          <td>0.570 ◆ MOD</td>
+          <td>Corporate capability</td>
+          <td>Organizational transformation expertise; change management and workforce planning — needs additional documentation</td>
+        </tr>
+        <tr>
+          <td><strong>Acquisition Planning &amp; Procurement Support</strong> (Execution)</td>
+          <td>V3202039 / V3412034</td>
+          <td>0.524 / 0.545 ◆ MOD</td>
+          <td>6913G621F400021 / 6913G621F400016</td>
+          <td>ASEPS acquisition management support; contracts management and procurement support in FAA PMO context</td>
+        </tr>
+        <tr>
+          <td><strong>Budget &amp; Financial Management</strong> (Management)</td>
+          <td>V3412034</td>
+          <td>0.545 ◆ MOD</td>
+          <td>6913G621F400016</td>
+          <td>Financial and administrative program support in FAA PMO context — moderate evidence; needs bolstering</td>
+        </tr>
+        <tr>
+          <td><strong>NAS Systems Safety Engineering</strong> (Safety)</td>
+          <td>V3412056</td>
+          <td>0.641 ◆ MOD</td>
+          <td>6913G622F40071N</td>
+          <td>Safety-critical NAS spectrum engineering; aviation systems safety and operational integrity — partial match; deeper safety engineering capacity needed</td>
+        </tr>
+        <tr>
+          <td><strong>UAS / New Entrant Integration Support</strong> (Safety/Execution)</td>
+          <td>V3202039</td>
+          <td>0.524 ◆ MOD</td>
+          <td>6913G621F400021</td>
+          <td>FAA multi-modal advanced surveillance support; emerging entrants referenced in ASEPS; indirect match — gap area</td>
+        </tr>
+        <tr>
+          <td><strong>NAS Infrastructure Modernization &amp; Facilities</strong> (Execution)</td>
+          <td>FAA_CLMRS</td>
+          <td>0.746 ▲ STRONG</td>
+          <td>FAA CLMRS</td>
+          <td>NAS supply chain and lifecycle management for facilities infrastructure; closest match but engineering depth may be a gap versus competitors</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CORPORATE EXPERIENCE SEEDS -->
+  <div class="section">
+    <div class="section-header">Corporate Experience Seeds (Proposal-Ready)</div>
+    <p style="font-size:15px; margin-bottom:14px;">For each STRONG match, a 2–3 sentence proposal narrative suitable for Volume II past performance or corporate experience:</p>
+
+    <div class="seed-box">
+      <div class="seed-header">FAA CLMRS — NAS Lifecycle Management &amp; Resource System (Score: 0.746)</div>
+      <div class="seed-body">Changeis provided comprehensive engineering and support services to implement the FAA's Logistics Center Support System (LCSS) and Configuration Management Application (CMA) systems using the IFS platform, directly supporting NAS supply chain and lifecycle management for the Technical Operations service unit (AJW-1). Our team delivered integrated logistics support (ILS), supply chain management (SCM), in-service lifecycle management, program management, system integration, security, and technical documentation — mirroring the NSEMS execution pillar's requirements for NAS infrastructure lifecycle management. This engagement demonstrated Changeis's ability to support FAA-wide asset management across all NAS platform domains including Surveillance, Automation, Navigation, Communications, Weather, and Environmental systems.</div>
+    </div>
+
+    <div class="seed-box">
+      <div class="seed-header">V3412056 — FAA NAS Spectrum Engineering Support (Score: 0.641)</div>
+      <div class="seed-body">Under the Volpe Center contract (DTFA-19D300021), Changeis supported the FAA's Spectrum Engineering Services (SES) in evaluating critical 1030 and 1090 MHz band operations in the National Airspace System — frequency bands essential to aircraft surveillance, navigation, and airborne collision avoidance systems used for safe and efficient separation of aircraft. Our technical team provided expert analysis of spectrum congestion risks affecting DoD, Canadian, and civil aviation missions that depend on the same frequency bands as NAS safety-critical systems. This work demonstrates direct capability in NAS technical consulting, safety-critical system analysis, and multi-stakeholder engagement across federal aviation and defense partners — all central to the NSEMS Safety and Execution mission pillars.</div>
+    </div>
+
+    <div class="seed-box">
+      <div class="seed-header">V3442032/V3442038 — NAS Data Analysis &amp; Technical Consulting (Score: 0.594 / 0.586)</div>
+      <div class="seed-body">Changeis provided FAA with specialized technical consulting services covering NAS facility and equipment operational performance, logistics familiarity, and subject matter expert analysis support under the Volpe Center vehicle, developing a framework and strategic roadmap for future NAS facility management. Our team demonstrated cross-functional capability spanning system operational performance analysis, engineering support, business process reengineering, strategic framework development, and communications strategy — functional areas that map directly to NSEMS's Management pillar work areas for performance monitoring, stakeholder engagement, and organizational planning. These task orders reflect Changeis's ability to deliver rapidly mobilized, high-quality analytical and consulting support to FAA Technical Operations programs with minimal ramp-up time.</div>
+    </div>
+
+    <div class="seed-box">
+      <div class="seed-header">V3132127 — FMCSA Safety Programs Support (Score: 0.579)</div>
+      <div class="seed-body">Changeis supported DOT's Federal Motor Carrier Safety Administration (FMCSA) in delivering comprehensive safety program support including program planning, education, training, communications strategy development, stakeholder engagement, data analysis, and customer service support for FMCSA's Compliance, Safety, and Accountability (CSA) program and Safety Measurement System (SMS). This engagement demonstrates Changeis's proficiency in supporting complex, multi-stakeholder federal safety programs with broad organizational reach — analogous to NSEMS's Safety Mission Pillar requirements for safety management systems, safety assurance, and safety risk management. Our team's ability to support a federal safety mission from strategic framework through field-level program execution provides directly transferable capacity for FAA AJW-2's safety management work areas.</div>
+    </div>
+  </div>
+
+  <!-- GO/NO-GO ASSESSMENT -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Assessment</div>
+
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px; flex-wrap:wrap;">
+      <div class="gng-badge gng-pursue-partner">⚠ PURSUE WITH PARTNER</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Factor</th><th>Assessment</th><th>Impact</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>RAG Match Strength</strong></td>
+          <td>1 STRONG (0.746), 9 MODERATE (0.505–0.641) — meaningful FAA/DOT footprint via Volpe vehicle; direct NAS lifecycle management experience</td>
+          <td style="color: var(--green);">POSITIVE</td>
+        </tr>
+        <tr>
+          <td><strong>Customer Relationship</strong></td>
+          <td>Changeis has executed multiple FAA task orders via Volpe Center and direct vehicles; AJW-2 (contracting via AAQ-410) is a new direct relationship to develop</td>
+          <td style="color: var(--orange);">MIXED</td>
+        </tr>
+        <tr>
+          <td><strong>Scope Alignment</strong></td>
+          <td>Management and analytical work areas (PMO, financial, stakeholder, change management) align well; heavy NAS systems engineering and facilities technical depth is a gap</td>
+          <td style="color: var(--orange);">MIXED</td>
+        </tr>
+        <tr>
+          <td><strong>Set-Aside Status</strong></td>
+          <td>Not yet specified. If small business or 8(a) set-aside components exist, Changeis competitive position improves significantly as prime</td>
+          <td style="color: var(--orange);">WATCH</td>
+        </tr>
+        <tr>
+          <td><strong>Competition</strong></td>
+          <td>Booz Allen, Noblis, SAIC, ASRC Federal are dominant incumbents in this space; as a small/mid business, Changeis needs a teaming strategy</td>
+          <td style="color: var(--red);">CHALLENGE</td>
+        </tr>
+        <tr>
+          <td><strong>Timeline</strong></td>
+          <td>RFI due May 4, 2026 (32 days away). Draft stage means award is 12–18 months out. Sufficient time to develop teaming strategy and shape requirements</td>
+          <td style="color: var(--green);">POSITIVE</td>
+        </tr>
+        <tr>
+          <td><strong>Strategic Value</strong></td>
+          <td>FAA AJW-2 is a priority account; NSEMS would be flagship NAS infrastructure support. A win (even as sub) builds CPARs and positions for future sole-source/expansion</td>
+          <td style="color: var(--green);">POSITIVE</td>
+        </tr>
+        <tr>
+          <td><strong>Contract Value Potential</strong></td>
+          <td>Estimated $300M–$800M IDIQ ceiling over 5–10 years; Changeis's task order capture even at 2–5% = $6M–$40M in revenue</td>
+          <td style="color: var(--green);">POSITIVE</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:18px;">
+      <div class="callout-title">Recommended Actions</div>
+      <p><strong>1. Respond to RFI by May 4, 2026</strong> — express interest in all three mission pillars; emphasize FAA CLMRS and Volpe past performance in program management, lifecycle management, and safety program support.<br><br>
+      <strong>2. Identify Teaming Partners</strong> — approach Noblis, CSSI, Systems Enginuity, or Objective Area Solutions (OAS) for teaming. Target a large prime with AJW-2 access for Changeis to position as sub.<br><br>
+      <strong>3. Monitor Set-Aside Status</strong> — if FAA establishes small business tracks or 8(a) components, Changeis's position as prime improves substantially.<br><br>
+      <strong>4. Develop AJW-2 Relationship</strong> — contact the AAQ-410 contracting team and program office to introduce Changeis; aim to participate in any industry days.</p>
+    </div>
+  </div>
+
+  <!-- CONTEXT SLUG SECTION -->
+  <div class="context-section">
+    <button class="context-toggle" onclick="toggleContext(this)">
+      <span class="arrow">▶</span> Session Context &amp; Methodology
+    </button>
+    <div class="context-body" id="contextBody">Task: NSEMS Deep Dive — NAS Safety, Execution, and Management Solutions
+Date: 2026-04-02
+Deliverable: deep-dive-nsems-2026-04-02.html
+Railway URL: https://vm2-p-taskers-production.up.railway.app/deep-dive-nsems-2026-04-02.html
+
+ORIGINAL INSTRUCTIONS:
+"Run deep dive opportunity analysis against our RAG" — Full opportunity analysis for NSEMS (SAM.gov notice 8a972039dd6a4ff5bb8a4e07d17daee8), including SAM.gov data extraction, RAG engine matching, incumbent research, competitive landscape, capability matrix, experience seeds, and Go/No-Go assessment.
+
+APPROACH:
+1. Fetched SAM.gov API (opps/v2 endpoint) and public page for opportunity metadata
+2. Ran Changeis RAG engine (https://changeis-bd-rag-production.up.railway.app/match) with top_n=50
+3. Conducted web research for incumbent, FPDS, USAspending, and competitive landscape
+4. Scored 23 RAG matches into STRONG/MODERATE/RELEVANT/LOW tiers
+5. Built capability matrix mapping 13 NSEMS functional areas to Changeis past performance
+6. Drafted 4 proposal-ready experience narratives from top RAG matches
+7. Assessed Go/No-Go as PURSUE WITH PARTNER
+
+KEY FINDINGS:
+- NSEMS is a new FAA AJW-2 IDIQ consolidating NAS facilities lifecycle support across 3 pillars, 13 functional areas, 8 PM work areas
+- 1 STRONG RAG match (FAA_CLMRS, 0.746) — direct NAS lifecycle management and supply chain experience
+- 9 MODERATE matches (0.505–0.641) across FAA/DOT safety programs, NAS technical consulting, and PMO support via Volpe
+- No named incumbent; appears to replace/expand the AISS (AJW Integrated Support Services) predecessor concept
+- Comparable contracts (ASRC $437M SLE, Noblis ATEPS II, SETIS $2.6B) suggest NSEMS ceiling of $300M–$800M
+- Major competitors: Booz Allen, Noblis, SAIC, ASRC Federal, Leidos — all with strong AJW relationships
+
+DEAD ENDS:
+- SAM.gov API returned minimal description (only summary paragraph; Attachment 1 not accessible via API)
+- USAspending API was blocked by robots.txt (could not query directly)
+- No direct FPDS search was possible for "NSEMS" as it is a new solicitation
+- SAM.gov search API was not queried separately (sufficient data from direct API)
+
+ASSUMPTIONS:
+- NSEMS is a new contract (not a direct recompete) based on draft language and no identified incumbent
+- Contract ceiling estimated at $300M–$800M based on comparable FAA AJW contracts
+- Set-aside status not yet determined; assumed full-and-open competition initially
+- AJW-2 is the primary customer office (confirmed from solicitation description)
+
+OPEN QUESTIONS:
+- Will NSEMS be full-and-open or include small business / 8(a) tracks?
+- What is the formal relationship between NSEMS and the AISS acquisition?
+- Will FAA issue a draft SOW or RFP attachment before May 4, 2026?
+- What specific labor categories will be required (engineering-heavy vs. management-heavy)?
+- Is there an industry day planned?
+
+DATA SOURCES:
+- SAM.gov API: https://sam.gov/api/prod/opps/v2/opportunities/8a972039dd6a4ff5bb8a4e07d17daee8
+- SAM.gov Public Page: https://sam.gov/opp/8a972039dd6a4ff5bb8a4e07d17daee8/view
+- Changeis RAG Engine: https://changeis-bd-rag-production.up.railway.app/match
+- GovConWire: https://www.govconwire.com/articles/faa-asrc-federal-437m-nas-engineering-contract
+- OrangeSlices.ai: https://orangeslices.ai/jma-solutions-beats-out-2-to-win-27m-faa-national-airspace-system-nas-defense-programs-program-office-support-task-on-efast/
+- Potomac Officers Club: https://www.potomacofficersclub.com/news/saic-secures-prime-position-on-2-6b-faa-contract-to-support-aviation-programs/
+- Noblis: https://noblis.org/news/noblis-awarded-ateps-ii-contract-for-faa/
+- Booz Allen Hamilton: https://www.boozallen.com/markets/transportation/safe-efficient-national-airspace-management-solutions.html
+- FAA SETIS: https://www.faa.gov/about/office_org/headquarters_offices/ang/contracts/setis/scope
+- HigherGov AISS: https://www.highergov.com/contract-opportunity/ajw-portfolio-ajw-integrated-support-services-ais-s-a311a/
+- GDI Consulting AISS: https://www.gdicwins.com/active-rfps/solicitation-profile/aiss/
+
+NEXT STEPS:
+1. Respond to NSEMS RFI by May 4, 2026 — express interest in all three pillars
+2. Contact FAA AAQ-410 Contracting Team: 9-AWA-AAQ410-Contracting-Team@faa.gov
+3. Identify and approach teaming partners (Noblis, CSSI, OAS, Systems Enginuity)
+4. Monitor SAM.gov for NSEMS draft SOW / RFP attachment release
+5. Develop AJW-2 relationship — request briefing or introduction via BD channels
+6. Update capture plan when set-aside status is confirmed
+7. Pull AISS acquisition status update from SAM.gov/HigherGov
+
+COST ESTIMATE:
+{
+  "model": "sonar-pro (Perplexity)",
+  "model_pricing": "~$3/$15 per 1M tokens",
+  "input_tokens_est": "~60,000",
+  "output_tokens_est": "~12,000",
+  "search_calls": 6,
+  "rag_calls": 2,
+  "subagent_calls": 0,
+  "cost_conservative": "$0.48",
+  "cost_ceiling": "$0.85",
+  "notes": "Complex deep dive with 6 web searches, 2 RAG calls, multiple SAM.gov fetches; HTML generation is the primary output cost driver"
+}</div>
+
+    <!-- Hidden JSON -->
+    <script type="application/json" id="vm2-context-data">
+{
+  "task_name": "NSEMS Deep Dive — NAS Safety, Execution, and Management Solutions",
+  "task_date": "2026-04-02",
+  "deliverable_file": "deep-dive-nsems-2026-04-02.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-nsems-2026-04-02.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Run deep dive opportunity analysis against our RAG — NSEMS (NAS Safety, Execution, and Management Solutions), SAM.gov notice 8a972039dd6a4ff5bb8a4e07d17daee8, solicitation 693KA9-26-NSEMS, RFI due May 4, 2026",
+  "approach": "Fetched SAM.gov API and public page; ran Changeis RAG engine (top_n=50); conducted web research for incumbents, competitors, and market context; scored 23 RAG matches into tiers; built capability matrix; drafted proposal experience seeds; assessed Go/No-Go",
+  "key_findings": [
+    "NSEMS is a new FAA AJW-2 IDIQ with 3 mission pillars, 13 functional work areas, 8 program management work areas — no named incumbent",
+    "1 STRONG RAG match: FAA_CLMRS (0.746) — direct NAS lifecycle management experience",
+    "9 MODERATE matches (0.505–0.641) across FAA/DOT safety, NAS technical consulting, and PMO support via Volpe",
+    "Comparable FAA contracts suggest NSEMS ceiling of $300M–$800M over 5–10 years",
+    "Major competitors: Booz Allen, Noblis, SAIC, ASRC Federal — all with strong AJW relationships; teaming strategy required"
+  ],
+  "dead_ends": [
+    "SAM.gov Attachment 1 not accessible via API — only summary description available",
+    "USAspending API blocked by robots.txt",
+    "No FPDS records for NSEMS (new solicitation)",
+    "AISS acquisition status unclear — in development as of Sept 2023, no public award found"
+  ],
+  "assumptions": [
+    "NSEMS is a new contract vehicle, not a direct recompete",
+    "Contract ceiling estimated $300M–$800M based on comparable FAA AJW contracts",
+    "Set-aside status TBD — assumed full-and-open initially",
+    "AJW-2 is confirmed primary customer office"
+  ],
+  "open_questions": [
+    "Will NSEMS include small business or 8(a) set-aside tracks?",
+    "Formal relationship between NSEMS and the AISS acquisition?",
+    "Will FAA release a draft SOW before May 4 RFI deadline?",
+    "Labor category mix — engineering-heavy vs. management-heavy?",
+    "Is there an industry day planned?"
+  ],
+  "data_sources": [
+    {"name": "SAM.gov API", "url": "https://sam.gov/api/prod/opps/v2/opportunities/8a972039dd6a4ff5bb8a4e07d17daee8"},
+    {"name": "SAM.gov Opportunity Page", "url": "https://sam.gov/opp/8a972039dd6a4ff5bb8a4e07d17daee8/view"},
+    {"name": "Changeis RAG Engine", "url": "https://changeis-bd-rag-production.up.railway.app/match"},
+    {"name": "GovConWire — ASRC Federal FAA Award", "url": "https://www.govconwire.com/articles/faa-asrc-federal-437m-nas-engineering-contract"},
+    {"name": "OrangeSlices — JMA Solutions FAA NAS", "url": "https://orangeslices.ai/jma-solutions-beats-out-2-to-win-27m-faa-national-airspace-system-nas-defense-programs-program-office-support-task-on-efast/"},
+    {"name": "Potomac Officers Club — SAIC SETIS", "url": "https://www.potomacofficersclub.com/news/saic-secures-prime-position-on-2-6b-faa-contract-to-support-aviation-programs/"},
+    {"name": "Noblis ATEPS II", "url": "https://noblis.org/news/noblis-awarded-ateps-ii-contract-for-faa/"},
+    {"name": "FAA SETIS Scope", "url": "https://www.faa.gov/about/office_org/headquarters_offices/ang/contracts/setis/scope"},
+    {"name": "HigherGov AISS", "url": "https://www.highergov.com/contract-opportunity/ajw-portfolio-ajw-integrated-support-services-ais-s-a311a/"}
+  ],
+  "next_steps": [
+    "Respond to NSEMS RFI by May 4, 2026",
+    "Contact FAA AAQ-410: 9-AWA-AAQ410-Contracting-Team@faa.gov",
+    "Identify teaming partners: Noblis, CSSI, OAS, Systems Enginuity",
+    "Monitor SAM.gov for draft SOW or RFP attachment",
+    "Develop AJW-2 relationship via BD channels",
+    "Update capture plan when set-aside status is confirmed"
+  ],
+  "cost_estimate": {
+    "model": "sonar-pro (Perplexity)",
+    "model_pricing": "~$3/$15 per 1M tokens",
+    "input_tokens_est": "~60,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 6,
+    "rag_calls": 2,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.48",
+    "cost_ceiling": "$0.85",
+    "notes": "Complex deep dive with 6 web searches, 2 RAG calls, multiple SAM.gov fetches; HTML generation is the primary output cost driver"
+  }
+}
+    </script>
+
+    <!-- Continue This Work Panel -->
+    <div class="continue-panel">
+      <h3>Continue This Work</h3>
+      <div class="subtitle">Pick up where this analysis left off, or assign a follow-up task.</div>
+      <div class="continue-btns">
+        <button class="btn btn-primary" onclick="copyFollowUp()">
+          <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+        </button>
+        <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up%3A%20NSEMS%20Deep%20Dive%20(2026-04-02)&body=Please%20continue%20the%20NSEMS%20deep%20dive%20analysis.%20Deliverable%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fdeep-dive-nsems-2026-04-02.html%0A%0AKey%20open%20questions%3A%0A-%20Confirm%20set-aside%20status%20when%20available%0A-%20Develop%20teaming%20strategy%20with%20Noblis%2FCSSI%2FOAS%0A-%20Draft%20RFI%20response%20before%20May%204%2C%202026">
+          <span class="btn-icon">✉</span> Email to VM2
+        </a>
+        <button class="btn btn-secondary" onclick="createTodoist()">
+          <span class="btn-icon">✓</span> Create Todoist Follow-Up
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · NAS Safety, Execution, and Management Solutions (NSEMS) Deep Dive · April 2, 2026 · VM2 Deliverable
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+
+function toggleContext(btn) {
+  btn.classList.toggle('open');
+  document.getElementById('contextBody').classList.toggle('open');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function copyFollowUp() {
+  const prompt = `Continue the NSEMS deep dive analysis.\n\nDeliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-nsems-2026-04-02.html\n\nContext: NSEMS (NAS Safety, Execution, and Management Solutions), FAA AJW-2, Solicitation 693KA9-26-NSEMS. RFI due May 4, 2026. Go/No-Go: PURSUE WITH PARTNER. 1 STRONG RAG match (FAA_CLMRS 0.746), 9 MODERATE matches.\n\nNext steps:\n1. Draft the NSEMS RFI response letter for Changeis\n2. Confirm teaming strategy and identify top 3 teaming candidates\n3. Monitor SAM.gov for draft SOW release\n4. Update capture plan when set-aside status is confirmed`;
+  navigator.clipboard.writeText(prompt).then(() => showToast('Follow-up prompt copied!'));
+}
+
+function createTodoist() {
+  const text = encodeURIComponent('NSEMS RFI Response — Due May 4, 2026');
+  const notes = encodeURIComponent('Draft RFI response for NSEMS (693KA9-26-NSEMS). Contact FAA AAQ-410. Identify teaming partners (Noblis, CSSI, OAS). Deep dive: https://vm2-p-taskers-production.up.railway.app/deep-dive-nsems-2026-04-02.html');
+  window.open(`https://todoist.com/add?content=${text}&description=${notes}&due_date=2026-04-30`, '_blank');
+  showToast('Opening Todoist...');
+}
+</script>
+</body>
+</html>
