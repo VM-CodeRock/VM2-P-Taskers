@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operational Test and Evaluation Support Services (OTSS) - Test and Evaluation Division (TED) · Deep Dive</title>
+<!-- Charter not on Google Fonts; Georgia serves as the serif fallback -->
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 36px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 18px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Cards row */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) {
+    .cards-row { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-num {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .card h4 {
+    font-size: 16px; font-weight: 700; margin-bottom: 6px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .card h4 { color: #e2e2e2; }
+  .card ul { padding-left: 16px; margin: 0; }
+  .card li { font-size: 13.5px; margin-bottom: 3px; line-height: 1.45; }
+  .card .best-for {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-muted);
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .card .best-for strong { color: var(--red); }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Follow-up steps */
+  .steps { counter-reset: step; margin-top: 8px; }
+  .step {
+    display: flex; gap: 12px; align-items: flex-start;
+    margin-bottom: 10px; font-size: 15px;
+  }
+  .step-num {
+    flex-shrink: 0; width: 26px; height: 26px;
+    background: var(--navy); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    margin-top: 1px;
+  }
+  [data-theme="dark"] .step-num { background: var(--red); }
+  .step-text { flex: 1; }
+  .step-text strong { font-weight: 700; }
+
+  /* Checklist */
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li {
+    position: relative; padding-left: 22px; margin-bottom: 5px; font-size: 14.5px;
+  }
+  .checklist li::before {
+    content: '✓'; position: absolute; left: 0; top: 0;
+    color: var(--red); font-weight: 700; font-size: 14px;
+  }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Compact note */
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  /* Cost note callout */
+  .cost-note {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--red);
+    padding: 8px 14px;
+    font-size: 13px; color: var(--text-muted);
+    margin-top: 10px; border-radius: 0 4px 4px 0;
+  }
+
+  /* Inline code */
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* Sub-options indent */
+  .sub-options { margin-top: 6px; margin-left: 4px; }
+  .sub-options li { font-size: 14px; margin-bottom: 4px; }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Guide</div>
+    <h1>VM2 System Guide</h1>
+    <div class="hero-sub">Your AI Operating System — Quick Reference</div>
+    <div class="hero-date">March 27, 2026</div>
+  </div>
+
+  <!-- What VM2 Is -->
+  <div class="section">
+    <div class="section-header">What VM2 Is</div>
+    <ul>
+      <li>Your personal AI operating system built on <strong>Perplexity Computer</strong></li>
+      <li>Handles: research, competitive intel, opportunity analysis, daily briefs, writing, scheduling, document creation</li>
+      <li>Everything produces a <strong>deliverable HTML page</strong> hosted on Railway, indexed in your Deliverables Portal</li>
+      <li>All deliverables are self-documenting — each contains the full reasoning chain so any session can pick up where the last one left off</li>
+    </ul>
+  </div>
+
+  <!-- How to Access -->
+  <div class="section">
+    <div class="section-header">How to Access</div>
+    <ul>
+      <li><strong>Deliverables Portal</strong> — <a href="https://vm2-p-taskers-production.up.railway.app/" target="_blank">vm2-p-taskers-production.up.railway.app</a> &nbsp;(vm2 / 97harry23!)</li>
+      <li><strong>Perplexity Computer</strong> — <a href="https://www.perplexity.ai/computer" target="_blank">perplexity.ai/computer</a> &nbsp;(your main sessions)</li>
+      <li><strong>GitHub Repo</strong> — <a href="https://github.com/vm-coderock/VM2-P-Taskers" target="_blank">github.com/vm-coderock/VM2-P-Taskers</a> &nbsp;(source of truth)</li>
+    </ul>
+  </div>
+
+  <!-- Three Ways to Task VM2 -->
+  <div class="section">
+    <div class="section-header">Three Ways to Task VM2</div>
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-num">Option 1</div>
+        <h4>Direct Chat</h4>
+        <ul>
+          <li>Open Perplexity Computer and type your request</li>
+          <li>Deliverable gets pushed to GitHub + Railway automatically</li>
+        </ul>
+        <div class="best-for"><strong>Best for:</strong> immediate, interactive work where you want to guide the analysis</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Option 2</div>
+        <h4>Email Pipeline</h4>
+        <ul>
+          <li>Send email to <strong>vm2.viru@gmail.com</strong> with "VM2" in subject or top of body</li>
+          <li>Hourly cron picks it up and creates a dedicated session</li>
+          <li>You get a reply with the deliverable link when done</li>
+        </ul>
+        <div class="best-for"><strong>Best for:</strong> fire-and-forget tasks, delegating while you're in meetings</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Option 3</div>
+        <h4>Auto-Helper (Todoist)</h4>
+        <ul>
+          <li>Daily at 7am, VM2 scans your Todoist and shows tasks it can handle</li>
+          <li>Open the Auto-Helper page on Railway and click "Task VM2" on any task</li>
+          <li>This sends an email that triggers the pipeline above</li>
+        </ul>
+        <div class="best-for"><strong>Best for:</strong> working through your backlog systematically</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How to Follow Up -->
+  <div class="section">
+    <div class="section-header">How to Follow Up on Any Deliverable</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">Open any deliverable on Railway</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">Scroll to the bottom — every page has a <strong>"Continue This Work"</strong> panel</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">Choose one of three options:
+          <ul class="sub-options">
+            <li><strong>Copy Follow-Up Prompt</strong> → paste into a new Perplexity Computer session. The new session reads the full context from the deliverable URL — all prior reasoning, findings, dead ends, and open questions.</li>
+            <li><strong>Email to VM2</strong> → sends a follow-up email that the pipeline picks up with full context</li>
+            <li><strong>Create Todoist Follow-Up</strong> → adds a follow-up task to your Todoist with <code>vm2</code> label</li>
+          </ul>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">The new session reads the original deliverable and picks up <strong>exactly</strong> where the last session left off — no starting from scratch, no lost reasoning</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Schedule -->
+  <div class="section">
+    <div class="section-header">What Runs Automatically (Daily Schedule)</div>
+    <table>
+      <thead>
+        <tr><th>Time (ET)</th><th>What</th><th>Output</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>7:00 AM</strong></td><td>Todoist Auto-Helper scan</td><td>vm2-auto-helper page (living page)</td></tr>
+        <tr><td><strong>8:00 AM</strong></td><td>APFS Monitor (DHS forecast)</td><td>Opportunity data for daily brief</td></tr>
+        <tr><td><strong>9:00 AM</strong></td><td>SAM.gov Monitor (11 NAICS)</td><td>Opportunity data for daily brief</td></tr>
+        <tr><td><strong>10:00 AM</strong></td><td>Combined Daily Brief email</td><td>Branded brief to varun@changeis.com</td></tr>
+        <tr><td><strong>Hourly</strong></td><td>Gmail Task Intake</td><td>Picks up vm2.viru emails, creates sessions</td></tr>
+        <tr><td><strong>Hourly</strong> <span style="font-size:12px;color:var(--text-faint)">(8a–7p)</span></td><td>Deep Dive Monitor</td><td>Executes vm2-opp Todoist tasks</td></tr>
+        <tr><td><strong>Nightly</strong></td><td>Compliance Audit</td><td>Verifies all rules followed, auto-fixes gaps</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Every Deliverable Contains -->
+  <div class="section">
+    <div class="section-header">Every Deliverable Contains</div>
+    <ul class="checklist">
+      <li>The analysis/output itself (the "answer")</li>
+      <li>Session Context panel (collapsible) — original instructions, approach, key findings, dead ends, assumptions, open questions, data sources, next steps</li>
+      <li>Cost estimate — conservative and ceiling API-equivalent cost</li>
+      <li>"Continue This Work" panel with 3 action buttons</li>
+      <li>Version history (if updated)</li>
+      <li>Light/dark mode toggle</li>
+    </ul>
+  </div>
+
+  <!-- Cost Per Deliverable -->
+  <div class="section">
+    <div class="section-header">Cost Per Deliverable</div>
+    <table>
+      <thead>
+        <tr><th>Type</th><th>Typical Cost</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Quick scan (SAM daily, ATEPS check)</td><td>$0.10 – $0.35</td></tr>
+        <tr><td>Research brief (articles, intel)</td><td>$0.25 – $0.75</td></tr>
+        <tr><td>Deep dive (opportunity analysis)</td><td>$0.45 – $1.00</td></tr>
+        <tr><td>Strategy document</td><td>$0.35 – $0.70</td></tr>
+        <tr><td>Daily executive brief</td><td>$0.50 – $1.20</td></tr>
+      </tbody>
+    </table>
+    <div class="cost-note">
+      Based on Claude Sonnet 4.6 ($3/$15 per 1M tokens). Your Perplexity Computer subscription covers this — these are API-equivalent costs shown for transparency.
+    </div>
+  </div>
+
+  <!-- Key Rules -->
+  <div class="section">
+    <div class="section-header">Key Rules (What VM2 Always Does)</div>
+    <ul>
+      <li>Every deliverable → pushed to GitHub as plain HTML (no encryption)</li>
+      <li>Every deliverable → logged in <code>portal.html</code> (the Deliverables Index)</li>
+      <li>Every deliverable → includes context slug for follow-up continuity</li>
+      <li>Railway basic auth protects everything server-side</li>
+      <li><code>portal.html</code> = the index. <code>index.html</code> = redirect only. Never edit <code>index.html</code>.</li>
+    </ul>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "VM2 System Guide",
+  "task_date": "2026-03-27",
+  "deliverable_file": "vm2-system-guide-2026-03-27.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-system-guide-2026-03-27.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [
+    "vm2-architecture-overhaul-plan-2026-03-27.html",
+    "vm2-architecture-2026-03-25.html"
+  ],
+  "original_instructions": "Varun requested a 1-pager executive summary of the VM2 system — how it works, how to use it, and what to expect. Quick reference format.",
+  "approach": "Compiled from the architecture overhaul plan, existing skill files, and cron configurations. Structured as a cheat sheet with scannable sections.",
+  "key_findings": [
+    "Three task channels: direct chat, email pipeline, auto-helper",
+    "7 automated daily tasks running on schedule",
+    "Context slug system enables full continuity across sessions",
+    "Typical deliverable costs $0.10-$1.20 API-equivalent"
+  ],
+  "dead_ends": [],
+  "assumptions": [
+    "All crons are running as configured",
+    "Railway deployment is current"
+  ],
+  "open_questions": [
+    "Should this guide be updated weekly as the system evolves?"
+  ],
+  "data_sources": [
+    "vm2-gmail-tasks skill",
+    "vm2-opp-deep-dive skill",
+    "vm2-wrapup skill",
+    "morning-routine skill",
+    "Claude API pricing docs"
+  ],
+  "next_steps": [
+    "Keep this guide updated as new capabilities are added",
+    "Consider printing as physical desk reference"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4.6",
+    "model_pricing": { "input_per_1m": 3.00, "output_per_1m": 15.00 },
+    "input_tokens_est": 30000,
+    "output_tokens_est": 8000,
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.21",
+    "cost_ceiling": "$0.38",
+    "notes": "No research required — compiled from existing system documentation"
+  }
+}</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · VM2 System Guide · March 27, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up prompt
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/vm2-system-guide-2026-03-27.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the VM2 System Guide.
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off. The context slug contains: original instructions, approach taken, key findings, dead ends, assumptions, open questions, data sources used, and next steps.
+
+Open questions from last session:
+- Should this guide be updated weekly as the system evolves?
+
+Suggested next steps:
+- Keep this guide updated as new capabilities are added
+- Consider printing as physical desk reference
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    }).catch(() => {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: VM2 System Guide');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: VM2 System Guide');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
