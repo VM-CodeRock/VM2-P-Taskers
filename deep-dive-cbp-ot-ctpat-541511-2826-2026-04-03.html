@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: CBP CTPAT Portals — F2026072826</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --deep-navy: #002060;
+    --brand-blue: #2E6DA4;
+    --heading-blue: #2E74B5;
+    --section-blue: #1F4D78;
+    --action-teal: #008B8B;
+    --success-green: #2D7D4A;
+    --approval-green: #1A7A3A;
+    --innovation-purple: #6B4C9A;
+    --attention-orange: #D97D2A;
+    --alert-red: #B22222;
+    --caution-gold: #B8860B;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --callout-bg: #E8F4F8;
+    --callout-border: #008B8B;
+    --row-alt: #F2F6FA;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --callout-bg: #1a2535;
+    --callout-border: #008B8B;
+    --row-alt: #1e2129;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: #c53a3a; font-size: 18px; }
+  .topbar-meta { font-size: 11px; opacity: 0.65; margin-left: 8px; font-weight: 400; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 44px 0 32px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-size: 30px; font-weight: 700; color: var(--navy);
+    line-height: 1.2; margin-bottom: 6px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 16px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 4px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Alert banner */
+  .alert-banner {
+    background: #fff3cd; border: 1px solid #ffc107; border-left: 4px solid #D97D2A;
+    border-radius: 4px; padding: 10px 16px;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;
+    color: #856404; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  [data-theme="dark"] .alert-banner {
+    background: #2a1f00; border-color: #ffc107; color: #ffc107;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 5px;
+    margin-bottom: 14px;
+  }
+  .section p { font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { font-size: 15px; margin-bottom: 4px; line-height: 1.5; }
+  .section li strong { color: var(--text); }
+  h2 { font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+  [data-theme="dark"] h2 { color: #e0e0e0; }
+  h3 { font-size: 16px; font-weight: 700; color: var(--section-blue); margin: 16px 0 8px; }
+  [data-theme="dark"] h3 { color: #9db8d8; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* KPI Cards */
+  .kpi-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin: 12px 0 20px;
+  }
+  @media (max-width: 700px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 12px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .kpi-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .kpi-value {
+    font-size: 20px; font-weight: 700; color: var(--navy);
+    line-height: 1.2;
+  }
+  [data-theme="dark"] .kpi-value { color: #d0d8e8; }
+  .kpi-sub {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; color: var(--text-faint); margin-top: 2px;
+  }
+
+  /* Callout box */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 3px solid var(--callout-border);
+    border-radius: 0 4px 4px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  .callout-title {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--action-teal); margin-bottom: 6px;
+  }
+  [data-theme="dark"] .callout-title { color: #4ecdc4; }
+  .callout p { font-size: 14px; margin-bottom: 4px; }
+  .callout ul { padding-left: 16px; margin: 0; }
+  .callout li { font-size: 14px; margin-bottom: 3px; }
+
+  /* Go/No-Go Box */
+  .gng-box {
+    border: 2px solid;
+    border-radius: 6px; padding: 18px 20px;
+    margin: 16px 0;
+  }
+  .gng-pursue {
+    border-color: var(--success-green);
+    background: #f0faf3;
+  }
+  [data-theme="dark"] .gng-pursue {
+    background: #0d1f12;
+    border-color: var(--success-green);
+  }
+  .gng-monitor {
+    border-color: var(--attention-orange);
+    background: #fdf6ee;
+  }
+  [data-theme="dark"] .gng-monitor {
+    background: #1f1200;
+    border-color: var(--attention-orange);
+  }
+  .gng-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 6px;
+  }
+  .gng-rating {
+    font-size: 22px; font-weight: 700; margin-bottom: 8px;
+  }
+  .gng-pursue .gng-label { color: var(--success-green); }
+  .gng-pursue .gng-rating { color: var(--approval-green); }
+  .gng-monitor .gng-label { color: var(--attention-orange); }
+  .gng-monitor .gng-rating { color: var(--attention-orange); }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13.5px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  [data-theme="dark"] tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Score badge */
+  .score-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 7px; border-radius: 3px;
+    letter-spacing: 0.04em;
+  }
+  .score-strong { background: #d4edda; color: var(--success-green); }
+  .score-moderate { background: #cce5ff; color: #0056b3; }
+  .score-relevant { background: #e2d9f3; color: var(--innovation-purple); }
+  [data-theme="dark"] .score-strong { background: #0d2619; color: #6fcf8a; }
+  [data-theme="dark"] .score-moderate { background: #0d1f36; color: #7eb3e0; }
+  [data-theme="dark"] .score-relevant { background: #1a1232; color: #c9b8e8; }
+
+  /* Status pill */
+  .pill {
+    display: inline-block; font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 2px 8px; border-radius: 10px;
+  }
+  .pill-green { background: #d4edda; color: var(--success-green); }
+  .pill-orange { background: #ffecd4; color: var(--attention-orange); }
+  .pill-red { background: #f8d7da; color: var(--alert-red); }
+  .pill-blue { background: #cce5ff; color: #004085; }
+  [data-theme="dark"] .pill-green { background: #0d2619; color: #6fcf8a; }
+  [data-theme="dark"] .pill-orange { background: #2a1500; color: #f0a854; }
+  [data-theme="dark"] .pill-red { background: #2a0808; color: #f08080; }
+  [data-theme="dark"] .pill-blue { background: #0d1f36; color: #7eb3e0; }
+
+  /* Capability matrix */
+  .cap-check { color: var(--success-green); font-size: 15px; }
+  .cap-partial { color: var(--attention-orange); font-size: 15px; }
+  .cap-gap { color: var(--alert-red); font-size: 15px; }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Tier divider */
+  .tier-label {
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 5px 12px; border-radius: 3px; margin: 14px 0 6px;
+    display: inline-block;
+  }
+  .tier-strong { background: #d4edda; color: var(--success-green); }
+  .tier-moderate { background: #cce5ff; color: #004085; }
+  .tier-relevant { background: #e2d9f3; color: var(--innovation-purple); }
+  [data-theme="dark"] .tier-strong { background: #0d2619; color: #6fcf8a; }
+  [data-theme="dark"] .tier-moderate { background: #0d1f36; color: #7eb3e0; }
+  [data-theme="dark"] .tier-relevant { background: #1a1232; color: #c9b8e8; }
+
+  /* Info grid */
+  .info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    border: 1px solid var(--border); border-radius: 4px; overflow: hidden;
+    margin-top: 10px;
+  }
+  @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } }
+  .info-row { display: contents; }
+  .info-row:nth-child(even) .info-key,
+  .info-row:nth-child(even) .info-val {
+    background: var(--row-alt);
+  }
+  [data-theme="dark"] .info-row:nth-child(even) .info-key,
+  [data-theme="dark"] .info-row:nth-child(even) .info-val {
+    background: var(--table-alt);
+  }
+  .info-key {
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-muted); padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .info-val {
+    font-size: 13.5px; padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  /* Excerpt */
+  .excerpt {
+    font-size: 12.5px; font-style: italic; color: var(--text-muted);
+    background: var(--surface-alt); border-left: 2px solid var(--border);
+    padding: 6px 10px; margin-top: 4px; border-radius: 0 3px 3px 0;
+  }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+    <span class="topbar-meta">Deep Dive · F2026072826 · CBP/OT</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · APFS Forecast</div>
+    <h1>CBP CTPAT &amp; Trade Compliance Portals</h1>
+    <div class="hero-sub">Applications Development &amp; O&amp;M Support — F2026072826</div>
+    <div class="hero-date">CBP / Office of Technology &nbsp;·&nbsp; NAICS 541511 &nbsp;·&nbsp; SB Set-Aside &nbsp;·&nbsp; April 3, 2026</div>
+  </div>
+
+  <!-- Imminent Award Alert -->
+  <div class="alert-banner">
+    ⚠ IMMINENT AWARD: Anticipated award date is <strong>April 5, 2026 — 2 days away</strong>. This is a <strong>recompetition monitoring</strong> item. Active capture window has closed for this cycle.
+  </div>
+
+  <!-- ============================
+       SECTION 1: EXECUTIVE SUMMARY
+       ============================ -->
+  <div class="section">
+    <div class="section-header">1 · Executive Summary</div>
+
+    <div class="gng-box gng-monitor">
+      <div class="gng-label">Go/No-Go Recommendation</div>
+      <div class="gng-rating">MONITOR — Position for Next Cycle</div>
+      <p style="font-size:14px; line-height:1.6;">Award is 2 days out (April 5, 2026). Active pursuit is not actionable. Changeis should monitor the award, capture the winner, and build a CBP/CSPD relationship strategy for the recompete in 2031. RAG score of <strong>0.683 (STRONG)</strong> confirms strong past performance alignment — the capability fit is real, but timing is the disqualifying factor for this cycle.</p>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Dollar Range</div>
+        <div class="kpi-value">$10M–$20M</div>
+        <div class="kpi-sub">5-year FFP BPA Call</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Award Date</div>
+        <div class="kpi-value" style="color:#D97D2A;">Apr 5, 2026</div>
+        <div class="kpi-sub">2 days remaining</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">RAG Score</div>
+        <div class="kpi-value" style="color:#2D7D4A;">0.683</div>
+        <div class="kpi-sub">STRONG classification</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Incumbent</div>
+        <div class="kpi-value" style="font-size:14px;">Impyrian LLC</div>
+        <div class="kpi-sub">8(a) / SDB / Black-owned</div>
+      </div>
+    </div>
+
+    <p>This APFS record represents a <strong>recompetition of an active CBP/CSPD application development and O&amp;M contract</strong>. The current contractor, Impyrian LLC, holds a $5.1M purchase order (70B04C24P00000251) for "digital services development support for cargo program services directorate" — covering CTPAT system maintenance and enhancements. The new award is 5x larger at $10M–$20M, suggesting scope expansion across ACE, CTPAT, and Trade Compliance portals under a BPA vehicle.</p>
+
+    <p>Changeis has strong technical alignment through its DOT/Volpe portfolio: 10 past performance matches covering federal web application development, O&amp;M support, 508 compliance, and iterative portal maintenance. The gap is DHS/CBP-specific experience and absence of an existing CBP BPA vehicle. The Total SB Set-Aside designation means this is an accessible market segment.</p>
+
+    <div class="callout">
+      <div class="callout-title">Key Factors for Next Recompete (2031)</div>
+      <ul>
+        <li><strong>Build CBP pipeline:</strong> Target smaller CBP IT opportunities to establish agency past performance before 2029 capture planning</li>
+        <li><strong>Watch award announcement:</strong> Monitor SAM.gov for contract award notice — identify new incumbent and any teaming partners</li>
+        <li><strong>Enterprise SB BPA access:</strong> Determine if CBP Enterprise SB BPA is the vehicle; seek BPA holder status for future calls</li>
+        <li><strong>CTPAT program expansion:</strong> CTPAT Pilot Program Act of 2023 (P.L. 118-98) expanded program to freight brokers/3PLs — growing system demand</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============================
+       SECTION 2: OPPORTUNITY OVERVIEW
+       ============================ -->
+  <div class="section">
+    <div class="section-header">2 · Opportunity Overview</div>
+
+    <div class="info-grid">
+      <div class="info-row">
+        <div class="info-key">APFS Number</div>
+        <div class="info-val"><strong>F2026072826</strong></div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Requirements Title</div>
+        <div class="info-val">Applications Development and O&amp;M Support for CTPAT &amp; Trade Compliance Portals</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Organization</div>
+        <div class="info-val">CBP / Office of Technology — Cargo Systems Program Directorate (CSPD)</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Requirements Office</div>
+        <div class="info-val">Information Technology Requirements Office (ITRO)</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Contracting Office</div>
+        <div class="info-val">Information Technology (ITCD)</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">NAICS</div>
+        <div class="info-val">541511 — Custom Computer Programming Services</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Dollar Range</div>
+        <div class="info-val"><strong>$10,000,000 – $20,000,000</strong></div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Contract Type</div>
+        <div class="info-val">Firm Fixed Price (FFP)</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Contract Vehicle</div>
+        <div class="info-val">BPA Call (FAR Part 8 or 13 Multiple Award BPA)</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Competition Type</div>
+        <div class="info-val">Follow-on / Recompetition — Total SB Set-Aside</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Contract Status</div>
+        <div class="info-val"><span class="pill pill-orange">REC — Recompetition</span></div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Incumbent</div>
+        <div class="info-val">Impyrian LLC · Contract 70B04C24P00000251</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Anticipated Award</div>
+        <div class="info-val"><strong style="color:#D97D2A;">April 5, 2026</strong> <span class="pill pill-orange">IMMINENT</span></div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Est. Solicitation Release</div>
+        <div class="info-val">February 6, 2026</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Period of Performance</div>
+        <div class="info-val">April 15, 2026 – April 14, 2031 (5 years)</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Award Quarter</div>
+        <div class="info-val">Q3 FY2026</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Place of Performance</div>
+        <div class="info-val">Ashburn, VA (listed as DC)</div>
+      </div>
+      <div class="info-row">
+        <div class="info-key">Published Date</div>
+        <div class="info-val">January 28, 2026</div>
+      </div>
+    </div>
+
+    <h3>Requirement Description</h3>
+    <p>The objective is development, enhancements, and operations &amp; maintenance (O&amp;M) of the Customs Trade Partnership Against Terrorism (CTPAT) systems and Trade Compliance (TC) Portal. The primary goal is to provide CTPAT Portal O&amp;M and enhancements required for <em>evolving business, regulatory, IT security and system/software architectural advancement</em> to CBP's Cargo Systems Program Directorate (CSPD) systems, including:</p>
+    <ul>
+      <li><strong>Automated Commercial Environment (ACE)</strong> — CBP's primary trade processing system/single window</li>
+      <li><strong>CTPAT System</strong> — Voluntary supply chain security program portal (11,000+ member companies)</li>
+      <li><strong>Trade Compliance (TC) Portals</strong> — Import/export compliance applications</li>
+    </ul>
+    <p>The CTPAT program has seen active expansion following the <a href="https://www.federalregister.gov/documents/2025/11/21/2025-20648/asset-based-and-non-asset-based-third-party-logistics-customs-trade-partnership-against-terrorism" target="_blank">CTPAT Pilot Program Act of 2023 (P.L. 118-98)</a>, which opened the program to freight brokers and 3PL warehouse facilities for the first time, driving portal development demand.</p>
+
+    <h3>Points of Contact</h3>
+    <table>
+      <thead>
+        <tr><th>Role</th><th>Name</th><th>Phone</th><th>Email</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Requirements Contact (Primary)</td><td>Gulrez Siddiqi</td><td>(202) 494-8947</td><td><a href="mailto:GULREZ.A.SIDDIQI@CBP.DHS.GOV">GULREZ.A.SIDDIQI@CBP.DHS.GOV</a></td></tr>
+        <tr><td>Requirements Contact (Alternate)</td><td>Natalie Wu</td><td>(407) 335-2214</td><td><a href="mailto:Natalie.J.Wu@cbp.dhs.gov">Natalie.J.Wu@cbp.dhs.gov</a></td></tr>
+        <tr><td>SBS Coordinator / APFS POC</td><td>David Harrod</td><td>(202) 553-6456</td><td><a href="mailto:David.K.Harrod@cbp.dhs.gov">David.K.Harrod@cbp.dhs.gov</a></td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:8px;">Source: <a href="https://apfs-cloud.dhs.gov/record/72826/public-print/" target="_blank">APFS Record F2026072826</a></p>
+  </div>
+
+  <!-- ============================
+       SECTION 3: RAG ENGINE RESULTS
+       ============================ -->
+  <div class="section">
+    <div class="section-header">3 · RAG Engine Results</div>
+
+    <p>The Changeis RAG engine analyzed the opportunity against internal past performance records and returned <strong>10 matches</strong> with an overall classification of <span class="score-badge score-strong">STRONG</span> and top composite score of <strong>0.683</strong>. All 10 matches originate from the Changeis DOT/Volpe MITS vehicle portfolio, reflecting thematic overlap in federal web portal O&amp;M, application development, and multi-agency IT support.</p>
+
+    <div class="callout">
+      <div class="callout-title">Scoring Methodology</div>
+      <p>Composite score combines semantic similarity across AWARD, SOW, and OTHER document types for each task order. Scores ≥ 0.65 = STRONG, 0.55–0.65 = MODERATE, 0.45–0.55 = RELEVANT.</p>
+    </div>
+
+    <!-- STRONG TIER -->
+    <div class="tier-label tier-strong">STRONG Tier · Score ≥ 0.65</div>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>Contract / Task Order</th><th>Score</th><th>End Clients</th><th>Doc Types</th><th>Theme</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td><strong>6913G620F400068</strong><br><small style="color:var(--text-faint);">TO: V3142016</small></td>
+          <td><span class="score-badge score-strong">0.6830</span></td>
+          <td>DOT, FAA, FMCSA, FRA, FTA, PHMSA, USCG, Volpe</td>
+          <td>AWARD, OTHER, SOW</td>
+          <td>DOT drug &amp; alcohol testing internet reporting system — web technical support, data collection, compliance</td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td><strong>6913G622F40064N</strong><br><small style="color:var(--text-faint);">TO: V3272120</small></td>
+          <td><span class="score-badge score-strong">0.6726</span></td>
+          <td>DOT, FHWA, FMCSA, FTA, Volpe</td>
+          <td>AWARD, OTHER, SOW</td>
+          <td>FMCSA Safety Data — Website &amp; SharePoint development/maintenance, GIS planning site, TPM portal, 508 compliance</td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td><strong>6913G621F400024</strong><br><small style="color:var(--text-faint);">TO: V3272051</small></td>
+          <td><span class="score-badge score-strong">0.6518</span></td>
+          <td>DOT, FHWA, FTA, Volpe</td>
+          <td>AWARD, OTHER, SOW, TORFP</td>
+          <td>TPCB website &amp; MPO database maintenance at planning.dot.gov — coding/design tasks, resource library, 508 compliance, quarterly analytics</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="excerpt">
+      Top excerpt (Match #1, relevance 0.547): "The contractor shall provide technical assistance, data collection and validation, and website technical support for the DOT drug and alcohol testing regulatory mandate... maintenance of internet based reporting system applications."
+    </div>
+    <div class="excerpt" style="margin-top:6px;">
+      Top excerpt (Match #3, relevance 0.545): "Perform up to five (5) major coding and design tasks to existing website focus pages... Perform up to twenty (20) minor coding and design tasks... Produce quarterly reports on web traffic statistics... Ensure 508-compliance for each document posted."
+    </div>
+
+    <!-- MODERATE TIER -->
+    <div class="tier-label tier-moderate" style="margin-top:18px;">MODERATE Tier · Score 0.55–0.65</div>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>Contract / Task Order</th><th>Score</th><th>End Clients</th><th>Doc Types</th><th>Theme</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>4</strong></td>
+          <td><strong>6913G621F400006</strong><br><small style="color:var(--text-faint);">TO: V3132080</small></td>
+          <td><span class="score-badge score-moderate">0.6162</span></td>
+          <td>DOT, FAA, FMCSA, Volpe</td>
+          <td>AWARD, OTHER, SOW</td>
+          <td>FMCSA State Safety Programs — eCVSP online application tool development, annual releases, wireframes, 508 standards, DB modifications</td>
+        </tr>
+        <tr>
+          <td><strong>5</strong></td>
+          <td><strong>6913G624F40021N</strong><br><small style="color:var(--text-faint);">TO: V3142112</small></td>
+          <td><span class="score-badge score-moderate">0.5684</span></td>
+          <td>DOT, FAA, FMCSA, FRA, FTA, PHMSA, Volpe</td>
+          <td>AWARD, OTHER, SOW</td>
+          <td>ODAPC internet-based reporting system — drug &amp; alcohol compliance web apps, technical support, data validation</td>
+        </tr>
+        <tr>
+          <td><strong>6</strong></td>
+          <td><strong>6913G622F40044N</strong><br><small style="color:var(--text-faint);">TO: V3142082</small></td>
+          <td><span class="score-badge score-moderate">0.5597</span></td>
+          <td>DOT, FAA, FMCSA, FRA, FTA, PHMSA, Volpe</td>
+          <td>AWARD, OTHER, SOW</td>
+          <td>DOT drug/alcohol compliance internet systems — multi-modal regulatory mandate web support</td>
+        </tr>
+        <tr>
+          <td><strong>7</strong></td>
+          <td><strong>6913G623F40043N</strong><br><small style="color:var(--text-faint);">TO: V3142097</small></td>
+          <td><span class="score-badge score-moderate">0.5577</span></td>
+          <td>DOT, FAA, FMCSA, FRA, FTA, PHMSA, Volpe</td>
+          <td>AWARD, OTHER, SOW</td>
+          <td>Multi-modal DOT compliance reporting systems O&amp;M — internet-based application maintenance</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- RELEVANT TIER -->
+    <div class="tier-label tier-relevant" style="margin-top:18px;">RELEVANT Tier · Score 0.45–0.55</div>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>Contract / Task Order</th><th>Score</th><th>End Clients</th><th>Doc Types</th><th>Theme</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>8</strong></td>
+          <td><strong>6913G620F400032</strong><br><small style="color:var(--text-faint);">TO: V3272005</small></td>
+          <td><span class="score-badge score-relevant">0.5020</span></td>
+          <td>DOT, FAA, FHWA, FTA, NHTSA, Volpe</td>
+          <td>AWARD, OTHER, SOW, TORFP</td>
+          <td>Multi-modal website development — includes NHTSA, broad DOT web portfolio</td>
+        </tr>
+        <tr>
+          <td><strong>9</strong></td>
+          <td><strong>6913G620F400059</strong><br><small style="color:var(--text-faint);">TO: V3132012</small></td>
+          <td><span class="score-badge score-relevant">0.5012</span></td>
+          <td>DOT, FAA, FMCSA, Volpe</td>
+          <td>AWARD, OTHER, SOW, TORFP</td>
+          <td>DOT/FAA application support — regulatory compliance tools, iterative O&amp;M</td>
+        </tr>
+        <tr>
+          <td><strong>10</strong></td>
+          <td><strong>6913G620F400115</strong><br><small style="color:var(--text-faint);">TO: V3132051</small></td>
+          <td><span class="score-badge score-relevant">0.4943</span></td>
+          <td>DOT, FAA, FMCSA, Volpe</td>
+          <td>AWARD, OTHER, SOW, TORFP</td>
+          <td>FMCSA safety application O&amp;M — custom programming, data systems support</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>RAG Interpretation</h3>
+    <p>All 10 matches come from Changeis's DOT/Volpe MITS contract vehicle. The thematic alignment is genuine: federal portal development, iterative O&amp;M, multi-agency internet-based compliance applications, 508 accessibility, quarterly reporting, and web database maintenance are recurring elements in both the CTPAT SOW and the matched past performance. The DOT environment differs from CBP/DHS in domain and security posture, but the technical service delivery model is structurally identical.</p>
+    <p>The strong clustering of FMCSA, ODAPC, and FHWA work around regulatory compliance reporting applications — all internet-facing, all requiring continuous enhancements — directly parallels what CSPD needs for CTPAT and TC Portals.</p>
+  </div>
+
+  <!-- ============================
+       SECTION 4: USASPENDING ANALYSIS
+       ============================ -->
+  <div class="section">
+    <div class="section-header">4 · USAspending Analysis</div>
+
+    <h3>Incumbent: Impyrian LLC</h3>
+    <p><a href="https://www.usaspending.gov/recipient/51fa7e1e-d182-ccf2-eac6-5638149e7d54-P/latest" target="_blank">Impyrian LLC</a> holds the current CTPAT portal support contract (70B04C24P00000251) and has a total federal award profile of <strong>$12.4M across 48 transactions</strong>. CBP is their dominant client at $4.88M (39.5% of all awards).</p>
+
+    <table>
+      <thead>
+        <tr><th>Award ID</th><th>Description</th><th>Total Value</th><th>Type</th><th>Set-Aside</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>70B04C24P00000251</strong></td>
+          <td>Digital Services Development Support for Cargo Program Services Directorate (CTPAT)</td>
+          <td><strong>$5,135,432</strong></td>
+          <td>Purchase Order (Mod ×9)</td>
+          <td>8(a) Sole Source</td>
+        </tr>
+        <tr>
+          <td>70B04C24P00000612</td>
+          <td>ESO Data Inventory and Catalog Support Services</td>
+          <td>$2,298,117</td>
+          <td>Purchase Order</td>
+          <td>8(a) Sole Source</td>
+        </tr>
+        <tr>
+          <td>70B04C24P00000251 (base)</td>
+          <td>OCIO Digital Services Development Support</td>
+          <td>$1,500,000</td>
+          <td>BPA Call (IDV: base)</td>
+          <td>8(a) Sole Source</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:12px;">
+      <div class="callout-title">Key Insight: Sole Source → Competitive Recompete</div>
+      <p>Impyrian's current CTPAT contract was awarded as an <strong>8(a) Sole Source</strong>. The new $10M–$20M recompetition is flagged as a <strong>Total SB Set-Aside with competition</strong> — this is a significant change in acquisition strategy. Either Impyrian has graduated from the 8(a) program or CBP has decided to open competition. This shift creates a genuine opportunity for competing SBs.</p>
+    </div>
+
+    <h3>Contract Modification History (70B04C24P00000251)</h3>
+    <p>The existing contract shows <strong>9 modifications over 13 months</strong>, indicating active, ongoing delivery with incremental funding — a classic O&amp;M pattern with scope expansion:</p>
+    <table>
+      <thead>
+        <tr><th>Mod</th><th>Date</th><th>Amount</th><th>Type</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>P00000 (Base)</td><td>Jun 14, 2024</td><td>$1,500,000</td><td>Initial Award</td></tr>
+        <tr><td>P00001</td><td>Sep 10, 2024</td><td>$47,456</td><td>Additional Work</td></tr>
+        <tr><td>P00002</td><td>Oct 11, 2024</td><td>$250,000</td><td>Option Exercise</td></tr>
+        <tr><td>P00003</td><td>Oct 31, 2024</td><td>$239,328</td><td>Funding Only</td></tr>
+        <tr><td>P00004</td><td>Nov 19, 2024</td><td>$500,000</td><td>Funding Only</td></tr>
+        <tr><td>P00005</td><td>Jan 10, 2025</td><td>$500,000</td><td>Funding Only</td></tr>
+        <tr><td>P00006</td><td>Feb 20, 2025</td><td>$500,000</td><td>Funding Only</td></tr>
+        <tr><td>P00007</td><td>Mar 31, 2025</td><td>$250,000</td><td>Incremental Funding (Maintenance/Enhancements)</td></tr>
+        <tr><td>P00008</td><td>Apr 23, 2025</td><td>$713,216</td><td>Change Order — <em>Extended PoP for CTPAT</em></td></tr>
+        <tr><td>P00009</td><td>Jul 2, 2025</td><td>$635,432</td><td>Option Exercise</td></tr>
+      </tbody>
+    </table>
+
+    <h3>CBP NAICS 541511 Spending Landscape</h3>
+    <p>CBP is one of DHS's largest IT buyers, with <a href="https://www.usaspending.gov/" target="_blank">USAspending</a> showing CBP contributing 39.5% of Impyrian's total awards. Notably, CBP has a dedicated Enterprise Small Business BPA (IDV: 70B04C23A00000055) used for SB competition in NAICS 541511 — <a href="https://orangeslices.ai/can-softtech-beats-out-4-to-wins-dhs-cbp-ilab-support-task-on-enterprise-small-business-bpa/" target="_blank">CAN Softtech won a task order on this vehicle in September 2024</a> against 5 bidders, confirming active competitive activity on the BPA. The new CTPAT award is likely via this same BPA vehicle.</p>
+
+    <table>
+      <thead>
+        <tr><th>Metric</th><th>Value</th><th>Source</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Impyrian total federal awards</td><td>$12.4M (48 transactions)</td><td><a href="https://www.usaspending.gov/recipient/51fa7e1e-d182-ccf2-eac6-5638149e7d54-P/latest" target="_blank">USAspending</a></td></tr>
+        <tr><td>CBP share of Impyrian awards</td><td>$4.88M (39.5%)</td><td>USAspending</td></tr>
+        <tr><td>CTPAT contract total (all mods)</td><td>$5,135,432</td><td>USAspending Award Detail</td></tr>
+        <tr><td>NAICS 541511 SB award rate (DHS)</td><td>67–72% of awards go to SBs</td><td><a href="https://www.cleat.ai/blog/naics-541511-custom-software-pricing-top-agencies" target="_blank">Cleatus.ai market data</a></td></tr>
+        <tr><td>NAICS 541511 SB size standard</td><td>$34M–$47M avg annual receipts</td><td>SBA / FAR</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================
+       SECTION 5: CAPABILITY MATRIX
+       ============================ -->
+  <div class="section">
+    <div class="section-header">5 · Capability Matrix</div>
+
+    <p>This matrix maps CTPAT portal requirements against Changeis past performance documented in RAG matches. Strength ratings reflect both the quality of the match and the proximity to CBP's specific technical environment.</p>
+
+    <table>
+      <thead>
+        <tr><th>Requirement Area</th><th>Changeis Capability</th><th>Evidence (RAG Match)</th><th>Strength</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Web Application O&amp;M</strong><br><small>Ongoing maintenance of internet-based portal systems</small></td>
+          <td>Sustained multi-year O&amp;M delivery across DOT/FMCSA/FHWA web applications under MITS vehicle</td>
+          <td>V3272120, V3272051, V3132080 — multiple "routine maintenance" and incremental enhancement task orders</td>
+          <td><span class="cap-check">✔</span> Strong</td>
+        </tr>
+        <tr>
+          <td><strong>Application Development &amp; Enhancement</strong><br><small>Feature development, code releases, business requirement changes</small></td>
+          <td>Annual release cycle development for eCVSP tool (FMCSA); coding/design tasks for TPCB and TPM portals</td>
+          <td>V3132080 — "annual release of the eCVSP Tool, enhancements, wireframes, DB modifications"</td>
+          <td><span class="cap-check">✔</span> Strong</td>
+        </tr>
+        <tr>
+          <td><strong>Regulatory Compliance Systems</strong><br><small>Internet applications tied to regulatory mandates (trade/safety)</small></td>
+          <td>Drug &amp; alcohol testing compliance reporting systems (ODAPC) — web-based regulatory applications with data collection, validation, program review</td>
+          <td>V3142016, V3142082, V3142097, V3142112 — ODAPC STRONG cluster (4 matches)</td>
+          <td><span class="cap-check">✔</span> Strong</td>
+        </tr>
+        <tr>
+          <td><strong>508 Accessibility Compliance</strong><br><small>Section 508 remediation, document accessibility</small></td>
+          <td>Documented 508 remediation deliverables; 508 compliance validation in all web development tasks</td>
+          <td>V3272120, V3272051 — explicit "508 remediation expertise" and "508-compliance for each document posted"</td>
+          <td><span class="cap-check">✔</span> Strong</td>
+        </tr>
+        <tr>
+          <td><strong>Multi-Modal Portal Support</strong><br><small>Supporting multiple interconnected portals (ACE, CTPAT, TC)</small></td>
+          <td>Supported FMCSA + FHWA + FTA + FAA + PHMSA simultaneously across shared vehicle; coordinated delivery across web ecosystems</td>
+          <td>V3272120 — "Task 00700: GIS Planning Website Maintenance" alongside TPM, SCOAR tasks on same TO</td>
+          <td><span class="cap-check">✔</span> Solid</td>
+        </tr>
+        <tr>
+          <td><strong>IT Security / DevSecOps</strong><br><small>Security scans, deployment pipelines, BETA/CIE environments</small></td>
+          <td>Code packaging and security scanning process documented for FMCSA release pipeline</td>
+          <td>V3132080 — "remediating package based on results of scans in BETA and CIE environments"</td>
+          <td><span class="cap-partial">◑</span> Partial</td>
+        </tr>
+        <tr>
+          <td><strong>DHS/CBP Agency Experience</strong><br><small>Prior CBP IT delivery, CBP BPA holder status</small></td>
+          <td>No documented CBP past performance in RAG corpus; DOT/Volpe is primary federal domain</td>
+          <td>No matching records</td>
+          <td><span class="cap-gap">✗</span> Gap</td>
+        </tr>
+        <tr>
+          <td><strong>ACE / Trade Systems Experience</strong><br><small>Automated Commercial Environment, customs trade processing</small></td>
+          <td>No ACE-specific past performance; trade compliance domain is new territory for Changeis</td>
+          <td>No matching records</td>
+          <td><span class="cap-gap">✗</span> Gap</td>
+        </tr>
+        <tr>
+          <td><strong>CBP BPA Vehicle Access</strong><br><small>Must be on CBP Enterprise SB BPA to receive call</small></td>
+          <td>Unknown — Changeis BPA holder status for CBP Enterprise SB BPA not confirmed</td>
+          <td>Vehicle IDV: 70B04C23A00000055 (inferred)</td>
+          <td><span class="cap-gap">✗</span> Unknown/Gap</td>
+        </tr>
+        <tr>
+          <td><strong>Agile / Analytics Reporting</strong><br><small>Quarterly analytics, web traffic reports, stakeholder dashboards</small></td>
+          <td>Quarterly reporting and web traffic analytics deliverables documented across DOT portfolio</td>
+          <td>V3272051, V3272120 — "quarterly reports on web traffic statistics"</td>
+          <td><span class="cap-check">✔</span> Strong</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:14px;">
+      <div class="callout-title">Capability Summary</div>
+      <p><strong>7 of 10 requirement areas:</strong> Changeis has demonstrable capability. <strong>2 critical gaps:</strong> DHS/CBP agency experience and trade-specific domain knowledge. <strong>1 structural barrier:</strong> BPA vehicle access (must be a BPA holder to bid on BPA Calls). For the next recompete, addressing the BPA vehicle gap is the single most important preparation step.</p>
+    </div>
+  </div>
+
+  <!-- ============================
+       SECTION 6: COMPETITIVE LANDSCAPE
+       ============================ -->
+  <div class="section">
+    <div class="section-header">6 · Competitive Landscape</div>
+
+    <p>This is a Total SB Set-Aside BPA Call under CBP's NAICS 541511 procurement environment. Based on market research of CBP IT award patterns and the Enterprise SB BPA vehicle, the likely competitive field includes:</p>
+
+    <table>
+      <thead>
+        <tr><th>Competitor</th><th>Profile</th><th>CBP Presence</th><th>Risk Level</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Impyrian LLC</strong><br><span class="pill pill-orange">Incumbent</span></td>
+          <td>8(a) / SDB / Black American owned SB; $5.1M current CTPAT contract; MD-based; NAICS 541511 primary</td>
+          <td>$4.88M at CBP — dominant client; 9 contract modifications showing deep program relationship</td>
+          <td><span class="pill pill-red">Highest Threat</span></td>
+        </tr>
+        <tr>
+          <td><strong>CAN Softtech Inc</strong></td>
+          <td>WOSB; NAICS 541511 competitor on CBP Enterprise SB BPA; won CBP ILAB task in Sep 2024 against 5 bidders ($667K)</td>
+          <td>Active on CBP Enterprise SB BPA (IDV 70B04C23A00000055); established CBP delivery</td>
+          <td><span class="pill pill-orange">High Threat</span></td>
+        </tr>
+        <tr>
+          <td><strong>Other CBP Enterprise SB BPA Holders</strong></td>
+          <td>Unknown set of SBs holding spots on the CBP Enterprise SB BPA — likely 5–8 awardees with established vehicles</td>
+          <td>By definition on-contract at CBP; eligible to bid BPA Calls</td>
+          <td><span class="pill pill-orange">Moderate Threat</span></td>
+        </tr>
+        <tr>
+          <td><strong>DHS/CBP Specialist SBs</strong></td>
+          <td>Firms like NVARIANT, InfoReliance, or similar CBP-focused SBs with trade system experience (ACE, CTPAT domain knowledge)</td>
+          <td>Likely multiple DHS IT SBs with CBP relationships through prior CSPD or OCIO work</td>
+          <td><span class="pill pill-blue">Moderate Threat</span></td>
+        </tr>
+        <tr>
+          <td><strong>Changeis (Prospective)</strong></td>
+          <td>SB; strong DOT/Volpe web application portfolio; no CBP past performance; uncertain BPA vehicle status</td>
+          <td>Not established at CBP; would require BPA holder status to bid this vehicle</td>
+          <td><span class="pill pill-blue">Low — Future Cycle</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Key Competitive Dynamics</h3>
+    <ul>
+      <li><strong>Incumbent advantage is substantial:</strong> Impyrian has 13 months of active delivery, 9 contract modifications, and deep program knowledge of CTPAT system architecture. Their transition-out risk is a significant evaluator concern — they are likely to retain the award unless performance has been poor.</li>
+      <li><strong>Set-aside change favors competition:</strong> The shift from 8(a) Sole Source to Total SB Set-Aside means CBP must receive multiple offers and award competitively. This is the structural opening for challengers.</li>
+      <li><strong>BPA Call structure limits field:</strong> Only firms holding spots on the CBP Enterprise SB BPA can submit. This dramatically narrows the competitor universe — likely 5–8 eligible firms rather than the full SB market.</li>
+      <li><strong>Domain knowledge is a differentiator:</strong> ACE and CTPAT are complex, highly specific trade systems. Firms without prior CBP/trade portal experience will struggle with technical evaluation criteria. This is where Changeis currently lacks.</li>
+      <li><strong>Price competition on FFP:</strong> Firm Fixed Price means bidders bear cost risk. Incumbent advantage is further amplified — Impyrian knows actual labor hours and system complexity.</li>
+    </ul>
+
+    <div class="callout">
+      <div class="callout-title">Labor Rate Context (NAICS 541511)</div>
+      <p>Market rates for CBP IT development work range from <strong>$125–$220/hr for senior engineers</strong> (public trust clearance) to <strong>$95–$130/hr for junior developers</strong>. At $10M–$20M over 5 years, this implies a team of roughly 5–12 FTEs depending on labor mix. A strong FFP bid requires precise knowledge of the existing system's maintenance burden — incumbents have an inherent pricing advantage.</p>
+    </div>
+  </div>
+
+  <!-- ============================
+       SECTION 7: GO/NO-GO ASSESSMENT
+       ============================ -->
+  <div class="section">
+    <div class="section-header">7 · Go/No-Go Assessment</div>
+
+    <div class="gng-box gng-monitor">
+      <div class="gng-label">Recommendation</div>
+      <div class="gng-rating">MONITOR — Next Cycle</div>
+      <p style="font-size:14px; line-height:1.7; margin-bottom:12px;">Award is 2 days out. No actionable pursuit is possible in this cycle. This is a strategic intelligence item. The correct posture is to <strong>monitor the award, analyze the winner, and begin 5-year positioning for the 2031 recompete</strong>.</p>
+    </div>
+
+    <h3>Decision Factors</h3>
+    <table>
+      <thead>
+        <tr><th>Factor</th><th>Assessment</th><th>Impact</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Award Timing</strong></td>
+          <td>April 5, 2026 — 2 days from today</td>
+          <td><span class="pill pill-red">Disqualifying</span></td>
+        </tr>
+        <tr>
+          <td><strong>RAG Score / Capability Fit</strong></td>
+          <td>0.683 STRONG — genuine technical alignment across 10 matches</td>
+          <td><span class="pill pill-green">Positive</span></td>
+        </tr>
+        <tr>
+          <td><strong>Agency Experience</strong></td>
+          <td>No CBP/DHS past performance; DOT only</td>
+          <td><span class="pill pill-orange">Negative</span></td>
+        </tr>
+        <tr>
+          <td><strong>Vehicle Access</strong></td>
+          <td>BPA Call — Changeis must be a BPA holder (unknown status)</td>
+          <td><span class="pill pill-orange">Structural Barrier</span></td>
+        </tr>
+        <tr>
+          <td><strong>Incumbent Strength</strong></td>
+          <td>Impyrian has 13 months of active delivery + 9 mods + 8(a) relationship history</td>
+          <td><span class="pill pill-orange">Negative</span></td>
+        </tr>
+        <tr>
+          <td><strong>Dollar Range</strong></td>
+          <td>$10M–$20M over 5 years — material win for Changeis if achieved</td>
+          <td><span class="pill pill-green">Positive (future)</span></td>
+        </tr>
+        <tr>
+          <td><strong>Set-Aside Type</strong></td>
+          <td>Total SB — accessible market segment, no large business competition</td>
+          <td><span class="pill pill-green">Positive (future)</span></td>
+        </tr>
+        <tr>
+          <td><strong>Program Trajectory</strong></td>
+          <td>CTPAT expanding via P.L. 118-98; ACE continues modernization — program is growing</td>
+          <td><span class="pill pill-green">Positive (future)</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Strategic Recommendations</h3>
+
+    <div class="callout">
+      <div class="callout-title">Immediate Actions (Next 30 Days)</div>
+      <ul>
+        <li><strong>Monitor SAM.gov for award notice</strong> — confirm winner, contract value, and teaming structure on or after April 5, 2026</li>
+        <li><strong>Research CBP Enterprise SB BPA</strong> (IDV: 70B04C23A00000055) — determine holders, on-ramp schedule, and eligibility requirements for Changeis</li>
+        <li><strong>FOIA watch:</strong> After award, track any debrief requests or protest notices that might signal recompete vulnerability</li>
+      </ul>
+    </div>
+
+    <div class="callout" style="margin-top:12px;">
+      <div class="callout-title">Medium-Term Actions (6–18 Months)</div>
+      <ul>
+        <li><strong>Target smaller CBP IT opportunities</strong> — identify BPA call opportunities under $1M in NAICS 541511 at CBP to build agency PP</li>
+        <li><strong>Engage ITRO and ITCD</strong> — attend CBP industry days; connect with Gulrez Siddiqi and David Harrod through formal market engagement</li>
+        <li><strong>Seek teaming partner with CBP experience</strong> — identify a CBP-credentialed SB for future partnership (subcontract relationship to build PP)</li>
+        <li><strong>Pursue CBP Enterprise SB BPA on-ramp</strong> if available — BPA holder status is the prerequisite for all future CBP calls</li>
+      </ul>
+    </div>
+
+    <div class="callout" style="margin-top:12px;">
+      <div class="callout-title">2031 Recompete Positioning (3–5 Years)</div>
+      <ul>
+        <li>By 2029, Changeis should have: (1) CBP past performance, (2) BPA holder status, (3) CTPAT domain knowledge, and (4) a capture strategy targeting a specific technical discriminator</li>
+        <li>Watch for early APFS postings (2029–2030) indicating recompete planning — this cycle published 2 months before award</li>
+        <li>Consider teaming with DHS cybersecurity or trade compliance domain firms to cover the IT security and ACE knowledge gaps</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============================
+       CONTEXT SLUG
+       ============================ -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Deep Dive: CBP CTPAT Portals F2026072826",
+  "task_date": "2026-04-03",
+  "deliverable_file": "deep-dive-cbp-ot-ctpat-541511-2826-2026-04-03.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-ot-ctpat-541511-2826-2026-04-03.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Generate a deep-dive analysis HTML deliverable for APFS forecast opportunity F2026072826: Applications Development and O&M Support for CTPAT & Trade Compliance Portals at CBP/Office of Technology. NAICS 541511, $10M-$20M, anticipated award 04/05/2026 (IMMINENT), BPA Call vehicle, RAG STRONG (0.683). Sections: Executive Summary with Go/No-Go, Opportunity Overview, RAG Engine Results (all 10 matches), USAspending Analysis, Capability Matrix, Competitive Landscape, Go/No-Go Assessment.",
+  "approach": "Read deep_dive_input_F2026072826.json for all APFS record data and RAG matches. Ran USAspending lookups on Impyrian LLC (incumbent) and the existing CTPAT contract 70B04C24P00000251. Searched for CBP IT small business competitive landscape and Enterprise SB BPA vehicle. Analyzed all 10 RAG matches across STRONG/MODERATE/RELEVANT tiers. Applied Changeis style guide (Navy #1B2A4A topbar, Charter/Georgia fonts, dark/light toggle). Built full HTML following vm2-system-guide reference structure.",
+  "key_findings": [
+    "Award date April 5, 2026 is 2 days out — active pursuit is not actionable; this is a monitor/position item",
+    "RAG score 0.683 STRONG with 10 DOT/Volpe matches confirms genuine technical capability alignment in web portal O&M, federal application development, and regulatory compliance systems",
+    "Incumbent Impyrian LLC (8(a)/SDB) held the prior contract as Sole Source; new award shifts to Total SB Set-Aside competitive — opening for challengers in next recompete",
+    "Critical gaps: no CBP/DHS agency past performance, no ACE/trade systems experience, uncertain BPA vehicle holder status",
+    "CTPAT program expanding via P.L. 118-98 (2023) — growing demand for portal development makes this a long-term strategic target",
+    "Impyrian's $5.13M contract had 9 modifications in 13 months — active incumbent relationship with deep program knowledge"
+  ],
+  "dead_ends": [
+    "Could not confirm specific CBP Enterprise SB BPA holder list — IDV 70B04C23A00000055 is referenced but full awardee list not publicly available",
+    "No solicitation document available — contract released Feb 6 but not indexed; competition likely limited to existing BPA holders",
+    "Impyrian graduate status from 8(a) program not confirmed — may still be 8(a) eligible which could affect competition type"
+  ],
+  "assumptions": [
+    "The BPA Call vehicle is likely CBP Enterprise SB BPA (IDV 70B04C23A00000055) based on prior award patterns",
+    "Impyrian is either graduating from 8(a) or CBP chose competitive SB set-aside as acquisition strategy change",
+    "Award date of April 5, 2026 is accurate per APFS record — solicitation closed prior to this analysis",
+    "Changeis does not currently hold a spot on the CBP Enterprise SB BPA"
+  ],
+  "open_questions": [
+    "Who are the other holders on CBP Enterprise SB BPA IDV 70B04C23A00000055?",
+    "Is Impyrian still 8(a)-eligible? If so, why the strategy shift to Total SB?",
+    "Did Changeis receive or request a solicitation for this requirement?",
+    "What is the on-ramp schedule for CBP Enterprise SB BPA — is there a new round planned?",
+    "Who won the award on April 5? Monitor SAM.gov for announcement."
+  ],
+  "data_sources": [
+    {"name": "APFS Record F2026072826", "url": "https://apfs-cloud.dhs.gov/record/72826/public-print/"},
+    {"name": "USAspending — Impyrian LLC Profile", "url": "https://www.usaspending.gov/recipient/51fa7e1e-d182-ccf2-eac6-5638149e7d54-P/latest"},
+    {"name": "USAspending — Contract 70B04C24P00000251", "url": "https://www.usaspending.gov/award/CONT_AWD_70B04C24P00000251_7014_-NONE-_-NONE-"},
+    {"name": "OrangeSlices.ai — Impyrian OCIO Digital Services Award", "url": "https://orangeslices.ai/contract-award-dhs-cbp-ocio-digital-services-development-support/"},
+    {"name": "OrangeSlices.ai — CAN Softtech CBP ILAB BPA Win", "url": "https://orangeslices.ai/can-softtech-beats-out-4-to-wins-dhs-cbp-ilab-support-task-on-enterprise-small-business-bpa/"},
+    {"name": "CTPAT Pilot Program Act Federal Register Notice", "url": "https://www.federalregister.gov/documents/2025/11/21/2025-20648/asset-based-and-non-asset-based-third-party-logistics-customs-trade-partnership-against-terrorism"},
+    {"name": "Changeis RAG — 10 top matches from deep_dive_input_F2026072826.json", "url": "local:deep_dive_input_F2026072826.json"}
+  ],
+  "next_steps": [
+    "Monitor SAM.gov for award notice on/after April 5, 2026 — identify winner and any teaming structure",
+    "Research CBP Enterprise SB BPA on-ramp timeline and eligibility for Changeis",
+    "Brief Changeis leadership on 5-year positioning strategy for 2031 recompete",
+    "Identify CBP-credentialed teaming partner for future pursuit",
+    "Add to 2029 pipeline planning calendar for early capture engagement"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 5,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.35",
+    "cost_ceiling": "$0.65",
+    "notes": "Deep dive with 5 web searches, 2 USAspending fetches, full RAG match analysis, and complete HTML generation. Input dominated by JSON record (65KB) and reference HTML structure."
+  }
+}</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · Deep Dive: CBP CTPAT Portals F2026072826 · April 3, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Hidden JSON Context Block -->
+<script type="application/json" id="vm2-context-data">{
+  "task_name": "Deep Dive: CBP CTPAT Portals F2026072826",
+  "task_date": "2026-04-03",
+  "deliverable_file": "deep-dive-cbp-ot-ctpat-541511-2826-2026-04-03.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-ot-ctpat-541511-2826-2026-04-03.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Generate a deep-dive analysis HTML deliverable for APFS forecast opportunity F2026072826: Applications Development and O&M Support for CTPAT & Trade Compliance Portals at CBP/Office of Technology. NAICS 541511, $10M-$20M, anticipated award 04/05/2026 (IMMINENT), BPA Call vehicle, RAG STRONG (0.683).",
+  "approach": "Read deep_dive_input_F2026072826.json for all APFS record data and RAG matches. Ran USAspending lookups on Impyrian LLC and contract 70B04C24P00000251. Searched for CBP IT small business competitive landscape and BPA vehicle intelligence. Analyzed all 10 RAG matches.",
+  "key_findings": [
+    "Award April 5, 2026 — 2 days out — active pursuit not actionable, MONITOR posture",
+    "RAG 0.683 STRONG — 10 DOT/Volpe matches confirm genuine web portal O&M alignment",
+    "Incumbent Impyrian LLC ($5.13M, 9 mods) — prior 8(a) Sole Source shifting to Total SB competitive",
+    "Critical gaps: no CBP agency PP, no ACE/trade domain experience, uncertain BPA vehicle holder status",
+    "CTPAT expanding via P.L. 118-98 — long-term strategic target for 2031 recompete"
+  ],
+  "dead_ends": [
+    "CBP Enterprise SB BPA holder list not publicly available",
+    "Solicitation document not indexed — competition likely limited to existing BPA holders"
+  ],
+  "assumptions": [
+    "BPA vehicle is CBP Enterprise SB BPA IDV 70B04C23A00000055",
+    "Changeis not currently a BPA holder",
+    "Award date April 5 is accurate per APFS"
+  ],
+  "open_questions": [
+    "Who are CBP Enterprise SB BPA holders?",
+    "Is Impyrian still 8(a)-eligible?",
+    "Who won the award on April 5?"
+  ],
+  "data_sources": [
+    "https://apfs-cloud.dhs.gov/record/72826/public-print/",
+    "https://www.usaspending.gov/recipient/51fa7e1e-d182-ccf2-eac6-5638149e7d54-P/latest",
+    "https://www.usaspending.gov/award/CONT_AWD_70B04C24P00000251_7014_-NONE-_-NONE-"
+  ],
+  "next_steps": [
+    "Monitor SAM.gov for award notice after April 5",
+    "Research CBP Enterprise SB BPA on-ramp for Changeis eligibility",
+    "Begin 2031 recompete pipeline planning"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 5,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.35",
+    "cost_ceiling": "$0.65",
+    "notes": "Deep dive with RAG analysis, USAspending research, competitive landscape, and full HTML build"
+  }
+}</script>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up prompt
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-ot-ctpat-541511-2826-2026-04-03.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the Deep Dive: CBP CTPAT Portals F2026072826.
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off. The context slug contains: original instructions, approach taken, key findings, dead ends, assumptions, open questions, data sources used, and next steps.
+
+Open questions from last session:
+- Who won the April 5, 2026 award? (Check SAM.gov for announcement)
+- Who are the CBP Enterprise SB BPA holders?
+- Is Impyrian still 8(a)-eligible?
+
+Suggested next steps:
+- Monitor SAM.gov for award notice after April 5
+- Research CBP Enterprise SB BPA on-ramp for Changeis eligibility
+- Begin 2031 recompete pipeline planning
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: Deep Dive CBP CTPAT Portals F2026072826');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Key open questions: Who won the April 5 award? Research CBP Enterprise SB BPA holder list.
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: CBP CTPAT Deep Dive F2026072826 — monitor award, BPA research');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}
+
+Actions:
+1. Check SAM.gov for April 5 award announcement
+2. Research CBP Enterprise SB BPA IDV 70B04C23A00000055 holder list
+3. Brief leadership on 2031 recompete positioning`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang='en' data-theme='light'>
+<head>
+<meta charset='utf-8'/>
+<meta name='viewport' content='width=device-width, initial-scale=1'/>
+<title>CBP/OIT ADAPT · Deep Dive · F2026072662 · 2026-04-03</title>
+<style>
+:root {
+  --navy:#1B2A4A;
+  --deep-navy:#002060;
+  --brand-blue:#2E6DA4;
+  --heading-blue:#2E74B5;
+  --section-blue:#1F4D78;
+  --teal:#008B8B;
+  --success-green:#2D7D4A;
+  --approval-green:#1A7A3A;
+  --purple:#6B4C9A;
+  --orange:#D97D2A;
+  --alert-red:#B22222;
+  --red:#c53a3a;
+  --bg:#ffffff;
+  --text:#111827;
+  --text-standard:#333333;
+  --muted:#6b7280;
+  --card:#f8fafc;
+  --card-callout:#E8F4F8;
+  --border:#e5e7eb;
+  --row-alt:#F2F6FA;
+  --row-alt-fed:#C5D9E8;
+}
+html[data-theme='dark'] {
+  --bg:#0b1220;
+  --text:#e5e7eb;
+  --text-standard:#d1d5db;
+  --muted:#9ca3af;
+  --card:#0f1a2b;
+  --card-callout:#0d2233;
+  --border:#22314a;
+  --row-alt:#0d1e30;
+  --row-alt-fed:#0a1925;
+}
+body { margin:0; background:var(--bg); color:var(--text); font-family:'Georgia','Times New Roman',serif; line-height:1.6; }
+.topbar { background:var(--navy); color:#fff; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.brand { font-family:system-ui,-apple-system,sans-serif; font-weight:700; font-size:14px; letter-spacing:.2px; }
+.brand-sub { font-family:system-ui,-apple-system,sans-serif; font-size:12px; opacity:.7; margin-left:10px; }
+.container { max-width:900px; margin:28px auto; padding:0 20px 60px; }
+.doc-header { border-left:5px solid var(--navy); padding:16px 20px; margin-bottom:24px; background:var(--card); }
+.doc-title { font-family:'Georgia','Times New Roman',serif; font-size:26px; font-weight:700; color:var(--navy); margin:0 0 4px; }
+.doc-subtitle { font-family:system-ui,-apple-system,sans-serif; font-size:14px; color:var(--muted); margin:0 0 10px; }
+.doc-meta { display:flex; flex-wrap:wrap; gap:8px; font-family:system-ui,-apple-system,sans-serif; font-size:12px; }
+.meta-chip { background:var(--border); color:var(--text-standard); padding:3px 10px; border-radius:4px; }
+.meta-chip.urgent { background:#FEF3CD; color:#7D4E00; border:1px solid #F5A623; }
+.meta-chip.pursue { background:#D4EDDA; color:#1A5C2A; border:1px solid #2D7D4A; }
+.section { margin:26px 0; }
+.section-header { font-family:system-ui,-apple-system,sans-serif; font-size:16px; font-weight:700; color:#fff; background:var(--red); padding:9px 14px; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+.section-header .num { opacity:.7; font-size:13px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; }
+.callout { background:var(--card-callout); border-left:4px solid var(--teal); padding:14px 16px; margin-bottom:14px; font-family:system-ui,-apple-system,sans-serif; font-size:13px; }
+.callout strong { color:var(--deep-navy); font-size:14px; display:block; margin-bottom:4px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.kv { padding:10px 12px; border:1px solid var(--border); border-radius:6px; background:transparent; font-family:system-ui,-apple-system,sans-serif; }
+.kv .k { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
+.kv .v { font-weight:600; font-size:13px; color:var(--text); }
+.kv .v.urgent { color:var(--orange); }
+.kv .v.green { color:var(--success-green); }
+table.std { width:100%; border-collapse:collapse; font-family:system-ui,-apple-system,sans-serif; font-size:13px; }
+table.std th { background:var(--navy); color:#fff; text-align:left; padding:9px 10px; font-weight:600; }
+table.std td { border-top:1px solid var(--border); padding:8px 10px; vertical-align:top; }
+table.std tr:nth-child(even) td { background:var(--row-alt); }
+table.std td.excerpt { font-family:'Georgia','Times New Roman',serif; font-size:12px; color:var(--muted); font-style:italic; max-width:260px; }
+.badge { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:700; font-family:system-ui,-apple-system,sans-serif; }
+.badge-strong { background:#2D7D4A; color:#fff; }
+.badge-moderate { background:#D97D2A; color:#fff; }
+.badge-relevant { background:#6B4C9A; color:#fff; }
+.badge-low { background:#6b7280; color:#fff; }
+.badge-pursue { background:#1A7A3A; color:#fff; }
+.badge-partner { background:#2E6DA4; color:#fff; }
+.badge-monitor { background:#D97D2A; color:#fff; }
+.badge-pass { background:#B22222; color:#fff; }
+.score-bar-wrap { display:inline-flex; align-items:center; gap:6px; }
+.score-bar { width:60px; height:8px; background:var(--border); border-radius:4px; overflow:hidden; }
+.score-fill { height:100%; border-radius:4px; }
+.rating-strong { color:var(--success-green); font-weight:700; }
+.rating-mod { color:var(--orange); font-weight:700; }
+.rating-rel { color:var(--purple); font-weight:700; }
+.req-text { white-space:pre-wrap; font-family:'Georgia','Times New Roman',serif; font-size:13px; line-height:1.7; color:var(--text); }
+ul.bullets { margin:0; padding-left:20px; }
+ul.bullets li { margin-bottom:6px; font-family:system-ui,-apple-system,sans-serif; font-size:13px; }
+.go-nogo-box { background:var(--card); border:2px solid var(--success-green); border-radius:8px; padding:18px; margin-bottom:14px; }
+.go-nogo-box.partner { border-color:var(--brand-blue); }
+.go-nogo-rec { font-family:system-ui,-apple-system,sans-serif; font-size:18px; font-weight:700; margin-bottom:8px; }
+.go-nogo-rec.pursue { color:var(--success-green); }
+.go-nogo-rec.partner { color:var(--brand-blue); }
+.factor-row { display:flex; gap:10px; margin-bottom:8px; font-family:system-ui,-apple-system,sans-serif; font-size:13px; }
+.factor-label { width:120px; font-weight:600; flex-shrink:0; }
+.tier-label { font-family:system-ui,-apple-system,sans-serif; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:14px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--border); }
+.capability-table th { background:var(--section-blue); }
+.competitive-card { padding:12px; border:1px solid var(--border); border-radius:6px; margin-bottom:8px; font-family:system-ui,-apple-system,sans-serif; }
+.competitive-card .cc-name { font-weight:700; font-size:13px; color:var(--deep-navy); }
+html[data-theme='dark'] .competitive-card .cc-name { color:var(--heading-blue); }
+.competitive-card .cc-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.competitive-card .cc-desc { font-size:12px; margin-top:6px; color:var(--text-standard); }
+.usa-spending-note { background:var(--card); border:1px solid var(--border); border-radius:6px; padding:12px 14px; font-family:system-ui,-apple-system,sans-serif; font-size:12px; color:var(--muted); }
+button.toggle { background:transparent; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:6px; padding:6px 12px; cursor:pointer; font-family:system-ui,-apple-system,sans-serif; font-size:12px; }
+.details summary { cursor:pointer; font-weight:700; font-family:system-ui,-apple-system,sans-serif; font-size:14px; padding:6px 0; }
+.footer { margin:30px 0 18px; color:var(--muted); font-size:11px; font-family:system-ui,-apple-system,sans-serif; text-align:center; border-top:1px solid var(--border); padding-top:14px; }
+.actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+.actions a, .actions button { border:1px solid var(--border); background:var(--card); color:var(--text); padding:10px 14px; border-radius:8px; text-decoration:none; cursor:pointer; font-family:system-ui,-apple-system,sans-serif; font-size:13px; }
+.section-context h3 { font-family:system-ui,-apple-system,sans-serif; font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:14px 0 4px; }
+.section-context ul { margin:4px 0; padding-left:18px; }
+.section-context li { font-family:system-ui,-apple-system,sans-serif; font-size:13px; margin-bottom:4px; }
+.alert-box { background:#FFF3CD; border:1px solid var(--orange); border-left:4px solid var(--orange); border-radius:6px; padding:12px 14px; margin-bottom:14px; font-family:system-ui,-apple-system,sans-serif; font-size:13px; color:#7D4E00; }
+html[data-theme='dark'] .alert-box { background:#2a1e00; color:#f5a623; border-color:#f5a623; }
+.exec-summary-box { border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:12px; }
+.exec-summary-box .es-head { background:var(--navy); color:#fff; padding:10px 14px; font-family:system-ui,-apple-system,sans-serif; font-size:13px; font-weight:700; }
+.exec-summary-box .es-body { padding:12px 14px; font-family:system-ui,-apple-system,sans-serif; font-size:13px; }
+@media(max-width:600px) { .grid2,.grid3 { grid-template-columns:1fr; } }
+</style>
+<script>
+function toggleTheme(){
+  const html=document.documentElement;
+  html.dataset.theme = html.dataset.theme==='dark'?'light':'dark';
+}
+function copyText(txt){ navigator.clipboard.writeText(txt).then(()=>alert('Copied!')); }
+function copyFollowUp(){
+  const txt = `I'd like to continue working on the CBP/OIT ADAPT deep dive (F2026072662).
+
+Railway URL: https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-oit-adapt-541512-2662-2026-04-03.html
+Deliverable File: deep-dive-cbp-oit-adapt-541512-2662-2026-04-03.html
+Task Date: 2026-04-03
+
+Key context: $20M–$50M AI development contract for CBP Passenger Systems Program Directorate (PSPD). Award date 04/20/2026 is imminent. RAG score MODERATE (0.609). Changeis lacks direct AI/ML delivery credentials — recommend PURSUE WITH PARTNER. Top partners to explore: Anika Systems, RIVA Solutions, OnPoint Consulting.
+
+Suggested follow-up: [Describe what you'd like to do next]`;
+  navigator.clipboard.writeText(txt).then(()=>alert('Follow-up prompt copied!'));
+}
+function emailVM2(){
+  const subj = encodeURIComponent('CBP ADAPT Deep Dive Follow-Up — F2026072662');
+  const body = encodeURIComponent(`Hi VM2,\n\nFollowing up on the CBP/OIT ADAPT deep dive (F2026072662).\n\nDeliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-oit-adapt-541512-2662-2026-04-03.html\n\n[Add your notes here]\n\nBest,\nVarun`);
+  window.location.href = `mailto:vm2.viru@gmail.com?subject=${subj}&body=${body}`;
+}
+</script>
+</head>
+<body>
+<div class='topbar'>
+  <div>
+    <span class='brand'>VM2 · Perplexity Computer</span>
+    <span class='brand-sub'>Opportunity Deep Dive · CBP/OIT ADAPT · F2026072662</span>
+  </div>
+  <button class='toggle' onclick='toggleTheme()'>Dark / Light</button>
+</div>
+
+<div class='container'>
+
+  <!-- DOCUMENT HEADER -->
+  <div class='doc-header'>
+    <div class='doc-title'>AI Development &amp; Advanced Program Transformation (ADAPT)</div>
+    <div class='doc-subtitle'>APFS Forecast Deep Dive &nbsp;·&nbsp; CBP/OIT &nbsp;·&nbsp; NAICS 541512 &nbsp;·&nbsp; F2026072662</div>
+    <div class='doc-meta'>
+      <span class='meta-chip urgent'>⚠ Award 04/20/2026 — 17 Days</span>
+      <span class='meta-chip'>$20M–$50M · FFP</span>
+      <span class='meta-chip'>IDIQ TO/DO · SB Set-Aside</span>
+      <span class='meta-chip'>RAG: MODERATE (0.609)</span>
+      <span class='meta-chip pursue'>Rec: PURSUE WITH PARTNER</span>
+      <span class='meta-chip'>Generated 2026-04-03</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1: EXECUTIVE SUMMARY -->
+  <div class='section'>
+    <div class='section-header'><span class='num'>01</span> Executive Summary &amp; Go/No-Go</div>
+    <div class='card'>
+
+      <div class='alert-box'>
+        <strong>⏱ TIMING CRITICAL:</strong> Anticipated award date is <strong>04/20/2026</strong> — 17 days from today (04/03/2026). Solicitation was estimated for 01/19/2026. If a solicitation has not yet been received, this opportunity may already be decided or in final evaluation. Immediate action is required to determine whether a proposal window is still open.
+      </div>
+
+      <div class='go-nogo-box partner'>
+        <div class='go-nogo-rec partner'>⚑ PURSUE WITH PARTNER</div>
+        <p style='font-family:system-ui,-apple-system,sans-serif;font-size:13px;margin:0 0 10px'>CBP's ADAPT requirement is a highly relevant, high-value opportunity that aligns with Changeis' federal IT modernization and program support track record. However, the core deliverable — active AI/ML model development, LLM integration, and DevSecOps pipeline construction — requires demonstrated AI engineering depth that Changeis' current past performance (primarily transportation policy analytics via Volpe) does not directly exhibit. A teaming strategy pairing Changeis' program management, data governance, and program support strength with an AI-native small business partner is the path to a credible, competitive proposal.</p>
+        <div style='font-family:system-ui,-apple-system,sans-serif;font-size:13px;'>
+          <strong>Recommendation conditions:</strong>
+          <ul class='bullets' style='margin-top:6px;'>
+            <li>Confirm solicitation is still open / proposal deadline not passed</li>
+            <li>Identify and lock in an AI/ML subcontractor (Anika Systems, RIVA Solutions, or OnPoint recommended)</li>
+            <li>Verify Changeis holds or can access the required IDIQ vehicle (MAC, OASIS+, or agency-specific)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class='exec-summary-box'>
+        <div class='es-head'>Opportunity Strength Factors</div>
+        <div class='es-body'>
+          <div class='factor-row'><span class='factor-label' style='color:var(--success-green)'>✔ Why Pursue</span><span>$20M–$50M new requirement, 5-year base PoP (05/2026–04/2031). CBP is actively investing in AI/ML across OIT. Small Business set-aside reduces large-prime competition. No incumbent — fresh competition. Strong DHS past performance footprint (USCIS workforce analytics, FTA contracts) demonstrates agency familiarity.</span></div>
+          <div class='factor-row'><span class='factor-label' style='color:var(--orange)'>⚠ Risks</span><span>Award date is 04/20/2026 — timing is extremely compressed. Changeis' RAG matches are transportation-domain analytics, not AI/ML engineering. LLM/DevOps/model development is core scope, not advisory. No direct CBP IT incumbent history confirmed. Requires ISC/SAF credentials for DHS security environment.</span></div>
+          <div class='factor-row'><span class='factor-label' style='color:var(--purple)'>★ Differentiators</span><span>DHS agency experience (USCIS), program management excellence, data science strategy, cloud optimization advisory — all directly cited in the ADAPT SOW sections 2.2 and 2.3. Changeis can credibly lead the non-AI-engineering scope while a partner handles model development.</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 2: OPPORTUNITY OVERVIEW -->
+  <div class='section'>
+    <div class='section-header'><span class='num'>02</span> Opportunity Overview</div>
+    <div class='card'>
+      <div class='grid2' style='margin-bottom:12px;'>
+        <div class='kv'><div class='k'>APFS Number</div><div class='v'>F2026072662</div></div>
+        <div class='kv'><div class='k'>Requirements Title</div><div class='v'>AI Development &amp; Advanced Program Transformation (ADAPT)</div></div>
+        <div class='kv'><div class='k'>Component / Office</div><div class='v'>CBP / Office of Information &amp; Technology (OIT)</div></div>
+        <div class='kv'><div class='k'>Requirements Office</div><div class='v'>Information Technology Requirements Office (ITRO)</div></div>
+        <div class='kv'><div class='k'>Contracting Office</div><div class='v'>Information Technology (ITCD)</div></div>
+        <div class='kv'><div class='k'>NAICS</div><div class='v'>541512 — Computer Systems Design Services</div></div>
+        <div class='kv'><div class='k'>Dollar Range</div><div class='v'>$20,000,000 – $50,000,000</div></div>
+        <div class='kv'><div class='k'>Contract Type</div><div class='v'>Firm Fixed Price</div></div>
+        <div class='kv'><div class='k'>Contract Vehicle</div><div class='v'>IDIQ TO/DO (Non-Strategic Sourcing MAC)</div></div>
+        <div class='kv'><div class='k'>Competition</div><div class='v'>YES — New Requirement, No Contract</div></div>
+        <div class='kv'><div class='k'>Small Business Program</div><div class='v'>SB (ESB — Set-Aside expected)</div></div>
+        <div class='kv'><div class='k'>Estimated Solicitation Release</div><div class='v'>01/19/2026 (est.)</div></div>
+        <div class='kv'><div class='k'>Anticipated Award Date</div><div class='v urgent'>04/20/2026 ← IMMINENT</div></div>
+        <div class='kv'><div class='k'>Period of Performance</div><div class='v'>05/01/2026 – 04/30/2031 (5 years)</div></div>
+        <div class='kv'><div class='k'>Place of Performance</div><div class='v'>Ashburn, VA</div></div>
+        <div class='kv'><div class='k'>Published Date</div><div class='v'>12/11/2025</div></div>
+        <div class='kv'><div class='k'>Fiscal Year</div><div class='v'>FY2026 (Q3)</div></div>
+      </div>
+
+      <div class='callout'>
+        <strong>Requirements Contact</strong>
+        Gary Orr — Gary.Orr@cbp.dhs.gov — (317) 614-4573<br>
+        <em style='color:var(--muted)'>Requirements Office: ITRO</em>
+      </div>
+      <div class='callout'>
+        <strong>Small Business Coordinator (APFS)</strong>
+        Ivette Jorge — CBP-IPOP@CBP.DHS.GOV — (202) 556-6545
+      </div>
+
+      <div class='tier-label'>SOW Summary — Three Core Work Areas</div>
+      <table class='std'>
+        <thead><tr><th>Section</th><th>Focus Area</th><th>Key Activities</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>2.1</strong></td>
+            <td>AI-Driven Software Development</td>
+            <td>LLM/DevOps capability development · AI-accelerated software delivery · automated test creation · UX/UI modernization · COR-directed software &amp; systems integration for CBP Passenger Systems Program Directorate (PSPD)</td>
+          </tr>
+          <tr>
+            <td><strong>2.2</strong></td>
+            <td>Program Support</td>
+            <td>TECS acquisition program documentation · CBP acquisition milestone support · GAO/DHS OIG audit support · risk identification/tracking (TECS/PSPD) · DHS Cost Wise Readiness (CWR) metrics · Records &amp; Information Management (RIM) coordination</td>
+          </tr>
+          <tr>
+            <td><strong>2.3</strong></td>
+            <td>Research &amp; Analysis</td>
+            <td>Cloud optimization research (Azure, AWS, MAGE/GCP) · cost avoidance &amp; savings identification · architectural assessment · independent solution assessment for PSPD leadership · coordination with CIM, CTO, and CDO</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class='tier-label' style='margin-top:14px;'>Client Context: CBP Passenger Systems Program Directorate (PSPD)</div>
+      <p style='font-family:system-ui,-apple-system,sans-serif;font-size:13px;margin:0;'>PSPD is the primary OIT directorate supporting traveler and immigration management systems (TPVS suite, TECS). It operates 24/7, manages a multi-billion dollar legacy portfolio, and is actively pursuing AI/ML adoption, cloud migration (Azure/AWS/MAGE), and modernization. CBP's Chief Digital Transformation Officer has publicly stated the agency's mission has "outsized the resources" and is using AI to close that gap. OMB M-25-21 (Feb 2025) mandates agencies accelerate responsible AI adoption — ADAPT is a direct acquisition response to that mandate.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 3: RAG ENGINE RESULTS -->
+  <div class='section'>
+    <div class='section-header'><span class='num'>03</span> RAG Engine Results — Changeis Past Performance Matches</div>
+    <div class='card'>
+      <div style='font-family:system-ui,-apple-system,sans-serif;font-size:13px;margin-bottom:12px;'>
+        <strong>Overall Classification: <span class='rating-mod'>MODERATE (0.609)</span></strong> &nbsp;|&nbsp; 10 matches returned &nbsp;|&nbsp;
+        Tiering: <span class='badge badge-strong'>STRONG ≥0.65</span> &nbsp;<span class='badge badge-moderate'>MODERATE 0.50–0.64</span> &nbsp;<span class='badge badge-relevant'>RELEVANT 0.45–0.49</span>
+      </div>
+      <p style='font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:var(--muted);margin:0 0 12px;'><strong>Note:</strong> All 10 matches originate from DOT/Volpe IDIQ contracts (6913G619D300021 family). These reflect Changeis' strong Volpe Center track record in technical research, policy analysis, program management, and IT tools development. Domain alignment to CBP's AI/ML engineering requirement is partial — the matches demonstrate analytical and technology advisory capabilities, not hands-on LLM/ML model engineering.</p>
+
+      <div class='tier-label'>MODERATE Tier — Scores 0.50–0.64 (Matches 1–6)</div>
+      <table class='std'>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Score</th>
+            <th>Task Order</th>
+            <th>Contract #</th>
+            <th>End Client(s)</th>
+            <th>Doc Types</th>
+            <th>Key Excerpt Theme</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>#1</strong></td>
+            <td>
+              <div class='score-bar-wrap'>
+                <div class='score-bar'><div class='score-fill' style='width:94%;background:#D97D2A;'></div></div>
+                <span style='font-weight:700;color:#D97D2A;'>0.609</span>
+              </div>
+            </td>
+            <td><code>V3202039</code></td>
+            <td style='font-size:11px;'>6913G621F400021</td>
+            <td>DOT / FAA / FHWA / NHTSA / Volpe</td>
+            <td>AWARD, OTHER, SOW, TORFP</td>
+            <td class='excerpt'>Algorithm research &amp; data analysis across policy/impact modeling frameworks; SME training in transportation data analysis; AEDT input/output evaluation; ADS-B benefits analysis</td>
+          </tr>
+          <tr>
+            <td><strong>#2</strong></td>
+            <td>
+              <div class='score-bar-wrap'>
+                <div class='score-bar'><div class='score-fill' style='width:92%;background:#D97D2A;'></div></div>
+                <span style='font-weight:700;color:#D97D2A;'>0.599</span>
+              </div>
+            </td>
+            <td><code>V3362009</code></td>
+            <td style='font-size:11px;'>6913G620F400102</td>
+            <td>DOT / FAA / FHWA / Volpe</td>
+            <td>AWARD, OTHER, SOW, TORFP</td>
+            <td class='excerpt'>Technical assistance for FHWA/ITS JPO automation research; program management support; policy &amp; technical analysis; AV pilot demonstration database design &amp; creation</td>
+          </tr>
+          <tr>
+            <td><strong>#3</strong></td>
+            <td>
+              <div class='score-bar-wrap'>
+                <div class='score-bar'><div class='score-fill' style='width:89%;background:#D97D2A;'></div></div>
+                <span style='font-weight:700;color:#D97D2A;'>0.581</span>
+              </div>
+            </td>
+            <td><code>V3132047</code></td>
+            <td style='font-size:11px;'>6913G620F400113</td>
+            <td>DOT / FAA / FMCSA / Volpe</td>
+            <td>AWARD, OTHER, SOW, TORFP</td>
+            <td class='excerpt'>FMCSA NAS Tool O&amp;M; Agile-based code development in Azure DevOps; Tableau data visualization; data quality education &amp; training; analytical studies &amp; program effectiveness</td>
+          </tr>
+          <tr>
+            <td><strong>#4</strong></td>
+            <td>
+              <div class='score-bar-wrap'>
+                <div class='score-bar'><div class='score-fill' style='width:86%;background:#D97D2A;'></div></div>
+                <span style='font-weight:700;color:#D97D2A;'>0.560</span>
+              </div>
+            </td>
+            <td><code>V3132172</code></td>
+            <td style='font-size:11px;'>6913G621F400061</td>
+            <td>FMCSA / Volpe</td>
+            <td>AWARD, OTHER, SOW</td>
+            <td class='excerpt'>FMCSA ITD program support; web design &amp; technology delivery; communications strategy; business process reengineering; systems analysis &amp; policy impacts; 5-year IAA continuation</td>
+          </tr>
+          <tr>
+            <td><strong>#5</strong></td>
+            <td>
+              <div class='score-bar-wrap'>
+                <div class='score-bar'><div class='score-fill' style='width:86%;background:#D97D2A;'></div></div>
+                <span style='font-weight:700;color:#D97D2A;'>0.558</span>
+              </div>
+            </td>
+            <td><code>V3132151</code></td>
+            <td style='font-size:11px;'><em>Not listed</em></td>
+            <td>Volpe</td>
+            <td>AWARD, OTHER, SOW, TORFP</td>
+            <td class='excerpt'>Technology delivery, business analysis, agile process management, GUI design, app development for system modernization; blockchain POC &amp; RPA development; UX improvement</td>
+          </tr>
+          <tr>
+            <td><strong>#6</strong></td>
+            <td>
+              <div class='score-bar-wrap'>
+                <div class='score-bar'><div class='score-fill' style='width:81%;background:#D97D2A;'></div></div>
+                <span style='font-weight:700;color:#D97D2A;'>0.527</span>
+              </div>
+            </td>
+            <td><code>V3362060</code></td>
+            <td style='font-size:11px;'>6913G623F40070N</td>
+            <td>DOT / Volpe</td>
+            <td>AWARD, OTHER, SOW</td>
+            <td class='excerpt'>ITS technology transfer to state &amp; local agencies; systems engineering approach; technology innovation adoption; multi-agency DOT portfolio support</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class='tier-label' style='margin-top:16px;'>RELEVANT Tier — Scores 0.45–0.49 (Matches 7–10)</div>
+      <table class='std'>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Score</th>
+            <th>Task Order</th>
+            <th>Contract #</th>
+            <th>End Client(s)</th>
+            <th>Key Excerpt Theme</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>#7</strong></td>
+            <td><span class='rating-rel'>0.479</span></td>
+            <td><code>V3422063</code></td>
+            <td style='font-size:11px;'>6913G620F400127</td>
+            <td>DOT / FAA / Volpe</td>
+            <td class='excerpt'>Advanced Aerial Mobility (AAM); air traffic management tech; counter-UAS strategies; BVLOS operations; program development leadership — future airborne transportation systems planning</td>
+          </tr>
+          <tr>
+            <td><strong>#8</strong></td>
+            <td><span class='rating-rel'>0.479</span></td>
+            <td><code>V3242019</code></td>
+            <td style='font-size:11px;'>6913G620F400034</td>
+            <td>DOT / FAA / Volpe</td>
+            <td class='excerpt'>Algorithm &amp; data research for FAA/EPA emissions modeling frameworks (EMF); SME expertise in transportation policy data; training in AEDT outputs</td>
+          </tr>
+          <tr>
+            <td><strong>#9</strong></td>
+            <td><span class='rating-rel'>0.476</span></td>
+            <td><code>V3132057</code></td>
+            <td style='font-size:11px;'>6913G620F400123</td>
+            <td>DOT / FAA / Volpe</td>
+            <td class='excerpt'>Technical support services scope across system analysis, policy impacts, industry analysis; system operational performance &amp; technological advances</td>
+          </tr>
+          <tr>
+            <td><strong>#10</strong></td>
+            <td><span class='rating-rel'>0.469</span></td>
+            <td><code>V3142032</code></td>
+            <td style='font-size:11px;'>6913G620F400036</td>
+            <td>DOT / FAA / NHTSA / Volpe</td>
+            <td class='excerpt'>Driver Assistance Systems (ADAS) &amp; Automated Driving Systems (ADS) behavioral studies; driving simulator automation assessments; latent hazard training evaluation</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style='margin-top:12px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:var(--muted);background:var(--card-callout);padding:10px;border-radius:6px;'>
+        <strong>RAG Interpretation:</strong> The MODERATE classification (0.609) reflects meaningful but imperfect alignment. The Volpe past performance demonstrates: program management, data analysis, policy research, Agile development, Tableau/visualization, and technology delivery — all relevant to ADAPT §§2.2–2.3. What the RAG corpus does <em>not</em> demonstrate: LLM fine-tuning, ML model training/deployment, AI DevSecOps pipeline engineering, or federal AI/ML model governance (ADAPT §2.1 core requirements). This gap is the primary risk driver.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: USASPENDING ANALYSIS -->
+  <div class='section'>
+    <div class='section-header'><span class='num'>04</span> USAspending &amp; Market Intelligence Analysis</div>
+    <div class='card'>
+
+      <div class='callout'>
+        <strong>CBP OIT AI/IT Spending Context</strong>
+        CBP OIT issues hundreds of IT-related solicitations annually. The PSPD specifically manages the TPVS suite (Traveler Processing &amp; Vetting Software), a multi-hundred-million-dollar application portfolio. CBP's Machine Learning Center of Excellence (ML CoE) managed 57 active AI projects in FY2022, with nearly half focused on AI/Analytics and Autonomy.
+      </div>
+
+      <div class='tier-label'>Key PSPD &amp; OIT Contract Context (FPDS/APFS Research)</div>
+      <table class='std'>
+        <thead>
+          <tr><th>Contract / Effort</th><th>Est. Value</th><th>Scope</th><th>Status / Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>ADAPT (F2026072662)</strong></td>
+            <td>$20M–$50M</td>
+            <td>AI/ML development, LLM DevOps, program support, cloud optimization for PSPD</td>
+            <td>Forecast — new requirement, award 04/20/2026</td>
+          </tr>
+          <tr>
+            <td><strong>AI Enhanced Surveillance Data Platform (F2026072745)</strong></td>
+            <td>$10M–$20M</td>
+            <td>AI/ML analytics, Zero-Trust infrastructure, real-time edge computing for border threat detection</td>
+            <td>Forecast — CBP/OIT/BEMS · GSA Schedule · SB · Award Q2 FY2026</td>
+          </tr>
+          <tr>
+            <td><strong>Traveler Processing &amp; Vetting Software (TPVS) 2.0</strong></td>
+            <td>&gt;$100M</td>
+            <td>End-to-end life cycle services for TPVS application suite; cloud migration; SecDevOps</td>
+            <td>RFP issued May 2025; Large Business · award est. Q1 2026</td>
+          </tr>
+          <tr>
+            <td><strong>MetaPhase CBP OFAM ORS Support</strong></td>
+            <td>$9.8M</td>
+            <td>Technical &amp; operational professional support for CBP Facilities &amp; Asset Management</td>
+            <td>Awarded June 2024 · OASIS SB · MetaPhase Consulting (8a SB)</td>
+          </tr>
+          <tr>
+            <td><strong>CBP C4I Systems (CACI incumbent)</strong></td>
+            <td>$50M–$100M</td>
+            <td>AMOC C4I systems, AMOSS surveillance, Kestrel cloud predictive threat modeling</td>
+            <td>Recompete forecast Nov 2025; Alliant 2; Full &amp; Open (Large Business)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class='tier-label' style='margin-top:16px;'>CBP OIT NAICS 541512 Spending Patterns</div>
+      <ul class='bullets'>
+        <li>CBP OIT obligates significant IT services spend under NAICS 541512 (Computer Systems Design) annually. ADAPT at $20M–$50M is among the larger SB-targeted AI efforts in the PSPD portfolio.</li>
+        <li>The AI-native CBP market is dominated by large FSIs (CACI, Leidos, GDIT, Booz Allen) for classified/large requirements, and by specialized SBs (MetaPhase, Anika Systems, RIVA Solutions, NeevSys) for advisory and analytics work.</li>
+        <li>DHS/CBP SB AI spending has grown approximately 16% annually (FY2022–FY2024, per GovWin IQ), consistent with government-wide trends. DHS &amp; HHS lead civilian agency SB AI spending.</li>
+        <li>ESB (Emerging Small Business) strategy designation on this APFS record suggests a targeted SB pool — likely OASIS+ SB, Polaris SB, or an agency-specific IDIQ vehicle.</li>
+        <li>No confirmed incumbent exists on this specific requirement (New Requirement status) — but PSPD's prior TPVS and TECS contractors (large and small business) will likely target this vehicle aggressively.</li>
+      </ul>
+
+      <div class='usa-spending-note' style='margin-top:12px;'>
+        <strong>Data limitation:</strong> USAspending API real-time query for CBP 541512 small business AI awards was unavailable during this analysis run. Data above is derived from APFS records, public GovCon news sources, and FPDS-accessible award summaries. For incumbent validation, recommend a direct SAM.gov and USAspending.gov search for CBP/OIT obligations under NAICS 541512 in FY2024–2025 filtered to SB awardees.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: CAPABILITY MATRIX -->
+  <div class='section'>
+    <div class='section-header'><span class='num'>05</span> Capability Matrix — ADAPT Requirements vs. Changeis Evidence</div>
+    <div class='card'>
+      <table class='std capability-table'>
+        <thead>
+          <tr>
+            <th>SOW Requirement Signal</th>
+            <th>Fit Rating</th>
+            <th>Best RAG Match</th>
+            <th>Evidence / Gap Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>AI/ML Model Design, Development &amp; Deployment</strong> — Designing, training, testing, deploying ML models</td>
+            <td><span class='badge badge-monitor'>GAP</span></td>
+            <td>None directly</td>
+            <td style='font-size:12px;font-family:system-ui;'>No Changeis RAG match demonstrates ML model training or deployment. This is the critical capability gap. <strong>Requires AI-native partner.</strong></td>
+          </tr>
+          <tr>
+            <td><strong>LLM Integration &amp; DevOps</strong> — Using LLMs to accelerate software delivery, automate testing, CI/CD pipelines</td>
+            <td><span class='badge badge-monitor'>GAP</span></td>
+            <td>V3132151 (RPA/blockchain POC)</td>
+            <td style='font-size:12px;font-family:system-ui;'>V3132151 covers RPA and process automation which is adjacent, but LLM DevOps is materially different. Agile DevOps referenced in V3132047 (Azure DevOps). <strong>Partner-dependent.</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Agile Software Development &amp; Systems Integration</strong> — Code development, COR-directed delivery</td>
+            <td><span class='badge badge-moderate'>PARTIAL</span></td>
+            <td>V3132047 / V3132151</td>
+            <td style='font-size:12px;font-family:system-ui;'>V3132047 covers Agile-based development in Azure DevOps; V3132151 covers GUI design &amp; app development for system modernization. Transportation domain, but methodology is transferable.</td>
+          </tr>
+          <tr>
+            <td><strong>Program Support &amp; Acquisition Milestone Support</strong> — Business case reviews, PMR, TECS documentation, GAO audit support</td>
+            <td><span class='badge badge-strong'>STRONG</span></td>
+            <td>V3202039 / V3362009</td>
+            <td style='font-size:12px;font-family:system-ui;'>Changeis' core strength. DHS USCIS workforce analytics contract (2023) demonstrates agency-level program support. Multiple Volpe matches show program management, reporting, and audit support delivery.</td>
+          </tr>
+          <tr>
+            <td><strong>Cloud Optimization Research</strong> — Azure, AWS, GCP/MAGE architecture review; cost avoidance identification</td>
+            <td><span class='badge badge-moderate'>PARTIAL</span></td>
+            <td>V3362009 / V3362060</td>
+            <td style='font-size:12px;font-family:system-ui;'>V3362009 covers cloud and database technology for transportation; V3362060 covers technology transfer and innovation adoption. Cloud optimization advisory is a Changeis strength but lacks CBP-specific evidence.</td>
+          </tr>
+          <tr>
+            <td><strong>Data Science Strategy Implementation</strong> — CDO/CDTO liaison, data governance, analytics framework</td>
+            <td><span class='badge badge-strong'>STRONG</span></td>
+            <td>USCIS Contract (2023) / V3132047</td>
+            <td style='font-size:12px;font-family:system-ui;'>Changeis USCIS DSSS (Data Strategy Support Services) contract is directly analogous — data governance, advanced analytics, BI reporting, CDO support. V3132047 includes Tableau data visualization development.</td>
+          </tr>
+          <tr>
+            <td><strong>UX/UI Development Across Device Types</strong> — Consistent UI using AI/LLMs</td>
+            <td><span class='badge badge-moderate'>PARTIAL</span></td>
+            <td>V3132151</td>
+            <td style='font-size:12px;font-family:system-ui;'>V3132151 explicitly covers GUI design and UX improvement for modernization. AI-assisted UX is the gap — addressable with a partner offering FuseFlow-type AI delivery.</td>
+          </tr>
+          <tr>
+            <td><strong>Risk Management &amp; Cost Tracking</strong> — DHS CWR initiative, program risk tracking per TECS/PSPD guidelines</td>
+            <td><span class='badge badge-strong'>STRONG</span></td>
+            <td>V3362009 / V3132172</td>
+            <td style='font-size:12px;font-family:system-ui;'>Program risk identification, tracking, and reporting is demonstrated across multiple Volpe matches. USCIS workload modeling contract is direct evidence of mission-critical metric tracking.</td>
+          </tr>
+          <tr>
+            <td><strong>Records &amp; Information Management (RIM)</strong> — Data retention, records schedules, central repository</td>
+            <td><span class='badge badge-moderate'>PARTIAL</span></td>
+            <td>V3132172</td>
+            <td style='font-size:12px;font-family:system-ui;'>V3132172 covers documentation, reporting, and knowledge management for FMCSA. RIM-specific federal recordkeeping is adjacent but not directly demonstrated.</td>
+          </tr>
+          <tr>
+            <td><strong>DHS Security Environment / Clearances</strong> — CBP/DHS IT security, possible clearance requirements</td>
+            <td><span class='badge badge-monitor'>UNKNOWN</span></td>
+            <td>N/A</td>
+            <td style='font-size:12px;font-family:system-ui;'>Must confirm: Does Changeis hold active personnel with DHS suitability/clearance for CBP OIT environment? This is a baseline eligibility question, not a proposal differentiator.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style='margin-top:12px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:var(--muted);'>
+        <strong>Matrix Summary:</strong> Changeis is <strong>strongly aligned</strong> on program support, data science strategy, risk management, and acquisition support (SOW §2.2–2.3). The SOW §2.1 core — AI/ML model development and LLM DevOps — is a <strong>capability gap</strong> that must be filled by a qualified teaming partner. A well-structured prime/sub arrangement can make Changeis competitive.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: COMPETITIVE LANDSCAPE -->
+  <div class='section'>
+    <div class='section-header'><span class='num'>06</span> Competitive Landscape</div>
+    <div class='card'>
+
+      <div class='callout'>
+        <strong>Market Context</strong>
+        This is an SB set-aside under a non-strategic sourcing MAC. The competitive pool is restricted to small businesses. CBP/DHS SB AI competitors range from management consulting hybrids (MetaPhase, RIVA) to AI-native shops (Anika, OnPoint) to tech-heavy niche players. Expect 8–15 offerors given the dollar range and market interest.
+      </div>
+
+      <div class='tier-label'>Likely Competitors — Prime-Eligible SBs</div>
+
+      <div class='competitive-card'>
+        <div class='cc-name'>MetaPhase Consulting</div>
+        <div class='cc-meta'>8(a) · SB · DHS CBP incumbent (OFAM ORS, $9.8M, 2024) · OASIS SB</div>
+        <div class='cc-desc'>Fast-growing management &amp; IT consultancy with confirmed CBP past performance. Won OASIS SB task order at CBP in June 2024. Threat level: <strong>HIGH</strong> — existing CBP relationships, DHS footprint, agile.</div>
+      </div>
+
+      <div class='competitive-card'>
+        <div class='cc-name'>RIVA Solutions (Riya Solutions Inc.)</div>
+        <div class='cc-meta'>SB · AI-first government delivery · FuseFlow AI product · DHS experience</div>
+        <div class='cc-desc'>Published AI-first government strategy. Launched FuseFlow AI (agentic workflow platform for federal delivery) in Jan 2026. Offers AI strategy, ML model development, LLM-assisted UX delivery — directly matching ADAPT §2.1. Threat level: <strong>HIGH</strong> — would be a formidable prime or dangerous competitor.</div>
+      </div>
+
+      <div class='competitive-card'>
+        <div class='cc-name'>Anika Systems</div>
+        <div class='cc-meta'>SB · USCIS DSSS $20M (OASIS 8a) · AI/ML government delivery · Polaris GWAC holder</div>
+        <div class='cc-desc'>Won $20M USCIS Data Strategy Support Services contract (OASIS Pool 1 8a). Holds Polaris GWAC for AI/cloud emerging tech. DoD JAIC AI support experience. Directly competitive with Changeis for the data science/analytics portion. Threat level: <strong>HIGH</strong> — also a strong potential teaming partner.</div>
+      </div>
+
+      <div class='competitive-card'>
+        <div class='cc-name'>OnPoint Consulting</div>
+        <div class='cc-meta'>SB · Arlington VA · AI/ML/RPA federal specialist · federal IT integrator</div>
+        <div class='cc-desc'>Specializes in AI/ML, RPA, and NLP for federal agencies. Has demonstrated ML solutions reducing query times from hours to seconds, NLP for inspection report processing, and AI anomaly detection. Threat level: <strong>MODERATE</strong> — strong AI depth, may lack PSPD familiarity.</div>
+      </div>
+
+      <div class='competitive-card'>
+        <div class='cc-name'>NeevSys / IT Concepts / dotIT</div>
+        <div class='cc-meta'>SB · DHS/CBP active players · IT modernization focus</div>
+        <div class='cc-desc'>Active DHS/CBP small businesses identified as highly tracked CBP players. IT Concepts operates a dotIT JV. Threat level: <strong>MODERATE</strong> — incumbent-adjacent presence in DHS IT ecosystem.</div>
+      </div>
+
+      <div class='competitive-card'>
+        <div class='cc-name'>Zapata Technology</div>
+        <div class='cc-meta'>VOSB · OASIS+ TSB holder · AI/ML Systems Engineering under 541512</div>
+        <div class='cc-desc'>VOSB with OASIS+ Total Small Business contract covering AI/ML systems engineering, computer vision, NLP for defense and civilian agencies. Actively registered under 541512 for AI/ML engineering. Threat level: <strong>MODERATE</strong> — would likely compete or team.</div>
+      </div>
+
+      <div class='tier-label' style='margin-top:16px;'>Recommended Teaming Targets for Changeis</div>
+      <table class='std'>
+        <thead><tr><th>Partner</th><th>What They Bring</th><th>Role</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>RIVA Solutions</strong></td>
+            <td>FuseFlow AI, LLM-assisted UX delivery, ML model development, AI governance</td>
+            <td>Sub — §2.1 AI Dev Lead</td>
+            <td><span class='badge badge-strong'>HIGH</span></td>
+          </tr>
+          <tr>
+            <td><strong>Anika Systems</strong></td>
+            <td>Data science strategy, AI/ML, analytics — DHS/USCIS proven</td>
+            <td>Sub — §2.1/§2.3 Data Science</td>
+            <td><span class='badge badge-strong'>HIGH</span></td>
+          </tr>
+          <tr>
+            <td><strong>OnPoint Consulting</strong></td>
+            <td>AI/ML implementation, NLP, anomaly detection, RPA engineering</td>
+            <td>Sub — §2.1 AI Dev</td>
+            <td><span class='badge badge-moderate'>MEDIUM</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
+  <!-- SECTION 7: GO/NO-GO ASSESSMENT -->
+  <div class='section'>
+    <div class='section-header'><span class='num'>07</span> Go / No-Go Assessment</div>
+    <div class='card'>
+
+      <div class='go-nogo-box partner'>
+        <div class='go-nogo-rec partner'>⚑ PURSUE WITH PARTNER</div>
+        <p style='font-family:system-ui,-apple-system,sans-serif;font-size:14px;margin:0;color:var(--text);'>This opportunity is worth pursuing but Changeis cannot win it as a solo prime. The AI/ML engineering core is a hard requirement, not advisory work — and the award date is 17 days away. Immediate action needed on two fronts: (1) confirm whether a proposal window is still open, and (2) identify and lock a teaming partner within days.</p>
+      </div>
+
+      <div class='tier-label'>Scoring Factors</div>
+      <table class='std'>
+        <thead><tr><th>Factor</th><th>Weight</th><th>Changeis Score (Solo)</th><th>Changeis + Partner Score</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>AI/ML Technical Capability</td>
+            <td>High</td>
+            <td><span style='color:var(--alert-red);font-weight:700;'>1/5</span></td>
+            <td><span style='color:var(--success-green);font-weight:700;'>4/5</span></td>
+            <td style='font-size:12px;font-family:system-ui;'>Requires dedicated AI engineering partner</td>
+          </tr>
+          <tr>
+            <td>DHS/CBP Agency Familiarity</td>
+            <td>High</td>
+            <td><span style='color:var(--orange);font-weight:700;'>3/5</span></td>
+            <td><span style='color:var(--orange);font-weight:700;'>3/5</span></td>
+            <td style='font-size:12px;font-family:system-ui;'>USCIS contract is strong; CBP OIT-specific is a gap</td>
+          </tr>
+          <tr>
+            <td>Program Support &amp; PM Credentials</td>
+            <td>Medium</td>
+            <td><span style='color:var(--success-green);font-weight:700;'>5/5</span></td>
+            <td><span style='color:var(--success-green);font-weight:700;'>5/5</span></td>
+            <td style='font-size:12px;font-family:system-ui;'>Core Changeis strength; directly evidenced</td>
+          </tr>
+          <tr>
+            <td>Data Science Strategy</td>
+            <td>Medium</td>
+            <td><span style='color:var(--success-green);font-weight:700;'>4/5</span></td>
+            <td><span style='color:var(--success-green);font-weight:700;'>5/5</span></td>
+            <td style='font-size:12px;font-family:system-ui;'>USCIS DSSS and Volpe analytics strong evidence</td>
+          </tr>
+          <tr>
+            <td>Cloud Optimization Advisory</td>
+            <td>Medium</td>
+            <td><span style='color:var(--orange);font-weight:700;'>3/5</span></td>
+            <td><span style='color:var(--orange);font-weight:700;'>4/5</span></td>
+            <td style='font-size:12px;font-family:system-ui;'>Azure/AWS/MAGE exposure needed; partner adds cloud engineering depth</td>
+          </tr>
+          <tr>
+            <td>Proposal Timeline Feasibility</td>
+            <td>Critical</td>
+            <td><span style='color:var(--alert-red);font-weight:700;'>1/5</span></td>
+            <td><span style='color:var(--alert-red);font-weight:700;'>2/5</span></td>
+            <td style='font-size:12px;font-family:system-ui;'>Award 04/20/2026 is 17 days away. Proposal may already be closed. VERIFY IMMEDIATELY.</td>
+          </tr>
+          <tr>
+            <td>Contract Vehicle Access</td>
+            <td>Critical</td>
+            <td><span style='color:var(--orange);font-weight:700;'>?</span></td>
+            <td><span style='color:var(--orange);font-weight:700;'>?</span></td>
+            <td style='font-size:12px;font-family:system-ui;'>Requires Changeis to hold or partner onto the specific IDIQ vehicle. Verify OASIS+ or agency MAC eligibility.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class='tier-label' style='margin-top:16px;'>Immediate Action Items (Next 48 Hours)</div>
+      <ul class='bullets'>
+        <li><strong>ACTION 1 — VERIFY SOLICITATION STATUS:</strong> Contact Gary Orr (Gary.Orr@cbp.dhs.gov / 317-614-4573) or check SAM.gov for any solicitation tied to this APFS number. If solicitation is closed, mark as MONITOR for recompete.</li>
+        <li><strong>ACTION 2 — VEHICLE CHECK:</strong> Confirm whether Changeis holds a position on the specific IDIQ MAC being used. Contact Ivette Jorge (CBP-IPOP@CBP.DHS.GOV) for acquisition strategy clarification.</li>
+        <li><strong>ACTION 3 — PARTNER OUTREACH:</strong> Contact RIVA Solutions and/or Anika Systems to explore teaming within 24–48 hours. Define Changeis' prime role (program management, data strategy, cloud advisory) and partner's AI engineering lead role.</li>
+        <li><strong>ACTION 4 — SAM.gov ALERT:</strong> Set a saved search for "CBP ADAPT" or "AI Development Advanced Program Transformation" to catch any solicitation release or Q&amp;A periods.</li>
+        <li><strong>If award date slips:</strong> This becomes a PURSUE — begin proactive relationship-building with Gary Orr's office and PSPD stakeholders immediately to position for the 5-year PoP.</li>
+      </ul>
+
+      <div class='callout' style='margin-top:14px;'>
+        <strong>Honest Assessment of AI Capability Gap</strong>
+        Changeis' Volpe past performance demonstrates technical advisory, program management, data science strategy, and IT tool development — valuable for §§2.2–2.3 but insufficient for ADAPT §2.1 (LLM integration, ML model deployment, AI DevSecOps pipelines). Any proposal claiming full AI/ML engineering capability without a credentialed partner or documented AI engineering staff would be misrepresentative and counterproductive. The teaming strategy is not a hedge — it is the <em>required approach</em> for a credible, compliant offer.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CONTINUE THIS WORK -->
+  <div class='section'>
+    <div class='section-header'>Continue This Work</div>
+    <div class='card'>
+      <p style='font-family:system-ui,-apple-system,sans-serif;font-size:13px;margin:0 0 10px;'>Use these shortcuts to continue the analysis or assign follow-up tasks.</p>
+      <div class='actions'>
+        <button onclick='copyFollowUp()'>📋 Copy Follow-Up Prompt</button>
+        <button onclick='emailVM2()'>✉ Email to VM2</button>
+        <a href='https://todoist.com/app' target='_blank'>☑ Open Todoist</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSION CONTEXT -->
+  <div class='section' id='session-context'>
+    <div class='section-header'>Session Context</div>
+    <details class='details card'>
+      <summary>Show / Hide Session Context</summary>
+      <div class='section-context' style='margin-top:12px;'>
+
+        <h3>Original Instructions</h3>
+        <p style='font-family:system-ui,-apple-system,sans-serif;font-size:13px;'>Generate a deep-dive analysis HTML deliverable for APFS forecast opportunity F2026072662 — AI Development &amp; Advanced Program Transformation (ADAPT), CBP/OIT, NAICS 541512, $20M–$50M, award 04/20/2026. Include 7 sections: Executive Summary with Go/No-Go, Opportunity Overview, RAG Engine Results (all 10 matches), USAspending Analysis, Capability Matrix, Competitive Landscape, and Go/No-Go Assessment. Use Changeis Navy topbar, dark/light toggle, Charter/Georgia fonts. Append context slug at bottom. Save to /home/user/workspace/outputs/deep-dive-cbp-oit-adapt-541512-2662-2026-04-03.html.</p>
+
+        <h3>Approach</h3>
+        <ul>
+          <li>Read and parsed full APFS JSON input from /home/user/workspace/deep_dive_input_F2026072662.json</li>
+          <li>Extracted all 10 RAG matches with composite scores, contract numbers, task orders, client lists, and key excerpts</li>
+          <li>Searched for CBP OIT AI/ML spending patterns, PSPD context, competitor landscape, and Changeis capabilities</li>
+          <li>Applied Changeis style guide (Navy #1B2A4A, Georgia/system-ui fonts, standard table/card components)</li>
+          <li>Built comprehensive 7-section HTML with capability matrix, competitive cards, and honest go/no-go assessment</li>
+          <li>Appended mandatory context slug with JSON metadata, session context panel, and continue-this-work panel</li>
+        </ul>
+
+        <h3>Key Findings</h3>
+        <ul>
+          <li>Award date 04/20/2026 is 17 days away — solicitation may already be in final evaluation; immediate status verification is the #1 action item</li>
+          <li>RAG MODERATE (0.609) reflects real but domain-mismatched past performance — Volpe transportation analytics vs. CBP AI/ML engineering</li>
+          <li>Changeis is STRONG on SOW §§2.2–2.3 (program support, data science strategy, cloud advisory, risk management); GAP on §2.1 (LLM DevOps, ML model development)</li>
+          <li>Top teaming candidates: RIVA Solutions (FuseFlow AI, LLM delivery), Anika Systems (USCIS DSSS, DHS proven), OnPoint Consulting (AI/ML/NLP government)</li>
+          <li>Competitive landscape is dominated by DHS-active SBs: MetaPhase, RIVA Solutions, Anika Systems are high-threat primes</li>
+          <li>No incumbent — genuinely open competition, which is favorable for a well-teamed Changeis proposal</li>
+        </ul>
+
+        <h3>Dead Ends</h3>
+        <ul>
+          <li>USAspending API v2 endpoints were inaccessible via direct HTTP during this run — CBP 541512 incumbent data estimated from public GovCon news and APFS records instead</li>
+          <li>No Changeis AI/ML-specific past performance found in RAG corpus — gap is real, not a retrieval artifact</li>
+          <li>Could not confirm whether solicitation is currently open (SAM.gov check recommended manually)</li>
+        </ul>
+
+        <h3>Assumptions</h3>
+        <ul>
+          <li>Changeis does not hold confirmed active DHS suitability or CBP clearances for all staff — must verify</li>
+          <li>Competitive landscape is hypothesis-based; confirm via market research and APFS/SAM.gov tracking</li>
+          <li>Dollar range $20M–$50M is forecast estimate; actual solicitation may be narrower</li>
+          <li>SB set-aside confirmed from APFS "SB" and "ESB" acquisition strategy; specific vehicle (OASIS+, Polaris, agency MAC) not yet confirmed</li>
+        </ul>
+
+        <h3>Open Questions</h3>
+        <ul>
+          <li>Is the solicitation already issued and in proposal/evaluation phase? If so, what is the proposal due date?</li>
+          <li>Which IDIQ MAC vehicle is being used for this ADAPT TO/DO?</li>
+          <li>Does the requirement include a security clearance or DHS suitability requirement?</li>
+          <li>Is the scope strictly PSPD-focused or does it extend to other OIT directorates?</li>
+          <li>Has Changeis performed any CBP OIT work directly (vs. via DHS USCIS)?</li>
+        </ul>
+
+        <h3>Data Sources</h3>
+        <ul>
+          <li>APFS Input JSON: /home/user/workspace/deep_dive_input_F2026072662.json (local)</li>
+          <li>Changeis Style Guide: /home/user/workspace/skills/changeis-style/Changeis_Refined_Document_Style.md</li>
+          <li><a href='https://apfs-cloud.dhs.gov/record/72662/public-print/' target='_blank'>DHS APFS Public Record F2026072662</a></li>
+          <li><a href='https://www.highergov.com/contract-forecast/ai-development-advanced-program-transformation-1133873/' target='_blank'>HigherGov ADAPT Forecast</a></li>
+          <li><a href='https://www.govconwire.com/articles/cbp-proposals-traveler-processing-and-vetting-software-2-contract' target='_blank'>GovCon Wire — TPVS 2.0</a></li>
+          <li><a href='https://orangeslices.ai/metaphase-wins-dhs-cbp-ofam-ors-tech-and-operational-support-services-task/' target='_blank'>OrangeSlices — MetaPhase CBP Award</a></li>
+          <li><a href='https://changeis.com/news/changeis-inc-wins-contract-to-support-dhs-uscis-workforce-analysis-and-resource-modeling/' target='_blank'>Changeis USCIS Contract Announcement</a></li>
+          <li><a href='https://fedscoop.com/video/how-cbp-is-deploying-ai-ml-to-improve-operational-efficiencies-and-effectiveness/' target='_blank'>FedScoop — CBP AI/ML Deployment</a></li>
+          <li><a href='https://rivasolutionsinc.com/insights/riva-introduces-fuseflow-ai-to-improve-federal-digital-delivery/' target='_blank'>RIVA FuseFlow AI Announcement</a></li>
+        </ul>
+
+        <h3>Next Steps</h3>
+        <ul>
+          <li>Contact Gary Orr (Gary.Orr@cbp.dhs.gov) today to determine solicitation status and proposal window</li>
+          <li>Check SAM.gov for active solicitation linked to APFS F2026072662 or "ADAPT CBP"</li>
+          <li>Reach out to RIVA Solutions and Anika Systems to explore teaming within 48 hours</li>
+          <li>Confirm Changeis' IDIQ vehicle eligibility for the anticipated MAC vehicle</li>
+          <li>Set SAM.gov alert and APFS monitoring for any date updates or solicitation release</li>
+          <li>If opportunity is still open: begin capability narrative development immediately (§2.2–2.3 Changeis-led, §2.1 partner-led)</li>
+        </ul>
+
+      </div>
+    </details>
+  </div>
+
+  <!-- HIDDEN JSON METADATA -->
+  <script type='application/json' id='vm2-context-data'>
+{
+  "task_name": "Deep Dive: CBP AI ADAPT F2026072662",
+  "task_date": "2026-04-03",
+  "deliverable_file": "deep-dive-cbp-oit-adapt-541512-2662-2026-04-03.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-oit-adapt-541512-2662-2026-04-03.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [
+    "deep-dive-usss-2375-2026-04-03.html",
+    "deep-dive-usss-2388-2026-04-03.html"
+  ],
+  "original_instructions": "Generate a deep-dive analysis HTML deliverable for APFS forecast opportunity F2026072662 — AI Development & Advanced Program Transformation (ADAPT), CBP/OIT, NAICS 541512, $20M–$50M, award 04/20/2026. Sections: Executive Summary with Go/No-Go, Opportunity Overview, RAG Engine Results (all 10 matches), USAspending Analysis, Capability Matrix, Competitive Landscape, Go/No-Go Assessment. Changeis Navy topbar, dark/light toggle, Charter/Georgia fonts. Context slug at bottom.",
+  "approach": "Parsed APFS JSON input; extracted all 10 RAG matches; researched CBP OIT AI spending, PSPD context, competitor landscape; applied Changeis style guide; built 7-section HTML with capability matrix, competitive cards, and honest go/no-go; appended context slug.",
+  "key_findings": [
+    "Award date 04/20/2026 is 17 days away — solicitation status must be verified immediately",
+    "RAG MODERATE (0.609) — Volpe transportation analytics is domain-mismatched to CBP AI/ML engineering",
+    "Changeis is STRONG on SOW §§2.2–2.3 (program support, data science, cloud advisory); GAP on §2.1 (LLM DevOps, ML model development)",
+    "Top teaming candidates: RIVA Solutions (FuseFlow AI), Anika Systems (USCIS DSSS), OnPoint Consulting",
+    "No incumbent — genuinely open competition favors a well-teamed Changeis proposal",
+    "Recommendation: PURSUE WITH PARTNER — teaming is not optional, it is required for credible §2.1 coverage"
+  ],
+  "dead_ends": [
+    "USAspending API v2 endpoints inaccessible during run — CBP 541512 incumbent data estimated from public sources",
+    "No Changeis AI/ML-specific past performance found in RAG corpus — gap is real",
+    "Could not confirm whether solicitation is currently open without manual SAM.gov check"
+  ],
+  "assumptions": [
+    "Changeis does not hold confirmed DHS suitability/clearances for CBP OIT environment — verify",
+    "SB set-aside confirmed from APFS; specific vehicle (OASIS+, Polaris, agency MAC) not yet confirmed",
+    "Dollar range is forecast estimate; actual solicitation value may differ",
+    "Competitive landscape is hypothesis-based"
+  ],
+  "open_questions": [
+    "Is the solicitation already issued and what is the proposal due date?",
+    "Which IDIQ MAC vehicle is being used for this ADAPT requirement?",
+    "Does the requirement include DHS suitability or clearance requirements?",
+    "Has Changeis performed any CBP OIT work directly?"
+  ],
+  "data_sources": [
+    "APFS Input JSON: /home/user/workspace/deep_dive_input_F2026072662.json",
+    "DHS APFS Public Record: https://apfs-cloud.dhs.gov/record/72662/public-print/",
+    "HigherGov: https://www.highergov.com/contract-forecast/ai-development-advanced-program-transformation-1133873/",
+    "GovCon Wire TPVS 2.0: https://www.govconwire.com/articles/cbp-proposals-traveler-processing-and-vetting-software-2-contract",
+    "OrangeSlices MetaPhase CBP: https://orangeslices.ai/metaphase-wins-dhs-cbp-ofam-ors-tech-and-operational-support-services-task/",
+    "Changeis USCIS Announcement: https://changeis.com/news/changeis-inc-wins-contract-to-support-dhs-uscis-workforce-analysis-and-resource-modeling/",
+    "FedScoop CBP AI: https://fedscoop.com/video/how-cbp-is-deploying-ai-ml-to-improve-operational-efficiencies-and-effectiveness/",
+    "RIVA FuseFlow: https://rivasolutionsinc.com/insights/riva-introduces-fuseflow-ai-to-improve-federal-digital-delivery/"
+  ],
+  "next_steps": [
+    "Contact Gary Orr (Gary.Orr@cbp.dhs.gov) today to determine solicitation status",
+    "Check SAM.gov for active solicitation linked to APFS F2026072662",
+    "Reach out to RIVA Solutions and Anika Systems to explore teaming within 48 hours",
+    "Confirm Changeis IDIQ vehicle eligibility for the anticipated MAC",
+    "Set SAM.gov alert and APFS monitoring for updates"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-5",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.37",
+    "cost_ceiling": "$0.65",
+    "notes": "Input cost driven by reading full APFS JSON (65KB), style guide, deliverable specs, reference HTML, plus 6 web search calls. Output cost driven by large HTML deliverable with 7 sections."
+  }
+}
+  </script>
+
+  <div class='footer'>
+    Changeis Confidential &nbsp;·&nbsp; CBP/OIT ADAPT Deep Dive · F2026072662 &nbsp;·&nbsp; 2026-04-03 &nbsp;·&nbsp; VM2 Deliverable
+  </div>
+
+</div>
+</body>
+</html>
