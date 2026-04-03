@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: DHS HQ ISO/Bus. Process Support — F2025069077</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --green: #2D7D4A;
+    --orange: #D97D2A;
+    --teal: #008B8B;
+    --purple: #6B4C9A;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --callout-bg: #E8F4F8;
+    --callout-border: #008B8B;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --callout-bg: #1a2530;
+    --callout-border: #008B8B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+  .hero-meta {
+    display: flex; justify-content: center; gap: 24px; flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .hero-meta-item {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-muted);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .hero-meta-item strong {
+    font-size: 14px; font-weight: 700; color: var(--text);
+  }
+
+  /* Sections */
+  .section { margin-bottom: 36px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 5px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Callout box */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 3px solid var(--callout-border);
+    padding: 14px 18px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout-title {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--teal);
+    margin-bottom: 6px;
+  }
+  .callout p { font-size: 14.5px; color: var(--text); }
+
+  /* Go/No-Go verdict box */
+  .verdict-box {
+    border: 2px solid var(--green);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    background: var(--surface);
+  }
+  .verdict-box.pass { border-color: var(--orange); }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 4px;
+  }
+  .verdict-title {
+    font-size: 26px; font-weight: 700; color: var(--green);
+    font-family: system-ui, sans-serif;
+  }
+  .verdict-box.pass .verdict-title { color: var(--orange); }
+  .verdict-sub {
+    font-size: 14px; color: var(--text-muted); margin-top: 4px; font-style: italic;
+  }
+
+  /* RAG tier badges */
+  .tier-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 3px;
+    vertical-align: middle; margin-left: 6px;
+  }
+  .tier-strong { background: #2D7D4A; color: #fff; }
+  .tier-moderate { background: #2E6DA4; color: #fff; }
+  .tier-relevant { background: #D97D2A; color: #fff; }
+  .tier-low { background: #888; color: #fff; }
+
+  /* Score pill */
+  .score-pill {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    padding: 1px 7px; border-radius: 10px;
+    background: var(--navy); color: #fff;
+    vertical-align: middle;
+  }
+
+  /* Capability indicator dots */
+  .cap-dot {
+    display: inline-block; width: 10px; height: 10px;
+    border-radius: 50%; margin-right: 4px; vertical-align: middle;
+  }
+  .cap-strong { background: var(--green); }
+  .cap-moderate { background: #2E6DA4; }
+  .cap-weak { background: var(--orange); }
+
+  /* Info grid */
+  .info-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px 24px; margin: 12px 0;
+  }
+  @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } }
+  .info-item label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-muted); display: block; margin-bottom: 2px;
+  }
+  .info-item span {
+    font-size: 14.5px; color: var(--text);
+  }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 12px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* RAG match card */
+  .rag-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: var(--card-shadow);
+  }
+  .rag-card-header {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .rag-card-contract {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700; color: var(--navy);
+  }
+  [data-theme="dark"] .rag-card-contract { color: #c8d8f0; }
+  .rag-card-client {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-muted);
+  }
+  .rag-card-excerpt {
+    font-size: 13.5px; color: var(--text-muted);
+    font-style: italic; border-left: 2px solid var(--border);
+    padding-left: 10px; margin-top: 6px; line-height: 1.5;
+  }
+
+  /* Tier section label */
+  .tier-section-label {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; margin: 18px 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tier-section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Note */
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  /* Inline code */
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* Pros/Cons columns */
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;
+  }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+  .two-col-box {
+    background: var(--surface);
+    border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px;
+  }
+  .two-col-box h4 {
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+  .two-col-box.pros h4 { color: var(--green); }
+  .two-col-box.cons h4 { color: var(--red); }
+  .two-col-box ul { padding-left: 18px; }
+  .two-col-box li { font-size: 13.5px; margin-bottom: 4px; line-height: 1.45; }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark/Light</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · APFS Forecast</div>
+    <h1>DHS HQ/MGMT — ISO/Business Process Support</h1>
+    <div class="hero-sub">APFS F2025069077 · NAICS 541219 · Incumbent: Guidehouse Inc.</div>
+    <div class="hero-date">Analysis Date: April 3, 2026 · RAG Classification: <strong style="color:#2D7D4A;">STRONG (0.705)</strong></div>
+    <div class="hero-meta">
+      <div class="hero-meta-item"><span>Dollar Range</span><strong>$20M – $50M</strong></div>
+      <div class="hero-meta-item"><span>Contract Vehicle</span><strong>GSA Schedule</strong></div>
+      <div class="hero-meta-item"><span>Award Quarter</span><strong>Q4 FY2026</strong></div>
+      <div class="hero-meta-item"><span>RFP Est. Release</span><strong>May 1, 2026</strong></div>
+      <div class="hero-meta-item"><span>PoP</span><strong>Sep 2026 – Sep 2031</strong></div>
+      <div class="hero-meta-item"><span>Contract Type</span><strong>Firm Fixed Price</strong></div>
+    </div>
+  </div>
+
+  <!-- Section 1: Executive Summary -->
+  <div class="section">
+    <div class="section-header">1 · Executive Summary &amp; Go/No-Go Recommendation</div>
+
+    <div class="verdict-box">
+      <div class="verdict-label">Go/No-Go Recommendation</div>
+      <div class="verdict-title">PURSUE WITH PARTNER</div>
+      <div class="verdict-sub">Strong RAG alignment (0.705) on business process re-engineering past performance; gaps in DHS financial audit domain require teaming strategy</div>
+    </div>
+
+    <p style="margin-top:14px;">DHS OCFO is re-competing a five-year Multiple-Award BPA (MA-BPA) to sustain ISO 9001 quality management, business process improvement, robotic process automation (RPA), strategic planning, and workforce development support. The incumbent task order (70RDAD21FR0000119, held by <strong>Guidehouse Inc.</strong>) was valued at approximately $3.8M under the prior award period (Sep 2021 – Mar 2025); the recompete ceiling of <strong>$20M–$50M</strong> signals a substantially expanded scope under a new MA-BPA structure.</p>
+
+    <p style="margin-top:10px;">Changeis carries <strong>demonstrably relevant past performance</strong> in business process re-engineering (HUD BPR via Volpe), strategic planning and communications support (DOT/FAA/Build America Bureau), and ISO-adjacent process optimization work. The RAG engine surfaces 9 past performance contracts across these domains — the top match scoring 0.705 (STRONG tier). However, Changeis does not currently hold DHS-direct financial audit support contracts, and the incumbent Guidehouse (now under DOGE contract pressure) may face a more competitive landscape than in prior cycles.</p>
+
+    <div class="callout">
+      <div class="callout-title">Key Strategic Consideration</div>
+      <p>This is a MA-BPA recompete — multiple awards expected. This dramatically increases win probability vs. a single-award competition. Changeis should pursue a teaming arrangement with a firm holding DHS OCFO audit support credentials (e.g., a CPA firm or existing OCFO BPA holder) while leading on ISO QMS, RPA, and process optimization work streams.</p>
+    </div>
+
+    <ul style="margin-top:10px;">
+      <li><strong>Timeline urgency:</strong> Solicitation estimated May 1, 2026 — approximately 4 weeks away. Capture activity should begin immediately.</li>
+      <li><strong>Set-aside status:</strong> TBD — could be full-and-open or small business set-aside. Changeis qualifies as WOSB.</li>
+      <li><strong>DOGE risk factor:</strong> Guidehouse lost $376M in federal contracts in 2025 under GSA termination pressure; incumbency advantage may be weakened.</li>
+      <li><strong>GSA Schedule vehicle:</strong> Changeis must confirm GSA Schedule eligibility under SIN 541219 for this competition.</li>
+    </ul>
+  </div>
+
+  <!-- Section 2: Opportunity Overview -->
+  <div class="section">
+    <div class="section-header">2 · Opportunity Overview</div>
+
+    <div class="info-grid">
+      <div class="info-item"><label>APFS Number</label><span>F2025069077</span></div>
+      <div class="info-item"><label>Requirements Title</label><span>ISO/Bus. Process Support</span></div>
+      <div class="info-item"><label>Organization</label><span>DHS HQ/MGMT</span></div>
+      <div class="info-item"><label>Requirements Office</label><span>Office of the Chief Financial Officer (OCFO) (70EFU1)</span></div>
+      <div class="info-item"><label>Contracting Office</label><span>Departmental Operations Acquisition Division (DOAD2) (70RDA2)</span></div>
+      <div class="info-item"><label>NAICS</label><span>541219 — Other Accounting Services</span></div>
+      <div class="info-item"><label>Dollar Range</label><span>$20,000,000 – $50,000,000</span></div>
+      <div class="info-item"><label>Contract Vehicle</label><span>GSA Schedule (MA-BPA)</span></div>
+      <div class="info-item"><label>Contract Type</label><span>Firm Fixed Price</span></div>
+      <div class="info-item"><label>Competitive Type</label><span>Follow-on to Existing Contract</span></div>
+      <div class="info-item"><label>Small Business Program</label><span>TBD</span></div>
+      <div class="info-item"><label>Place of Performance</label><span>Springfield, VA</span></div>
+      <div class="info-item"><label>Est. Solicitation Release</label><span>May 1, 2026</span></div>
+      <div class="info-item"><label>Award Quarter</label><span>Q4 FY2026 (est. Sep 25, 2026)</span></div>
+      <div class="info-item"><label>PoP Start</label><span>September 26, 2026</span></div>
+      <div class="info-item"><label>PoP End</label><span>September 25, 2031 (5 years)</span></div>
+      <div class="info-item"><label>Incumbent</label><span>Guidehouse Inc.</span></div>
+      <div class="info-item"><label>Predecessor Contract</label><span>70RDAD21FR0000119 (~$3.8M, Sep 2021–Mar 2025)</span></div>
+    </div>
+
+    <h3 style="font-family:system-ui,sans-serif;font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--navy);">Requirements Description</h3>
+    <p>This is a re-compete for a long-term contract of existing task order 70RDAD21FR0000119. DHS/OCFO has a continued need to re-establish and re-compete a Multiple-Award Blanket Purchase Agreement (BPA) to provide ISO Maintenance, Business Process Improvement, and Robotic Process Automation support services. Award of this BPA will assist DHS in continuing its success in achieving a <strong>clean financial statement audit opinion</strong> and move towards a clean opinion on internal controls. Contractor support may include:</p>
+
+    <div class="two-col" style="margin-top:12px;">
+      <div class="two-col-box">
+        <h4 style="color:var(--teal);">ISO &amp; Quality Management</h4>
+        <ul>
+          <li>ISO Maintenance</li>
+          <li>ISO QMS SharePoint Maintenance/Enhancement</li>
+          <li>ISO Training</li>
+          <li>ISO Strategic Guidance</li>
+        </ul>
+      </div>
+      <div class="two-col-box">
+        <h4 style="color:var(--purple);">Process &amp; Automation</h4>
+        <ul>
+          <li>Process Optimization</li>
+          <li>Robotic Process Automation Development &amp; Governance</li>
+          <li>Organization Restructure Support</li>
+        </ul>
+      </div>
+      <div class="two-col-box">
+        <h4 style="color:var(--navy);">Strategic &amp; Workforce</h4>
+        <ul>
+          <li>Strategic Planning</li>
+          <li>OFO Customer Engagement Activities</li>
+          <li>Workforce Planning &amp; Modeling</li>
+          <li>Workforce Training and Development</li>
+          <li>Technical Advice</li>
+        </ul>
+      </div>
+      <div class="two-col-box">
+        <h4 style="color:var(--red);">Key Compliance Context</h4>
+        <ul>
+          <li>Supporting DHS clean financial audit opinion</li>
+          <li>Moving toward clean internal controls opinion</li>
+          <li>ISO 9001:2015 QMS certification support</li>
+          <li>OCFO financial operations support environment</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="font-family:system-ui,sans-serif;font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--navy);">Points of Contact</h3>
+    <table>
+      <thead>
+        <tr><th>Role</th><th>Name</th><th>Email</th><th>Phone</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Requirements Contact</td><td>Michael Cranney</td><td>michael.cranney@hq.dhs.gov</td><td>(202) 964-6651</td></tr>
+        <tr><td>SBS Coordinator</td><td>Geoff Seay</td><td>geoffrey.seay@hq.dhs.gov</td><td>(202) 695-7000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 3: RAG Engine Results -->
+  <div class="section">
+    <div class="section-header">3 · RAG Engine Results</div>
+    <p>RAG engine scored this opportunity against Changeis' full past performance corpus. Top score: <span class="score-pill">0.705</span> <span class="tier-badge tier-strong">STRONG</span>. Total corpus matches: <strong>46</strong>. Displaying top 9 unique contract matches.</p>
+
+    <!-- STRONG Tier -->
+    <div class="tier-section-label"><span class="tier-badge tier-strong" style="font-size:11px;">Strong ≥ 0.65</span></div>
+
+    <div class="rag-card">
+      <div class="rag-card-header">
+        <span class="score-pill">0.705</span>
+        <span class="tier-badge tier-strong">STRONG</span>
+        <span class="rag-card-contract">Contract: 6913G621F400047 · TO: V3132151</span>
+        <span class="rag-card-client">End Client: Volpe / HUD</span>
+        <span style="font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);">Docs: AWARD, OTHER, SOW, TORFP</span>
+      </div>
+      <p style="font-size:13.5px;font-weight:600;color:var(--text-muted);">HUD BPR — Process Re-engineering Support</p>
+      <div class="rag-card-excerpt">"The Volpe Center provides support to the U.S. Department of Housing and Urban Development (HUD) in the area of business process re-engineering (BPR) and digital services development. The contractor shall provide technical assistance, business requirement analysis, agile development management, programming, outreach and capacity building to the Volpe Center." (SOW / AWARD)</div>
+    </div>
+
+    <!-- MODERATE Tier -->
+    <div class="tier-section-label"><span class="tier-badge tier-moderate" style="font-size:11px;">Moderate 0.50–0.64</span></div>
+
+    <div class="rag-card">
+      <div class="rag-card-header">
+        <span class="score-pill">0.598</span>
+        <span class="tier-badge tier-moderate">MODERATE</span>
+        <span class="rag-card-contract">Contract: 6913G621F400058 · TO: V3272013</span>
+        <span class="rag-card-client">End Clients: DOT, FAA, FHWA, Volpe</span>
+        <span style="font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);">Docs: AWARD, OTHER, SOW, TORFP</span>
+      </div>
+      <p style="font-size:13.5px;font-weight:600;color:var(--text-muted);">Build America Bureau Support (SCOAR V3272013)</p>
+      <div class="rag-card-excerpt">"The objective of this task order is to provide support for the Build America Bureau… providing communications and operations research and analysis support across TIFIA, RRIF, and PAB credit assistance programs." (TORFP)</div>
+    </div>
+
+    <div class="rag-card">
+      <div class="rag-card-header">
+        <span class="score-pill">0.570</span>
+        <span class="tier-badge tier-moderate">MODERATE</span>
+        <span class="rag-card-contract">Contract: 6913G620F400101 · TO: V3222016</span>
+        <span class="rag-card-client">End Clients: DOT, FAA, Volpe</span>
+        <span style="font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);">Docs: AWARD, OTHER, SOW, TORFP</span>
+      </div>
+      <p style="font-size:13.5px;font-weight:600;color:var(--text-muted);">Federal Permitting Improvement Steering Council (FPISC) Support</p>
+      <div class="rag-card-excerpt">"This is a Firm Fixed Price Level of Effort Task Order. Task Order Award No. 6913G620F400101 to provide Federal Permitting Improvement Steering Council (FPISC) Support… Award: $38,312.21." (AWARD – Changeis Inc., WOSB)</div>
+    </div>
+
+    <div class="rag-card">
+      <div class="rag-card-header">
+        <span class="score-pill">0.536</span>
+        <span class="tier-badge tier-moderate">MODERATE</span>
+        <span class="rag-card-contract">Contract: 6913G620F400123 · TO: V3132057</span>
+        <span class="rag-card-client">End Clients: DOT, FAA, Volpe</span>
+        <span style="font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);">Docs: AWARD, OTHER, SOW, TORFP</span>
+      </div>
+      <p style="font-size:13.5px;font-weight:600;color:var(--text-muted);">HUD BPR Support — Business Process Re-engineering (Predecessor TO)</p>
+      <div class="rag-card-excerpt">"00100 Systems business process re-engineering support to provide technical assistance, business requirement analysis, outreach and capacity building. $105,926.05 … 00101 Business Process Re-Engineering Support — program business analysis, graphic user interface design, and technology delivery. $75,000.00." (AWARD)</div>
+    </div>
+
+    <div class="rag-card">
+      <div class="rag-card-header">
+        <span class="score-pill">0.502</span>
+        <span class="tier-badge tier-moderate">MODERATE</span>
+        <span class="rag-card-contract">Contract: 6913G621F400063 · TO: V3362037</span>
+        <span class="rag-card-client">End Clients: DOT, FHWA, Volpe</span>
+        <span style="font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);">Docs: AWARD, OTHER, SOW</span>
+      </div>
+      <p style="font-size:13.5px;font-weight:600;color:var(--text-muted);">ITS JPO Support — Hybrid FFP/T&amp;M Task Order</p>
+      <div class="rag-card-excerpt">"The task order is issued as a hybrid contract type, Firm Fixed Price (FFP) Task Order with a Time and Materials (T&M) CLIN for travel. The offeror proposed a firm-fixed price total price in CLIN 00100 to accomplish the tasks and deliverables listed in Section C." (OTHER)</div>
+    </div>
+
+    <div class="rag-card">
+      <div class="rag-card-header">
+        <span class="score-pill">0.502</span>
+        <span class="tier-badge tier-moderate">MODERATE</span>
+        <span class="rag-card-contract">Contract: 6913G620F400067 · TO: V3362012</span>
+        <span class="rag-card-client">End Clients: DOT, FAA, FHWA, Volpe</span>
+        <span style="font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);">Docs: AWARD, OTHER, TORFP</span>
+      </div>
+      <p style="font-size:13.5px;font-weight:600;color:var(--text-muted);">FHWA Global Benchmarking Program (GBP) Support</p>
+      <div class="rag-card-excerpt">"This is a Firm Fixed Price Level of Effort Task Order. Task Order Award No. 6913G620F400067 to provide Global Benchmarking Program (GBP) Support. Award: $14,954.28." (AWARD – Changeis Inc., WOSB)</div>
+    </div>
+
+    <div class="rag-card">
+      <div class="rag-card-header">
+        <span class="score-pill">0.501</span>
+        <span class="tier-badge tier-moderate">MODERATE</span>
+        <span class="rag-card-contract">Contract: 6913G621F400048 · TO: V3272085</span>
+        <span class="rag-card-client">End Clients: DOT, Volpe</span>
+        <span style="font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);">Docs: AWARD, OTHER, SOW, TORFP</span>
+      </div>
+      <p style="font-size:13.5px;font-weight:600;color:var(--text-muted);">Build America Bureau Support — FFP Conversion, Multi-Task</p>
+      <div class="rag-card-excerpt">"The contractor shall provide both onsite and offsite support to work efforts at the U.S. DOT's TIFIA Office and the Build America Bureau in support of the TIFIA, RRIF, and PAB credit assistance programs as well as other communications efforts. This Modification will convert the contract to firm-fixed price and alters the scope of work across multiple tasks." (SOW)</div>
+    </div>
+
+    <!-- RELEVANT Tier -->
+    <div class="tier-section-label"><span class="tier-badge tier-relevant" style="font-size:11px;">Relevant 0.45–0.49</span></div>
+
+    <div class="rag-card">
+      <div class="rag-card-header">
+        <span class="score-pill">0.475</span>
+        <span class="tier-badge tier-relevant">RELEVANT</span>
+        <span class="rag-card-contract">Contract: 6913G621F400035 · TO: V330A2232</span>
+        <span class="rag-card-client">End Clients: DOT, FAA, Volpe</span>
+        <span style="font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);">Docs: TORFP</span>
+      </div>
+      <p style="font-size:13.5px;font-weight:600;color:var(--text-muted);">Work Zone Data Exchange — FFP Level of Effort</p>
+      <div class="rag-card-excerpt">"The task order shall be issued as Firm Fixed Price Level of Effort to be proposed based on Direct Productive Person Hours (DPPH). DPPHs are defined as prime contractor and subcontractor direct labor hours, exclusive of labor hours for vacation, holiday, sick leave, and other absences." (TORFP)</div>
+    </div>
+
+    <div class="rag-card">
+      <div class="rag-card-header">
+        <span class="score-pill">0.468</span>
+        <span class="tier-badge tier-relevant">RELEVANT</span>
+        <span class="rag-card-contract">Contract: 6913G621F400025 · TO: V330A2223</span>
+        <span class="rag-card-client">End Clients: DOT, FAA, Volpe</span>
+        <span style="font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);">Docs: TORFP</span>
+      </div>
+      <p style="font-size:13.5px;font-weight:600;color:var(--text-muted);">Communication Support (SCOAR V330A2223)</p>
+      <div class="rag-card-excerpt">"The task order is issued as Firm Fixed Price Level of Effort to be proposed based on Direct Productive Person Hours (DPPH). Communications support across DOT agencies including outreach, stakeholder engagement, and technical communication activities." (TORFP)</div>
+    </div>
+
+    <div class="rag-card">
+      <div class="rag-card-header">
+        <span class="score-pill">0.468</span>
+        <span class="tier-badge tier-relevant">RELEVANT</span>
+        <span class="rag-card-contract">Contract: 6913G622F40073N · TO: V1002010</span>
+        <span class="rag-card-client">End Clients: DOT, Volpe</span>
+        <span style="font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);">Docs: AWARD, OTHER, SOW</span>
+      </div>
+      <p style="font-size:13.5px;font-weight:600;color:var(--text-muted);">Strategic Initiatives Support — Option Year Award</p>
+      <div class="rag-card-excerpt">"Contract 6913G619D300021 / Task Order 6913G622F40073N / Strategic Initiatives Support. PSC: R405. Amount: $245,110.73 (Option Line Item). Period: through 09/06/2024." (AWARD)</div>
+    </div>
+
+    <div class="callout" style="margin-top:14px;">
+      <div class="callout-title">RAG Summary</div>
+      <p><strong>1 STRONG match</strong> (≥0.65) | <strong>6 MODERATE matches</strong> (0.50–0.64) | <strong>3 RELEVANT matches</strong> (0.45–0.49) | Total corpus: 46 scored documents. The top cluster of matches centers on business process re-engineering at HUD via Volpe, with strong secondary evidence in DOT/FAA communications, strategic planning, and FFP task order management — all directly translatable to DHS OCFO's ISO and process optimization scope.</p>
+    </div>
+  </div>
+
+  <!-- Section 4: USAspending Analysis -->
+  <div class="section">
+    <div class="section-header">4 · USAspending Analysis</div>
+
+    <p>Analysis of DHS OCFO spending in NAICS 541219 and the incumbent contract profile, drawn from <a href="https://www.usaspending.gov" target="_blank">USAspending.gov</a>, <a href="https://www.highergov.com/contract-forecast/iso-bus-process-support-1130056/" target="_blank">HigherGov</a>, and <a href="https://www.govconinabox.com/explore/contract-awards?agency=070&naics=541219" target="_blank">GovCon in a Box</a>.</p>
+
+    <h3 style="font-family:system-ui,sans-serif;font-size:14px;font-weight:700;margin:16px 0 8px;color:var(--navy);">Incumbent Contract Profile</h3>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Detail</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Contract Number</td><td><code>70RDAD21FR0000119</code></td></tr>
+        <tr><td>Contractor</td><td>Guidehouse Inc.</td></tr>
+        <tr><td>Contract Vehicle</td><td>GSA MAS (GS10F039AA)</td></tr>
+        <tr><td>Issuing Agency</td><td>DHS Departmental Operations Acquisition Division (DOAD2)</td></tr>
+        <tr><td>Period of Performance</td><td>September 5, 2021 – March 4, 2025</td></tr>
+        <tr><td>Total Obligated Value</td><td>~$3,782,598</td></tr>
+        <tr><td>Recompete BPA Ceiling</td><td>$20M – $50M (10–13x scale-up)</td></tr>
+        <tr><td>Contract Status</td><td>REC (Recommended — active forecast)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:14px;">
+      <div class="callout-title">Scale-Up Analysis</div>
+      <p>The prior task order was valued at ~$3.8M over approximately 3.5 years. The recompete ceiling of $20M–$50M over 5 years suggests DHS OCFO intends to <strong>significantly expand scope</strong> — likely consolidating multiple work streams (ISO, RPA, workforce planning, strategic planning) under a single MA-BPA vehicle rather than individual task orders. This is consistent with DHS OCFO's pattern of consolidating financial management support under fewer, larger vehicles.</p>
+    </div>
+
+    <h3 style="font-family:system-ui,sans-serif;font-size:14px;font-weight:700;margin:16px 0 8px;color:var(--navy);">DHS OCFO NAICS 541219 Active Contract Landscape</h3>
+    <p>DHS has <strong>471+ active contract actions</strong> under NAICS 541219 across all components. Key OCFO-specific contracts in this space include:</p>
+    <table>
+      <thead>
+        <tr><th>Contract</th><th>Description</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>70CMSW24FR0000114</code></td><td>Accounting Support Services for OCFO (Option Yr 1 + Surge)</td><td>Small Business Set-Aside; Washington, DC</td></tr>
+        <tr><td><code>70CMSW24FR0000024</code></td><td>Policy and Audit Remediation Strategic Support — financial, budgetary, audit, asset management</td><td>Arlington, VA</td></tr>
+        <tr><td><code>70CMSW23FR0000007</code></td><td>Financial Statement Reporting and Analysis Support — accounting reconciliations, financial analysis</td><td>Small Business Set-Aside; Washington, DC</td></tr>
+        <tr><td><code>70SBUR23F00000183</code></td><td>Financial Systems Modernization Support (OCFO) — Option Yr 2</td><td>Annapolis, MD; non-covered contract (DOGE Sec 2d)</td></tr>
+        <tr><td><code>70SBUR24F00000137</code></td><td>Chief Financial Officer Integrated Financial Services — Option exercised FY25</td><td>McLean, VA; DOGE EO Exemption 2(d)</td></tr>
+        <tr><td><code>70RDAD21FR0000119</code></td><td>ISO/Business Process Support (this recompete's predecessor)</td><td>Guidehouse; now expiring/recompeting</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Source: <a href="https://www.govconinabox.com/explore/contract-awards?agency=070&naics=541219" target="_blank">GovCon in a Box — DHS NAICS 541219 Awards</a></p>
+
+    <h3 style="font-family:system-ui,sans-serif;font-size:14px;font-weight:700;margin:16px 0 8px;color:var(--navy);">DHS OCFO Financial Management BPA Context</h3>
+    <p>In November 2024, DHS OCFO awarded a separate five-year, $100M Financial Management and Operations (FMO) Support Services MA-BPA to <strong>five large firms: Deloitte, Ernst &amp; Young, Guidehouse, Kearney &amp; Co., and KPMG</strong>. This ISO/BPS recompete is complementary but distinct — focused on ISO QMS, process improvement, and RPA rather than core financial statement audit support. This distinction is <strong>strategically important for Changeis</strong>: the FMO BPA is dominated by Big 4 firms, but the ISO/BPS BPA may have a more accessible competitive field, particularly under small business set-aside scenarios.</p>
+    <p class="note">Source: <a href="https://www.govconwire.com/articles/5-contractors-to-provide-dhs-with-financial-management-and-operations-support-services" target="_blank">GovCon Wire — DHS OCFO FMO BPA Award, Nov 2024</a></p>
+  </div>
+
+  <!-- Section 5: Capability Matrix -->
+  <div class="section">
+    <div class="section-header">5 · Capability Matrix</div>
+    <p>Mapping DHS OCFO's stated requirements to Changeis past performance evidence from RAG matches.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Requirement Area</th>
+          <th>Changeis Evidence</th>
+          <th>Supporting Contract(s)</th>
+          <th>Strength</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Business Process Re-engineering</strong></td>
+          <td>HUD BPR via Volpe — technical assistance, business requirement analysis, digital services development. BPR support contract with $181K+ in awards across two TOs.</td>
+          <td>V3132151 (0.705), V3132057 (0.536)</td>
+          <td><span class="cap-dot cap-strong"></span><strong>Strong</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Process Optimization</strong></td>
+          <td>Federal Permitting Improvement Steering Council (FPISC) support, Global Benchmarking Program support — process streamlining for federal agencies.</td>
+          <td>V3222016 (0.570), V3362012 (0.502)</td>
+          <td><span class="cap-dot cap-strong"></span><strong>Strong</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Strategic Planning</strong></td>
+          <td>Strategic Initiatives Support (DOT/Volpe), Build America Bureau communications and strategic support across multiple TOs.</td>
+          <td>V1002010 (0.468), V3272013 (0.598), V3272085 (0.501)</td>
+          <td><span class="cap-dot cap-strong"></span><strong>Strong</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Workforce Planning &amp; Modeling</strong></td>
+          <td>Communications and outreach support includes workforce/stakeholder engagement components; not a primary work stream in corpus.</td>
+          <td>V330A2223 (0.468)</td>
+          <td><span class="cap-dot cap-moderate"></span><strong>Moderate</strong></td>
+        </tr>
+        <tr>
+          <td><strong>ISO Maintenance &amp; QMS</strong></td>
+          <td>No direct ISO 9001 certification evidence in RAG corpus. Changeis' process improvement work is adjacent but not explicitly ISO-framed. <em>Gap — may need teaming partner.</em></td>
+          <td>—</td>
+          <td><span class="cap-dot cap-weak"></span><em>Gap</em></td>
+        </tr>
+        <tr>
+          <td><strong>Robotic Process Automation (RPA)</strong></td>
+          <td>No RPA-specific past performance in RAG corpus. Agile development management and technology delivery (V3132151) are adjacent capabilities.</td>
+          <td>V3132151 (SOW — "agile development management")</td>
+          <td><span class="cap-dot cap-weak"></span><em>Gap</em></td>
+        </tr>
+        <tr>
+          <td><strong>Workforce Training &amp; Development</strong></td>
+          <td>Outreach and capacity building references appear in HUD BPR SOW. Training is mentioned as a component across multiple TOs.</td>
+          <td>V3132151, V3132057</td>
+          <td><span class="cap-dot cap-moderate"></span><strong>Moderate</strong></td>
+        </tr>
+        <tr>
+          <td><strong>SharePoint Maintenance/Enhancement</strong></td>
+          <td>Digital services development and agile programming support in HUD BPR; SharePoint specifically not referenced in corpus.</td>
+          <td>V3132151 (adjacent)</td>
+          <td><span class="cap-dot cap-moderate"></span><strong>Moderate</strong></td>
+        </tr>
+        <tr>
+          <td><strong>DHS/Federal Financial Audit Support</strong></td>
+          <td>No DHS-direct financial audit support in corpus. This is a critical gap given OCFO's clean audit opinion objective. Teaming is essential.</td>
+          <td>—</td>
+          <td><span class="cap-dot cap-weak"></span><em>Critical Gap</em></td>
+        </tr>
+        <tr>
+          <td><strong>FFP Contract Management</strong></td>
+          <td>Multiple FFP and FFP Level-of-Effort TOs managed via GSA SCOAR vehicle. Demonstrated pricing, DPPH methodology, and deliverable tracking.</td>
+          <td>V3362037, V3362012, V330A2232</td>
+          <td><span class="cap-dot cap-strong"></span><strong>Strong</strong></td>
+        </tr>
+        <tr>
+          <td><strong>OFO Customer Engagement</strong></td>
+          <td>Stakeholder outreach, capacity building, and communications support across DOT program offices — highly transferable to DHS OCFO customer engagement model.</td>
+          <td>V3272013, V330A2223, V3132057</td>
+          <td><span class="cap-dot cap-strong"></span><strong>Strong</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:16px;">
+      <div class="callout-title">Teaming Recommendation</div>
+      <p>Changeis should lead on <strong>BPR, Process Optimization, Strategic Planning, and OFO Engagement</strong> work streams. A subcontractor with DHS OCFO financial audit credentials and ISO 9001/RPA capabilities (e.g., a small CPA firm, or specialized RPA firm like Blueprint Technologies or ProcessMaker) would round out a competitive team. Consider reaching out to firms already on the DHS OCFO accounting support BPAs (e.g., 70CMSW24FR0000024 awardees) as teaming partners.</p>
+    </div>
+  </div>
+
+  <!-- Section 6: Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">6 · Competitive Landscape</div>
+
+    <p>Based on the DHS OCFO contract environment, the FMO BPA awardees, and the nature of ISO/BPS work, the following competitors are likely for this recompete.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Competitor</th>
+          <th>Competitive Position</th>
+          <th>Key Risk Factors</th>
+          <th>Advantage vs. Changeis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Guidehouse Inc.</strong><br><span style="font-size:12px;color:var(--text-muted);">Incumbent</span></td>
+          <td>Highest — incumbent with institutional knowledge of DHS OCFO processes and relationships</td>
+          <td>DOGE pressure ($376M in contract terminations in 2025); potential pricing vulnerability; large business designation limits set-aside eligibility</td>
+          <td>Deep OCFO relationships, ISO QMS institutional memory, RPA tool familiarity</td>
+        </tr>
+        <tr>
+          <td><strong>Deloitte Consulting</strong></td>
+          <td>High — on DHS OCFO FMO BPA; strong DHS financial management presence</td>
+          <td>DOGE targeting ($372M terminated); large business; conflict of interest risk if also on FMO BPA</td>
+          <td>Scale, DHS OCFO audit credibility, RPA/automation capabilities</td>
+        </tr>
+        <tr>
+          <td><strong>Kearney &amp; Co.</strong></td>
+          <td>Moderate-High — specialized government financial management firm; on DHS FMO BPA</td>
+          <td>Smaller than Big 4; niche focus may not span full scope</td>
+          <td>Government financial management specialization, ISO QMS capabilities</td>
+        </tr>
+        <tr>
+          <td><strong>KPMG Government</strong></td>
+          <td>Moderate — on DHS FMO BPA; audit expertise highly relevant to OCFO clean opinion objective</td>
+          <td>Large business; DOGE scrutiny of Big 4 consulting firms</td>
+          <td>CPA audit credibility, financial controls expertise</td>
+        </tr>
+        <tr>
+          <td><strong>LMI Consulting</strong></td>
+          <td>Moderate — strong DHS management consulting history; lost CBP EBMSS-2 recently</td>
+          <td>Currently protesting CBP award; management bandwidth risk</td>
+          <td>Federal management consulting depth, strategic planning expertise</td>
+        </tr>
+        <tr>
+          <td><strong>Booz Allen Hamilton</strong></td>
+          <td>Moderate — broad DHS presence; RPA and digital transformation capabilities</td>
+          <td>Large business designation; DOGE exposure ($207M terminated); pricing may be uncompetitive</td>
+          <td>RPA/automation maturity, DHS enterprise relationships</td>
+        </tr>
+        <tr>
+          <td><strong>Small Business Competitors</strong><br><span style="font-size:12px;color:var(--text-muted);">If set aside</span></td>
+          <td>Variable — if WOSB/SB set-aside, field narrows significantly; Changeis competitive</td>
+          <td>Many SB firms lack DHS OCFO-specific experience; ISO certification experience variable</td>
+          <td>If SB set-aside, Changeis WOSB status + BPR past performance is a strong differentiator</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-family:system-ui,sans-serif;font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--navy);">Competitive Dynamics — Current Environment</h3>
+    <div class="two-col">
+      <div class="two-col-box pros">
+        <h4>Favorable Factors for Changeis</h4>
+        <ul>
+          <li>DOGE pressure weakens Guidehouse incumbency advantage</li>
+          <li>MA-BPA structure means multiple awards — reduces single-bid risk</li>
+          <li>Potential small business set-aside benefits Changeis as WOSB</li>
+          <li>BPR/process improvement past performance is directly relevant</li>
+          <li>Price competitiveness vs. Big 4 on FFP contracts</li>
+        </ul>
+      </div>
+      <div class="two-col-box cons">
+        <h4>Challenges for Changeis</h4>
+        <ul>
+          <li>No DHS OCFO financial audit direct experience in corpus</li>
+          <li>No ISO 9001 certification support evidence</li>
+          <li>No RPA-specific past performance demonstrated</li>
+          <li>Scale gap vs. Guidehouse/Deloitte on large BPA management</li>
+          <li>GSA Schedule 541219 SIN eligibility needs confirmation</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:14px;">
+      <div class="callout-title">DOGE Context — Critical for Strategy</div>
+      <p>The GSA in February 2025 directed agencies to terminate non-essential contracts with the top-10 consulting firms — including Guidehouse. By April 2025, Guidehouse had lost $376M in federal contract value. While this creates a competitive opening, <strong>DHS OCFO will still prioritize continuity and mission-critical expertise</strong>. Changeis' strategy should emphasize clean audit opinion support credentials via teaming partners, positioning as the agile, cost-effective alternative to large incumbents.</p>
+    </div>
+  </div>
+
+  <!-- Section 7: Go/No-Go Assessment -->
+  <div class="section">
+    <div class="section-header">7 · Go/No-Go Assessment</div>
+
+    <div class="verdict-box">
+      <div class="verdict-label">Final Recommendation</div>
+      <div class="verdict-title">PURSUE WITH PARTNER</div>
+      <div class="verdict-sub">Strong RAG alignment on BPR/process improvement; teaming required for ISO QMS, RPA, and DHS OCFO audit credentials. MA-BPA structure increases win probability. WOSB status is a potential differentiator.</div>
+    </div>
+
+    <table style="margin-top:16px;">
+      <thead>
+        <tr><th>Factor</th><th>Score</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>RAG Alignment</strong></td>
+          <td><span class="tier-badge tier-strong">Strong</span> 0.705</td>
+          <td>Top match on BPR and process re-engineering; 6 moderate matches in strategic planning, DOT/FAA support</td>
+        </tr>
+        <tr>
+          <td><strong>Capability Coverage</strong></td>
+          <td><span class="tier-badge tier-moderate">Moderate</span></td>
+          <td>~60% of requirements have Changeis evidence; ISO, RPA, and DHS audit domains require teaming</td>
+        </tr>
+        <tr>
+          <td><strong>Incumbent Risk</strong></td>
+          <td><span class="tier-badge tier-moderate">Moderate</span></td>
+          <td>Guidehouse weakened by DOGE; MA-BPA means multiple awards — not winner-take-all</td>
+        </tr>
+        <tr>
+          <td><strong>Set-Aside Potential</strong></td>
+          <td><span class="tier-badge tier-moderate">TBD — Moderate</span></td>
+          <td>TBD status. If WOSB/SB set-aside, Changeis is highly competitive. Monitor SBA coordination contact.</td>
+        </tr>
+        <tr>
+          <td><strong>Contract Vehicle</strong></td>
+          <td><span class="tier-badge tier-moderate">Confirm Required</span></td>
+          <td>GSA Schedule required; confirm Changeis holds SIN 541219 or can add to existing schedule</td>
+        </tr>
+        <tr>
+          <td><strong>Timeline / Bandwidth</strong></td>
+          <td><span class="tier-badge tier-relevant">Tight</span></td>
+          <td>RFP estimated May 1, 2026 (~4 weeks). Teaming outreach and capture plan needed immediately.</td>
+        </tr>
+        <tr>
+          <td><strong>Revenue Potential</strong></td>
+          <td><span class="tier-badge tier-strong">High</span></td>
+          <td>$20M–$50M ceiling over 5 years; even a moderate BPA share could represent $5M–$15M in TO revenue</td>
+        </tr>
+        <tr>
+          <td><strong>Strategic Fit</strong></td>
+          <td><span class="tier-badge tier-strong">High</span></td>
+          <td>DHS OCFO client relationship would anchor future growth in the DHS financial management space</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-family:system-ui,sans-serif;font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--navy);">Immediate Next Steps</h3>
+    <ol style="padding-left:20px;margin-top:8px;">
+      <li style="margin-bottom:8px;font-size:15px;"><strong>Confirm GSA Schedule 541219 SIN eligibility</strong> — This is a gate requirement. Verify Changeis' current MAS contract includes SIN 541219 or initiate a modification.</li>
+      <li style="margin-bottom:8px;font-size:15px;"><strong>Contact SBS Coordinator Geoff Seay</strong> (geoffrey.seay@hq.dhs.gov) to inquire about small business set-aside determination — this single question significantly changes competitive strategy.</li>
+      <li style="margin-bottom:8px;font-size:15px;"><strong>Identify teaming partner(s)</strong> for ISO QMS, RPA/automation, and DHS OCFO audit credentials. Target firms on the existing DHS accounting support BPAs or those with ISO 9001 government certifications.</li>
+      <li style="margin-bottom:8px;font-size:15px;"><strong>Monitor SAM.gov</strong> for the solicitation release (est. May 1, 2026). Set up APFS/SAM alert for NAICS 541219, DHS HQ, F2025069077.</li>
+      <li style="margin-bottom:8px;font-size:15px;"><strong>Contact Michael Cranney</strong> (michael.cranney@hq.dhs.gov, (202) 964-6651) for a pre-solicitation meeting to discuss scope and competitive requirements.</li>
+      <li style="margin-bottom:8px;font-size:15px;"><strong>Develop capability narrative</strong> mapping HUD BPR and DOT process support experience to DHS OCFO's ISO QMS and clean audit objective. Frame as "government-wide process transformation" expertise.</li>
+    </ol>
+  </div>
+
+  <!-- Context Slug -->
+  <div class="context-section">
+    <button class="context-toggle" onclick="toggleContext(this)">
+      <span class="arrow">▶</span>
+      Session Context &amp; Metadata
+    </button>
+    <div class="context-body" id="contextBody">DEEP DIVE — DHS HQ ISO/Business Process Support (APFS F2025069077)
+Generated: April 3, 2026 | Analyst: VM2 (Perplexity Computer)
+Railway URL: https://vm2-p-taskers-production.up.railway.app/deep-dive-dhs-hq-mgmt-541219-9077-2026-04-03.html
+
+--- ORIGINAL INSTRUCTIONS ---
+Generate a deep-dive analysis HTML deliverable for APFS forecast opportunity F2025069077.
+Input: /home/user/workspace/deep_dive_input_F2025069077.json
+Sections: Executive Summary + Go/No-Go, Opportunity Overview, RAG Engine Results (all 10 matches),
+USAspending Analysis, Capability Matrix, Competitive Landscape, Go/No-Go Assessment.
+Style: Changeis Navy topbar, dark/light toggle, Charter/Georgia fonts, red accent #c53a3a.
+Output: /home/user/workspace/outputs/deep-dive-dhs-hq-mgmt-541219-9077-2026-04-03.html
+
+--- APPROACH ---
+1. Read full APFS JSON record including all 9 RAG top_matches with key_excerpts
+2. Read Changeis style guide (Changeis_Refined_Document_Style.md) for brand colors
+3. Read deliverable-specs.md for required context slug structure
+4. Read reference HTML file (vm2-system-guide-2026-03-27.html) for exact CSS/JS structure
+5. Searched USAspending/HigherGov/GovCon for incumbent contract details and DHS OCFO spending
+6. Searched for competitive landscape (DHS FMO BPA awardees, DOGE impact on Guidehouse)
+7. Built comprehensive HTML deliverable with all 7 sections + mandatory context slug elements
+
+--- KEY FINDINGS ---
+- RAG score 0.705 (STRONG) — top match on HUD BPR/Process Re-engineering via Volpe SCOAR contract
+- Incumbent Guidehouse valued the prior TO at ~$3.8M; recompete ceiling is $20M–$50M (10-13x expansion)
+- Competition is Follow-on to existing contract; MA-BPA structure means MULTIPLE AWARDS expected
+- DHS OCFO separately awarded a $100M FMO BPA to Deloitte/EY/Guidehouse/Kearney/KPMG in Nov 2024 — this ISO/BPS BPA is complementary, not the same vehicle
+- Guidehouse under significant DOGE pressure ($376M terminated); incumbency advantage weakened
+- Changeis gaps: ISO 9001 certification, RPA development, DHS OCFO financial audit experience
+- Changeis strengths: BPR, process optimization, strategic planning, FFP TO management, DOT/FAA stakeholder engagement (all transferable)
+- Set-aside status TBD — WOSB designation would be major differentiator if SB set-aside declared
+
+--- DEAD ENDS ---
+- USAspending direct URL for contract 70RDAD21FR0000119 returned empty page (JS-rendered)
+- Full FPDS search not executed (no FPDS API access in this context)
+- HigherGov paywalled competitor/bidder data — no specific potential bidders listed for F2025069077
+- RAG JSON shows 9 unique contracts (not 10 as originally stated); all 9 displayed
+
+--- ASSUMPTIONS ---
+- MA-BPA structure based on requirement text ("Multiple-Award Blanket Purchase Agreement")
+- $3.8M incumbent value from HigherGov data (USAspending direct lookup not available)
+- DHS FMO BPA awardees sourced from GovCon Wire Nov 2024 article
+- DOGE impact on Guidehouse sourced from Management Consulted / FedScoop reporting
+- Competitive field assumes full-and-open competition (set-aside TBD)
+
+--- OPEN QUESTIONS ---
+1. Will this be set aside for small businesses (WOSB/SB)? — contact Geoff Seay to confirm
+2. Does Changeis hold GSA MAS SIN 541219? — gate requirement for BPA participation
+3. How many awardees will be selected for the MA-BPA? (2? 3? 5?)
+4. Will Guidehouse protest if they lose? (pattern in CBP/other DHS awards)
+5. Is there an Industry Day or Pre-solicitation meeting planned before May 1 RFP?
+6. Which specific RPA platforms/tools does DHS OCFO currently use? (UiPath? Microsoft Power Automate?)
+
+--- DATA SOURCES ---
+- /home/user/workspace/deep_dive_input_F2025069077.json (primary — APFS record + RAG matches)
+- https://www.highergov.com/contract-forecast/iso-bus-process-support-1130056/
+- https://www.govconwire.com/articles/5-contractors-to-provide-dhs-with-financial-management-and-operations-support-services
+- https://www.govconinabox.com/explore/contract-awards?agency=070&naics=541219
+- https://fedscoop.com/gsa-tells-agencies-to-terminate-contracts-with-top-10-consulting-firms/
+- https://managementconsulted.com/podcast/doge-cuts-1-5b-consulting-spend/
+- https://www.gsaelibrary.gsa.gov/ElibMain/home.do/sinDetails.do?scheduleNumber=MAS&specialItemNumber=541219&executeQuery=YES
+
+--- NEXT STEPS ---
+1. Confirm GSA Schedule SIN 541219 eligibility (immediate)
+2. Contact SBS Coordinator Geoff Seay re: set-aside determination
+3. Contact Requirements Contact Michael Cranney for pre-solicitation meeting
+4. Identify ISO QMS / RPA / DHS audit teaming partners
+5. Monitor SAM.gov for May 1 RFP release
+6. Build capability narrative mapping HUD BPR + DOT strategic planning to DHS OCFO scope
+
+--- COST ESTIMATE ---
+{
+  "model": "claude-sonnet-4-6",
+  "model_pricing": "$3/$15 per 1M tokens",
+  "input_tokens_est": "~65,000",
+  "output_tokens_est": "~12,000",
+  "search_calls": 5,
+  "subagent_calls": 0,
+  "cost_conservative": "$0.37",
+  "cost_ceiling": "$0.65",
+  "notes": "Large input from APFS JSON (533 lines) + reference HTML reading + 5 web searches + 3 URL fetches. Output is substantial HTML deliverable (~600 lines)."
+}</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Use these shortcuts to pick up where this deep dive left off.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up%3A%20DHS%20HQ%20ISO%20F2025069077%20Deep%20Dive&body=Please%20continue%20work%20on%20the%20deep%20dive%20for%20DHS%20HQ%20ISO%2FBus.%20Process%20Support%20(APFS%20F2025069077).%20Deliverable%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fdeep-dive-dhs-hq-mgmt-541219-9077-2026-04-03.html%0A%0AContext%3A%20RAG%20STRONG%20(0.705)%2C%20PURSUE%20WITH%20PARTNER%20recommendation.%20RFP%20est.%20May%201%2C%202026.%20Next%20steps%3A%20confirm%20GSA%20SIN%20541219%2C%20contact%20SBS%20Coordinator%20Geoff%20Seay%2C%20identify%20ISO%2FRPA%20teaming%20partner.">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <button class="btn btn-secondary" onclick="createTodoistTask()">
+        <span class="btn-icon">✅</span> Create Todoist Follow-Up
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · DHS HQ ISO/Business Process Support Deep Dive · April 3, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Hidden JSON metadata block -->
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Deep Dive: DHS HQ ISO/Bus. Process Support — APFS F2025069077",
+  "task_date": "2026-04-03",
+  "deliverable_file": "deep-dive-dhs-hq-mgmt-541219-9077-2026-04-03.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-dhs-hq-mgmt-541219-9077-2026-04-03.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Generate deep-dive analysis HTML for APFS F2025069077. Input: deep_dive_input_F2025069077.json. Sections: ExecSummary, Opportunity Overview, RAG Results (all matches), USAspending, Capability Matrix, Competitive Landscape, Go/No-Go. Style: Changeis Navy topbar, dark/light toggle. Context slug required. Save to outputs/deep-dive-dhs-hq-mgmt-541219-9077-2026-04-03.html",
+  "approach": "Read APFS JSON record + RAG matches, research incumbent contract and USAspending data, research competitive landscape, build full HTML deliverable following reference style",
+  "key_findings": [
+    "RAG score 0.705 (STRONG) — top match on HUD BPR/Process Re-engineering via Volpe SCOAR contract 6913G621F400047",
+    "Incumbent Guidehouse valued prior TO at ~$3.8M; recompete ceiling $20M–$50M (10-13x expansion under new MA-BPA structure)",
+    "Guidehouse under DOGE pressure ($376M terminated in 2025) — incumbency advantage weakened",
+    "DHS OCFO separately has a $100M FMO BPA with Deloitte/EY/Guidehouse/Kearney/KPMG — this ISO/BPS BPA is complementary",
+    "Recommendation: PURSUE WITH PARTNER — Changeis leads BPR/process/strategic work; team for ISO QMS, RPA, DHS audit credentials",
+    "Set-aside status TBD — WOSB status would be major differentiator if SB set-aside declared"
+  ],
+  "dead_ends": [
+    "USAspending direct URL for 70RDAD21FR0000119 returned empty (JS-rendered page)",
+    "HigherGov competitor/bidder data paywalled",
+    "FPDS API not available in this context",
+    "RAG corpus shows 9 unique contracts (not 10 as stated in task)"
+  ],
+  "assumptions": [
+    "MA-BPA = multiple awards, based on requirement text",
+    "$3.8M incumbent value from HigherGov (USAspending direct not available)",
+    "DHS FMO BPA awardees from GovCon Wire Nov 2024",
+    "Competitive field assumes full-and-open (set-aside TBD)"
+  ],
+  "open_questions": [
+    "Will this be set aside for small businesses (WOSB/SB)?",
+    "Does Changeis hold GSA MAS SIN 541219?",
+    "How many awardees will be selected for the MA-BPA?",
+    "Industry Day or pre-solicitation meeting before May 1?",
+    "Which RPA platforms does DHS OCFO currently use?"
+  ],
+  "data_sources": [
+    {"name": "APFS JSON Record", "url": "/home/user/workspace/deep_dive_input_F2025069077.json"},
+    {"name": "HigherGov F2025069077", "url": "https://www.highergov.com/contract-forecast/iso-bus-process-support-1130056/"},
+    {"name": "GovCon Wire — DHS FMO BPA", "url": "https://www.govconwire.com/articles/5-contractors-to-provide-dhs-with-financial-management-and-operations-support-services"},
+    {"name": "GovCon in a Box — DHS 541219", "url": "https://www.govconinabox.com/explore/contract-awards?agency=070&naics=541219"},
+    {"name": "FedScoop — GSA Consulting Terminations", "url": "https://fedscoop.com/gsa-tells-agencies-to-terminate-contracts-with-top-10-consulting-firms/"},
+    {"name": "Management Consulted — DOGE Impact", "url": "https://managementconsulted.com/podcast/doge-cuts-1-5b-consulting-spend/"}
+  ],
+  "next_steps": [
+    "Confirm GSA Schedule SIN 541219 eligibility (immediate gate requirement)",
+    "Contact SBS Coordinator Geoff Seay (geoffrey.seay@hq.dhs.gov) re: set-aside determination",
+    "Contact Requirements Contact Michael Cranney (michael.cranney@hq.dhs.gov) for pre-solicitation meeting",
+    "Identify ISO QMS / RPA / DHS audit teaming partners",
+    "Monitor SAM.gov for May 1 RFP release",
+    "Build capability narrative: HUD BPR + DOT strategic planning → DHS OCFO scope"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 5,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.37",
+    "cost_ceiling": "$0.65",
+    "notes": "Large input from APFS JSON (533 lines) + reference HTML reading + 5 web searches + 3 URL fetches. Output is substantial HTML deliverable."
+  }
+}
+</script>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+
+  function toggleContext(btn) {
+    btn.classList.toggle('open');
+    document.getElementById('contextBody').classList.toggle('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function copyFollowUp() {
+    const prompt = `Continue the deep dive for DHS HQ ISO/Business Process Support (APFS F2025069077).
+
+Deliverable URL: https://vm2-p-taskers-production.up.railway.app/deep-dive-dhs-hq-mgmt-541219-9077-2026-04-03.html
+
+Context:
+- RAG Classification: STRONG (0.705)
+- Recommendation: PURSUE WITH PARTNER
+- RFP estimated release: May 1, 2026
+- Incumbent: Guidehouse Inc. (weakened by DOGE — $376M terminated)
+- Contract: MA-BPA, $20M–$50M ceiling, 5-year PoP
+
+Open questions to resolve:
+1. Is this set aside for small businesses (WOSB/SB)? Contact Geoff Seay: geoffrey.seay@hq.dhs.gov
+2. Does Changeis hold GSA MAS SIN 541219?
+3. Who should be teaming partners for ISO QMS + RPA + DHS audit credentials?
+4. Has Changeis contacted Michael Cranney (michael.cranney@hq.dhs.gov) for pre-solicitation meeting?
+
+Next actions needed: [describe what you need]`;
+    navigator.clipboard.writeText(prompt).then(() => showToast('Follow-up prompt copied to clipboard')).catch(() => showToast('Copy failed — please copy manually'));
+  }
+
+  function createTodoistTask() {
+    const taskData = {
+      content: 'Follow-Up: DHS HQ ISO F2025069077 — Deep Dive Action Items',
+      description: `Deep Dive completed: https://vm2-p-taskers-production.up.railway.app/deep-dive-dhs-hq-mgmt-541219-9077-2026-04-03.html\n\nRecommendation: PURSUE WITH PARTNER\nRFP est. May 1, 2026\n\nAction items:\n1. Confirm GSA MAS SIN 541219\n2. Contact Geoff Seay re: set-aside (geoffrey.seay@hq.dhs.gov)\n3. Contact Michael Cranney for pre-sol meeting (michael.cranney@hq.dhs.gov)\n4. Identify ISO/RPA teaming partners\n\n---VM2-OPP-METADATA---\n{"source":"deep-dive","apfs_number":"F2025069077","agency":"DHS HQ/MGMT","naics":"541219","rag_score":0.705,"rag_classification":"STRONG","recommendation":"PURSUE WITH PARTNER","rfp_date":"2026-05-01"}\n---END-METADATA---`,
+      labels: ['vm2-opp'],
+      due_string: 'today'
+    };
+
+    fetch('/api/todoist/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(taskData)
+    })
+    .then(r => r.ok ? showToast('Todoist task created successfully') : Promise.reject(r.status))
+    .catch(() => {
+      window.open('https://todoist.com/app/inbox', '_blank');
+      showToast('Todoist API unavailable — opened Todoist in new tab');
+    });
+  }
+</script>
+
+</body>
+</html>
