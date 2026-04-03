@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM2 System Architecture — April 2026</title>
+<style>
+  :root {
+    --bg: #ffffff; --text: #1a1a1a; --muted: #666; --border: #e0e0e0;
+    --accent: #c53a3a; --code-bg: #f5f5f5; --header-bg: #1a1a1a;
+    --header-text: #ffffff; --tag-bg: #f0f0f0; --tag-text: #333;
+    --section-bg: #fafafa; --pass: #2d7a2d; --warn: #b36200;
+  }
+  .dark {
+    --bg: #111; --text: #e8e8e8; --muted: #999; --border: #2a2a2a;
+    --accent: #e05555; --code-bg: #1e1e1e; --header-bg: #0a0a0a;
+    --header-text: #f0f0f0; --tag-bg: #222; --tag-text: #ccc;
+    --section-bg: #161616; --pass: #4caf50; --warn: #ffb300;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+  .topbar { background: var(--header-bg); color: var(--header-text); padding: 10px 24px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; position: sticky; top: 0; z-index: 100; }
+  .topbar-brand { font-weight: 600; letter-spacing: 0.02em; }
+  .topbar-right { display: flex; gap: 16px; align-items: center; }
+  .theme-toggle { background: none; border: 1px solid rgba(255,255,255,0.3); color: var(--header-text); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+  .doc-header { border-bottom: 2px solid var(--accent); padding-bottom: 20px; margin-bottom: 36px; }
+  .doc-header h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  .doc-header .meta { color: var(--muted); font-size: 13px; }
+  .version-badge { display: inline-block; background: var(--accent); color: white; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 3px; margin-left: 10px; vertical-align: middle; }
+  h2 { font-size: 18px; font-weight: 700; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 15px; font-weight: 600; margin: 24px 0 10px; color: var(--accent); }
+  p { margin-bottom: 12px; }
+  ul, ol { padding-left: 20px; margin-bottom: 12px; }
+  li { margin-bottom: 5px; }
+  code { font-family: 'SF Mono', Monaco, monospace; font-size: 13px; background: var(--code-bg); padding: 2px 6px; border-radius: 3px; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px; overflow-x: auto; margin: 16px 0; font-size: 12.5px; line-height: 1.5; font-family: 'SF Mono', Monaco, monospace; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px; }
+  th { background: var(--section-bg); text-align: left; padding: 9px 12px; border: 1px solid var(--border); font-weight: 600; }
+  td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--section-bg); }
+  .status-pass { color: var(--pass); font-weight: 600; }
+  .status-warn { color: var(--warn); font-weight: 600; }
+  .callout { background: var(--section-bg); border-left: 4px solid var(--accent); padding: 14px 16px; border-radius: 0 6px 6px 0; margin: 16px 0; font-size: 14px; }
+  .toc { background: var(--section-bg); border: 1px solid var(--border); border-radius: 6px; padding: 20px 24px; margin-bottom: 36px; }
+  .toc h2 { margin-top: 0; border: none; font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  .toc ol { columns: 2; column-gap: 24px; }
+  .toc li { font-size: 13.5px; margin-bottom: 6px; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .changelog { font-size: 13px; }
+  .changelog td:first-child { color: var(--muted); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-brand">VM2 · Perplexity Computer</span>
+  <div class="topbar-right">
+    <span style="color: var(--muted); font-size:12px;">Architecture Reference</span>
+    <button class="theme-toggle" onclick="document.body.classList.toggle('dark')">◑ Dark</button>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="doc-header">
+  <h1>VM2 System Architecture <span class="version-badge">v3.0 — April 2026</span></h1>
+  <div class="meta">Last updated: April 3, 2026 &nbsp;·&nbsp; Prepared for Varun Malhotra, President — Changeis Inc. &nbsp;·&nbsp; Perplexity Computer</div>
+</div>
+
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#overview">System Overview</a></li>
+    <li><a href="#components">Component Architecture</a></li>
+    <li><a href="#dataflow">Data Flow & Lifecycle</a></li>
+    <li><a href="#dropbox">Dropbox Integration</a></li>
+    <li><a href="#github">GitHub & Railway Hosting</a></li>
+    <li><a href="#crons">Scheduled Automation</a></li>
+    <li><a href="#skills">Active Skills</a></li>
+    <li><a href="#security">Security Model</a></li>
+    <li><a href="#naming">File & Naming Conventions</a></li>
+    <li><a href="#folders">Dropbox Folder Taxonomy</a></li>
+    <li><a href="#changelog">Change Log</a></li>
+  </ol>
+</div>
+
+<!-- SECTION 1 -->
+<h2 id="overview">1. System Overview</h2>
+<p>VM2 is a fully automated AI task pipeline built on Perplexity Computer. It receives work instructions via email, direct chat, or Todoist, executes them through AI agents, publishes HTML deliverables to a password-protected Railway web portal, and backs up everything to Dropbox and GitHub automatically.</p>
+
+<pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                    VM2 SYSTEM — APRIL 2026                      │
+└─────────────────────────────────────────────────────────────────┘
+
+  INPUT LAYER                EXECUTION LAYER           OUTPUT LAYER
+  ─────────────              ───────────────           ────────────
+  Gmail                 ──▶  Perplexity Computer  ──▶  GitHub Repo
+  vm2.viru@gmail.com         (Hourly Cron)              VM2-P-Taskers
+
+  Direct Chat           ──▶  Task Subagent        ──▶  Railway Portal
+  perplexity.ai/computer     (per task)                 vm2-p-taskers-
+                                                        production.up.railway.app
+  Todoist               ──▶  Compliance Audit     ──▶  Dropbox
+  VM2 label                  (Nightly Cron)             /VM2-main-folder/VM2-P/
+                                                        Taskers/
+  Todoist               ──▶  Daily Brief          ──▶  Nightly Config Backup
+  Daily cron                 (Morning Cron)             /VM2-main-folder/VM2-P/
+                                                        _Config Back-up/
+</pre>
+
+<div class="callout">
+  <strong>Core principle:</strong> Every task produces a deliverable HTML page. Every deliverable is indexed, hosted on Railway, pushed to GitHub, and synced to Dropbox — automatically, with no manual steps required.
+</div>
+
+<!-- SECTION 2 -->
+<h2 id="components">2. Component Architecture</h2>
+
+<h3>2.1 Railway Hosting & Auth</h3>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>URL</td><td><code>vm2-p-taskers-production.up.railway.app</code></td></tr>
+  <tr><td>Auth method</td><td>nginx basic auth (server-side) — NO StaticCrypt</td></tr>
+  <tr><td>Password</td><td><code>vm2 / 97harry23!</code></td></tr>
+  <tr><td>Deployment</td><td>Auto-deploys from <code>vm-coderock/VM2-P-Taskers</code> main branch</td></tr>
+  <tr><td>Encryption</td><td>NONE — all HTML must be plain. Railway handles auth.</td></tr>
+</table>
+
+<h3>2.2 GitHub Repository</h3>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Repo</td><td><code>vm-coderock/VM2-P-Taskers</code></td></tr>
+  <tr><td>Branch</td><td><code>main</code></td></tr>
+  <tr><td>Pages URL</td><td><code>https://vm-coderock.github.io/VM2-P-Taskers/</code></td></tr>
+  <tr><td>Deliverables as of Apr 3, 2026</td><td>310 HTML files</td></tr>
+  <tr><td>Index file</td><td><code>index.html</code> (plain HTML, never encrypted)</td></tr>
+</table>
+
+<h3>2.3 Gmail Task Pipeline</h3>
+<ul>
+  <li><strong>Inbox:</strong> <code>vm2.viru@gmail.com</code></li>
+  <li>Monitored hourly by the <code>vm2-gmail-tasks</code> skill cron</li>
+  <li>Emails with "VM2" in subject/body are parsed as task instructions</li>
+  <li>Each task spawns a dedicated Perplexity Computer session</li>
+  <li>Completed emails are labeled <code>vm2-done</code> and a reply is sent with the deliverable link</li>
+</ul>
+
+<h3>2.4 Todoist Integration</h3>
+<ul>
+  <li>Tasks with <code>VM2</code> label are eligible for pipeline execution</li>
+  <li>Daily Auto-Helper scans Todoist and surfaces actionable tasks</li>
+  <li>Completed VM2 tasks receive <code>vm2-done</code> label</li>
+</ul>
+
+<h3>2.5 Dropbox Backup</h3>
+<ul>
+  <li><strong>Account:</strong> <code>vm2.viru@gmail.com</code> (CHANGEIS team)</li>
+  <li><strong>Root path:</strong> <code>/VM2-main-folder/VM2-P/</code></li>
+  <li><strong>API app:</strong> Perplexity-VM2 (App Key: <code>hxpsk9te4wiyzud</code>)</li>
+  <li><strong>Auth:</strong> OAuth2 refresh token (permanent, no expiry)</li>
+  <li><strong>Sync:</strong> Full diff sync runs nightly via vm2-wrapup — all GitHub deliverables mirrored to Dropbox automatically</li>
+  <li><strong>Config backup:</strong> Separate nightly cron backs up Perplexity config to <code>_Config Back-up/</code></li>
+</ul>
+
+<h3>2.6 Connected Integrations</h3>
+<table>
+  <tr><th>Service</th><th>Status</th><th>Purpose</th></tr>
+  <tr><td>Dropbox API</td><td class="status-pass">✅ Active</td><td>File backup, deliverable sync</td></tr>
+  <tr><td>GitHub</td><td class="status-pass">✅ Active</td><td>Deliverable hosting, version control</td></tr>
+  <tr><td>Microsoft SharePoint</td><td class="status-pass">✅ Connected</td><td>changeis.sharepoint.com</td></tr>
+  <tr><td>Microsoft Teams</td><td class="status-pass">✅ Connected</td><td>Changeis tenant</td></tr>
+  <tr><td>Outlook</td><td class="status-pass">✅ Connected</td><td>varunm24@gmail.com</td></tr>
+  <tr><td>Jira</td><td class="status-pass">✅ Connected</td><td>Changeis project tracking</td></tr>
+  <tr><td>Todoist</td><td class="status-pass">✅ Connected</td><td>VM2 task queue</td></tr>
+  <tr><td>Fireflies</td><td class="status-pass">✅ Connected</td><td>Meeting transcription</td></tr>
+  <tr><td>Dropbox Sign</td><td class="status-warn">❌ Disconnected</td><td>—</td></tr>
+</table>
+
+<!-- SECTION 3 -->
+<h2 id="dataflow">3. Data Flow & Lifecycle</h2>
+<pre>
+Task received (email / chat / Todoist)
+        │
+        ▼
+Perplexity Computer session executes
+        │
+        ▼
+HTML deliverable generated
+        │
+        ├──▶ Push to GitHub (vm-coderock/VM2-P-Taskers)
+        │           │
+        │           └──▶ Railway auto-deploys (accessible via portal)
+        │
+        └──▶ Nightly vm2-wrapup cron:
+                    │
+                    ├──▶ Diff GitHub vs Dropbox
+                    ├──▶ Upload missing files to Dropbox /Taskers/
+                    ├──▶ Verify index.html entries
+                    ├──▶ Check plain HTML (no encryption)
+                    ├──▶ Check Todoist vm2-done labels
+                    └──▶ Generate compliance-audit-YYYY-MM-DD.html
+</pre>
+
+<!-- SECTION 4 -->
+<h2 id="dropbox">4. Dropbox Integration</h2>
+
+<h3>4.1 API Configuration</h3>
+<table>
+  <tr><th>Parameter</th><th>Value</th></tr>
+  <tr><td>App Name</td><td>Perplexity-VM2</td></tr>
+  <tr><td>App Key</td><td><code>hxpsk9te4wiyzud</code></td></tr>
+  <tr><td>App Secret</td><td><code>586m8kofaq3isn9</code></td></tr>
+  <tr><td>Refresh Token</td><td><code>-CFeD0umIIYAAAAAAAAAAZJJvNziWCUZGTiCVL7QYt2wzpmnVAxg-fB3a0gXHaFx</code></td></tr>
+  <tr><td>Token endpoint</td><td><code>https://api.dropbox.com/oauth2/token</code></td></tr>
+  <tr><td>Upload endpoint</td><td><code>https://content.dropboxapi.com/2/files/upload</code></td></tr>
+  <tr><td>List endpoint</td><td><code>https://api.dropboxapi.com/2/files/list_folder</code></td></tr>
+</table>
+
+<div class="callout">
+  <strong>Important:</strong> The correct Dropbox root is <code>/VM2-main-folder</code> — NOT <code>/V M2/VM2-main-folder</code>. Early sessions used the wrong path; this was corrected on March 22, 2026.
+</div>
+
+<h3>4.2 Sync Mechanism</h3>
+<p>The nightly <code>vm2-wrapup</code> skill (v2.1+) performs a full diff sync:</p>
+<ol>
+  <li>Lists all <code>.html</code> files in <code>/VM2-main-folder/VM2-P/Taskers/</code> recursively</li>
+  <li>Lists all deliverable HTML files in the GitHub repo</li>
+  <li>Computes the diff (GitHub − Dropbox)</li>
+  <li>Uploads all missing files to the correct categorized subfolder</li>
+  <li>Reports N synced, N already present in the compliance report</li>
+</ol>
+
+<!-- SECTION 5 -->
+<h2 id="github">5. GitHub & Railway Hosting</h2>
+<h3>5.1 Push Workflow</h3>
+<pre>
+# Standard deliverable push
+git add &lt;filename&gt;.html index.html
+git commit -m "Deliverable: &lt;slug&gt; · VM2 · YYYY-MM-DD"
+git push origin main
+# Railway auto-deploys within ~60 seconds
+</pre>
+
+<h3>5.2 HTML Requirements</h3>
+<ul>
+  <li>All HTML must be <strong>plain HTML</strong> — no StaticCrypt encryption</li>
+  <li>Railway nginx basic auth protects all pages server-side</li>
+  <li>Deliverables should include a "Continue This Work" footer panel with context for follow-up sessions</li>
+</ul>
+
+<!-- SECTION 6 -->
+<h2 id="crons">6. Scheduled Automation (Crons)</h2>
+<table>
+  <tr><th>Name</th><th>Schedule</th><th>Skill</th><th>Status</th></tr>
+  <tr><td>Gmail Task Monitor</td><td>Hourly</td><td>vm2-gmail-tasks</td><td class="status-pass">✅ Active</td></tr>
+  <tr><td>Daily Executive Brief</td><td>Morning (weekdays)</td><td>morning-routine</td><td class="status-pass">✅ Active</td></tr>
+  <tr><td>Nightly Compliance Audit</td><td>Nightly (varies)</td><td>vm2-wrapup v2.1</td><td class="status-pass">✅ Active</td></tr>
+  <tr><td>Nightly Config Backup</td><td>11:00 PM EDT (03:00 UTC)</td><td>Embedded cron (id: 3b217572)</td><td class="status-pass">✅ Active</td></tr>
+  <tr><td>Opportunity Deep Dive</td><td>Hourly</td><td>vm2-opp-deep-dive</td><td class="status-pass">✅ Active</td></tr>
+</table>
+
+<!-- SECTION 7 -->
+<h2 id="skills">7. Active Skills (User Skills)</h2>
+<table>
+  <tr><th>Skill</th><th>Version</th><th>Purpose</th></tr>
+  <tr><td>vm2-wrapup</td><td>v2.1</td><td>Nightly compliance audit + full Dropbox diff sync</td></tr>
+  <tr><td>morning-routine</td><td>—</td><td>Daily Executive Agenda — HTML + PDF + Obsidian</td></tr>
+  <tr><td>vm2-gmail-tasks</td><td>—</td><td>Hourly Gmail inbox monitor, task pipeline</td></tr>
+  <tr><td>vm2-opp-deep-dive</td><td>—</td><td>Opportunity intelligence, SAM.gov/APFS monitoring, RAG deep dives</td></tr>
+  <tr><td>changeis-style</td><td>—</td><td>Brand style guide for all Changeis documents</td></tr>
+</table>
+
+<!-- SECTION 8 -->
+<h2 id="security">8. Security Model</h2>
+<table>
+  <tr><th>Layer</th><th>Method</th><th>Notes</th></tr>
+  <tr><td>Railway portal</td><td>nginx basic auth</td><td>vm2 / 97harry23! — server-side, covers all pages</td></tr>
+  <tr><td>GitHub repo</td><td>Private repo + PAT</td><td>vm-coderock org</td></tr>
+  <tr><td>Dropbox</td><td>OAuth2 refresh token</td><td>Permanent token, stored in Perplexity memory</td></tr>
+  <tr><td>HTML content</td><td>Plain HTML only</td><td>NO StaticCrypt — Railway auth is sufficient</td></tr>
+  <tr><td>Sensitive config</td><td>Perplexity memory + Dropbox _Config Back-up</td><td>Nightly encrypted config snapshot</td></tr>
+</table>
+
+<!-- SECTION 9 -->
+<h2 id="naming">9. File & Naming Conventions</h2>
+<table>
+  <tr><th>Type</th><th>Format</th><th>Example</th></tr>
+  <tr><td>Deliverable HTML</td><td><code>slug-YYYY-MM-DD.html</code></td><td><code>deep-dive-tsa-oit-1609-2026-04-01.html</code></td></tr>
+  <tr><td>Compliance report</td><td><code>compliance-audit-YYYY-MM-DD.html</code></td><td><code>compliance-audit-2026-04-03.html</code></td></tr>
+  <tr><td>Daily brief</td><td><code>daily-executive-agenda-YYYY-MM-DD.html</code></td><td><code>daily-executive-agenda-2026-04-03.html</code></td></tr>
+  <tr><td>Architecture doc</td><td><code>vm2-architecture-YYYY-MM-DD.html</code></td><td><code>vm2-architecture-2026-04-03.html</code></td></tr>
+  <tr><td>Config backup</td><td><code>perplexity-config-YYYY-MM-DD.md</code></td><td><code>perplexity-config-2026-04-02.md</code></td></tr>
+</table>
+
+<!-- SECTION 10 -->
+<h2 id="folders">10. Dropbox Folder Taxonomy</h2>
+<pre>
+/VM2-main-folder/
+  VM2-P/
+    _Config Back-up/
+      config/           ← perplexity-config.md (updated nightly)
+      sessions/         ← dated snapshots (perplexity-config-YYYY-MM-DD.md)
+      skills/           ← custom skill backups
+      outputs/          ← important one-off outputs
+    Taskers/
+      BD-Proposals/
+        Deep-Dives/     ← 115+ opportunity deep-dive reports
+        SAM-Daily/      ← daily FAA/SAM.gov scans
+        ATEPS-II/       ← ATEPS-II tracking
+        FAA-Research/   ← SWIM, ODRA, FAA intel
+        Opportunity-Analysis/ ← RFP shreds, bid analysis
+        Competitive-Intel/    ← competitor research
+        MATS-Motus/     ← MATS/Motus BD tracking
+        G2X/            ← G2X FedCiv daily briefs
+      Strategy-Executive/
+        Daily-Briefs/   ← Changeis daily brief + executive agenda
+        AI-Change-Management/
+        AI-Research/    ← AI developments, tools research
+        Communications/ ← LinkedIn, social, messaging
+        Analysis/       ← strategic analysis pieces
+        Tech-Strategy/  ← VM2 architecture, platform docs
+        Industry-Briefs/
+      Hiring-HR/
+        Job-Descriptions/
+      Research-Reading/
+        Leadership/
+        Articles/
+        Wellness/
+      Events-Networking/
+        ACT-IAC/
+        PSC/
+        YPO/
+      Operations/
+        Emails/
+        Meetings/
+        Compliance/     ← nightly compliance audit reports
+        Digests/
+        Travel/
+        Personal/
+        Calendar/
+        Misc/
+      Tech-Automation/
+        Agents/         ← vm2-auto-helper, SharePoint agent, etc.
+</pre>
+
+<!-- SECTION 11 -->
+<h2 id="changelog">11. Change Log</h2>
+<table class="changelog">
+  <tr><th>Date</th><th>Version</th><th>Change</th></tr>
+  <tr><td>Apr 3, 2026</td><td>v3.0</td><td>This document. Full architecture refresh. vm2-wrapup v2.1 with Dropbox diff sync. 310 deliverables in repo.</td></tr>
+  <tr><td>Mar 28, 2026</td><td>—</td><td>vm2-wrapup skill recreated after cron cancellation (id: 3b217572)</td></tr>
+  <tr><td>Mar 22, 2026</td><td>—</td><td>Dropbox root path corrected to /VM2-main-folder (was /V M2/VM2-main-folder). 68 deliverables synced.</td></tr>
+  <tr><td>Mar 22, 2026</td><td>—</td><td>243 missing deliverables synced to Dropbox. Full folder taxonomy established.</td></tr>
+  <tr><td>Mar 15, 2026</td><td>—</td><td>Dropbox API connected (OAuth2 refresh token). Nightly config backup cron started. VM2-P folder structure created.</td></tr>
+  <tr><td>Mar 27, 2026</td><td>v2.0</td><td>Architecture overhaul: portal.html as canonical index, session isolation, plain HTML mandate, Railway auth.</td></tr>
+  <tr><td>Mar 25, 2026</td><td>v1.0</td><td>Initial architecture document.</td></tr>
+</table>
+
+<div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px;">
+  Generated by Perplexity Computer · VM2 System · April 3, 2026 · Confidential — Changeis Inc.
+</div>
+
+</div>
+<script>
+  // Preserve dark mode preference
+  if (localStorage.getItem('vm2-dark') === '1') document.body.classList.add('dark');
+  document.querySelector('.theme-toggle').addEventListener('click', () => {
+    localStorage.setItem('vm2-dark', document.body.classList.contains('dark') ? '1' : '0');
+  });
+</script>
+</body>
+</html>
