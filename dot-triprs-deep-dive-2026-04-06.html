@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOT TRIPRS MRAS Deep Dive — April 6, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --green: #2a7a4a;
+    --green-bg: #eaf5ee;
+    --yellow: #7a6200;
+    --yellow-bg: #fdf8e1;
+    --red-bg: #fdf0f0;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --green-bg: #0f2a1a;
+    --yellow-bg: #1a1800;
+    --red-bg: #1a0f0f;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+  .hero-meta {
+    display: flex; justify-content: center; gap: 24px; flex-wrap: wrap;
+    margin-top: 16px;
+    font-family: system-ui, sans-serif; font-size: 12px; color: var(--text-muted);
+  }
+  .hero-meta span strong { color: var(--text); }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+  .section p { margin-bottom: 10px; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Cards row */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  .cards-row-2 {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) {
+    .cards-row, .cards-row-2 { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-num {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .card h4 {
+    font-size: 15px; font-weight: 700; margin-bottom: 6px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .card h4 { color: #e2e2e2; }
+  .card ul { padding-left: 16px; margin: 0; }
+  .card li { font-size: 13.5px; margin-bottom: 3px; line-height: 1.45; }
+  .card p { font-size: 13.5px; line-height: 1.5; margin-bottom: 0; }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Verdict box */
+  .verdict-box {
+    border-radius: 10px;
+    padding: 22px 26px;
+    margin-bottom: 28px;
+    border: 2px solid;
+  }
+  .verdict-go {
+    background: var(--green-bg);
+    border-color: #2a7a4a;
+  }
+  .verdict-go .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--green); margin-bottom: 4px;
+  }
+  .verdict-box h2 {
+    font-size: 24px; font-weight: 700; margin-bottom: 8px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .verdict-box h2 { color: #e2e2e2; }
+  .verdict-box p { font-size: 14.5px; line-height: 1.6; margin-bottom: 0; }
+
+  /* Score bar */
+  .score-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+  }
+  .score-label {
+    font-family: system-ui, sans-serif; font-size: 13px;
+    width: 160px; flex-shrink: 0; color: var(--text-muted);
+  }
+  .score-bar-wrap {
+    flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;
+  }
+  .score-bar { height: 100%; border-radius: 4px; }
+  .score-bar-green { background: #2a7a4a; }
+  .score-bar-yellow { background: #e6a800; }
+  .score-bar-red { background: var(--red); }
+  .score-val {
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    width: 36px; text-align: right; color: var(--text);
+  }
+
+  /* Tag pills */
+  .tag {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+    margin: 1px 2px;
+  }
+  .tag-green { background: #d4edda; color: #1a5c32; }
+  .tag-yellow { background: #fff3cd; color: #856404; }
+  .tag-red { background: #f8d7da; color: #721c24; }
+  .tag-blue { background: #d1ecf1; color: #0c5460; }
+  [data-theme="dark"] .tag-green { background: #0f2a1a; color: #5ec87e; }
+  [data-theme="dark"] .tag-yellow { background: #1a1800; color: #e6c200; }
+  [data-theme="dark"] .tag-red { background: #1a0f0f; color: #e87070; }
+  [data-theme="dark"] .tag-blue { background: #0a1f25; color: #5ec4d4; }
+
+  /* Info grid */
+  .info-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    margin-top: 10px;
+  }
+  @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } }
+  .info-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .info-item .info-key {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text-faint); margin-bottom: 4px;
+  }
+  .info-item .info-val {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    line-height: 1.4;
+  }
+
+  /* Note callout */
+  .callout {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--red);
+    padding: 10px 14px;
+    font-size: 13.5px; color: var(--text-muted);
+    margin: 10px 0; border-radius: 0 4px 4px 0;
+    line-height: 1.55;
+  }
+  .callout-green {
+    border-left-color: #2a7a4a;
+  }
+  .callout-yellow {
+    border-left-color: #e6a800;
+  }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  h3.sub-heading {
+    font-size: 16px; font-weight: 700; margin-bottom: 8px; margin-top: 16px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] h3.sub-heading { color: #e2e2e2; }
+
+  .rag-match {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .rag-match .rag-title {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700; color: var(--navy);
+    margin-bottom: 2px;
+  }
+  [data-theme="dark"] .rag-match .rag-title { color: #e2e2e2; }
+  .rag-match .rag-meta {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint); margin-bottom: 6px;
+  }
+  .rag-match .rag-excerpt {
+    font-size: 13px; color: var(--text-muted); line-height: 1.5;
+  }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive</div>
+    <h1>DOT TRIPRS MRAS Deep Dive</h1>
+    <div class="hero-sub">Traffic Records Improvement Program Reporting System Support · GSA MRAS RFI</div>
+    <div class="hero-date">April 6, 2026 · Prepared for Varun Malhotra, Changeis Inc.</div>
+    <div class="hero-meta">
+      <span><strong>Agency:</strong> DOT / NHTSA</span>
+      <span><strong>Source:</strong> GSA MRAS</span>
+      <span><strong>Response Deadline:</strong> April 15, 2026</span>
+      <span><strong>Incumbent:</strong> TTW Solutions Inc.</span>
+      <span><strong>Est. Value:</strong> ~$2–4M (5-year BPA)</span>
+    </div>
+  </div>
+
+  <!-- GO / NO-GO VERDICT -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Recommendation</div>
+    <div class="verdict-box verdict-go">
+      <div class="verdict-label">Recommendation</div>
+      <h2>✅ CONDITIONAL GO — Respond to RFI, Pursue as Subcontractor or Teaming Partner</h2>
+      <p>Changeis has strong DOT/transportation IT pedigree ($154M+ in DOT obligations), active FMCSA data systems experience, and proven Oracle-adjacent work — all directly relevant. However, the NAICS code (541715 R&amp;D) is outside Changeis's primary codes, the incumbent TTW Solutions is a sole-source 8(a) awardee with deep TRIPRS institutional knowledge, and the RFI is early-stage market research. The highest-probability play is to <strong>respond to the MRAS RFI now</strong>, position as a technical sub or teaming partner to a prime with 541715 R&amp;D credentials, and begin incumbent analysis for the eventual BPA competition.</p>
+    </div>
+
+    <h3 class="sub-heading">Opportunity Scorecard</h3>
+    <div style="margin-top:8px;">
+      <div class="score-row">
+        <span class="score-label">DOT Relationship Fit</span>
+        <div class="score-bar-wrap"><div class="score-bar score-bar-green" style="width:90%"></div></div>
+        <span class="score-val">9/10</span>
+      </div>
+      <div class="score-row">
+        <span class="score-label">Technical Capability Fit</span>
+        <div class="score-bar-wrap"><div class="score-bar score-bar-green" style="width:75%"></div></div>
+        <span class="score-val">7.5/10</span>
+      </div>
+      <div class="score-row">
+        <span class="score-label">NAICS/Set-Aside Fit</span>
+        <div class="score-bar-wrap"><div class="score-bar score-bar-yellow" style="width:55%"></div></div>
+        <span class="score-val">5.5/10</span>
+      </div>
+      <div class="score-row">
+        <span class="score-label">Competitive Position</span>
+        <div class="score-bar-wrap"><div class="score-bar score-bar-yellow" style="width:60%"></div></div>
+        <span class="score-val">6/10</span>
+      </div>
+      <div class="score-row">
+        <span class="score-label">Win Probability (Prime)</span>
+        <div class="score-bar-wrap"><div class="score-bar score-bar-yellow" style="width:35%"></div></div>
+        <span class="score-val">3.5/10</span>
+      </div>
+      <div class="score-row">
+        <span class="score-label">Win Probability (Sub/Team)</span>
+        <div class="score-bar-wrap"><div class="score-bar score-bar-green" style="width:70%"></div></div>
+        <span class="score-val">7/10</span>
+      </div>
+      <div class="score-row">
+        <span class="score-label">Strategic Value</span>
+        <div class="score-bar-wrap"><div class="score-bar score-bar-green" style="width:85%"></div></div>
+        <span class="score-val">8.5/10</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPPORTUNITY SNAPSHOT -->
+  <div class="section">
+    <div class="section-header">Opportunity Snapshot</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-key">Opportunity Title</div>
+        <div class="info-val">Traffic Records Improvement Program Reporting System (TRIPRS) Support</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Agency</div>
+        <div class="info-val">DOT / NHTSA (National Highway Traffic Safety Administration)</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Solicitation Type</div>
+        <div class="info-val">GSA MRAS RFI (Market Research As a Service) — Pre-Solicitation</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Prior Sources Sought</div>
+        <div class="info-val">693JJ925RQ000236 — BPA Sources Sought (Mar 2025, closed)</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Response Deadline</div>
+        <div class="info-val">April 15, 2026</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Expected Vehicle</div>
+        <div class="info-val">Blanket Purchase Agreement (BPA) — multiple awards likely</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Primary NAICS</div>
+        <div class="info-val">541715 — R&amp;D in Physical, Engineering &amp; Life Sciences</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Estimated Contract Value</div>
+        <div class="info-val">$2–4M (O&amp;M contract was $1.86M/5yr; BPA scope is broader)</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Set-Aside Likely</div>
+        <div class="info-val">Small Business (SB, SDB, 8(a), HUBZone, SDVOSB, WOSB eligible)</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Place of Performance</div>
+        <div class="info-val">Washington, DC (NHTSA HQ) + remote; state-level travel</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">RFI Survey Link</div>
+        <div class="info-val"><a href="https://feedback.gsa.gov/jfe/form/SV_3dtKt3dn0txelUO" target="_blank">feedback.gsa.gov/jfe/form/SV_3dtKt3dn0txelUO</a></div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Incumbent</div>
+        <div class="info-val">TTW Solutions Inc. — 8(a) sole-source, NHTSA TRIPRS O&amp;M since 2018</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT IS TRIPRS -->
+  <div class="section">
+    <div class="section-header">What Is TRIPRS?</div>
+    <p>TRIPRS — the <strong>Traffic Records Improvement Program Reporting System</strong> — is NHTSA's central web-based IT platform for managing the federal Traffic Records Program. It serves as the authoritative portal through which all 50 states, territories, and tribal nations interact with NHTSA's traffic safety data collection infrastructure.</p>
+
+    <h3 class="sub-heading">Core Functions</h3>
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-num">Module 1</div>
+        <h4>STRAP</h4>
+        <p>State Traffic Records Assessment Program module — states enter responses to assessment questions, upload documentation, and peer assessors review. Drives §405(c) Safety Data grant eligibility.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">Module 2</div>
+        <h4>CDIP Tracking</h4>
+        <p>Crash Data Improvement Program tracking — manages workshops, technical advisory team visits, state-identified issues, and actionable recommendations for improving crash data quality.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">Module 3</div>
+        <h4>Performance Measures</h4>
+        <p>Tracks state progress on six core traffic records data quality dimensions: timeliness, accuracy, completeness, uniformity, integration, and accessibility.</p>
+      </div>
+    </div>
+
+    <h3 class="sub-heading" style="margin-top:18px;">System Architecture (Current &amp; Future)</h3>
+    <table>
+      <thead>
+        <tr><th>Component</th><th>Current State</th><th>Future Direction (per RFI)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Database</td><td>Oracle (SQL-based, legacy configuration)</td><td>Oracle Cloud Infrastructure (OCI) migration</td></tr>
+        <tr><td>Application</td><td>Web portal (ASP.NET-era patterns)</td><td>Enhanced UI/UX, expanded features</td></tr>
+        <tr><td>Integrations</td><td>Standalone NHTSA system</td><td>Backend integration with other NHTSA systems (GMSS, GRTS, etc.)</td></tr>
+        <tr><td>Users</td><td>All 50 states + DC + territories + tribal</td><td>Expanded for pedestrian/bicycle safety assessments</td></tr>
+        <tr><td>Grant Link</td><td>§405(c) Safety Data grant qualification</td><td>Bipartisan Infrastructure Law SEDC ($350M+) integration</td></tr>
+        <tr><td>Hosting</td><td>NHTSA on-prem/legacy infrastructure</td><td>OCI migration per NHTSA IT modernization roadmap</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green" style="margin-top:12px;">
+      <strong>Strategic Context:</strong> NHTSA awarded $171M in grants to 19 states (Dec 2024) under the Bipartisan Infrastructure Law's SEDC program, with $350M total available. This significantly increases state demand on TRIPRS as states must document their upgrades. The system is entering a high-growth, high-activity phase.
+    </div>
+
+    <h3 class="sub-heading">TRIPRS Users &amp; Stakeholders</h3>
+    <ul>
+      <li><strong>State Traffic Records Coordinators</strong> — primary portal users; submit assessment data, track performance measures</li>
+      <li><strong>State Traffic Records Coordinating Committees (TRCCs)</strong> — strategic planning bodies in each state</li>
+      <li><strong>NHTSA Regional Offices (10 regions)</strong> — oversight and facilitation of state assessments</li>
+      <li><strong>NHTSA Traffic Records Program Office</strong> — system owner; manages contractor relationship</li>
+      <li><strong>Peer Assessors</strong> — subject matter experts who review STRAP submissions</li>
+      <li><strong>Tribal Nations</strong> — expanded scope for tribal crash reporting toolkit</li>
+    </ul>
+  </div>
+
+  <!-- INCUMBENT ANALYSIS -->
+  <div class="section">
+    <div class="section-header">Incumbent Analysis: TTW Solutions Inc.</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-key">Company</div>
+        <div class="info-val">TTW Solutions Inc. (Bethesda, MD)</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Certifications</div>
+        <div class="info-val">8(a), WOSB, EDWOSB, Minority-Owned (Woman &amp; Minority)</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">UEI</div>
+        <div class="info-val">CGMEE5V9L6F6</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Primary NAICS</div>
+        <div class="info-val">541512 (Computer Systems Design)</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">TRIPRS O&amp;M Contract (Current)</div>
+        <div class="info-val">693JJ924C000005 — $1.86M ceiling, base + 4 options through Sept 2026</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Prior TRIPRS Contract</div>
+        <div class="info-val">693JJ918C000025 — $4.73M, "manage Oracle software and configuration" for TRIPRS</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Total NHTSA/DOT Revenue</div>
+        <div class="info-val">~$112M total federal awards since 2009; NHTSA primary client</div>
+      </div>
+      <div class="info-item">
+        <div class="info-key">Award History</div>
+        <div class="info-val">TRIPRS sole-source since at least 2018; number of bidders = 1 on last award</div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:12px;">
+      <strong>Incumbent Risk Assessment:</strong> TTW Solutions is deeply entrenched — 8+ years of TRIPRS work, sole-source awards, deep institutional knowledge of the Oracle configuration and state user base. However, their 8(a) graduation timeline is uncertain, and the shift to BPA format (vs. sole-source direct award) signals NHTSA wants to open competition. The BPA structure creates a legitimate entry point. TTW likely bids on BPA but cannot maintain sole-source status indefinitely.
+    </div>
+
+    <h3 class="sub-heading">Other Market Participants</h3>
+    <table>
+      <thead>
+        <tr><th>Firm</th><th>Role</th><th>Relevance</th><th>Threat Level</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>TTW Solutions Inc.</strong></td>
+          <td>Current O&amp;M incumbent</td>
+          <td>Direct TRIPRS Oracle config management</td>
+          <td><span class="tag tag-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td><strong>VHB (Vanasse Hangen Brustlin)</strong></td>
+          <td>NHTSA Traffic Records BPA (Lot A &amp; B)</td>
+          <td>Technical assistance + IT support for traffic records</td>
+          <td><span class="tag tag-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td><strong>Leidos / General Dynamics IT</strong></td>
+          <td>NHTSA/DOT primes (TTW subcontracts to GDIT)</td>
+          <td>IT infrastructure, large system O&amp;M capability</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+        </tr>
+        <tr>
+          <td><strong>Booz Allen Hamilton</strong></td>
+          <td>DOT/federal IT modernization</td>
+          <td>OCI migration, federal cloud experience</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+        </tr>
+        <tr>
+          <td><strong>Small Oracle Partners</strong></td>
+          <td>OCI-specialized SBs</td>
+          <td>OCI migration capability if teamed</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+        </tr>
+        <tr>
+          <td><strong>Changeis Inc.</strong></td>
+          <td>Potential teaming partner / sub</td>
+          <td>DOT-wide IT support, data systems, FMCSA experience</td>
+          <td><span class="tag tag-green">OPPORTUNITY</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CHANGEIS CAPABILITY MATRIX -->
+  <div class="section">
+    <div class="section-header">Changeis Capability Matrix vs. TRIPRS Requirements</div>
+    <p>Based on the RAG Engine match against Changeis past performance (50 results, top matches below) and known contract history.</p>
+
+    <table>
+      <thead>
+        <tr><th>TRIPRS Requirement</th><th>Changeis Evidence</th><th>Fit</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Oracle database O&amp;M</strong> — manage Oracle software, config, data layers</td>
+          <td>FMCSA SCOAR contracts (V3132047, V3132127): Oracle DB maintenance, data migration, DAL modernization; DOT ODAPC SAI system Oracle backend maintenance; DAMIS Oracle database management</td>
+          <td><span class="tag tag-green">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>Oracle Cloud Infrastructure (OCI)</strong> — backend integration &amp; migration</td>
+          <td>DOT IT SWAT (693JJ423F00060N): enterprise-wide IT modernization at DOT; LCSS/DLMS cybersecurity remediation work; production support/sustainment for multiple DOT cloud systems (CMA Build 1/2)</td>
+          <td><span class="tag tag-yellow">MODERATE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Web application development &amp; enhancement</strong></td>
+          <td>FHWA/ITS JPO Web Support; Website and SharePoint development/maintenance (SCOAR); MOTUS/HAZMAT registration redevelopment (693JK325F00028N); URS/FRS system development (693JJ424F00002N)</td>
+          <td><span class="tag tag-green">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>DOT system integration</strong> — connect TRIPRS to GMSS, GRTS, other NHTSA systems</td>
+          <td>AMMS/RMLS-LCSS interface dev &amp; integration testing; MOTUS HAZMAT-FMCSA integration; URS Unified Registration System; multi-system data integration at Volpe across FAA, FMCSA, FRA, FTA, PHMSA</td>
+          <td><span class="tag tag-green">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>Data analytics &amp; visualization</strong></td>
+          <td>Tableau dashboards for FMCSA PSMB; A&amp;I data dissemination; DataQs system enhancements; SMS measurement web validation; Crash data MCMIS/FARS analysis; DART data request handling</td>
+          <td><span class="tag tag-green">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>State technical assistance support</strong> — help desk, super-user functions</td>
+          <td>State partner support via phone/email for SSDQ measures (V3132047); SAFETYNET state coordination; state DQ specialist support across multiple states</td>
+          <td><span class="tag tag-green">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>Traffic records program knowledge</strong> (STRAP, CDIP, TRCC)</td>
+          <td>NHTSA/FMCSA adjacent but no direct TRIPRS STRAP module work found in RAG results; DOT traffic safety data expertise demonstrated through FMCSA crash data systems</td>
+          <td><span class="tag tag-yellow">MODERATE</span></td>
+        </tr>
+        <tr>
+          <td><strong>NAICS 541715 R&amp;D experience</strong></td>
+          <td>Changeis primary codes are 541512, 541519, 541990, 541611 — 541715 not in top NAICS; gap requiring teaming</td>
+          <td><span class="tag tag-red">GAP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Agile development / software delivery</strong></td>
+          <td>FMCSA Jira/Confluence release management; sprint/agile practices across SCOAR TOs; LCSS software dev BPV; E-IDS software development/testing</td>
+          <td><span class="tag tag-green">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>Cybersecurity / ATO support</strong></td>
+          <td>LCSS/DLMS cybersecurity remediation (693GH25F00770); JBOSS vulnerability remediation; PIV card multi-factor authentication (ODAPC); ATO coordination in FMCSA release processes</td>
+          <td><span class="tag tag-green">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>Small business set-aside eligibility</strong></td>
+          <td>Changeis is 8(a), WOSB, EDWOSB, minority-owned — eligible for all targeted set-aside categories in the Sources Sought</td>
+          <td><span class="tag tag-green">STRONG</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub-heading">Top RAG Matches — Past Performance Relevant to TRIPRS</h3>
+    <div class="rag-match">
+      <div class="rag-title">V3132127 — SCOAR FMCSA Business Operations &amp; PRISM Support</div>
+      <div class="rag-meta">Contract: 6913G621F400039 · End Client: DOT/FMCSA/Volpe · Score: 0.68 (12 matching chunks)</div>
+      <div class="rag-excerpt">Tableau visualizations, Oracle authentication library updates, Jira/Confluence release management, monthly reporting, state coordination. Directly analogous to TRIPRS reporting and data dissemination functions.</div>
+    </div>
+    <div class="rag-match">
+      <div class="rag-title">V3132047 — SCOAR FMCSA Data Quality, DataQs, DART, A&amp;I Maintenance</div>
+      <div class="rag-meta">Contract: 6913G620F400113 · End Client: FMCSA/Volpe · Score: 0.67 (12 matching chunks)</div>
+      <div class="rag-excerpt">Oracle authentication library fixes, DataQs state support, crash data MCMIS integration, A&amp;I website modernization, data quality technical assistance to states — directly parallels TRIPRS state support and data quality functions.</div>
+    </div>
+    <div class="rag-match">
+      <div class="rag-title">V3132314 — MCSAP ITD PRISM Program Support</div>
+      <div class="rag-meta">Contract: 6913G623F40003N · End Client: FMCSA/Volpe · Score: 0.67 (14 matching chunks)</div>
+      <div class="rag-excerpt">AWS data source migration, Tableau dashboard maintenance, grants management portal support, eCVSP tool updates — demonstrates cloud migration and grants-IT integration capability relevant to TRIPRS-GMSS integration work.</div>
+    </div>
+    <div class="rag-match">
+      <div class="rag-title">V3142064 / V3142016 — DOT OST ODAPC Drug &amp; Alcohol Support (DAMIS &amp; SAI)</div>
+      <div class="rag-meta">Multiple contracts · End Client: DOT/FAA/FMCSA/FRA/FTA/PHMSA/Volpe · Score: 0.60</div>
+      <div class="rag-excerpt">ASP.NET web application O&amp;M, Oracle database backend maintenance, PIV card authentication — direct parallel to TRIPRS web portal O&amp;M and Oracle database management requirements.</div>
+    </div>
+    <div class="rag-match">
+      <div class="rag-title">V3132349 — CDLPI/CMVOST Technical Assistance &amp; Website</div>
+      <div class="rag-meta">Contract: 6913G623F40042N · End Client: FMCSA/NHTSA/Volpe · Score: 0.54</div>
+      <div class="rag-excerpt">NHTSA-client work, TPR technical support, portal user help desk, website migration — notable as this is an NHTSA task order where Changeis provided help desk/user support, directly analogous to TRIPRS "super-user" support role.</div>
+    </div>
+  </div>
+
+  <!-- COMPETITIVE LANDSCAPE -->
+  <div class="section">
+    <div class="section-header">Competitive Landscape &amp; Win Strategy</div>
+
+    <h3 class="sub-heading">Path Analysis</h3>
+    <div class="cards-row-2">
+      <div class="card">
+        <div class="card-num">Path A — Prime on BPA (Lower Probability)</div>
+        <h4>Prime Bid</h4>
+        <ul>
+          <li>Changeis qualifies under set-aside categories (8(a), WOSB)</li>
+          <li><strong>Risk:</strong> NAICS 541715 not primary code; TRIPRS-specific knowledge gap vs. TTW</li>
+          <li><strong>Risk:</strong> NHTSA likely favors a known entity or incumbent-adjacent team</li>
+          <li><strong>Best case:</strong> Win one BPA lot (likely Lot B — IT support) if NHTSA awards multiple BPAs</li>
+          <li>Requires teaming with 541715-qualified partner and traffic records SME</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Path B — Teaming / Sub (Higher Probability)</div>
+        <h4>Teaming Partner</h4>
+        <ul>
+          <li>Approach VHB (prime on existing NHTSA Traffic Records BPA) as IT sub</li>
+          <li>Approach TTW Solutions as technical sub if they prime the BPA (provide OCI migration expertise)</li>
+          <li>Target Lot B (IT Support &amp; Analysis) as the natural Changeis lane</li>
+          <li><strong>Changeis brings:</strong> Oracle/OCI dev, DOT IT delivery, systems integration, cloud migration, agile</li>
+          <li>High relevance given current DOT contracts and NHTSA adjacency</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="sub-heading">Key Differentiators Changeis Should Highlight in RFI Response</h3>
+    <ul>
+      <li><strong>DOT Ecosystem Depth:</strong> $154M+ in active/recent DOT contracts across FAA, FMCSA, FTA, PHMSA, FRA — institutional knowledge of DOT IT standards, security, and acquisition processes</li>
+      <li><strong>Oracle + Federal Data Systems:</strong> Demonstrated Oracle database O&amp;M, ASP.NET web systems, and federal data system modernization on Volpe/FMCSA contracts</li>
+      <li><strong>OCI Modernization:</strong> Production support and sustainment of cloud-migrated DOT systems (CMA Build 1/2, LCSS); cybersecurity remediation work showing security-first approach</li>
+      <li><strong>State Technical Assistance Model:</strong> Experience supporting state partners via help desk model on FMCSA SSDQ/DataQs programs — directly transferable to TRIPRS state user support</li>
+      <li><strong>NHTSA Adjacent Work:</strong> Task order V3132349 included NHTSA as end client with TPR portal user support — closest existing past performance to TRIPRS</li>
+      <li><strong>Certifications:</strong> 8(a), WOSB, EDWOSB — fully qualifies for all targeted set-aside categories</li>
+    </ul>
+
+    <h3 class="sub-heading">Gaps to Address Before Proposal</h3>
+    <div class="callout">
+      <strong>NAICS Gap:</strong> NAICS 541715 (R&amp;D Physical/Life Sciences) is unusual for a pure IT O&amp;M/development contract. NHTSA appears to use it due to the traffic safety research component of the program. Changeis should recommend NAICS 541512 or 541519 as more appropriate alternatives in the RFI response — this is explicitly requested and could shift the competitive landscape.
+    </div>
+    <div class="callout callout-yellow" style="margin-top:8px;">
+      <strong>Traffic Records Domain Knowledge Gap:</strong> TRIPRS STRAP assessments, TRCC strategic planning, MMUCC standards, and state traffic records program expertise are specialized. Changeis needs to either hire/retain a traffic records SME or partner with VHB/academic institution with this expertise before proposal submission.
+    </div>
+    <div class="callout callout-yellow" style="margin-top:8px;">
+      <strong>OCI Certification Gap:</strong> Oracle Cloud Infrastructure certifications (OCI Architect, OCI Developer) would strengthen the proposal significantly. Confirm current OCI-certified staff inventory before proposal.
+    </div>
+  </div>
+
+  <!-- RELATED SOLICITATIONS & MARKET CONTEXT -->
+  <div class="section">
+    <div class="section-header">Related Solicitations &amp; Market Context</div>
+    <table>
+      <thead>
+        <tr><th>Solicitation / Award</th><th>Agency</th><th>Details</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>GSA MRAS RFI (current)</strong></td>
+          <td>NHTSA</td>
+          <td>TRIPRS Support BPA; deadline 04/15/2026</td>
+          <td><span class="tag tag-blue">OPEN</span></td>
+        </tr>
+        <tr>
+          <td><strong>693JJ925RQ000236</strong></td>
+          <td>NHTSA</td>
+          <td>TRIPRS BPA Sources Sought — Mar 2025 (closed)</td>
+          <td><span class="tag tag-yellow">CLOSED</span></td>
+        </tr>
+        <tr>
+          <td><strong>693JJ924C000005</strong></td>
+          <td>NHTSA</td>
+          <td>TTW Solutions TRIPRS O&amp;M, $1.86M, base+4 options through Sept 2026</td>
+          <td><span class="tag tag-green">ACTIVE</span></td>
+        </tr>
+        <tr>
+          <td><strong>693JJ918C000025</strong></td>
+          <td>NHTSA</td>
+          <td>TTW Solutions prior TRIPRS Oracle contract, $4.73M</td>
+          <td><span class="tag tag-yellow">COMPLETE</span></td>
+        </tr>
+        <tr>
+          <td><strong>NHTSA Traffic Records BPA (VHB)</strong></td>
+          <td>NHTSA</td>
+          <td>VHB: Lot A (Technical Assistance), Lot B (IT Support &amp; Analysis)</td>
+          <td><span class="tag tag-green">ACTIVE</span></td>
+        </tr>
+        <tr>
+          <td><strong>SEDC Grants ($350M)</strong></td>
+          <td>NHTSA</td>
+          <td>State Electronic Data Collection; drives increased TRIPRS activity</td>
+          <td><span class="tag tag-green">ACTIVE</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green" style="margin-top:12px;">
+      <strong>Market Timing:</strong> The MRAS RFI coming immediately after the Mar 2025 Sources Sought indicates NHTSA is actively building the acquisition. The current O&amp;M contract expires Sept 2026 — NHTSA needs the BPA in place before that date. This is a time-sensitive, high-activity acquisition cycle. Responding to the April 15 RFI is critical to getting agency POC information.
+    </div>
+  </div>
+
+  <!-- RISK REGISTER -->
+  <div class="section">
+    <div class="section-header">Risk Register</div>
+    <table>
+      <thead>
+        <tr><th>Risk</th><th>Likelihood</th><th>Impact</th><th>Mitigation</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>NHTSA extends TTW sole-source rather than competing BPA</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+          <td><span class="tag tag-red">HIGH</span></td>
+          <td>Monitor SAM.gov; RFI response keeps Changeis in contention; advocacy through NHTSA CO relationship</td>
+        </tr>
+        <tr>
+          <td>NAICS 541715 bars Changeis from prime bid eligibility</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+          <td>Argue 541512/541519 in RFI response; pivot to sub if NAICS not changed</td>
+        </tr>
+        <tr>
+          <td>TTW Solutions or VHB wins all BPA lots</td>
+          <td><span class="tag tag-green">LOW-MED</span></td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+          <td>Position as sub to either; multiple BPA awards likely under BPA structure</td>
+        </tr>
+        <tr>
+          <td>OCI migration scope expands beyond Changeis current OCI depth</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+          <td>Recruit OCI-certified staff; establish Oracle partner relationship; team with OCI specialist</td>
+        </tr>
+        <tr>
+          <td>Budget constraints under DOT FY2026 CR/sequestration</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+          <td>SEDC grant funding creates independent revenue stream for TRIPRS activity; diversified risk</td>
+        </tr>
+        <tr>
+          <td>RFI response is ignored / no follow-up from NHTSA</td>
+          <td><span class="tag tag-green">LOW</span></td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+          <td>MRAS guarantees POC info to respondents within 7-10 days; creates direct NHTSA CO contact</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- IMMEDIATE ACTION PLAN -->
+  <div class="section">
+    <div class="section-header">Immediate Action Plan</div>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Action</th><th>Owner</th><th>Deadline</th><th>Priority</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Respond to MRAS RFI at feedback.gsa.gov/jfe/form/SV_3dtKt3dn0txelUO</strong> — highlight DOT IT pedigree, Oracle/OCI capability, FMCSA state-support analogues; recommend 541512 NAICS; express intent to prime or team</td>
+          <td>Varun / BD Lead</td>
+          <td><strong>Apr 15, 2026</strong></td>
+          <td><span class="tag tag-red">CRITICAL</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Contact VHB teaming lead</strong> — VHB holds active NHTSA Traffic Records BPA; explore Lot B IT sub opportunity; Changeis brings Oracle/data systems depth to complement VHB's traffic records domain expertise</td>
+          <td>Varun / Capture Lead</td>
+          <td>Apr 18, 2026</td>
+          <td><span class="tag tag-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Set SAM.gov alert for NHTSA TRIPRS solicitation</strong> — monitor for BPA RFP release (expected Q2–Q3 2026 given Sept 2026 O&amp;M expiry)</td>
+          <td>BD Team</td>
+          <td>Apr 10, 2026</td>
+          <td><span class="tag tag-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>Identify traffic records SME</strong> — recruit or partner with individual with STRAP/TRCC/MMUCC expertise; needed for any prime or sub proposal</td>
+          <td>Talent / Capture</td>
+          <td>Apr 25, 2026</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>OCI capability audit</strong> — inventory OCI-certified staff; if gap, initiate Oracle Cloud Government partner agreement and accelerate OCI certifications for 2 staff</td>
+          <td>Technical Lead</td>
+          <td>Apr 25, 2026</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>Pull NHTSA contracting office contact</strong> from MRAS RFI response acknowledgment — establish direct relationship with CO within 10 days of responding</td>
+          <td>Varun</td>
+          <td>Apr 25, 2026</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Prepare capability brief</strong> — 2-page Changeis capability statement specifically for NHTSA/TRIPRS audience, incorporating V3132349 (NHTSA TPR) and FMCSA Oracle/data analogues as headline past performance</td>
+          <td>BD / Proposal</td>
+          <td>Apr 30, 2026</td>
+          <td><span class="tag tag-yellow">MEDIUM</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FINANCIAL ANALYSIS -->
+  <div class="section">
+    <div class="section-header">Financial Analysis</div>
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-num">O&amp;M Contract (current)</div>
+        <h4>$1.86M / 5 years</h4>
+        <p>TTW Solutions contract 693JJ924C000005: $460K annual run rate for core TRIPRS O&amp;M. Lean contract, single firm, limited scope.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">BPA Estimate (new)</div>
+        <h4>$2–5M / 5 years</h4>
+        <p>BPA format with expanded scope (OCI migration, feature enhancement, state-support expansion) likely 1.5–2.5x prior O&amp;M value. Multiple awardees possible.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">Changeis Revenue Target</div>
+        <h4>$500K–$1.5M+</h4>
+        <p>As sub/team: 25–40% of 1 BPA lot. As prime: up to $2M+ ceiling. Annual revenue: $100–400K. Strategic value exceeds financial value.</p>
+      </div>
+    </div>
+    <div class="callout callout-green" style="margin-top:12px;">
+      <strong>Strategic Value Beyond Revenue:</strong> An NHTSA TRIPRS footprint establishes Changeis as a traffic safety data systems firm — adjacent to NHTSA's $350M+ SEDC grant ecosystem and larger future NHTSA IT modernization work. The strategic positioning value significantly exceeds the direct contract value.
+    </div>
+  </div>
+
+  <!-- SESSION CONTEXT (COLLAPSIBLE) -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "DOT TRIPRS MRAS Deep Dive",
+  "task_date": "2026-04-06",
+  "deliverable_file": "dot-triprs-deep-dive-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/dot-triprs-deep-dive-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute a deep dive analysis for DOT/NHTSA TRIPRS opportunity. GSA MRAS RFI. Response deadline 04/15/2026. Research TRIPRS, NHTSA IT systems, SAM.gov solicitations, incumbent contractors (FPDS/USAspending), call RAG Engine for Changeis past performance match, competitive landscape, capability matrix, Go/No-Go recommendation. HTML deliverable per spec.",
+  "approach": "1) Read deliverable spec and reference HTML; 2) Web research on TRIPRS system architecture, NHTSA programs, SEDC grants context; 3) SAM.gov API query (API returned no results via browser but prior solicitation 693JJ925RQ000236 found via HigherGov); 4) FPDS/USAspending queries for incumbent — TTW Solutions 693JJ924C000005 found via orangeslices and GovTribe; 5) RAG Engine POST call returned 50 matches with top 5 ranked; 6) VHB and competitor research; 7) Synthesized into capability matrix, scorecard, and action plan.",
+  "key_findings": [
+    "TRIPRS is NHTSA's central state-facing portal for traffic records assessments (STRAP), crash data improvement (CDIP), and performance tracking; used by all 50 states + territories + tribal nations",
+    "Incumbent TTW Solutions (8(a), WOSB, Bethesda MD) has held TRIPRS sole-source contracts since 2018: $4.73M (prior) + $1.86M current (expires Sept 2026); 1 bidder on last award",
+    "NHTSA is transitioning to BPA format (Sources Sought 693JJ925RQ000236 in Mar 2025, MRAS RFI now Apr 2026), signaling competitive opening — sole-source era ending",
+    "Changeis RAG match shows strong analogues: FMCSA Oracle DB O&M, DataQs state support, ASP.NET web O&M, DOT multi-system integration — especially task order V3132349 with direct NHTSA TPR work",
+    "NAICS 541715 (R&D) is the primary gap; Changeis should recommend 541512/541519 in RFI response and consider sub/team path if NAICS holds",
+    "OCI migration is the new technical differentiator; Changeis has adjacent cloud experience (CMA production support, LCSS cybersecurity) but no specific OCI certification evidence found",
+    "SEDC grant ecosystem ($350M+, 19 states in Dec 2024 tranche) is driving massive increase in TRIPRS activity — strategic entry point timing is excellent"
+  ],
+  "dead_ends": [
+    "SAM.gov API URL returned 'page not found' — could not query directly; relied on HigherGov for solicitation details",
+    "USAspending.gov direct award URL (693JJ924C000005) returned 404; used GovTribe and orangeslices.ai instead",
+    "GSA MRAS RFI survey URL (feedback.gsa.gov Qualtrics form) is not publicly readable — cannot extract full PWS/requirements from the form itself",
+    "NHTSA TRIPRS technical architecture documentation not publicly available; relied on contract descriptions and sources sought SOW excerpts"
+  ],
+  "assumptions": [
+    "MRAS RFI will lead to formal BPA solicitation in Q2-Q3 2026 before TTW O&M contract expires Sept 2026",
+    "BPA will be small business set-aside given prior sources sought targeting SB/SDB/8(a)/HUBZone/SDVOSB/WOSB",
+    "Multiple BPA awards likely under BPA structure (Lot A technical assistance, Lot B IT support analogous to VHB structure)",
+    "Contract value estimated at $2-5M based on $1.86M O&M baseline plus expanded OCI/feature enhancement scope",
+    "Changeis NAICS 541715 not in current portfolio — verification of GSA schedule SINs required before responding"
+  ],
+  "open_questions": [
+    "Does Changeis have NAICS 541715 on any GSA schedule? If not, can it be added before proposal deadline?",
+    "What is TTW Solutions 8(a) graduation date? If they are near graduation, sole-source extension becomes impossible",
+    "Has NHTSA issued a J&A (Justification & Authorization) for sole-source continuation of TTW beyond Sept 2026?",
+    "Does VHB's current NHTSA Traffic Records BPA cover TRIPRS IT work or is it separate from the O&M contract?",
+    "What are the specific OCI services NHTSA plans to use (OCI Database, OCI Object Storage, OCI Compute)?",
+    "Is there a classified or sensitive data handling requirement that would limit competition further?"
+  ],
+  "data_sources": [
+    "HigherGov: Sources Sought 693JJ925RQ000236 — https://www.highergov.com/contract-opportunity/traffic-records-improvement-program-reporting-syst-693jj925rq000236-r-b19a8/",
+    "OrangeSlices.ai: TTW TRIPRS O&M award — https://orangeslices.ai/contract-award-dot-traffic-records-improvement-program-reporting-system-triprs-operations-maintenance/",
+    "GovTribe: TTW Solutions contract history — https://govtribe.com/vendors/ttw-solutions-inc-dot-5ch59",
+    "GovConInABox: Changeis contract history — https://www.govconinabox.com/explore/contractors/profile/EBUKVBEHZJD3",
+    "VHB NHTSA Traffic Records Program — https://www.vhb.com/federal-government/transportation/nhtsa-traffic-records-program/",
+    "NHTSA CrashStats TRIPRS brochure — https://crashstats.nhtsa.dot.gov/Api/Public/Publication/812764",
+    "NHTSA SEDC $350M press release — https://www.nhtsa.gov/press-releases/nhtsa-announces-350-million-states-upgrade-data-collection-systems",
+    "NHTSA SEDC $171M awards — https://www.nhtsa.gov/press-releases/nhtsa-announces-grants-states-territories-upgrade-crash-data-collection",
+    "Changeis RAG Engine: POST https://changeis-bd-rag-production.up.railway.app/match — top matches V3132127, V3132047, V3132314, V3142064, V3132349",
+    "GSA MRAS training PDF — https://buy.gsa.gov/api/system/files/documents/fy25-mras-monthly-industry-training-fy25_0.pdf"
+  ],
+  "next_steps": [
+    "CRITICAL: Respond to MRAS RFI at https://feedback.gsa.gov/jfe/form/SV_3dtKt3dn0txelUO by April 15, 2026",
+    "Contact VHB teaming lead for Lot B IT support sub opportunity",
+    "Set SAM.gov alert for NHTSA TRIPRS BPA solicitation",
+    "Verify NAICS 541715 on GSA schedule; if not present, recommend alternative NAICS in RFI response",
+    "Audit OCI certifications; initiate Oracle Government Cloud partner agreement",
+    "Identify traffic records domain SME (STRAP/TRCC/MMUCC expertise)",
+    "Prepare 2-page NHTSA-specific capability brief highlighting V3132349 (NHTSA TPR) and FMCSA Oracle analogues"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 8,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.48",
+    "cost_ceiling": "$0.95",
+    "notes": "8 web searches + 7 URL fetches + 1 RAG API call + reference HTML read; substantial output HTML generation; deep dive complexity"
+  }
+}</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · DOT TRIPRS Deep Dive · April 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Hidden JSON context block -->
+<script type="application/json" id="vm2-context-data">{
+  "task_name": "DOT TRIPRS MRAS Deep Dive",
+  "task_date": "2026-04-06",
+  "deliverable_file": "dot-triprs-deep-dive-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/dot-triprs-deep-dive-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute a deep dive analysis for DOT/NHTSA TRIPRS opportunity. GSA MRAS RFI. Response deadline 04/15/2026. Research TRIPRS, NHTSA IT systems, SAM.gov solicitations, incumbent contractors, RAG Engine for Changeis past performance, competitive landscape, capability matrix, Go/No-Go recommendation.",
+  "approach": "Web research on TRIPRS/NHTSA + SAM.gov query + USAspending/FPDS incumbent research + RAG Engine past performance match + competitive analysis synthesis",
+  "key_findings": [
+    "TRIPRS is NHTSA central state portal for traffic records assessments, CDIP, and performance measures; used by all 50 states",
+    "Incumbent TTW Solutions 8(a) sole-source since 2018: $4.73M prior + $1.86M current (expires Sept 2026)",
+    "NHTSA moving to BPA competition format — competitive opening confirmed",
+    "Changeis RAG strong analogues: FMCSA Oracle O&M, DataQs state support, V3132349 NHTSA TPR direct",
+    "NAICS 541715 gap; Changeis should recommend 541512/541519 in RFI response",
+    "SEDC $350M grant ecosystem driving TRIPRS activity surge — excellent timing"
+  ],
+  "dead_ends": [
+    "SAM.gov API returned page not found",
+    "USAspending direct URL 404",
+    "MRAS RFI Qualtrics form not readable"
+  ],
+  "assumptions": [
+    "BPA solicitation expected Q2-Q3 2026",
+    "Small business set-aside likely",
+    "Multiple BPA lots likely"
+  ],
+  "open_questions": [
+    "Does Changeis have NAICS 541715 on GSA schedule?",
+    "TTW Solutions 8(a) graduation date?",
+    "J&A issued for TTW sole-source continuation?",
+    "VHB BPA scope vs TRIPRS O&M scope?",
+    "Specific OCI services targeted?"
+  ],
+  "data_sources": [
+    "HigherGov Sources Sought 693JJ925RQ000236",
+    "OrangeSlices TTW award 693JJ924C000005",
+    "GovTribe TTW contract history",
+    "GovConInABox Changeis profile",
+    "VHB NHTSA Traffic Records page",
+    "Changeis RAG Engine POST /match",
+    "NHTSA SEDC press releases"
+  ],
+  "next_steps": [
+    "Respond to MRAS RFI by April 15, 2026",
+    "Contact VHB for teaming",
+    "SAM.gov alert for BPA solicitation",
+    "Verify NAICS 541715 on schedule",
+    "OCI cert audit",
+    "Traffic records SME identification",
+    "2-page capability brief for NHTSA"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 8,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.48",
+    "cost_ceiling": "$0.95",
+    "notes": "8 web searches + 7 URL fetches + 1 RAG API call + reference HTML read; deep dive complexity"
+  }
+}</script>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up prompt
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/dot-triprs-deep-dive-2026-04-06.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the DOT TRIPRS MRAS Deep Dive for Changeis Inc.
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off. The context slug contains: original instructions, approach taken, key findings, dead ends, assumptions, open questions, data sources used, and next steps.
+
+Open questions from last session:
+- Does Changeis have NAICS 541715 on any GSA schedule?
+- What is TTW Solutions 8(a) graduation date?
+- Has NHTSA issued a J&A for sole-source continuation of TTW beyond Sept 2026?
+- Does VHB's current NHTSA BPA cover TRIPRS IT work?
+- What are the specific OCI services NHTSA plans to use?
+
+Suggested next steps:
+- Respond to MRAS RFI by April 15, 2026
+- Contact VHB for teaming on Lot B
+- Set SAM.gov alert for TRIPRS BPA solicitation
+- OCI capability audit
+- Traffic records SME identification
+- Prepare 2-page NHTSA capability brief
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: DOT TRIPRS MRAS Deep Dive');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: DOT TRIPRS MRAS Deep Dive');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
