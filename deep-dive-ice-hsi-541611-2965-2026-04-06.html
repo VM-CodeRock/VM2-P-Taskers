@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: ICE HSI RIM Support (F2026072965) — April 6, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.2; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Stat cards */
+  .stat-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-top: 12px;
+  }
+  @media (max-width: 700px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    text-align: center;
+  }
+  .stat-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+  .stat-value {
+    font-size: 22px; font-weight: 700; color: var(--navy);
+    font-family: system-ui, sans-serif;
+  }
+  [data-theme="dark"] .stat-value { color: #e2e2e2; }
+  .stat-sub {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  /* Cards row */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) { .cards-row { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-num {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .card h4 {
+    font-size: 15px; font-weight: 700; margin-bottom: 6px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .card h4 { color: #e2e2e2; }
+  .card ul { padding-left: 16px; margin: 0; }
+  .card li { font-size: 13px; margin-bottom: 3px; line-height: 1.45; }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* RAG badge */
+  .rag-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    padding: 3px 10px; border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+  .rag-moderate { background: #f0a500; color: #fff; }
+  .rag-high { background: #2e7d32; color: #fff; }
+  .rag-low { background: #c53a3a; color: #fff; }
+
+  /* Go/No-Go verdict box */
+  .verdict-box {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 10px; padding: 20px 24px;
+    margin-top: 12px;
+  }
+  .verdict-title {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text-faint); margin-bottom: 8px;
+  }
+  .verdict-decision {
+    font-size: 26px; font-weight: 700;
+    font-family: system-ui, sans-serif;
+    margin-bottom: 10px;
+  }
+  .verdict-conditional { color: #e07b00; }
+  .verdict-go { color: #2e7d32; }
+  .verdict-nogo { color: #c53a3a; }
+
+  /* Score bar */
+  .score-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .score-bar-wrap {
+    flex: 1; height: 10px;
+    background: var(--border); border-radius: 5px; overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%; border-radius: 5px;
+    background: #f0a500;
+  }
+  .score-num {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; font-weight: 700; color: var(--text-muted);
+    min-width: 38px;
+  }
+
+  /* Timeline items */
+  .timeline { margin-top: 10px; }
+  .timeline-item {
+    display: flex; gap: 14px; margin-bottom: 14px;
+    align-items: flex-start;
+  }
+  .tl-date {
+    flex-shrink: 0; min-width: 90px;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--red); padding-top: 2px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .tl-content { flex: 1; font-size: 14.5px; line-height: 1.5; }
+  .tl-content strong { display: block; margin-bottom: 2px; }
+
+  /* Inline highlight */
+  .highlight {
+    background: #fff8e1;
+    border-left: 3px solid #f0a500;
+    padding: 10px 14px;
+    font-size: 14.5px; line-height: 1.55;
+    border-radius: 0 4px 4px 0;
+    margin: 10px 0;
+  }
+  [data-theme="dark"] .highlight {
+    background: #2a2410;
+    border-left-color: #f0a500;
+  }
+
+  .callout-red {
+    background: #fff5f5;
+    border-left: 3px solid var(--red);
+    padding: 10px 14px;
+    font-size: 14.5px; line-height: 1.55;
+    border-radius: 0 4px 4px 0;
+    margin: 10px 0;
+  }
+  [data-theme="dark"] .callout-red {
+    background: #2a1212;
+  }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px; letter-spacing: 0.04em;
+    margin-right: 4px; margin-bottom: 3px;
+  }
+  .tag-blue { background: #e3f0fb; color: #1B2A4A; }
+  .tag-orange { background: #fff0d8; color: #b36200; }
+  .tag-green { background: #e8f5e9; color: #2e7d32; }
+  .tag-red { background: #fde8e8; color: #c53a3a; }
+  [data-theme="dark"] .tag-blue { background: #1a2d42; color: #7eb3e0; }
+  [data-theme="dark"] .tag-orange { background: #2a1f0a; color: #f5a623; }
+  [data-theme="dark"] .tag-green { background: #0d2011; color: #66bb6a; }
+  [data-theme="dark"] .tag-red { background: #2a0d0d; color: #ef9a9a; }
+
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · APFS Forecast</div>
+    <h1>ICE HSI Electronic Records &amp; Information Management (RIM) Support</h1>
+    <div class="hero-sub">APFS F2026072965 · ICE/HSI – Student &amp; Exchange Visitor Program (SEVP)</div>
+    <div class="hero-date">April 6, 2026 &nbsp;·&nbsp; Changeis Inc. Internal Use Only</div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="section">
+    <div class="section-header">Opportunity Snapshot</div>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-label">Est. Value</div>
+        <div class="stat-value">$5–10M</div>
+        <div class="stat-sub">5-Year FFP (FY26–FY31)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">RAG Score</div>
+        <div class="stat-value" style="color:#f0a500;">0.636</div>
+        <div class="stat-sub">MODERATE</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Solicitation</div>
+        <div class="stat-value">Apr 1</div>
+        <div class="stat-sub">Est. Release</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Award</div>
+        <div class="stat-value">Jun 10</div>
+        <div class="stat-sub">Anticipated 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core Details Table -->
+  <div class="section">
+    <div class="section-header">Acquisition Details</div>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>APFS Number</strong></td><td>F2026072965</td></tr>
+        <tr><td><strong>Agency / Office</strong></td><td>ICE/HSI – SEVP (Student and Exchange Visitor Program) · Contracting Office: IOSD-Investigation and Ops Support</td></tr>
+        <tr><td><strong>Requirements Title</strong></td><td>Electronic Records and Information Management (RIM) Support Services</td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541611 – Administrative Management and General Management Consulting Services</td></tr>
+        <tr><td><strong>PSC</strong></td><td>R499 – Support–Professional: Other</td></tr>
+        <tr><td><strong>Contract Vehicle</strong></td><td>GSA Multiple Award Schedule (MAS)</td></tr>
+        <tr><td><strong>Contract Type</strong></td><td>Firm Fixed Price (FFP)</td></tr>
+        <tr><td><strong>Competition</strong></td><td>Yes — Recompetition (Follow-on to Existing Contract)</td></tr>
+        <tr><td><strong>Small Business Set-Aside</strong></td><td>TBD (Not currently designated)</td></tr>
+        <tr><td><strong>Incumbent</strong></td><td>Neostek Inc. · Contract #70CMSD21FR0000087 (under GSA MAS 47QSMA19D08N8)</td></tr>
+        <tr><td><strong>Incumbent Value</strong></td><td>$3.43M (current base) — up to ~$3.43M over POP 7/7/2021 – 7/9/2026</td></tr>
+        <tr><td><strong>New POP</strong></td><td>7/10/2026 – 7/23/2031 (~5 years)</td></tr>
+        <tr><td><strong>Place of Performance</strong></td><td>Vienna, VA</td></tr>
+        <tr><td><strong>Est. Solicitation Release</strong></td><td>April 1, 2026</td></tr>
+        <tr><td><strong>Anticipated Award</strong></td><td>June 10, 2026</td></tr>
+        <tr><td><strong>Award Quarter</strong></td><td>Q3 FY2026</td></tr>
+        <tr><td><strong>Published</strong></td><td>January 23, 2026</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Requirement Description -->
+  <div class="section">
+    <div class="section-header">Requirement Description</div>
+    <p>This requirement covers <strong>Records and Information Management (RIM) support across all of ICE's Student and Exchange Visitor Program (SEVP)</strong>. The work spans two interconnected systems:</p>
+    <br>
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-num">System 1</div>
+        <h4>SEVPAMS</h4>
+        <ul>
+          <li>SEVP Automated Management System — document repository &amp; electronic records management for SEVP workflows</li>
+          <li>Data, document &amp; records control</li>
+          <li>Electronic submissions handling</li>
+          <li>Must integrate with SEVPAMS support teams</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">System 2</div>
+        <h4>ERMS / CollabWare</h4>
+        <ul>
+          <li>ICE-wide Electronic Records Management System</li>
+          <li>Runs on Collabware's Collabspace platform (FedRAMP Moderate JAB P-ATO; ICE ATO holder)</li>
+          <li>Administrative &amp; configuration support</li>
+          <li>NARA-compliant lifecycle management</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Mission Goals</div>
+        <h4>SEVP RIM Objectives</h4>
+        <ul>
+          <li>Promote transparency &amp; accountability via documentation</li>
+          <li>Move to 100% electronic environment</li>
+          <li>Implement full-text search for all artifacts</li>
+          <li>Apply metadata for proper records disposal per file plan</li>
+          <li>Operational &amp; cost efficiencies</li>
+        </ul>
+      </div>
+    </div>
+
+    <br>
+    <div class="highlight">
+      <strong>Key technical context:</strong> SEVPAMS is a SharePoint-based system that serves as ICE SEVP's primary document and workflow management platform. It maintains records for school certification, student tracking, compliance documentation, and the SEVIS interconnection. The ERMS (CollabWare) provides agency-level records lifecycle governance — automated categorization, retention, disposition certificates — layered on top of M365/SharePoint infrastructure. The contractor must bridge operational records management (SEVPAMS) with enterprise compliance (ERMS/CollabWare).
+    </div>
+  </div>
+
+  <!-- Contact Information -->
+  <div class="section">
+    <div class="section-header">Points of Contact</div>
+    <table>
+      <thead>
+        <tr><th>Role</th><th>Name</th><th>Phone</th><th>Email</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Requirements POC</strong></td>
+          <td>Christopher Jackson</td>
+          <td>(682) 308-7165</td>
+          <td><a href="mailto:Christopher.L.Jackson@ice.dhs.gov">Christopher.L.Jackson@ice.dhs.gov</a></td>
+        </tr>
+        <tr>
+          <td><strong>Alternate POC</strong></td>
+          <td>Tracy Riley</td>
+          <td>(469) 858-2855</td>
+          <td><a href="mailto:Tracy.Riley@ice.dhs.gov">Tracy.Riley@ice.dhs.gov</a></td>
+        </tr>
+        <tr>
+          <td><strong>Small Business Specialist / APFS Coordinator</strong></td>
+          <td>Samuel Thompson</td>
+          <td>(202) 329-0703</td>
+          <td><a href="mailto:Samuel.L.Thompson@ice.dhs.gov">Samuel.L.Thompson@ice.dhs.gov</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">Texas/DFW area codes for Jackson (682) and Riley (469) suggest the POCs may be based at ICE HSI Dallas. SEVP headquarters is in Vienna, VA — the place of performance.</p>
+  </div>
+
+  <!-- Incumbent Analysis -->
+  <div class="section">
+    <div class="section-header">Incumbent Analysis: Neostek Inc.</div>
+    <p>Neostek is the entrenched specialist and a formidable incumbent. Understanding their position is critical to any bid decision.</p>
+    <br>
+    <table>
+      <thead>
+        <tr><th>Attribute</th><th>Details</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Company Profile</strong></td>
+          <td>WOSB-certified federal IT firm, GSA MAS holder, specializing exclusively in records and information management. ~$25.5M total federal contract value since 2010. <a href="https://www.neostek.com" target="_blank">neostek.com</a></td>
+        </tr>
+        <tr>
+          <td><strong>Current ICE Contract</strong></td>
+          <td>47QSMA19D08N8-70CMSD21FR0000087 — $3.43M FFP, ICE SEVP, GSA MAS. POP 7/7/2021–7/9/2026. Expiring July 2026.</td>
+        </tr>
+        <tr>
+          <td><strong>Incumbent Advantage</strong></td>
+          <td>~5 years of institutional knowledge of SEVPAMS workflows, CollabWare ERMS configuration, and ICE file plans. Staff likely holds DHS suitability clearances. Zero transition risk for the agency.</td>
+        </tr>
+        <tr>
+          <td><strong>Other RIM Contracts</strong></td>
+          <td>DOJ Justice Management Division $150M BPA (through 2033); Bureau of Engraving &amp; Printing $6.3M RIM; NARA training BPA; FMCS ERM support ($424K). Deep RIM-only portfolio.</td>
+        </tr>
+        <tr>
+          <td><strong>WOSB Status</strong></td>
+          <td>Woman-Owned Small Business — if set-aside designates WOSB or SB, Neostek retains socioeconomic advantage. Changeis is not WOSB-certified.</td>
+        </tr>
+        <tr>
+          <td><strong>RIM Core Competency</strong></td>
+          <td>Neostek's entire business is RIM. They are CollabWare-proficient and NARA-certified. This is existential revenue for them — they will bid aggressively.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout-red" style="margin-top:14px;">
+      <strong>Incumbent Risk:</strong> Neostek is one of the most specialized federal RIM contractors in existence. Their DOJ BPA alone ($150M through 2033) signals they won the largest RIM vehicle in the federal market. Displacing them from a $3.4M ICE program they've run for 5 years requires a compelling differentiator — teaming, price, or expanded scope/modernization angle.
+    </div>
+  </div>
+
+  <!-- ICE SEVP Context -->
+  <div class="section">
+    <div class="section-header">ICE / SEVP Mission Context</div>
+    <p>SEVP is the ICE program that manages the Student and Exchange Visitor Information System (SEVIS), the federal database tracking approximately 1.5 million F/M/J nonimmigrant students and exchange visitors at ~10,000 certified schools. SEVP's records management obligations are extensive:</p>
+    <br>
+    <ul>
+      <li><strong>SEVPAMS:</strong> SharePoint-based workflow system that manages school certification, Form I-17 petitions, correction requests, and inquiry tracking. Interconnected with SEVIS in near-real-time.</li>
+      <li><strong>Volume:</strong> SEVP processes millions of transactions annually — school petitions, compliance events, document submissions, appeal workflows.</li>
+      <li><strong>NARA Mandates:</strong> Presidential Directives M-19-21 and M-23-07 require federal agencies to transition to fully electronic records and comply with NARA UERM (Universal Electronic Records Management) requirements by defined milestones.</li>
+      <li><strong>CollabWare ATO:</strong> ICE holds an Agency-level FedRAMP Authority to Operate (ATO) for Collabspace, Collabware's SaaS platform. This is the foundation of the ERMS layer — the contractor supports its configuration and administration.</li>
+      <li><strong>Data sensitivity:</strong> SEVP records contain PII for foreign nationals, school officials, and federal staff. The contractor must maintain DHS security posture including likely DHS Entry On Duty (EOD) suitability.</li>
+    </ul>
+
+    <div class="highlight" style="margin-top:12px;">
+      <strong>Strategic context (2025–2026):</strong> ICE enforcement activity has surged under current administration priorities. SEVP is simultaneously under pressure to (1) increase student tracking and school compliance enforcement and (2) meet NARA digital records mandates. This creates genuine demand for both operational RIM support (more transactions) and system modernization (100% electronic goal). The $5–10M range — nearly 3x the prior $3.43M contract ceiling — signals meaningful scope expansion.
+    </div>
+  </div>
+
+  <!-- Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">Competitive Landscape</div>
+    <p>This is a specialized niche. The likely bidder pool is small — typically 3–5 firms on a GSA Schedule task order of this type and scope.</p>
+    <br>
+    <table>
+      <thead>
+        <tr><th>Competitor</th><th>Profile</th><th>RIM Capability</th><th>Threat Level</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Neostek Inc.</strong></td>
+          <td>WOSB, ~25 FTEs, $25.5M lifetime federal; ICE incumbent</td>
+          <td>Core competency — entire company built around RIM</td>
+          <td><span class="rag-badge rag-low">HIGHEST</span></td>
+        </tr>
+        <tr>
+          <td><strong>Iron Mountain Federal</strong></td>
+          <td>Large business; enterprise RM platform, broad federal presence</td>
+          <td>Physical + ERM, NARA relationships; less CollabWare-specific</td>
+          <td><span class="rag-badge rag-moderate">MODERATE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Carahsoft / Collabware resellers</strong></td>
+          <td>VAR ecosystem around Collabspace; Carahsoft is distributor</td>
+          <td>Product expertise but less systems integration depth</td>
+          <td><span class="rag-badge rag-moderate">MODERATE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Leidos / SAIC</strong></td>
+          <td>Large primes; broad DHS presence</td>
+          <td>IT modernization strength; RIM typically subcontracted</td>
+          <td><span class="rag-badge rag-high">LOW–MED</span></td>
+        </tr>
+        <tr>
+          <td><strong>Small RIM boutiques</strong></td>
+          <td>Companies like FileNet/IBM partners, Gimmal, Preservica resellers</td>
+          <td>Variable — some strong in NARA/GRS compliance</td>
+          <td><span class="rag-badge rag-moderate">MODERATE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Changeis Inc.</strong></td>
+          <td>Mid-tier IT consulting, GSA MAS holder, 541611 qualified</td>
+          <td>IT modernization, program management strength; limited dedicated RIM</td>
+          <td><em>Challenger</em></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">Source: <a href="https://govtribe.com/vendors/neostek-inc-dot-654j0" target="_blank">GovTribe Neostek profile</a>; <a href="https://finance.yahoo.com/news/carahsoft-collabware-partner-compliant-archive-160000020.html" target="_blank">Carahsoft–Collabware partnership</a>.</p>
+  </div>
+
+  <!-- RAG Capability Analysis -->
+  <div class="section">
+    <div class="section-header">RAG Capability Match Analysis</div>
+    <p>The RAG scoring compared this requirement against Changeis's past performance corpus. Score: <strong>0.636 (MODERATE)</strong>. The top matches are all FMCSA/DOT system support contracts — data management, electronic records, workflow support for regulatory programs. This is a partial but not direct match.</p>
+    <br>
+
+    <div class="score-row" style="margin-bottom:16px;">
+      <span style="font-family:system-ui;font-size:13px;font-weight:700;min-width:70px;">RAG Score</span>
+      <div class="score-bar-wrap">
+        <div class="score-bar-fill" style="width:63.6%;"></div>
+      </div>
+      <span class="score-num">0.636</span>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Past Performance Match</th><th>End Client</th><th>Relevance</th><th>Score</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Contract V3132168 / 6913G622F400001</td>
+          <td>DOT / FMCSA / Volpe</td>
+          <td>Data processing, ACE/AIM enforcement system support, electronic records (ELD/eRODS), weekly/monthly data runs</td>
+          <td>0.636</td>
+        </tr>
+        <tr>
+          <td>Contract V3132012 / 6913G620F400059</td>
+          <td>DOT / FMCSA / FAA / Volpe</td>
+          <td>ELD/eRODS electronic records system support; document management; system operations</td>
+          <td>0.633</td>
+        </tr>
+        <tr>
+          <td>Contract V3132127 / 6913G621F400039</td>
+          <td>DOT / FMCSA / Volpe</td>
+          <td>Business process reengineering, CDMS case management, compliance data workflows</td>
+          <td>0.629</td>
+        </tr>
+        <tr>
+          <td>Contract V3132051 / 6913G620F400115</td>
+          <td>DOT / FMCSA / FAA / Volpe</td>
+          <td>ACE enforcement data processing, daily/weekly/monthly records workflows</td>
+          <td>0.624</td>
+        </tr>
+        <tr>
+          <td>FAA_CLMRS</td>
+          <td>FAA</td>
+          <td>Data migration, IRS/interface specs, cloud IFS; supply chain records</td>
+          <td>0.610</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <br>
+    <div class="highlight">
+      <strong>Assessment:</strong> Changeis's FMCSA experience demonstrates capability in <em>data processing workflows, electronic system support, and compliance records</em> — adjacent capabilities. However, these matches involve operational data processing, not dedicated RIM program management (CollabWare configuration, NARA records schedules, disposition workflows). The gap is domain-specific RIM expertise, not general IT competency.
+    </div>
+
+    <br>
+    <p><strong>Capability tags from RAG matches:</strong><br>
+      <span class="tag tag-green">Electronic Records Support</span>
+      <span class="tag tag-green">Data Processing Workflows</span>
+      <span class="tag tag-green">Compliance System Operations</span>
+      <span class="tag tag-green">Document Management</span>
+      <span class="tag tag-blue">SharePoint / M365</span>
+      <span class="tag tag-blue">Program Management</span>
+      <span class="tag tag-orange">CollabWare / ERMS Admin</span>
+      <span class="tag tag-orange">NARA Records Schedules</span>
+      <span class="tag tag-orange">Records Disposition</span>
+      <span class="tag tag-red">Dedicated RIM Domain Expertise</span>
+    </p>
+    <p class="note">Green = Changeis has demonstrated; Blue = partially demonstrated; Orange = adjacent/partial; Red = gap requiring teaming or hire.</p>
+  </div>
+
+  <!-- Go/No-Go Assessment -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Assessment</div>
+
+    <div class="verdict-box">
+      <div class="verdict-title">Changeis Recommendation</div>
+      <div class="verdict-decision verdict-conditional">CONDITIONAL GO</div>
+      <p style="font-size:15px;line-height:1.6;">Pursue <em>only if</em> Changeis can secure a qualified RIM subcontractor or hire a CollabWare-experienced SME before solicitation release. Without a domain teaming partner, this is effectively a no-go against the Neostek incumbent.</p>
+    </div>
+
+    <br>
+    <table>
+      <thead>
+        <tr><th>Factor</th><th>Assessment</th><th>Rating</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Vehicle Match</strong></td>
+          <td>Changeis holds GSA MAS schedule. This is a GSA Schedule task order — direct vehicle alignment. No separate vehicle qualification needed.</td>
+          <td><span class="rag-badge rag-high">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>NAICS 541611 Eligibility</strong></td>
+          <td>Changeis has GSA MAS 541611 (Management Consulting). SIN matches the requirement category.</td>
+          <td><span class="rag-badge rag-high">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>Place of Performance</strong></td>
+          <td>Vienna, VA — Changeis is Northern Virginia-based. Commutable to SEVP HQ for on-site support if required.</td>
+          <td><span class="rag-badge rag-high">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>Program Management</strong></td>
+          <td>Federal IT program management is Changeis's core. Managing a multi-year FFP task order with defined deliverables is well within capability.</td>
+          <td><span class="rag-badge rag-high">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>IT / Data Modernization</strong></td>
+          <td>Changeis IT modernization experience is applicable to the "100% electronic environment" and "full search capabilities" goals in the SOW.</td>
+          <td><span class="rag-badge rag-moderate">MODERATE</span></td>
+        </tr>
+        <tr>
+          <td><strong>SharePoint / M365</strong></td>
+          <td>SEVPAMS is SharePoint-based. Changeis's prior work includes M365 ecosystems. Partial fit.</td>
+          <td><span class="rag-badge rag-moderate">MODERATE</span></td>
+        </tr>
+        <tr>
+          <td><strong>CollabWare / ERMS</strong></td>
+          <td>No demonstrated CollabWare CLM/Collabspace experience in past performance. Critical gap — the ERMS/CollabWare admin is an explicit deliverable.</td>
+          <td><span class="rag-badge rag-low">GAP</span></td>
+        </tr>
+        <tr>
+          <td><strong>NARA / Records Compliance</strong></td>
+          <td>No demonstrated NARA records schedule development or GRS application experience in corpus. Key requirement for RIM work.</td>
+          <td><span class="rag-badge rag-low">GAP</span></td>
+        </tr>
+        <tr>
+          <td><strong>ICE / SEVP Experience</strong></td>
+          <td>No prior ICE or SEVP past performance. Neostek has 5+ years on this exact program.</td>
+          <td><span class="rag-badge rag-low">GAP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Small Business Status</strong></td>
+          <td>Set-aside is TBD. If designated small business or WOSB, Neostek (WOSB) retains socioeconomic advantage. Unrestricted competition favors Changeis's teaming flexibility.</td>
+          <td><span class="rag-badge rag-moderate">WATCH</span></td>
+        </tr>
+        <tr>
+          <td><strong>Competitive Position</strong></td>
+          <td>Neostek will re-bid aggressively. Displacing them requires price efficiency + expanded scope vision + teaming credentials.</td>
+          <td><span class="rag-badge rag-low">CHALLENGING</span></td>
+        </tr>
+        <tr>
+          <td><strong>Dollar Range vs. Changeis Size</strong></td>
+          <td>$5–10M over 5 years ($1–2M/year) is appropriate for Changeis's size and capacity.</td>
+          <td><span class="rag-badge rag-high">FIT</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <br>
+    <p><strong>Win Strategy (if pursuing):</strong></p>
+    <ul style="padding-left:20px;margin-top:6px;">
+      <li><strong>Team with a CollabWare-certified partner:</strong> Identify firms with Collabspace experience and NARA ERM credentials (e.g., a small CollabWare partner or Carahsoft reseller). Position Changeis as prime PM/IT modernization lead.</li>
+      <li><strong>Modernization angle:</strong> Position beyond pure RIM maintenance — frame the offering around accelerating SEVP's "100% electronic" and "full search capability" goals using Changeis's IT modernization credentials. Neostek maintains; Changeis transforms.</li>
+      <li><strong>Price competitiveness:</strong> FFP structure rewards efficiency. Changeis's overhead and pricing could undercut Neostek on a similarly qualified team.</li>
+      <li><strong>SEVPAMS integration:</strong> If Changeis has any SEVP-adjacent SEVIS/DHS data experience, highlight the systems integration angle between SEVPAMS, SEVIS, and ERMS.</li>
+      <li><strong>Early POC engagement:</strong> Contact Christopher Jackson (Requirements POC) before solicitation drops for a capabilities briefing. His DFW area code suggests accessibility.</li>
+    </ul>
+  </div>
+
+  <!-- Timeline & SAM.gov Watch -->
+  <div class="section">
+    <div class="section-header">Timeline &amp; SAM.gov Watch Items</div>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="tl-date">Jan 23, 2026</div>
+        <div class="tl-content">
+          <strong>APFS Published</strong>
+          Forecast record posted on DHS APFS system. Signals intent to recompete Neostek's expiring contract.
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-date">Apr 1, 2026</div>
+        <div class="tl-content">
+          <strong>Estimated Solicitation Release</strong>
+          RFQ expected on SAM.gov or eBuy under GSA Schedule. Watch for RFI/Sources Sought that may precede formal solicitation. <em>Action: Monitor SAM.gov for NAICS 541611 + "SEVP" or "RIM" or "ERMS" postings from ICE/IOSD.</em>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-date">Apr–May 2026</div>
+        <div class="tl-content">
+          <strong>Q&amp;A / Industry Engagement Window</strong>
+          GSA Schedule task orders typically allow a short Q&amp;A period. Submit questions to clarify: set-aside determination, Phase 1/Phase 2 structure, CollabWare certification requirements, transition timeline.
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-date">Jun 10, 2026</div>
+        <div class="tl-content">
+          <strong>Anticipated Award Date</strong>
+          Tight timeline — ~70 days from solicitation release to award. Likely a streamlined GSA Schedule competition. Proposal preparation must begin immediately upon RFQ receipt.
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-date">Jul 10, 2026</div>
+        <div class="tl-content">
+          <strong>Performance Start</strong>
+          Day 1 of new 5-year period. Incumbent's current contract expires July 9, 2026 — no gap in coverage intended.
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="tl-date">Jul 23, 2031</div>
+        <div class="tl-content">
+          <strong>Performance End</strong>
+          5-year base. No option periods explicitly listed — this is a 5-year single-award FFP task order.
+        </div>
+      </div>
+    </div>
+
+    <br>
+    <table>
+      <thead>
+        <tr><th>SAM.gov Watch Item</th><th>Action</th><th>Priority</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>RFQ Release (ICE IOSD, NAICS 541611)</td>
+          <td>Set SAM.gov alert: Agency=DHS/ICE, NAICS=541611, keyword="SEVP" or "RIM" or "ERMS"</td>
+          <td><strong>HIGH</strong></td>
+        </tr>
+        <tr>
+          <td>Sources Sought / RFI</td>
+          <td>If issued before RFQ, submit capabilities statement immediately — critical for shaping set-aside decision</td>
+          <td><strong>HIGH</strong></td>
+        </tr>
+        <tr>
+          <td>Small Business Set-Aside Determination</td>
+          <td>Monitor APFS record for update to "small_business_set_aside" field. WOSB designation would disadvantage Changeis.</td>
+          <td><strong>HIGH</strong></td>
+        </tr>
+        <tr>
+          <td>APFS Record Updates</td>
+          <td>Check APFS F2026072965 for any amendments to solicitation date, set-aside, or scope</td>
+          <td><strong>MEDIUM</strong></td>
+        </tr>
+        <tr>
+          <td>eBuy Posting</td>
+          <td>GSA Schedule task orders often post on eBuy — ensure Changeis GSA MAS 541611 registration is current to receive notices</td>
+          <td><strong>MEDIUM</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Changeis Positioning Summary -->
+  <div class="section">
+    <div class="section-header">Changeis Positioning Summary</div>
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-num">Strengths</div>
+        <h4>What Works For Us</h4>
+        <ul>
+          <li>GSA MAS 541611 — vehicle match</li>
+          <li>Northern Virginia location — near SEVP HQ</li>
+          <li>IT modernization / digital transformation brand</li>
+          <li>Program management depth</li>
+          <li>M365 / SharePoint ecosystem familiarity</li>
+          <li>Right size for $1–2M/yr task order</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Gaps</div>
+        <h4>What We Need to Close</h4>
+        <ul>
+          <li>CollabWare Collabspace expertise</li>
+          <li>NARA records schedules / GRS experience</li>
+          <li>ICE / SEVP / DHS prior performance</li>
+          <li>Dedicated Records Manager (CRM or IGP credential)</li>
+          <li>WOSB socioeconomic status (cannot acquire)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Next Actions</div>
+        <h4>Immediate Steps</h4>
+        <ul>
+          <li>Identify CollabWare-certified teaming partner</li>
+          <li>Contact Christopher Jackson for capability briefing</li>
+          <li>Set SAM.gov + eBuy alerts for RFQ</li>
+          <li>Assess set-aside risk (call APFS SBS Samuel Thompson)</li>
+          <li>Decide pursue/pass before solicitation drops</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Sources -->
+  <div class="section">
+    <div class="section-header">Data Sources</div>
+    <ul>
+      <li><a href="https://apfs-cloud.dhs.gov/record/72965/public-print/" target="_blank">DHS APFS Forecast Record F2026072965</a> — official forecast record</li>
+      <li><a href="https://govtribe.com/vendors/neostek-inc-dot-654j0" target="_blank">GovTribe: Neostek Inc. Vendor Profile</a> — contract history and value</li>
+      <li><a href="https://www.neostek.com/markets/" target="_blank">Neostek Markets Page</a> — ICE/DHS client relationships</li>
+      <li><a href="https://www.reginfo.gov/public/do/DownloadDocument?objectID=97773501" target="_blank">DHS/ICE PIA-001(c): SEVIS, SEVPAMS, SETA</a> — authoritative SEVPAMS system description</li>
+      <li><a href="https://collabware.com/government" target="_blank">Collabware Government Page</a> — Collabspace FedRAMP/ICE ATO details</li>
+      <li><a href="https://finance.yahoo.com/news/carahsoft-collabware-partner-compliant-archive-160000020.html" target="_blank">Yahoo Finance: Carahsoft–Collabware Partnership</a> — ICE ATO confirmation</li>
+      <li><a href="https://www.highergov.com/contract-forecast/electronic-records-and-information-management-rim-1140585/" target="_blank">HigherGov: F2026072965 Forecast Record</a> — secondary source with incumbent value</li>
+      <li>APFS JSON file: <code>/home/user/workspace/cron_tracking/6f5371ab/apfs_F2026072965.json</code></li>
+    </ul>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Deep Dive: ICE HSI RIM F2026072965",
+  "task_date": "2026-04-06",
+  "deliverable_file": "deep-dive-ice-hsi-541611-2965-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-ice-hsi-541611-2965-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Generate a deep-dive analysis for APFS opportunity F2026072965. Agency: ICE/HSI. Title: Electronic Records and Information Management (RIM) Support Services. NAICS: 541611. Dollar Range: $5M to $10M. Contract Vehicle: GSA Schedule. Anticipated Award: 06/10/2026. RAG Score: 0.636 (MODERATE). Tasks: Read APFS JSON; research ICE HSI records management needs/systems; USAspending ICE spending NAICS 541611; competitive landscape; capability matrix from RAG matches; Go/No-Go assessment; timeline and SAM.gov watch items.",
+  "approach": "Read full APFS JSON to extract all fields. Searched for SEVP/SEVPAMS system context from DHS PIA documents. Researched Neostek incumbent via GovTribe and company website. Researched CollabWare/Collabspace for ICE ATO and federal RIM context. Analyzed RAG match excerpts for capability alignment. Synthesized Go/No-Go with specific factors.",
+  "key_findings": [
+    "Neostek is a highly specialized WOSB RIM incumbent — entire business is records management; won DOJ RIM BPA ($150M), Bureau of Engraving RIM ($6.3M), ICE SEVP ($3.43M). Strongest possible incumbent.",
+    "The ERMS is CollabWare Collabspace — ICE holds an Agency FedRAMP ATO. CollabWare expertise is an explicit requirement gap for Changeis.",
+    "Scope expansion is significant: prior contract was $3.43M; new ceiling is $5–10M — signals SEVP is growing this program, possibly for 100% electronic environment push per NARA M-23-07.",
+    "GSA MAS vehicle is a clean match for Changeis. No separate qualification needed.",
+    "Set-aside is TBD — if designated WOSB, Changeis cannot compete. Monitoring this is the highest-priority near-term action.",
+    "Solicitation estimated April 1, 2026 — award in ~70 days is a very compressed timeline. Decision to pursue must be made immediately."
+  ],
+  "dead_ends": [
+    "USAspending direct API query returned 404 — relied on GovTribe for contract value data (GovTribe aggregates USAspending data; $3.43M figure is sourced from there).",
+    "Could not access eBuy for any active market research or RFI that may have preceded this forecast."
+  ],
+  "assumptions": [
+    "The $3.43M USAspending figure for the incumbent Neostek contract represents total obligated value, not ceiling. The new $5-10M ceiling may include options or additional scope.",
+    "Solicitation will use GSA eBuy/MAS ordering mechanism consistent with the GSA Schedule vehicle designation.",
+    "CollabWare CLM (on-premise SharePoint) and Collabspace (SaaS) are related products — the ERMS/CollabWare reference in the SOW likely refers to Collabspace given ICE's Agency ATO for the SaaS platform.",
+    "Vienna, VA place of performance likely means on-site work at SEVP HQ (Potomac Center Plaza or similar)."
+  ],
+  "open_questions": [
+    "Will the set-aside be designated small business or WOSB? (Critical to pursue/pass decision — call Samuel Thompson at APFS coordinator)",
+    "Is there a Phase 1 (non-price) / Phase 2 (price) structure for this GSA Schedule competition?",
+    "Does the expanded $5-10M ceiling include support for the broader ICE ERMS (agency-wide CollabWare) beyond SEVP, or just SEVP's systems?",
+    "Has a Sources Sought or RFI been released on SAM.gov that preceded the APFS posting?",
+    "Does Changeis have any staff with IGP (Institute of Certified Records Managers), CRM, or CollabWare certifications?"
+  ],
+  "data_sources": [
+    {"name": "DHS APFS Forecast Record F2026072965", "url": "https://apfs-cloud.dhs.gov/record/72965/public-print/"},
+    {"name": "GovTribe Neostek Profile", "url": "https://govtribe.com/vendors/neostek-inc-dot-654j0"},
+    {"name": "DHS ICE PIA-001(c) SEVIS/SEVPAMS/SETA", "url": "https://www.reginfo.gov/public/do/DownloadDocument?objectID=97773501"},
+    {"name": "Collabware Government FedRAMP/ICE ATO", "url": "https://collabware.com/government"},
+    {"name": "Carahsoft Collabware Partnership / ICE ATO confirmation", "url": "https://finance.yahoo.com/news/carahsoft-collabware-partner-compliant-archive-160000020.html"},
+    {"name": "HigherGov F2026072965", "url": "https://www.highergov.com/contract-forecast/electronic-records-and-information-management-rim-1140585/"},
+    {"name": "APFS JSON", "url": "/home/user/workspace/cron_tracking/6f5371ab/apfs_F2026072965.json"}
+  ],
+  "next_steps": [
+    "Call Samuel Thompson (APFS SBS Coordinator, (202) 329-0703) to ask about small business set-aside determination timeline",
+    "Email/call Christopher Jackson (Requirements POC) for a pre-solicitation capabilities briefing",
+    "Set SAM.gov alert: Agency=DHS/ICE, NAICS=541611, keyword=SEVP/RIM/ERMS",
+    "Identify and contact 1-2 CollabWare-certified teaming partners (check GSA Advantage for SIN 518210ERM holders)",
+    "Decision gate: Go/No-Go must be confirmed before solicitation drops (~April 1, 2026)",
+    "If going: assign a capture manager and begin RIM-specific past performance documentation now"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "6 web searches + 4 URL fetches + large APFS JSON parsing; deep-dive HTML generation"
+  }
+}</div>
+  </div>
+
+  <!-- Continue Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span>📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span>✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span>☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · ICE HSI RIM Support Deep Dive (F2026072965) · April 6, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Hidden context JSON -->
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Deep Dive: ICE HSI RIM F2026072965",
+  "task_date": "2026-04-06",
+  "deliverable_file": "deep-dive-ice-hsi-541611-2965-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-ice-hsi-541611-2965-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Generate a deep-dive analysis for APFS opportunity F2026072965. Agency: ICE/HSI. Title: Electronic Records and Information Management (RIM) Support Services. NAICS: 541611. Dollar Range: $5M to $10M. Contract Vehicle: GSA Schedule. Anticipated Award: 06/10/2026. RAG Score: 0.636 (MODERATE).",
+  "approach": "Read full APFS JSON; researched SEVP/SEVPAMS system context; analyzed Neostek incumbent; researched CollabWare FedRAMP/ICE ATO; built capability matrix from RAG matches; synthesized Go/No-Go.",
+  "key_findings": [
+    "Neostek is strongest possible incumbent — entire company built around RIM, holds ICE SEVP contract ($3.43M) + DOJ RIM BPA ($150M)",
+    "ERMS is CollabWare Collabspace with ICE Agency FedRAMP ATO — explicit requirement gap for Changeis",
+    "Scope expansion from $3.43M to $5-10M ceiling signals significant program growth",
+    "GSA MAS 541611 is clean vehicle match for Changeis",
+    "Set-aside TBD — WOSB designation would disqualify Changeis"
+  ],
+  "dead_ends": [
+    "USAspending direct API returned 404 — used GovTribe aggregated data",
+    "Could not access eBuy for any prior RFI"
+  ],
+  "assumptions": [
+    "CollabWare reference is Collabspace SaaS given ICE Agency ATO",
+    "Vienna VA = SEVP HQ on-site work"
+  ],
+  "open_questions": [
+    "Will set-aside be WOSB or small business?",
+    "Is there a Phase 1/2 structure?",
+    "Does any Changeis staff hold CRM/IGP or CollabWare certification?"
+  ],
+  "data_sources": [
+    {"name": "DHS APFS F2026072965", "url": "https://apfs-cloud.dhs.gov/record/72965/public-print/"},
+    {"name": "GovTribe Neostek", "url": "https://govtribe.com/vendors/neostek-inc-dot-654j0"},
+    {"name": "DHS ICE PIA SEVPAMS", "url": "https://www.reginfo.gov/public/do/DownloadDocument?objectID=97773501"},
+    {"name": "Collabware Government", "url": "https://collabware.com/government"}
+  ],
+  "next_steps": [
+    "Call Samuel Thompson (APFS SBS Coordinator, (202) 329-0703) re set-aside determination",
+    "Contact Christopher Jackson for pre-solicitation capabilities briefing",
+    "Set SAM.gov alert for ICE NAICS 541611 SEVP/RIM/ERMS",
+    "Identify CollabWare-certified teaming partner",
+    "Decision gate before ~April 1 solicitation release"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "6 web searches + 4 URL fetches + large APFS JSON parsing"
+  }
+}
+</script>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-ice-hsi-541611-2965-2026-04-06.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the ICE HSI RIM Support Deep Dive (F2026072965).
+
+Previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Will the set-aside be WOSB or small business? (Critical for go/no-go)
+- Does any Changeis staff hold CRM/IGP or CollabWare certification?
+- Is there a Phase 1/2 structure for this GSA Schedule competition?
+
+Suggested next steps:
+- Check SAM.gov for released solicitation or Sources Sought
+- Identify CollabWare-certified teaming partners on GSA Advantage (SIN 518210ERM)
+- Update analysis with any new solicitation details
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    });
+  }
+
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: ICE HSI RIM Deep Dive F2026072965');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  const todoistTitle = encodeURIComponent('Follow up: ICE HSI RIM Deep Dive F2026072965');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
