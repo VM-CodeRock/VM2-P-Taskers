@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: TSA DC1 &amp; DC15 O&amp;M — F2025071032 — April 6, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* KV Grid */
+  .kv-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    margin-top: 10px;
+  }
+  @media (max-width: 600px) { .kv-grid { grid-template-columns: 1fr; } }
+  .kv {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    box-shadow: var(--card-shadow);
+  }
+  .kv-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.07em; margin-bottom: 4px;
+  }
+  .kv-value {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    line-height: 1.35;
+  }
+
+  /* Score badge */
+  .score-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    padding: 4px 14px; border-radius: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .score-strong { background: #16a34a; color: #fff; }
+  .score-moderate { background: #d97706; color: #fff; }
+  .score-relevant { background: #7c3aed; color: #fff; }
+  .score-low { background: #6b7280; color: #fff; }
+
+  /* Alert/callout */
+  .callout {
+    background: var(--surface-alt);
+    border-left: 4px solid var(--red);
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 14.5px;
+  }
+  .callout strong { color: var(--red); }
+  .callout-warn { border-left-color: #d97706; }
+  .callout-warn strong { color: #d97706; }
+  .callout-green { border-left-color: #16a34a; }
+  .callout-green strong { color: #16a34a; }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Timeline */
+  .timeline { margin: 10px 0; }
+  .tl-item {
+    display: flex; gap: 14px; align-items: flex-start;
+    margin-bottom: 14px; font-size: 14.5px;
+  }
+  .tl-dot {
+    flex-shrink: 0; width: 12px; height: 12px;
+    background: var(--red); border-radius: 50%;
+    margin-top: 5px;
+  }
+  .tl-dot.future { background: var(--border); border: 2px solid var(--red); }
+  .tl-content { flex: 1; }
+  .tl-date {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 2px;
+  }
+
+  /* Steps */
+  .steps { margin-top: 8px; }
+  .step { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; font-size: 15px; }
+  .step-num {
+    flex-shrink: 0; width: 26px; height: 26px;
+    background: var(--navy); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    margin-top: 1px;
+  }
+  [data-theme="dark"] .step-num { background: var(--red); }
+  .step-text { flex: 1; }
+
+  /* Go/No-Go */
+  .gng-box {
+    background: var(--surface);
+    border: 2px solid var(--red);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-top: 10px;
+    text-align: center;
+  }
+  .gng-verdict {
+    font-family: system-ui, sans-serif;
+    font-size: 22px; font-weight: 900;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--red);
+    margin-bottom: 6px;
+  }
+  .gng-sub {
+    font-size: 14px; color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Context section */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .note { font-size: 13px; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · Forecast</div>
+    <h1>TSA Data Center 1 &amp; Data Center 15<br>Operations &amp; Maintenance</h1>
+    <div class="hero-sub">APFS Forecast F2025071032 · NAICS 541519 · DCCO IDIQ</div>
+    <div class="hero-date">April 6, 2026 · RAG Score: 0.654 <span class="score-badge score-strong">STRONG</span></div>
+  </div>
+
+  <!-- Opportunity Snapshot -->
+  <div class="section">
+    <div class="section-header">Opportunity Snapshot</div>
+    <div class="kv-grid">
+      <div class="kv"><div class="kv-label">APFS Number</div><div class="kv-value">F2025071032</div></div>
+      <div class="kv"><div class="kv-label">Agency / Component</div><div class="kv-value">DHS — Transportation Security Administration (TSA)</div></div>
+      <div class="kv"><div class="kv-label">Title</div><div class="kv-value">Data Center 1 &amp; Data Center 15 Operations and Maintenance</div></div>
+      <div class="kv"><div class="kv-label">NAICS</div><div class="kv-value">541519 — Other Computer Related Services</div></div>
+      <div class="kv"><div class="kv-label">Contract Vehicle</div><div class="kv-value">DCCO IDIQ · <code>70RTAC21D00000006</code></div></div>
+      <div class="kv"><div class="kv-label">Contract Type</div><div class="kv-value">Firm Fixed Price (Task Order)</div></div>
+      <div class="kv"><div class="kv-label">Estimated Value</div><div class="kv-value">$2M – $5M</div></div>
+      <div class="kv"><div class="kv-label">Period of Performance</div><div class="kv-value">09/30/2026 – 09/29/2029 (~3 years)</div></div>
+      <div class="kv"><div class="kv-label">Solicitation Release</div><div class="kv-value">04/01/2026 (est.)</div></div>
+      <div class="kv"><div class="kv-label">Anticipated Award</div><div class="kv-value">Q4 FY2026 (Sept 2026)</div></div>
+      <div class="kv"><div class="kv-label">Place of Performance</div><div class="kv-value">Stennis Space Center, MS (NASA NCCIPS facility)</div></div>
+      <div class="kv"><div class="kv-label">Incumbent</div><div class="kv-value">Peraton Engineering (Perspecta Engineering legacy)</div></div>
+      <div class="kv"><div class="kv-label">Contract Status</div><div class="kv-value">Recompetition (REC)</div></div>
+      <div class="kv"><div class="kv-label">Small Business Program</div><div class="kv-value">TBD — No set-aside designated yet</div></div>
+      <div class="kv"><div class="kv-label">Competition</div><div class="kv-value">YES — Follow-on to Existing Contract</div></div>
+      <div class="kv"><div class="kv-label">Requirements Contact</div><div class="kv-value">Robert DeBarba · <a href="mailto:robert.debarba1@tsa.dhs.gov">robert.debarba1@tsa.dhs.gov</a> · (571) 227-3807</div></div>
+      <div class="kv"><div class="kv-label">SBS Coordinator</div><div class="kv-value">Elizabeth Harrington · <a href="mailto:TSASmallBiz@tsa.dhs.gov">TSASmallBiz@tsa.dhs.gov</a> · (571) 227-1067</div></div>
+    </div>
+    <p class="note" style="margin-top:12px">APFS published 07/23/2025. RAG analysis scored 2026-04-02. This is a forecast — no active SAM solicitation was found as of this deep dive.</p>
+  </div>
+
+  <!-- Requirement Description -->
+  <div class="section">
+    <div class="section-header">Requirement Description</div>
+    <div class="callout">
+      <strong>What TSA is buying:</strong> Continued colocation space, power, and connectivity at DHS's Data Center 1 (DC1) and Data Center 15 (DC15) via the DCCO IDIQ. The fees cover physical infrastructure — raised floor space, power, cooling, and physical security — for TSA's production, test, and development environments. DHS HQ controls and owns the facilities; TSA pays O&amp;M fees through an IDIQ task order. The work is not IT services delivery per se — it is the facility-level colocation subscription that keeps TSA's mission-critical systems running at DC1/DC15.
+    </div>
+    <p style="font-size:15px;margin-top:10px;">
+      <strong>DC1 background:</strong> Data Center One is located at the <a href="https://www.meritalk.com/articles/dhs-looks-to-advances-its-data-center-and-cloud-optimization-efforts/" target="_blank">National Center for Critical Information Processing and Storage (NCCIPS)</a> at NASA's Stennis Space Center in Bay St. Louis, Mississippi. DHS occupies approximately 35,000 sq ft of raised floor in a NASA-owned facility. DC1 historically housed over 2,000 physical servers, 1,660 VMs, and 765 TB of provisioned storage across DHS components including TSA, OBIM, and others.
+    </p>
+    <p style="font-size:15px;margin-top:8px;">
+      <strong>DC15 context:</strong> DC15 is a DHS HQ colocation/annex data center also served under the DCCO umbrella. Recent FPDS records show <a href="https://www.govconinabox.com/explore/contractors/profile/CJ38H41QMGA1" target="_blank">Peraton task orders</a> explicitly covering "DC 1 and DC 15" colocation services for DHS components including TSA and OBIM. The TSA <strong>IMPACT II</strong> contract (Peraton, $342.7M, 2022–2027) covers TSA's enterprise IT management, while this separate task order specifically covers the colocation O&amp;M fees owed to the DCCO facility manager.
+    </p>
+  </div>
+
+  <!-- DCCO Vehicle Deep Dive -->
+  <div class="section">
+    <div class="section-header">DCCO Vehicle — Structure &amp; Access</div>
+    <div class="callout callout-warn">
+      <strong>Critical Finding:</strong> The DCCO IDIQ (Contract No. <code>70RTAC21D00000006</code>) is a <strong>single-award IDIQ held exclusively by Peraton Technology Services</strong> (formerly Perspecta Engineering Inc.). Peraton was awarded this $2.685B, 10-year contract in September 2021. Only Peraton — as prime — can receive task orders directly. All other companies, including Changeis, can only participate as <strong>subcontractors to Peraton</strong>.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Detail</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Contract Number</strong></td>
+          <td><code>70RTAC21D00000006</code></td>
+          <td><a href="https://www.highergov.com/idv/70RTAC21D00000006/" target="_blank">HigherGov</a></td>
+        </tr>
+        <tr>
+          <td><strong>Prime Contractor</strong></td>
+          <td>Peraton Technology Services Inc. (CAGE: 6KTD1)</td>
+          <td><a href="https://www.peraton.com/news/peraton-awarded-2-685-billion-contract-to-provide-data-center-and-cloud-optimization-support-services-to-u-s-department-of-homeland-security/" target="_blank">Peraton</a></td>
+        </tr>
+        <tr>
+          <td><strong>Award Date</strong></td>
+          <td>September 29, 2021</td>
+          <td><a href="https://www.highergov.com/idv/70RTAC21D00000006/" target="_blank">HigherGov</a></td>
+        </tr>
+        <tr>
+          <td><strong>IDIQ Ceiling</strong></td>
+          <td>$2.685 billion over 10 years</td>
+          <td><a href="https://www.peraton.com/contract-vehicles/dhs-dcco-support-services/" target="_blank">Peraton DCCO page</a></td>
+        </tr>
+        <tr>
+          <td><strong>Total Obligated to Date</strong></td>
+          <td>~$345.8M (as of Apr 2026, ~13% burn rate)</td>
+          <td><a href="https://www.federalcompass.com/award-contract-detail/70RTAC21D00000006" target="_blank">Federal Compass</a></td>
+        </tr>
+        <tr>
+          <td><strong>Contract Duration</strong></td>
+          <td>5-year base + options, ultimate completion Sept 28, 2026</td>
+          <td><a href="https://www.federalcompass.com/award-contract-detail/70RTAC21D00000006" target="_blank">Federal Compass</a></td>
+        </tr>
+        <tr>
+          <td><strong>Award Structure</strong></td>
+          <td>Single Award IDIQ — no other vehicle holders</td>
+          <td><a href="https://www.peraton.com/news/peraton-awarded-2-685-billion-contract-to-provide-data-center-and-cloud-optimization-support-services-to-u-s-department-of-homeland-security/" target="_blank">Peraton</a></td>
+        </tr>
+        <tr>
+          <td><strong>Known Subcontractors</strong></td>
+          <td>Technalink, Inc. (8(a) STARS II / EDWOSB, IT managed services); ETC Solutions (TSA IMPACT II sub, DC1 onsite)</td>
+          <td><a href="https://technalink.net/technalink-inc-secures-contract-award-supporting-the-department-of-homeland-security-dhs-data-center-and-cloud-optimization-dcco/" target="_blank">Technalink</a></td>
+        </tr>
+        <tr>
+          <td><strong>NAICS on IDIQ</strong></td>
+          <td>518210 (the individual TSA task order is listed under 541519)</td>
+          <td><a href="https://apfs-cloud.dhs.gov/record/71032/public-print/" target="_blank">APFS</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">The DCCO IDIQ expires in September 2026 — the same quarter as the anticipated award for this task order. A successor vehicle or re-compete of the IDIQ itself is likely in play. Watch for DHS OCIO announcements on DCCO recompetition.</p>
+  </div>
+
+  <!-- TSA Incumbent Context -->
+  <div class="section">
+    <div class="section-header">Incumbent &amp; Competitive Landscape</div>
+    <p style="font-size:15px;margin-bottom:12px;">The incumbent on this task order is <strong>Peraton Engineering</strong> (a Peraton subsidiary). Peraton holds a dominant position across TSA IT — it is simultaneously:</p>
+    <ul>
+      <li style="margin-bottom:6px;"><strong>DCCO prime</strong> — the only company that can receive task orders for DC1/DC15 colocation fees</li>
+      <li style="margin-bottom:6px;"><strong>TSA IMPACT II prime</strong> — $342.7M, 5-year contract (2022–2027) for TSA's entire enterprise IT management covering ~85,000 employees/contractors at all domestic and select international locations (<a href="https://www.peraton.com/news/peraton-awarded-342-7-million-contract-to-provide-tsa-with-comprehensive-mission-it-support-services/" target="_blank">Peraton press release, Dec 2022</a>)</li>
+      <li style="margin-bottom:6px;"><strong>DC1 onsite management legacy</strong> — Prior to Peraton, General Dynamics IT (GDIT) and CSRA held DC1 onsite roles going back to at least 2013, with ETC Solutions serving as a sub for TSA IMPACT I/II work at DC1</li>
+    </ul>
+
+    <table style="margin-top:12px;">
+      <thead>
+        <tr>
+          <th>Competitor / Stakeholder</th>
+          <th>Role</th>
+          <th>Strength</th>
+          <th>Changeis Consideration</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Peraton Engineering</strong></td>
+          <td>DCCO prime / incumbent / IMPACT II prime</td>
+          <td>Maximum — single-award vehicle holder; deep TSA relationships; onsite personnel at DC1 since 2022</td>
+          <td>Must subcontract through Peraton; not a competitor, a required partner</td>
+        </tr>
+        <tr>
+          <td><strong>ETC Solutions</strong></td>
+          <td>Peraton IMPACT II subcontractor, DC1 onsite team lead</td>
+          <td>High — technical expertise onsite at Stennis; TSA DTE/ITE management</td>
+          <td>Potential competitor for Peraton sub slots on this task order</td>
+        </tr>
+        <tr>
+          <td><strong>Technalink Inc.</strong></td>
+          <td>Peraton DCCO subcontractor (8(a), EDWOSB)</td>
+          <td>Established — certified sub relationship with Peraton on DCCO</td>
+          <td>Direct competitor for subcontract role; Technalink has head start</td>
+        </tr>
+        <tr>
+          <td><strong>CSRA / GDIT</strong></td>
+          <td>Historical DC1 incumbents (pre-2018)</td>
+          <td>Legacy institutional knowledge; no longer in primary role</td>
+          <td>Low threat; not in current DCCO ecosystem</td>
+        </tr>
+        <tr>
+          <td><strong>Other DHS DCCO subs</strong></td>
+          <td>Unknown — Peraton's full sub team not public</td>
+          <td>Variable</td>
+          <td>Market research needed; Peraton sub outreach recommended</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-warn" style="margin-top:14px;">
+      <strong>Key Structural Constraint:</strong> This is a recompetition of a task order <em>within</em> a single-award IDIQ. TSA will issue the RFP <strong>only to Peraton</strong> (or potentially invite competition within the DCCO vehicle if it is restructured). The "competition" referenced in APFS likely means Peraton must submit a competitive price, not that multiple vendors will bid directly to TSA. Changeis cannot bid directly — only through a Peraton subcontract arrangement.
+    </div>
+  </div>
+
+  <!-- RAG / Capability Matrix -->
+  <div class="section">
+    <div class="section-header">Changeis Capability Matrix (RAG Analysis)</div>
+    <p style="font-size:15px;margin-bottom:10px;">The RAG system scored this opportunity <strong>0.654 (STRONG)</strong> with 21 matches across Changeis's past performance corpus. The top matches are all DOT/Volpe task orders involving <strong>operations and maintenance of multi-environment server infrastructure, data center-hosted production systems, and O&amp;M/DevOps support</strong>. The semantic similarity is driven by O&amp;M language, multi-environment (Dev/Test/Prod) management, and technical operations patterns — not by physical data center facility management per se.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Score</th>
+          <th>Task Order</th>
+          <th>End Client</th>
+          <th>Doc Types</th>
+          <th>RAG Signal / Relevance to F2025071032</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>0.654</strong></td>
+          <td>V3272120</td>
+          <td>DOT / FHWA / FMCSA / Volpe</td>
+          <td>SOW, AWARD, OTHER</td>
+          <td>Website &amp; SharePoint dev/maintenance; production servers in Volpe Data Center; multi-environment operations support</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>0.646</td>
+          <td>V3272051</td>
+          <td>DOT / FHWA / FTA / Volpe</td>
+          <td>SOW, AWARD, TORFP, OTHER</td>
+          <td>Operations/maintenance of FHWA web and SharePoint systems; server-hosted production environments; recurring O&amp;M cycles</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>0.553</td>
+          <td>V3132051</td>
+          <td>DOT / FMCSA / Volpe</td>
+          <td>SOW, AWARD, MTPR, TORFP</td>
+          <td>FMCSA safety systems O&amp;M across Dev/Beta/CIE/Production servers (AWS &amp; Volpe DC); release governance; SOPs; troubleshooting</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>0.484</td>
+          <td>V3132168</td>
+          <td>FMCSA / Volpe</td>
+          <td>MTPR</td>
+          <td>Multi-system operations support (ELD, Clearinghouse, NCCDB/HHG, New Entrant Web System); recurring O&amp;M deliverables</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>0.465</td>
+          <td>V3132012</td>
+          <td>DOT / FMCSA / Volpe</td>
+          <td>SOW, AWARD, TORFP</td>
+          <td>Operations and maintenance of FMCSA web/safety systems; AWS + Volpe DC environment management; system governance</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="note" style="margin-top:8px;">All 21 matches are DOT/Volpe ecosystem task orders. No DHS/TSA past performance exists in the Changeis corpus. The STRONG classification reflects semantic O&amp;M alignment, not domain or agency match.</p>
+
+    <div style="margin-top:14px;">
+      <p class="section-header" style="font-size:13px;border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:10px;text-transform:none;letter-spacing:normal;color:var(--text-muted);">Requirements → Evidence Mapping</p>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Requirement Signal (F2025071032)</th>
+            <th>Best-Aligned Changeis Evidence</th>
+            <th>Gap Assessment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>O&amp;M of production, test, and development environments</td>
+            <td>V3132051 FMCSA: "maintenance and operations of Dev, Beta, CIE, Production Servers in AWS &amp; Volpe environment"</td>
+            <td><strong style="color:#16a34a;">Strong match</strong> — multi-environment O&amp;M is core Changeis DOT work</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Support mission-critical TSA production systems</td>
+            <td>V3272120: production server management for FHWA websites; V3132051: MCMIS/SMS/DSMS production ops</td>
+            <td><strong style="color:#d97706;">Moderate match</strong> — production system operations present, but DOT not DHS/TSA</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Colocation space/power/connectivity fee management</td>
+            <td>No direct analogue in Changeis corpus — this is a facility O&amp;M fee, not IT services delivery</td>
+            <td><strong style="color:#c53a3a;">Gap</strong> — Changeis has no evidence of managing physical data center colocation fees</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>DHS IDIQ / DCCO vehicle compliance</td>
+            <td>No DCCO vehicle access or past performance on DCCO task orders</td>
+            <td><strong style="color:#c53a3a;">Critical gap</strong> — vehicle access is mandatory and not available to Changeis as prime</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>FFP contract execution with recurring deliverables</td>
+            <td>Multiple FFP Volpe task orders (AWARD docs show FFP structures)</td>
+            <td><strong style="color:#16a34a;">Strong match</strong> — FFP contract management is well-evidenced</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>Security clearance / DHS suitability (Stennis onsite)</td>
+            <td>FMCSA/FHWA work — no evidence of DHS clearance-level work in corpus</td>
+            <td><strong style="color:#d97706;">Unknown / potential gap</strong> — TSA systems require DHS suitability at minimum</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- USAspending Analysis -->
+  <div class="section">
+    <div class="section-header">USAspending &amp; Spending Context</div>
+    <p style="font-size:15px;margin-bottom:10px;">Peraton Technology Services holds the DCCO IDIQ and has received the following relevant TSA and DHS data center task orders under <code>70RTAC21D00000006</code>:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Amount</th>
+          <th>Date</th>
+          <th>NAICS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>TSA Data Center Operations and Maintenance Support Services — Option Year 3</td>
+          <td>~$1.16M</td>
+          <td>Aug 2025</td>
+          <td>518210</td>
+        </tr>
+        <tr>
+          <td>DHS ID DC 1 and DC 15 Colocation — 4-Month Base (Follow-on TO of 70RDAD23FR0000100)</td>
+          <td>$18,903</td>
+          <td>Sep 2025</td>
+          <td>518210</td>
+        </tr>
+        <tr>
+          <td>OBIM Level 1 services for on-premise assets at DC1, DC15, and SV10</td>
+          <td>Not disclosed</td>
+          <td>FY2025</td>
+          <td>518210</td>
+        </tr>
+        <tr>
+          <td>O&amp;M and installation support for DC1 Network Collector Support Services</td>
+          <td>Not disclosed</td>
+          <td>FY2025</td>
+          <td>518210</td>
+        </tr>
+        <tr>
+          <td>TSA WPaaS (virtual desktop service) renewal — TSA network access</td>
+          <td>$75,086</td>
+          <td>Sep 2025</td>
+          <td>518210</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:8px;">The current TSA DC O&amp;M task order (Option Year 3, ~$1.16M/yr) implies an annual burn rate of roughly $1.0–1.5M; the recompetition at $2M–$5M suggests an expanded scope or 3-year FFP structure of ~$1.5–1.7M/year. Source: <a href="https://www.govconinabox.com/explore/contractors/profile/CJ38H41QMGA1" target="_blank">GovCon in a Box / Peraton FPDS profile</a>.</p>
+
+    <div class="callout callout-warn" style="margin-top:12px;">
+      <strong>Note on NAICS discrepancy:</strong> The DCCO IDIQ (and most Peraton task orders under it) are coded under <strong>518210</strong> (Computing Infrastructure/Data Processing). The APFS forecast lists this task order under <strong>541519</strong> (Other Computer Related Services). This suggests TSA may have discretion in how it classifies the recompete, which could affect SB set-aside eligibility and competitive pool.
+    </div>
+  </div>
+
+  <!-- Go/No-Go -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Assessment</div>
+
+    <div class="gng-box">
+      <div class="gng-verdict">NO-GO AS PRIME · CONDITIONAL PURSUE AS SUB</div>
+      <div class="gng-sub">Changeis cannot bid directly. Pursue via Peraton subcontract relationship if DCCO capabilities exist.</div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Criterion</th>
+            <th>Assessment</th>
+            <th>Finding</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>DCCO Vehicle Access</strong></td>
+            <td><span style="color:#c53a3a;font-weight:700;">❌ No Direct Access</span></td>
+            <td>DCCO is a single-award IDIQ held exclusively by Peraton. Changeis cannot receive task orders as a prime. Access only through Peraton subcontract.</td>
+          </tr>
+          <tr>
+            <td><strong>TSA Domain Experience</strong></td>
+            <td><span style="color:#c53a3a;font-weight:700;">❌ Not Established</span></td>
+            <td>No TSA past performance exists in Changeis's RAG corpus. Peraton's IMPACT II dominance makes TSA-direct entry very difficult without an existing relationship.</td>
+          </tr>
+          <tr>
+            <td><strong>DHS Domain Experience</strong></td>
+            <td><span style="color:#d97706;font-weight:700;">⚠ Partial</span></td>
+            <td>Changeis has active DHS work: USCIS workforce modeling (2023) and CBP HCPS ($20M, 2024). No IT infrastructure or data center work within DHS ecosystem.</td>
+          </tr>
+          <tr>
+            <td><strong>Data Center O&amp;M Capabilities</strong></td>
+            <td><span style="color:#d97706;font-weight:700;">⚠ IT O&amp;M Yes; Physical DC Fees No</span></td>
+            <td>Changeis has strong DOT/Volpe multi-environment IT O&amp;M. Physical colocation fee management (space/power/connectivity) is not evidenced in past performance.</td>
+          </tr>
+          <tr>
+            <td><strong>RAG Score / Past Performance Fit</strong></td>
+            <td><span style="color:#16a34a;font-weight:700;">✓ 0.654 (STRONG)</span></td>
+            <td>High semantic alignment on O&amp;M of multi-environment production systems. Score reflects genuine operational similarity, though domain mismatch (DOT vs. TSA) is a weakness.</td>
+          </tr>
+          <tr>
+            <td><strong>Security Clearance Posture</strong></td>
+            <td><span style="color:#d97706;font-weight:700;">⚠ Unknown</span></td>
+            <td>Stennis onsite work and TSA systems require at minimum DHS Public Trust / suitability. Whether Changeis has cleared staff for TSA/DHS systems is unknown.</td>
+          </tr>
+          <tr>
+            <td><strong>SB Set-Aside Opportunity</strong></td>
+            <td><span style="color:#d97706;font-weight:700;">⚠ TBD</span></td>
+            <td>SB Program listed as "TBD." If designated as 8(a) or SB set-aside, Changeis could potentially pursue as a sub to a certified vehicle holder or through teaming. Monitor closely.</td>
+          </tr>
+          <tr>
+            <td><strong>Competitive Window</strong></td>
+            <td><span style="color:#c53a3a;font-weight:700;">❌ Narrow</span></td>
+            <td>Solicitation estimated April 1, 2026 — which may already be imminent or past by the time this deep dive is actioned. The window for teaming outreach is tight.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-green" style="margin-top:14px;">
+      <strong>Subcontract Path Analysis:</strong> The most realistic path for Changeis on this specific task order is as a <strong>subcontractor to Peraton</strong>. Peraton has a DHS subcontracting goal of 43% for small businesses. Changeis's DHS experience (USCIS, CBP) and IT O&amp;M credentials could make it attractive as a sub for program management, technical operations, or reporting/compliance functions. The key action is direct outreach to Peraton's DCCO program leadership and small business liaison.
+    </div>
+
+    <div class="callout callout-warn" style="margin-top:10px;">
+      <strong>Strategic Watch Item — DCCO Recompete:</strong> The DCCO IDIQ base contract expires September 2026 — the same timeframe as this task order's anticipated award. DHS may recompete the IDIQ itself, potentially shifting to a multi-award or expanding the small business participation structure. A DCCO recompete would <em>fundamentally change the competitive landscape</em> and open a direct prime path for Changeis. Monitor DHS OCIO solicitations on SAM.gov for any DCCO successor vehicle.
+    </div>
+  </div>
+
+  <!-- Timeline & Watch Items -->
+  <div class="section">
+    <div class="section-header">Forecast Timeline &amp; What to Watch</div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <div class="tl-date">July 23, 2025</div>
+          <p>APFS forecast record published. Signals TSA planning for recompetition.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <div class="tl-date">April 1, 2026 (Est.)</div>
+          <p>Solicitation release. TSA issues RFP to Peraton (or within DCCO vehicle). <strong>This date may have already passed</strong> as of this deep dive — check SAM.gov for active solicitation under <code>70RTAC21D00000006</code>.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot future"></div>
+        <div class="tl-content">
+          <div class="tl-date">Q2–Q3 2026</div>
+          <p>Expected proposal evaluation period. Teaming discussions with Peraton should happen <em>before</em> proposal submission. This is the critical outreach window.</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot future"></div>
+        <div class="tl-content">
+          <div class="tl-date">September 2026 (Q4 FY2026)</div>
+          <p>Anticipated award. PoP begins September 30, 2026 and runs through September 29, 2029 (3 years).</p>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot future"></div>
+        <div class="tl-content">
+          <div class="tl-date">Ongoing: DCCO Recompete Watch</div>
+          <p>The DCCO IDIQ base expires Sep 2026. Watch SAM.gov and DHS OCIO procurement forecasts for any DCCO successor vehicle — this is a higher-value strategic opportunity for Changeis.</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:14px;font-weight:600;margin-top:12px;margin-bottom:6px;">SAM.gov Watch Keywords:</p>
+    <ul style="font-size:14px;">
+      <li><code>70RTAC21D00000006</code> — DCCO IDIQ task order modifications and new awards</li>
+      <li>"Data Center and Cloud Optimization" + TSA</li>
+      <li>"DC1 DC15 operations maintenance TSA"</li>
+      <li>"DCCO" + recompete or successor or follow-on</li>
+      <li>Robert DeBarba — direct SAM contact monitoring</li>
+    </ul>
+  </div>
+
+  <!-- Recommended Actions -->
+  <div class="section">
+    <div class="section-header">Recommended Next Steps</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Check SAM.gov immediately</strong> for any active solicitation under DCCO contract <code>70RTAC21D00000006</code> with TSA as ordering agency and DC1/DC15 O&amp;M as scope. The estimated release date of 04/01/2026 means this may already be live.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Reach out to Peraton's small business/teaming liaison</strong> — Peraton's DCCO program is under DHS's 43% SB subcontracting goal. Contact Peraton's DHS sector BD team and reference DCCO task order for TSA DC1/DC15 O&amp;M. Position Changeis as a program management, operations support, or technical documentation sub.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Contact Robert DeBarba</strong> (robert.debarba1@tsa.dhs.gov, 571-227-3807) for a capability briefing. Given the forecast status and timeline, a 15-minute intro call to understand scope, key evaluation factors, and teaming openness is appropriate. Reference Changeis DHS work (USCIS, CBP) as agency familiarity credentials.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text"><strong>Monitor DCCO IDIQ recompetition</strong> — the IDIQ expires September 2026. Any successor DCCO vehicle is a <em>strategic</em> prime opportunity for Changeis if structured as multi-award or with SB preferences. Set a SAM.gov alert for DHS OCIO data center and DCCO procurements. This is a higher-priority watch item than the task order itself.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-text"><strong>Contact TSA SBS Coordinator</strong> Elizabeth Harrington (TSASmallBiz@tsa.dhs.gov, 571-227-1067) to understand whether a small business set-aside designation is being considered for this task order. If the SB Program field changes from "TBD" to a specific designation, Changeis's path shifts accordingly.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Deep Dive: TSA DC O&M F2025071032",
+  "task_date": "2026-04-06",
+  "deliverable_file": "deep-dive-tsa-541519-1032-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-541519-1032-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [
+    "deep-dive-uscis-9990-2026-04-01.html",
+    "deep-dive-usss-2375-2026-04-03.html"
+  ],
+  "original_instructions": "Generate a deep-dive analysis for APFS opportunity F2025071032. Agency: TSA. Title: Data Center 1 & Data Center 15 Operations and Maintenance. NAICS: 541519. Dollar Range: $2M to $5M. Contract Vehicle: DCCO. Anticipated Award: 09/01/2026. Contact: Robert DeBarba. RAG Score: 0.654 (STRONG). Tasks: skip SAM active fetch (forecast), read RAG from APFS JSON, USAspending analysis, competitive landscape, capability matrix, Go/No-Go, forecast timeline.",
+  "approach": "Read APFS JSON file for full RAG data and opportunity details. Ran parallel web research on DCCO vehicle structure, Peraton DCCO history, TSA data center contracts, and Changeis capabilities. Synthesized competitive landscape from HigherGov, Federal Compass, Peraton press releases, GovCon in a Box, and LinkedIn (James Wade career profile for DC1 onsite context). Built capability matrix by mapping top RAG matches (Volpe/DOT task orders) against F2025071032 requirements.",
+  "key_findings": [
+    "DCCO is a single-award IDIQ held exclusively by Peraton — Changeis cannot bid as prime. Only path is as Peraton subcontractor.",
+    "Peraton's DCCO IDIQ expires September 2026 — same timeframe as this task order award. A DCCO recompete could open a direct prime path for Changeis.",
+    "RAG score 0.654 (STRONG) reflects genuine IT O&M semantic alignment (multi-environment production operations) from Changeis DOT/Volpe work, but there is no DHS/TSA past performance in the corpus.",
+    "Current TSA DC O&M task order runs ~$1.16M/yr (Option Year 3, Aug 2025). The $2M-$5M range for the recompete suggests 3-year FFP pricing or expanded scope.",
+    "Place of Performance is NASA Stennis Space Center, MS — onsite personnel will need DHS suitability/clearance. No evidence Changeis has cleared staff for TSA systems."
+  ],
+  "dead_ends": [
+    "USAspending direct API unavailable — used HigherGov, GovCon in a Box, and Federal Compass as proxy data sources.",
+    "Changeis capabilities page (changeis.com/about/) returned 404; changeis.com/services/ also 404. Used changeis.com/capabilities/ and recent press releases.",
+    "Could not access full task order list from HigherGov IDIQ page (paywall on task order details). Used description snippets from search results.",
+    "No SAM.gov active solicitation found — consistent with forecast status."
+  ],
+  "assumptions": [
+    "DCCO IDIQ (70RTAC21D00000006) remains single-award through the anticipated award date of Q4 FY2026.",
+    "The NAICS code for the recompeted task order may shift to 518210 consistent with the rest of the DCCO portfolio.",
+    "Changeis does not currently have a subcontract relationship with Peraton on DCCO.",
+    "The Peraton DHS subcontracting goal of 43% for small businesses applies to this task order."
+  ],
+  "open_questions": [
+    "Has the DCCO IDIQ been recompeted or extended? The base period expires Sept 2026 — what is DHS's plan?",
+    "Is Changeis currently a Peraton subcontractor on any DHS contract that could serve as a bridge relationship?",
+    "What is the SB designation for this task order? Elizabeth Harrington (SBS Coordinator) should be contacted.",
+    "Has the solicitation already been released (est. 04/01/2026)? Check SAM.gov for active TO solicitation under 70RTAC21D00000006.",
+    "Does Changeis have any staff with DHS/TSA suitability or clearances?"
+  ],
+  "data_sources": [
+    {"name": "APFS F2025071032 JSON", "url": "/home/user/workspace/cron_tracking/6f5371ab/apfs_F2025071032.json"},
+    {"name": "APFS Public Print", "url": "https://apfs-cloud.dhs.gov/record/71032/public-print/"},
+    {"name": "Peraton DCCO Press Release", "url": "https://www.peraton.com/news/peraton-awarded-2-685-billion-contract-to-provide-data-center-and-cloud-optimization-support-services-to-u-s-department-of-homeland-security/"},
+    {"name": "HigherGov DCCO IDIQ", "url": "https://www.highergov.com/idv/70RTAC21D00000006/"},
+    {"name": "Federal Compass DCCO", "url": "https://www.federalcompass.com/award-contract-detail/70RTAC21D00000006"},
+    {"name": "GovCon in a Box / Peraton profile", "url": "https://www.govconinabox.com/explore/contractors/profile/CJ38H41QMGA1"},
+    {"name": "Technalink DCCO sub announcement", "url": "https://technalink.net/technalink-inc-secures-contract-award-supporting-the-department-of-homeland-security-dhs-data-center-and-cloud-optimization-dcco/"},
+    {"name": "Peraton IMPACT II TSA Press Release", "url": "https://www.peraton.com/news/peraton-awarded-342-7-million-contract-to-provide-tsa-with-comprehensive-mission-it-support-services/"},
+    {"name": "Route Fifty / DCCO DC1 description", "url": "https://www.route-fifty.com/infrastructure/2021/01/dhs-issues-call-for-infrastructure-modernization/315970/"},
+    {"name": "MeriTalk / Stennis DC1 details", "url": "https://www.meritalk.com/articles/dhs-looks-to-advances-its-data-center-and-cloud-optimization-efforts/"},
+    {"name": "LinkedIn: James Wade (DC1 Onsite History)", "url": "https://www.linkedin.com/in/james-w-wade-46781310"},
+    {"name": "Changeis capabilities page", "url": "https://changeis.com/capabilities/"},
+    {"name": "Changeis CBP HCPS award", "url": "https://changeis.com/news/changeis-inc-awarded-20m-dhs-cbp-human-capital-program-support-hcps-contract/"}
+  ],
+  "next_steps": [
+    "Check SAM.gov for active solicitation under 70RTAC21D00000006 with TSA DC1/DC15 O&M scope",
+    "Contact Peraton small business/teaming liaison about DCCO subcontract opportunity",
+    "Contact Robert DeBarba (robert.debarba1@tsa.dhs.gov) for capability briefing",
+    "Contact Elizabeth Harrington (TSASmallBiz@tsa.dhs.gov) re: SB designation for this TO",
+    "Set SAM.gov alert for DCCO recompete / successor vehicle — higher strategic value"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.45",
+    "cost_ceiling": "$0.80",
+    "notes": "Deep dive with 6 web searches, multiple URL fetches (HigherGov, Peraton, Technalink, Changeis, APFS), full APFS JSON read (64KB), and reference HTML template read. Moderate complexity with competitive landscape synthesis."
+  }
+}</div>
+  </div>
+
+  <!-- Hidden JSON block -->
+  <script type="application/json" id="vm2-context-data">{
+  "task_name": "Deep Dive: TSA DC O&M F2025071032",
+  "task_date": "2026-04-06",
+  "deliverable_file": "deep-dive-tsa-541519-1032-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-541519-1032-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": ["deep-dive-uscis-9990-2026-04-01.html", "deep-dive-usss-2375-2026-04-03.html"],
+  "original_instructions": "Generate a deep-dive analysis for APFS opportunity F2025071032. Agency: TSA. Title: Data Center 1 & Data Center 15 Operations and Maintenance. NAICS: 541519. Dollar Range: $2M to $5M. Contract Vehicle: DCCO. Anticipated Award: 09/01/2026. Contact: Robert DeBarba. RAG Score: 0.654 (STRONG). Tasks: skip SAM active fetch (forecast), read RAG from APFS JSON, USAspending analysis, competitive landscape, capability matrix, Go/No-Go, forecast timeline.",
+  "approach": "Read APFS JSON for full RAG data and opportunity details. Parallel web research on DCCO vehicle structure, Peraton DCCO history, TSA data center contracts, and Changeis capabilities. Synthesized competitive landscape from multiple sources. Built capability matrix from top RAG matches.",
+  "key_findings": [
+    "DCCO is single-award IDIQ held by Peraton — Changeis cannot prime; only path is Peraton subcontract",
+    "DCCO IDIQ expires Sept 2026 — recompete is strategic prime opportunity to watch",
+    "RAG 0.654 STRONG from IT O&M semantic match (DOT/Volpe), not DHS/TSA domain match",
+    "Current TSA DC O&M ~$1.16M/yr; $2M-$5M recompete implies 3-year FFP or expanded scope",
+    "Onsite at NASA Stennis requires DHS suitability — Changeis clearance posture unknown"
+  ],
+  "dead_ends": ["USAspending API unavailable", "Changeis about/services pages returned 404", "No SAM active solicitation (forecast)"],
+  "assumptions": ["DCCO remains single-award through Q4 FY2026", "Changeis has no current Peraton DCCO sub relationship"],
+  "open_questions": ["Has DCCO been recompeted/extended?", "Is Changeis a current Peraton sub on DHS work?", "What will SB designation be?", "Has solicitation already released (est. 04/01/2026)?"],
+  "data_sources": [
+    "https://apfs-cloud.dhs.gov/record/71032/public-print/",
+    "https://www.peraton.com/news/peraton-awarded-2-685-billion-contract-to-provide-data-center-and-cloud-optimization-support-services-to-u-s-department-of-homeland-security/",
+    "https://www.highergov.com/idv/70RTAC21D00000006/",
+    "https://www.federalcompass.com/award-contract-detail/70RTAC21D00000006",
+    "https://www.govconinabox.com/explore/contractors/profile/CJ38H41QMGA1",
+    "https://technalink.net/technalink-inc-secures-contract-award-supporting-the-department-of-homeland-security-dhs-data-center-and-cloud-optimization-dcco/",
+    "https://www.peraton.com/news/peraton-awarded-342-7-million-contract-to-provide-tsa-with-comprehensive-mission-it-support-services/",
+    "https://changeis.com/capabilities/"
+  ],
+  "next_steps": [
+    "Check SAM.gov for active TO solicitation under 70RTAC21D00000006",
+    "Outreach to Peraton DCCO small business/teaming liaison",
+    "Contact Robert DeBarba (robert.debarba1@tsa.dhs.gov)",
+    "Contact Elizabeth Harrington (TSASmallBiz@tsa.dhs.gov) re SB designation",
+    "Set SAM alert for DCCO recompete"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.45",
+    "cost_ceiling": "$0.80",
+    "notes": "Deep dive with 6 web searches, multiple URL fetches, full APFS JSON read (64KB), and reference template read."
+  }
+}</script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span>📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span>✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span>☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · TSA DC1 &amp; DC15 O&amp;M Deep Dive · April 6, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up prompt
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-541519-1032-2026-04-06.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the TSA DC1 & DC15 O&M Deep Dive (F2025071032).
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Has the DCCO IDIQ been recompeted or extended beyond Sept 2026?
+- Has the 04/01/2026 solicitation been released on SAM.gov?
+- What is the final SB designation for this task order?
+- Is Changeis currently a Peraton subcontractor on any DHS work?
+
+Suggested next steps:
+- Check SAM.gov for active solicitation under 70RTAC21D00000006
+- Research Peraton teaming/subcontract outreach approach
+- Monitor DCCO recompete announcements
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: TSA DC1 & DC15 O&M Deep Dive (F2025071032)');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Key open questions:
+- Has DCCO IDIQ been recompeted?
+- Has solicitation been released on SAM.gov (est. 04/01/2026)?
+- What is SB designation?
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: TSA DC O&M Deep Dive F2025071032');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}\n\nActions:\n- Check SAM.gov for solicitation under 70RTAC21D00000006\n- Outreach to Peraton DCCO teaming liaison\n- Contact Robert DeBarba (robert.debarba1@tsa.dhs.gov)\n- Monitor DCCO IDIQ recompete`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
