@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VM2 System Architecture — April 2026</title>
+<title>VM2 System Architecture — v3.1 · April 2026</title>
 <style>
   :root {
     --bg: #ffffff; --text: #1a1a1a; --muted: #666; --border: #e0e0e0;
@@ -64,8 +64,8 @@
 <div class="container">
 
 <div class="doc-header">
-  <h1>VM2 System Architecture <span class="version-badge">v3.0 — April 2026</span></h1>
-  <div class="meta">Last updated: April 3, 2026 &nbsp;·&nbsp; Prepared for Varun Malhotra, President — Changeis Inc. &nbsp;·&nbsp; Perplexity Computer</div>
+  <h1>VM2 System Architecture <span class="version-badge">v3.1 — April 2026</span></h1>
+  <div class="meta">Last updated: April 6, 2026 &nbsp;·&nbsp; Prepared for Varun Malhotra, President — Changeis Inc. &nbsp;·&nbsp; Perplexity Computer</div>
 </div>
 
 <div class="toc">
@@ -76,7 +76,8 @@
     <li><a href="#dataflow">Data Flow & Lifecycle</a></li>
     <li><a href="#dropbox">Dropbox Integration</a></li>
     <li><a href="#github">GitHub & Railway Hosting</a></li>
-    <li><a href="#crons">Scheduled Automation</a></li>
+    <li><a href="#crons">Scheduled Automation (12 Crons)</a></li>
+    <li><a href="#opp-intel">Opportunity Intelligence Pipeline</a></li>
     <li><a href="#skills">Active Skills</a></li>
     <li><a href="#security">Security Model</a></li>
     <li><a href="#naming">File & Naming Conventions</a></li>
@@ -117,7 +118,12 @@
 <!-- SECTION 2 -->
 <h2 id="components">2. Component Architecture</h2>
 
-<h3>2.1 Railway Hosting & Auth</h3>
+<h3>2.1 Portal & Index</h3>
+<div class="callout">
+  <strong>Rule:</strong> <code>portal.html</code> is the sole deliverables index. <code>index.html</code> is an immutable ~229-byte redirect stub pointing to <code>portal.html</code>. No cron or session may modify <code>index.html</code> content. The nightly compliance audit enforces this.
+</div>
+
+<h3>2.2 Railway Hosting & Auth</h3>
 <table>
   <tr><th>Property</th><th>Value</th></tr>
   <tr><td>URL</td><td><code>vm2-p-taskers-production.up.railway.app</code></td></tr>
@@ -127,17 +133,17 @@
   <tr><td>Encryption</td><td>NONE — all HTML must be plain. Railway handles auth.</td></tr>
 </table>
 
-<h3>2.2 GitHub Repository</h3>
+<h3>2.3 GitHub Repository</h3>
 <table>
   <tr><th>Property</th><th>Value</th></tr>
   <tr><td>Repo</td><td><code>vm-coderock/VM2-P-Taskers</code></td></tr>
   <tr><td>Branch</td><td><code>main</code></td></tr>
   <tr><td>Pages URL</td><td><code>https://vm-coderock.github.io/VM2-P-Taskers/</code></td></tr>
-  <tr><td>Deliverables as of Apr 3, 2026</td><td>310 HTML files</td></tr>
-  <tr><td>Index file</td><td><code>index.html</code> (plain HTML, never encrypted)</td></tr>
+  <tr><td>Index file</td><td><code>portal.html</code> (deliverable index — see §2.1)</td></tr>
+  <tr><td>Git config</td><td><code>user.email="varun@changeis.com"</code>, <code>user.name="VM2-Perplexity"</code></td></tr>
 </table>
 
-<h3>2.3 Gmail Task Pipeline</h3>
+<h3>2.4 Gmail Task Pipeline</h3>
 <ul>
   <li><strong>Inbox:</strong> <code>vm2.viru@gmail.com</code></li>
   <li>Monitored hourly by the <code>vm2-gmail-tasks</code> skill cron</li>
@@ -146,14 +152,17 @@
   <li>Completed emails are labeled <code>vm2-done</code> and a reply is sent with the deliverable link</li>
 </ul>
 
-<h3>2.4 Todoist Integration</h3>
+<h3>2.5 Todoist Integration</h3>
 <ul>
-  <li>Tasks with <code>VM2</code> label are eligible for pipeline execution</li>
-  <li>Daily Auto-Helper scans Todoist and surfaces actionable tasks</li>
-  <li>Completed VM2 tasks receive <code>vm2-done</code> label</li>
+  <li>Tasks with <code>VM2</code> label are eligible for pipeline execution (hourly cron)</li>
+  <li>Tasks with <code>vm2-opp</code> label are deep dive requests — created <strong>only</strong> by manual button clicks on the daily brief (see §7)</li>
+  <li>Daily Auto-Helper scans non-VM2 tasks and surfaces ones where AI could help</li>
+  <li>Completed tasks receive <code>vm2-done</code> label</li>
+  <li><strong>API:</strong> REST v1 with pagination (<code>https://api.todoist.com/api/v1/tasks</code>). Connector limited to 50 results — always use direct REST API with pagination for comprehensive fetches.</li>
+  <li><strong>Key label IDs:</strong> VM2 = <code>2183231010</code>, vm2-opp = <code>2183369880</code></li>
 </ul>
 
-<h3>2.5 Dropbox Backup</h3>
+<h3>2.6 Dropbox Backup</h3>
 <ul>
   <li><strong>Account:</strong> <code>vm2.viru@gmail.com</code> (CHANGEIS team)</li>
   <li><strong>Root path:</strong> <code>/VM2-main-folder/VM2-P/</code></li>
@@ -163,7 +172,7 @@
   <li><strong>Config backup:</strong> Separate nightly cron backs up Perplexity config to <code>_Config Back-up/</code></li>
 </ul>
 
-<h3>2.6 Connected Integrations</h3>
+<h3>2.7 Connected Integrations</h3>
 <table>
   <tr><th>Service</th><th>Status</th><th>Purpose</th></tr>
   <tr><td>Dropbox API</td><td class="status-pass">✅ Active</td><td>File backup, deliverable sync</td></tr>
@@ -236,11 +245,16 @@ HTML deliverable generated
 <h3>5.1 Push Workflow</h3>
 <pre>
 # Standard deliverable push
-git add &lt;filename&gt;.html index.html
+git add &lt;filename&gt;.html portal.html
 git commit -m "Deliverable: &lt;slug&gt; · VM2 · YYYY-MM-DD"
+git pull --rebase origin main   # resolve any concurrent pushes
 git push origin main
 # Railway auto-deploys within ~60 seconds
 </pre>
+
+<div class="callout">
+  <strong>Conflict resolution:</strong> Multiple crons may push concurrently. Always use <code>git pull --rebase</code> before pushing. If rebase fails, the cron escalates to the foreground session for manual resolution.
+</div>
 
 <h3>5.2 HTML Requirements</h3>
 <ul>
@@ -250,18 +264,91 @@ git push origin main
 </ul>
 
 <!-- SECTION 6 -->
-<h2 id="crons">6. Scheduled Automation (Crons)</h2>
+<h2 id="crons">6. Scheduled Automation (12 Active Crons)</h2>
+<p>All times shown in EDT. Background crons run in isolated agents without conversation history. If a background cron needs user skills or encounters errors, it escalates to the foreground session.</p>
+
+<h3>6.1 Weekday Morning Pipeline (Sequential)</h3>
+<p>These run in order so each step has fresh data from the prior one:</p>
 <table>
-  <tr><th>Name</th><th>Schedule</th><th>Skill</th><th>Status</th></tr>
-  <tr><td>Gmail Task Monitor</td><td>Hourly</td><td>vm2-gmail-tasks</td><td class="status-pass">✅ Active</td></tr>
-  <tr><td>Daily Executive Brief</td><td>Morning (weekdays)</td><td>morning-routine</td><td class="status-pass">✅ Active</td></tr>
-  <tr><td>Nightly Compliance Audit</td><td>Nightly (varies)</td><td>vm2-wrapup v2.1</td><td class="status-pass">✅ Active</td></tr>
-  <tr><td>Nightly Config Backup</td><td>11:00 PM EDT (03:00 UTC)</td><td>Embedded cron (id: 3b217572)</td><td class="status-pass">✅ Active</td></tr>
-  <tr><td>Opportunity Deep Dive</td><td>Hourly</td><td>vm2-opp-deep-dive</td><td class="status-pass">✅ Active</td></tr>
+  <tr><th>#</th><th>Name</th><th>ID</th><th>EDT</th><th>Skill</th></tr>
+  <tr><td>1</td><td>Daily Executive Agenda</td><td><code>c40cee7b</code></td><td>6:00 AM M-F</td><td>morning-routine</td></tr>
+  <tr><td>2</td><td>Todoist Auto-Helper</td><td><code>27d43c4a</code></td><td>7:00 AM daily</td><td>changeis-style</td></tr>
+  <tr><td>3</td><td>APFS Daily Monitor</td><td><code>8734a0c6</code></td><td>8:00 AM M-F</td><td>vm2-opp-deep-dive</td></tr>
+  <tr><td>4</td><td>SAM.gov Daily Monitor</td><td><code>8f2a4ac1</code></td><td>9:00 AM M-F</td><td>vm2-opp-deep-dive</td></tr>
+  <tr><td>5</td><td>Combined Daily Brief</td><td><code>8516a029</code></td><td>10:00 AM M-F</td><td>vm2-opp-deep-dive</td></tr>
+</table>
+
+<h3>6.2 Hourly Task Processors (8 AM – 7 PM Weekdays)</h3>
+<table>
+  <tr><th>#</th><th>Name</th><th>ID</th><th>Minute</th><th>Skill</th></tr>
+  <tr><td>6</td><td>VM2 Gmail Task Intake</td><td><code>2da8354a</code></td><td>:29</td><td>vm2-gmail-tasks</td></tr>
+  <tr><td>7</td><td>VM2 Todoist Execution</td><td><code>59996e17</code></td><td>:15</td><td>—</td></tr>
+  <tr><td>8</td><td>Deep Dive Monitor</td><td><code>6f5371ab</code></td><td>:45</td><td>vm2-opp-deep-dive</td></tr>
+</table>
+
+<h3>6.3 Periodic Maintenance</h3>
+<table>
+  <tr><th>#</th><th>Name</th><th>ID</th><th>Schedule</th><th>Skill</th></tr>
+  <tr><td>9</td><td>Nightly Compliance Audit</td><td><code>6494d39d</code></td><td>10 PM Sun/Mon/Wed/Fri</td><td>vm2-wrapup</td></tr>
+  <tr><td>10</td><td>Weekly Digest</td><td><code>972eaa3f</code></td><td>8 AM Saturday</td><td>vm2-wrapup</td></tr>
+  <tr><td>11</td><td>Monthly Dropbox Integrity</td><td><code>44ba162a</code></td><td>9 AM 1st of month</td><td>vm2-wrapup</td></tr>
+  <tr><td>12</td><td>YPO Weekly Backlog</td><td><code>b56c2335</code></td><td>8 AM Monday</td><td>changeis-style</td></tr>
 </table>
 
 <!-- SECTION 7 -->
-<h2 id="skills">7. Active Skills (User Skills)</h2>
+<h2 id="opp-intel">7. Opportunity Intelligence Pipeline</h2>
+
+<h3>7.1 Data Sources</h3>
+<table>
+  <tr><th>Source</th><th>API</th><th>Auth</th><th>Notes</th></tr>
+  <tr><td>APFS (DHS Forecast)</td><td><code>https://apfs-cloud.dhs.gov/api/forecast/</code></td><td>None (public)</td><td>~686 total records, ~224 match priority NAICS. Domain uses HYPHEN not dot.</td></tr>
+  <tr><td>SAM.gov</td><td><code>https://sam.gov/api/prod/sgs/v1/search/</code></td><td>None (internal API)</td><td>11 priority NAICS codes queried. Do NOT use api.sam.gov (requires key).</td></tr>
+  <tr><td>Changeis RAG Engine</td><td><code>POST https://changeis-bd-rag-production.up.railway.app/match</code></td><td><code>X-API-Key</code> header (NOT Bearer)</td><td>Returns top-N contract matches with composite scores.</td></tr>
+</table>
+
+<h3>7.2 RAG Scoring Tiers</h3>
+<table>
+  <tr><th>Tier</th><th>Score Range</th><th>Meaning</th></tr>
+  <tr><td class="status-pass">STRONG</td><td>≥ 0.65</td><td>High confidence match to Changeis past performance</td></tr>
+  <tr><td class="status-warn">MODERATE</td><td>0.50 – 0.64</td><td>Partial match — worth reviewing</td></tr>
+  <tr><td>RELEVANT</td><td>0.45 – 0.49</td><td>Tangential relevance</td></tr>
+  <tr><td>LOW</td><td>&lt; 0.45</td><td>Weak or no match</td></tr>
+</table>
+
+<h3>7.3 Daily Brief → Deep Dive Flow</h3>
+<pre>
+APFS Monitor (8 AM)  ──▶  RAG scoring  ──▶  apfs_opportunities_latest.json
+SAM.gov Monitor (9 AM) ──▶  RAG scoring  ──▶  sam_daily_*.json
+        │
+        ▼
+Combined Daily Brief (10 AM)
+  ├── Generates branded HTML email with all STRONG + MODERATE opportunities
+  ├── Sends plain-text email to varun@changeis.com with HTML attachment
+  ├── Each opportunity card has a manual "Create Deep-Dive Task" button
+  └── INFORMATIONAL ONLY — does NOT auto-create Todoist tasks
+        │
+        ▼  (Varun clicks button on specific opportunities he wants analyzed)
+        │
+Todoist task created with vm2-opp label
+        │
+        ▼
+Deep Dive Monitor (:45 past each hour)
+  ├── Picks up vm2-opp tasks (3 per run, highest RAG score first)
+  ├── Generates full deep-dive HTML deliverable
+  ├── Publishes to GitHub → Railway, uploads to Dropbox
+  └── Marks Todoist task complete with vm2-done label
+</pre>
+
+<div class="callout">
+  <strong>Design principle (v3.1):</strong> The daily brief surfaces intelligence; Varun decides what gets a deep dive. No automated task creation. The system is a decision-support tool, not an autonomous actor.
+</div>
+
+<h3>7.4 Priority NAICS Codes</h3>
+<p>16 codes monitored across APFS; 11 across SAM.gov:</p>
+<p><code>541511</code> <code>541512</code> <code>541513</code> <code>541519</code> <code>541611</code> <code>518210</code> <code>541330</code> <code>541690</code> <code>541715</code> <code>561110</code> <code>611430</code> <code>541219</code> <code>541990</code> <code>541720</code> <code>541614</code> <code>541618</code></p>
+
+<!-- SECTION 8 -->
+<h2 id="skills">8. Active Skills (User Skills)</h2>
 <table>
   <tr><th>Skill</th><th>Version</th><th>Purpose</th></tr>
   <tr><td>vm2-wrapup</td><td>v2.1</td><td>Nightly compliance audit + full Dropbox diff sync</td></tr>
@@ -271,8 +358,8 @@ git push origin main
   <tr><td>changeis-style</td><td>—</td><td>Brand style guide for all Changeis documents</td></tr>
 </table>
 
-<!-- SECTION 8 -->
-<h2 id="security">8. Security Model</h2>
+<!-- SECTION 9 -->
+<h2 id="security">9. Security Model</h2>
 <table>
   <tr><th>Layer</th><th>Method</th><th>Notes</th></tr>
   <tr><td>Railway portal</td><td>nginx basic auth</td><td>vm2 / 97harry23! — server-side, covers all pages</td></tr>
@@ -282,8 +369,8 @@ git push origin main
   <tr><td>Sensitive config</td><td>Perplexity memory + Dropbox _Config Back-up</td><td>Nightly encrypted config snapshot</td></tr>
 </table>
 
-<!-- SECTION 9 -->
-<h2 id="naming">9. File & Naming Conventions</h2>
+<!-- SECTION 10 -->
+<h2 id="naming">10. File & Naming Conventions</h2>
 <table>
   <tr><th>Type</th><th>Format</th><th>Example</th></tr>
   <tr><td>Deliverable HTML</td><td><code>slug-YYYY-MM-DD.html</code></td><td><code>deep-dive-tsa-oit-1609-2026-04-01.html</code></td></tr>
@@ -293,8 +380,8 @@ git push origin main
   <tr><td>Config backup</td><td><code>perplexity-config-YYYY-MM-DD.md</code></td><td><code>perplexity-config-2026-04-02.md</code></td></tr>
 </table>
 
-<!-- SECTION 10 -->
-<h2 id="folders">10. Dropbox Folder Taxonomy</h2>
+<!-- SECTION 11 -->
+<h2 id="folders">11. Dropbox Folder Taxonomy</h2>
 <pre>
 /VM2-main-folder/
   VM2-P/
@@ -344,11 +431,12 @@ git push origin main
         Agents/         ← vm2-auto-helper, SharePoint agent, etc.
 </pre>
 
-<!-- SECTION 11 -->
-<h2 id="changelog">11. Change Log</h2>
+<!-- SECTION 12 -->
+<h2 id="changelog">12. Change Log</h2>
 <table class="changelog">
   <tr><th>Date</th><th>Version</th><th>Change</th></tr>
-  <tr><td>Apr 3, 2026</td><td>v3.0</td><td>This document. Full architecture refresh. vm2-wrapup v2.1 with Dropbox diff sync. 310 deliverables in repo.</td></tr>
+  <tr><td>Apr 6, 2026</td><td>v3.1</td><td><strong>Removed auto-dive.</strong> Combined Daily Brief no longer auto-creates Todoist tasks for STRONG opportunities. Deep dives are now manual-only — triggered by Varun clicking buttons on the daily brief. Added §7 Opportunity Intelligence Pipeline with full data flow. Expanded cron table to all 12 active crons with IDs and schedules. Added portal.html governance rule (§2.1). Added git conflict resolution guidance.</td></tr>
+  <tr><td>Apr 3, 2026</td><td>v3.0</td><td>Full architecture refresh. vm2-wrapup v2.1 with Dropbox diff sync. 310 deliverables in repo.</td></tr>
   <tr><td>Mar 28, 2026</td><td>—</td><td>vm2-wrapup skill recreated after cron cancellation (id: 3b217572)</td></tr>
   <tr><td>Mar 22, 2026</td><td>—</td><td>Dropbox root path corrected to /VM2-main-folder (was /V M2/VM2-main-folder). 68 deliverables synced.</td></tr>
   <tr><td>Mar 22, 2026</td><td>—</td><td>243 missing deliverables synced to Dropbox. Full folder taxonomy established.</td></tr>
@@ -358,7 +446,7 @@ git push origin main
 </table>
 
 <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px;">
-  Generated by Perplexity Computer · VM2 System · April 3, 2026 · Confidential — Changeis Inc.
+  Generated by Perplexity Computer · VM2 System · April 6, 2026 · Confidential — Changeis Inc.
 </div>
 
 </div>
