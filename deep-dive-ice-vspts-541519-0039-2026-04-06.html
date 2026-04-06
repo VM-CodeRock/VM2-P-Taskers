@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: ICE VSPTS F2025070039 — April 6, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --go-green: #1a6b2e;
+    --go-green-bg: #e8f5ec;
+    --warn-amber: #7a4f00;
+    --warn-amber-bg: #fff3cd;
+    --nogo-red: #7b1d1d;
+    --nogo-red-bg: #fdecea;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --go-green: #4caf70;
+    --go-green-bg: #0e2a16;
+    --warn-amber: #f5c842;
+    --warn-amber-bg: #2a1e00;
+    --nogo-red: #f08080;
+    --nogo-red-bg: #2a0a0a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Snapshot cards */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) { .cards-row { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .card-value {
+    font-size: 18px; font-weight: 700; color: var(--navy);
+    line-height: 1.2;
+  }
+  [data-theme="dark"] .card-value { color: #e2e2e2; }
+  .card-sub {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Go/No-Go verdict */
+  .verdict-box {
+    border-radius: 8px; padding: 20px 24px;
+    margin-top: 10px;
+  }
+  .verdict-box.go {
+    background: var(--go-green-bg);
+    border: 2px solid var(--go-green);
+  }
+  .verdict-box.watch {
+    background: var(--warn-amber-bg);
+    border: 2px solid var(--warn-amber);
+  }
+  .verdict-box.nogo {
+    background: var(--nogo-red-bg);
+    border: 2px solid var(--nogo-red);
+  }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .verdict-box.go .verdict-label { color: var(--go-green); }
+  .verdict-box.watch .verdict-label { color: var(--warn-amber); }
+  .verdict-box.nogo .verdict-label { color: var(--nogo-red); }
+  .verdict-headline {
+    font-size: 20px; font-weight: 700; margin-bottom: 8px;
+  }
+  .verdict-box.go .verdict-headline { color: var(--go-green); }
+  .verdict-box.watch .verdict-headline { color: var(--warn-amber); }
+  .verdict-box.nogo .verdict-headline { color: var(--nogo-red); }
+  .verdict-body { font-size: 14.5px; line-height: 1.6; }
+
+  /* Alert / callout */
+  .alert {
+    background: var(--warn-amber-bg);
+    border-left: 3px solid var(--warn-amber);
+    padding: 10px 14px;
+    font-size: 14px; color: var(--warn-amber);
+    margin-bottom: 14px; border-radius: 0 4px 4px 0;
+    font-family: system-ui, sans-serif;
+  }
+  .alert strong { color: var(--warn-amber); }
+
+  .info-callout {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--navy);
+    padding: 10px 14px;
+    font-size: 14px; color: var(--text-muted);
+    margin-top: 10px; border-radius: 0 4px 4px 0;
+  }
+
+  /* Capability matrix pills */
+  .pill {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    padding: 2px 10px; border-radius: 12px;
+    margin: 2px;
+  }
+  .pill-strong { background: #1a6b2e22; color: #1a6b2e; border: 1px solid #1a6b2e55; }
+  .pill-moderate { background: #7a4f0022; color: #7a4f00; border: 1px solid #7a4f0055; }
+  .pill-gap { background: #7b1d1d22; color: #7b1d1d; border: 1px solid #7b1d1d55; }
+  [data-theme="dark"] .pill-strong { background: #0e2a16; color: #4caf70; border-color: #4caf7055; }
+  [data-theme="dark"] .pill-moderate { background: #2a1e00; color: #f5c842; border-color: #f5c84255; }
+  [data-theme="dark"] .pill-gap { background: #2a0a0a; color: #f08080; border-color: #f0808055; }
+
+  /* Urgency bar */
+  .urgency-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--nogo-red-bg);
+    border: 1px solid var(--nogo-red);
+    border-radius: 6px; padding: 10px 16px;
+    margin-bottom: 20px;
+    font-family: system-ui, sans-serif;
+  }
+  .urgency-icon { font-size: 22px; }
+  .urgency-text { font-size: 14px; color: var(--nogo-red); font-weight: 600; }
+
+  /* RAG score */
+  .rag-moderate {
+    display: inline-block;
+    background: var(--warn-amber-bg);
+    color: var(--warn-amber);
+    border: 1px solid var(--warn-amber);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    padding: 2px 10px; border-radius: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  .cost-note {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--red);
+    padding: 8px 14px;
+    font-size: 13px; color: var(--text-muted);
+    margin-top: 10px; border-radius: 0 4px 4px 0;
+  }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · APFS Forecast</div>
+    <h1>ICE Visa Security Program Tracking System</h1>
+    <div class="hero-sub">VSPTS O&amp;M Support Services · F2025070039 · ICE/M&amp;A/CIO</div>
+    <div class="hero-date">April 6, 2026 &nbsp;·&nbsp; NAICS 541519 &nbsp;·&nbsp; CIO-SP3 &nbsp;·&nbsp; RAG <span class="rag-moderate">MODERATE 0.631</span></div>
+  </div>
+
+  <!-- Urgency Banner -->
+  <div class="urgency-bar">
+    <span class="urgency-icon">⚠</span>
+    <div class="urgency-text">IMMINENT AWARD — Anticipated award date April 26, 2026. Approximately 20 days from analysis date. Solicitation release was projected January 26, 2026 — may already be in market or award is imminent.</div>
+  </div>
+
+  <!-- Opportunity Snapshot -->
+  <div class="section">
+    <div class="section-header">Opportunity Snapshot</div>
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-label">Dollar Range</div>
+        <div class="card-value">$2M – $5M</div>
+        <div class="card-sub">Firm Fixed Price · 4-year PoP</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Contract Vehicle</div>
+        <div class="card-value">NITAAC CIO-SP3</div>
+        <div class="card-sub">Extended through April 29, 2027</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Anticipated Award</div>
+        <div class="card-value">04/26/2026</div>
+        <div class="card-sub">Q3 FY2026 · ~20 days out</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Agency</div>
+        <div class="card-value">ICE/M&amp;A/CIO</div>
+        <div class="card-sub">Resource Management Division</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Set-Aside</div>
+        <div class="card-value">None</div>
+        <div class="card-sub">SB Program listed (competitive)</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Place of Performance</div>
+        <div class="card-value">McLean, VA</div>
+        <div class="card-sub">PoP: 04/26/2026 – 04/25/2030</div>
+      </div>
+    </div>
+
+    <table style="margin-top:18px;">
+      <thead>
+        <tr><th>Field</th><th>Detail</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>APFS Number</strong></td><td>F2025070039</td></tr>
+        <tr><td><strong>Requirements Title</strong></td><td>Visa Security Program Tracking System (VSPTS)</td></tr>
+        <tr><td><strong>Organization</strong></td><td>ICE/M&amp;A/CIO — Information Technology Division (ITD)</td></tr>
+        <tr><td><strong>Requirements Office</strong></td><td>Resource Management Division</td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541519 — Other Computer Related Services</td></tr>
+        <tr><td><strong>Contract Status</strong></td><td>NEW — New Requirement, No Prior Contract</td></tr>
+        <tr><td><strong>Published</strong></td><td>May 9, 2025 (APFS); last updated May 9, 2025</td></tr>
+        <tr><td><strong>Solicitation Release (Est.)</strong></td><td>January 26, 2026</td></tr>
+        <tr><td><strong>Contracting Office</strong></td><td>ITD — Information and Technology Division, ICE</td></tr>
+        <tr><td><strong>Requirements POC</strong></td><td>Jacob Westerfeld · <a href="mailto:Jacob.Westerfeld@ice.dhs.gov">Jacob.Westerfeld@ice.dhs.gov</a> · (771) 233-4145</td></tr>
+        <tr><td><strong>Alternate POC</strong></td><td>Pamela Rodgers · <a href="mailto:pamela.a.rodgers@ice.dhs.gov">pamela.a.rodgers@ice.dhs.gov</a> · (202) 809-4802</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Program Background -->
+  <div class="section">
+    <div class="section-header">Program Background: What is VSPTS?</div>
+    <p>The <strong>Visa Security Program Tracking System (VSPTS)</strong>, also designated VSPTS-NET, is ICE's official system of record for the <strong>Visa Security Program (VSP)</strong> — the HSI-led counterterrorism mission that screens and vets visa applicants to prevent terrorists, criminals, and other inadmissible individuals from obtaining U.S. visas.</p>
+    <br>
+    <p>The VSP traces to <strong>Section 428 of the Homeland Security Act of 2002</strong> and deploys ICE/HSI special agents to U.S. embassies and consulates worldwide ("consular posts") in high-risk areas. As of the most recent OIG audit, the program operates at <strong>45 consular posts across 29 countries</strong>.</p>
+    <br>
+    <p><strong>What VSPTS does operationally:</strong></p>
+    <ul>
+      <li>Provides a globally-accessible web-based application for HSI agents at consular posts to <strong>record, track, and manage</strong> all visa security reviews</li>
+      <li>Serves as the repository for visa adjudication recommendations (issuance or non-issuance) sent electronically to the State Department</li>
+      <li>Supports the <strong>Security Advisory Opinion (SAO) Unit</strong> — processing SAOs for applicants with terrorism or proliferation flags</li>
+      <li>Integrates with CBP's Automated Targeting System — Passenger (ATS-P), which transmits analyst notes into VSPTS</li>
+      <li>Supports MANTIS SAO processing (targeting technology export control violations) — NSID screens 100% of MANTIS SAOs worldwide, inputting results into VSPTS</li>
+      <li>Interfaces with PATRIOT (Pre-Adjudicated Threat Recognition Intelligence Operations Team), TECS, and the State Department's Consular Consolidated Database (CCD)</li>
+    </ul>
+    <br>
+    <p><strong>System evolution noted in OIG-22-70 (September 2022):</strong> The DHS OIG found data transfer issues between ATS-P and VSPTS including a 4,000-character note limit. ICE resolved the character limit on July 22, 2022 and committed to redesigning the VSPTS interface. This procurement is likely the vehicle to fund that continued evolution plus steady-state O&amp;M.</p>
+
+    <div class="info-callout" style="margin-top:14px;">
+      <strong>Key distinction:</strong> This APFS item is labeled <em>New Requirement, No Contract</em> — meaning VSPTS O&amp;M is being carved out as a <em>standalone</em> contract for the first time. Previously, VSPTS support was bundled into the broader "Visa Security Program &amp; International Operations Support Services" contract (70CMSD19FR0000029). This separation is significant: it narrows scope and creates a cleaner competitive field.
+    </div>
+  </div>
+
+  <!-- SAM.gov / Solicitation Status -->
+  <div class="section">
+    <div class="section-header">SAM.gov / Solicitation Status</div>
+    <div class="alert">
+      <strong>No active SAM.gov solicitation found</strong> for VSPTS specifically as of this analysis date. The APFS estimated solicitation release was January 26, 2026. Given the April 26, 2026 award date, one of three scenarios is likely: (1) the solicitation was released on CIO-SP3's e-GOS platform (not publicly indexed on SAM.gov), (2) award has already been made and the APFS record will shortly update, or (3) the schedule has slipped.
+    </div>
+    <ul>
+      <li>CIO-SP3 solicitations are released <em>exclusively</em> through NITAAC's <strong>e-GOS</strong> ordering system — they do not appear on SAM.gov directly. This is a critical access point: only CIO-SP3 prime contract holders receive the RFP.</li>
+      <li>The APFS published date is May 9, 2025; last updated May 9, 2025 — suggesting no schedule update has posted since original publication</li>
+      <li>A related bridge contract (70CMSD19FR0000029) for "Visa Security Program &amp; International Operations Support Services" was active through August 31, 2024, indicating the broader program has been running on continuity. The standalone VSPTS O&amp;M buy is a new discrete contract action.</li>
+      <li><strong>Recommended action:</strong> Contact Jacob Westerfeld (<a href="mailto:Jacob.Westerfeld@ice.dhs.gov">Jacob.Westerfeld@ice.dhs.gov</a>) immediately to confirm solicitation status</li>
+    </ul>
+  </div>
+
+  <!-- USAspending / ICE CIO Spending Context -->
+  <div class="section">
+    <div class="section-header">USAspending: ICE CIO Spending Context (NAICS 541519)</div>
+    <p>ICE's CIO organization is a prolific buyer of NAICS 541519 (Other Computer Related Services) support services. Recent contract actions from the ICE CIO Business Resource Management office include:</p>
+
+    <table>
+      <thead>
+        <tr><th>Award / Description</th><th>Awardee</th><th>Value</th><th>Vehicle</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Adaptiva Endpoint Management Licenses (OCIO)</td><td>PanAmerica Computers</td><td>$209,600</td><td>NASA SEWP (HUBZone)</td></tr>
+        <tr><td>Tableau Software Licenses (ICE data analytics)</td><td>GovSmart, Inc.</td><td>$2.1M</td><td>NASA SEWP</td></tr>
+        <tr><td>FCN Inc. Laptop Delivery (OCIO)</td><td>FCN, Inc.</td><td>N/A</td><td>IDV</td></tr>
+        <tr><td>FFMS Infrastructure Software O&amp;M</td><td>Aeec-Argentys (via CIO-SP3 SB)</td><td>$7.7M</td><td>CIO-SP3 SB</td></tr>
+        <tr><td>ICE SEVIS / SEVP System Support (historical)</td><td>Multiple via CIO-SP3 SB</td><td>$50M+</td><td>CIO-SP3 SB → GSA MAS</td></tr>
+        <tr><td>VSP &amp; Int'l Ops Support Bridge</td><td>Unknown incumbent</td><td>~30 days</td><td>Direct (70CMSD19FR0000029)</td></tr>
+      </tbody>
+    </table>
+
+    <p class="note" style="margin-top:10px;">ICE CIO has been systematically consolidating O&amp;M support onto CIO-SP3 SB and GSA MAS. VSPTS at $2–5M FFP is squarely in the range of other ICE HSI application O&amp;M buys (e.g., LeadTrac at $5M, FFMS at $7.7M). The FFP contract type signals well-understood, stable scope — favorable for competitive pricing.</p>
+  </div>
+
+  <!-- Changeis CIO-SP3 Analysis -->
+  <div class="section">
+    <div class="section-header">CIO-SP3 Access: Changeis Vehicle Gap Analysis</div>
+
+    <div class="alert" style="border-color:#c53a3a;background:var(--nogo-red-bg);color:var(--nogo-red);">
+      <strong>CRITICAL GAP:</strong> Changeis does NOT hold CIO-SP3 or CIO-SP3 Small Business. This opportunity requires a CIO-SP3 prime to compete directly.
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Contract Vehicle</th><th>Changeis Status</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>NITAAC CIO-SP3 (Full &amp; Open)</td><td>❌ Not a holder</td><td>Required vehicle for this procurement</td></tr>
+        <tr><td>NITAAC CIO-SP3 Small Business</td><td>❌ Not a holder</td><td>Required vehicle for this procurement</td></tr>
+        <tr><td>GSA Multiple Award Schedule (MAS) IT</td><td>✅ Holder (#47QTCA18D0078)</td><td>Not applicable to this procurement</td></tr>
+        <tr><td>GSA OASIS+</td><td>✅ Holder</td><td>Not applicable to this procurement</td></tr>
+        <tr><td>GSA STARS III (8(a) GWAC)</td><td>✅ Holder (#47QTCB22D0075)</td><td>Not applicable; ICE is using CIO-SP3</td></tr>
+        <tr><td>GSA Professional Services Schedule</td><td>✅ Holder (#GS-10F-054BA)</td><td>Not applicable</td></tr>
+        <tr><td>FAA eFAST</td><td>✅ Holder</td><td>FAA only — not applicable</td></tr>
+        <tr><td>HCaTS SB</td><td>✅ Holder</td><td>Human capital only — not applicable</td></tr>
+      </tbody>
+    </table>
+
+    <br>
+    <p><strong>Path to compete — two options:</strong></p>
+    <ul>
+      <li><strong>Option A — Teaming as a Subcontractor:</strong> Partner with an existing CIO-SP3 (or CIO-SP3 SB) prime holder who lacks ICE/HSI O&amp;M depth. Changeis brings DHS domain credibility (active USCIS, CBP contracts on GSA MAS), application O&amp;M experience, and the management consulting layer. This is the <em>only viable path given the ~20-day window.</em></li>
+      <li><strong>Option B — Wait / Monitor:</strong> CIO-SP4 was cancelled in February 2026. NITAAC has extended CIO-SP3 through April 29, 2027. A successor GWAC is undefined — the landscape may shift to GSA vehicles. If the award slips or follow-on recompete occurs on a vehicle Changeis holds, position accordingly.</li>
+    </ul>
+
+    <div class="info-callout">
+      <strong>CIO-SP3 Extended to April 29, 2027:</strong> NITAAC cancelled CIO-SP4 in late January 2026 (aligned with EO 14240 on procurement consolidation) and extended CIO-SP3 another year. The VSPTS award PoP runs to April 25, 2030 — well beyond CIO-SP3's expiration. The ordering vehicle must be active at task order award, not throughout performance.
+    </div>
+  </div>
+
+  <!-- Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">Competitive Landscape</div>
+    <p>This is a <strong>New Requirement, No Prior Incumbent</strong> on this specific VSPTS standalone contract. The program was previously part of broader ICE HSI support contracts. Key competitors likely to pursue this:</p>
+
+    <table>
+      <thead>
+        <tr><th>Competitor</th><th>CIO-SP3?</th><th>ICE/HSI Presence</th><th>Threat Level</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>GovCIO</td><td>✅ (Full &amp; Open, SB)</td><td>HIGH — $97M ICE ERO APMSS; $80M ECCO task order</td><td>Very High</td></tr>
+        <tr><td>Steampunk, Inc.</td><td>✅ CIO-SP3 SB (Q4 2024 top holder)</td><td>Moderate — DHS/ICE presence reported</td><td>High</td></tr>
+        <tr><td>Technatomy Corp.</td><td>✅ CIO-SP3 SB (Q4 2024 top holder)</td><td>Moderate — health IT focus but ICE work known</td><td>Moderate–High</td></tr>
+        <tr><td>Alpha Omega Integration</td><td>✅ CIO-SP3 SB (Q4 2024 top holder)</td><td>Moderate</td><td>Moderate</td></tr>
+        <tr><td>Arch Systems / Astor &amp; Sanders</td><td>✅ CIO-SP3 SB (Q3 2024 top holders)</td><td>Moderate</td><td>Moderate</td></tr>
+        <tr><td>Deloitte / Leidos / Booz Allen</td><td>✅ Full &amp; Open</td><td>HIGH — large DHS footprint</td><td>High (if unrestricted)</td></tr>
+        <tr><td>VSP bridge contract incumbent</td><td>Unknown</td><td>HIGH — may know VSPTS architecture</td><td>Very High if identified</td></tr>
+      </tbody>
+    </table>
+
+    <p class="note">Set-aside note: No small business set-aside is listed in the APFS record. If the procurement runs unrestricted on CIO-SP3, large primes (Deloitte, Leidos, GovCIO) will compete. If restricted to CIO-SP3 SB, the competitive set narrows but remains crowded. Changeis should use its ICE/HSI knowledge to position a teaming proposal with a CIO-SP3 SB prime.</p>
+  </div>
+
+  <!-- RAG / Capability Matrix -->
+  <div class="section">
+    <div class="section-header">Capability Matrix &amp; RAG Analysis</div>
+    <p>The RAG system scored this opportunity <strong>0.631 (MODERATE)</strong>. The top RAG matches were from Changeis past performance on FMCSA/Volpe Center IT support contracts — reflecting O&amp;M process alignment but limited direct ICE/national security/vetting system experience. Below is the assessed capability fit:</p>
+
+    <table>
+      <thead>
+        <tr><th>Capability Domain</th><th>Changeis Fit</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>IT Operations &amp; Maintenance (O&amp;M)</td>
+          <td><span class="pill pill-strong">Strong</span></td>
+          <td>Active ICE SEVIS support (GSA MAS, $35M contract #70CTD022FR0000005); CBP OFAM support; USCIS workforce modernization</td>
+        </tr>
+        <tr>
+          <td>DHS / ICE Agency Familiarity</td>
+          <td><span class="pill pill-strong">Strong</span></td>
+          <td>Active ICE contract (SEVIS/SEVP); DHS CBP ($20M HCPS); USCIS contracts — institutional knowledge of DHS IT governance, ATO processes, policy environment</td>
+        </tr>
+        <tr>
+          <td>Web Application O&amp;M (Law Enforcement Systems)</td>
+          <td><span class="pill pill-moderate">Moderate</span></td>
+          <td>SEVIS is a web-based case management system with adjacency to VSPTS; gap is specific HSI/national security classification level</td>
+        </tr>
+        <tr>
+          <td>Counterterrorism / National Security IT</td>
+          <td><span class="pill pill-gap">Gap</span></td>
+          <td>VSPTS handles sensitive PII + law enforcement / terrorism-adjacent data; no published Changeis work in this classification space</td>
+        </tr>
+        <tr>
+          <td>TECS / ATS-P / CBP Systems Integration</td>
+          <td><span class="pill pill-gap">Gap</span></td>
+          <td>VSPTS integrates with ATS-P, TECS, State Dept CCD; specialized DHS interoperability experience needed</td>
+        </tr>
+        <tr>
+          <td>FISMA / ATO / Security Compliance</td>
+          <td><span class="pill pill-moderate">Moderate</span></td>
+          <td>DHS FISMA experience via existing contracts; VSPTS will require FISMA High or Secret-level clearance support</td>
+        </tr>
+        <tr>
+          <td>FFP Contract Performance</td>
+          <td><span class="pill pill-strong">Strong</span></td>
+          <td>Changeis has FFP contract experience; FFP O&amp;M scope here is well-defined and stable</td>
+        </tr>
+        <tr>
+          <td>CIO-SP3 Contract Vehicle</td>
+          <td><span class="pill pill-gap">Gap</span></td>
+          <td>Not a CIO-SP3 holder — must team to access this vehicle</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="note" style="margin-top:10px;">The RAG top matches (FMCSA/Volpe O&amp;M) demonstrate process/methodology alignment — adaptive maintenance, enhancements, stakeholder coordination — but the counterterrorism and law enforcement system sensitivity are the true differentiators ICE will evaluate. A strong prime with HSI/national security creds is essential.</p>
+  </div>
+
+  <!-- Go / No-Go Assessment -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Assessment</div>
+
+    <div class="verdict-box watch">
+      <div class="verdict-label">Verdict</div>
+      <div class="verdict-headline">CONDITIONAL WATCH — Pursue Teaming Immediately or Stand Down</div>
+      <div class="verdict-body">
+        The opportunity is real and the program is mission-critical. Changeis has DHS/ICE credibility and O&amp;M depth that could add value as a subcontractor. However, two blockers make direct prime pursuit impossible and even sub-pursuit extremely time-constrained: (1) Changeis does not hold CIO-SP3, the required contract vehicle; (2) with ~20 days to award, the solicitation is likely already closed or evaluations are underway. The optimal action is immediate outreach to identify whether a CIO-SP3 prime partner is already competing on VSPTS and needs Changeis-level DHS O&amp;M capability.
+      </div>
+    </div>
+
+    <table style="margin-top:18px;">
+      <thead>
+        <tr><th>Factor</th><th>Score</th><th>Assessment</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Vehicle Access</strong></td><td>🔴 0/10</td><td>Changeis does not hold CIO-SP3; teaming required to compete at all</td></tr>
+        <tr><td><strong>Timeline Viability</strong></td><td>🔴 1/10</td><td>~20 days to award; solicitation likely already in evaluation; direct pursuit near-impossible</td></tr>
+        <tr><td><strong>Technical Fit</strong></td><td>🟡 6/10</td><td>Strong O&amp;M pedigree; gap in national security classification and HSI-specific system experience</td></tr>
+        <tr><td><strong>Agency Relationship</strong></td><td>🟡 5/10</td><td>Active ICE contract (SEVIS) provides credibility, but HSI/counterterrorism unit is distinct from SEVP</td></tr>
+        <tr><td><strong>Competitive Position</strong></td><td>🟡 4/10</td><td>As a sub, value-add is real but HSI primes with existing VSPTS familiarity have structural advantage</td></tr>
+        <tr><td><strong>Dollar Size / Opportunity Value</strong></td><td>🟢 7/10</td><td>$2–5M FFP over 4 years is a meaningful vehicle for capability-building in ICE IT</td></tr>
+        <tr><td><strong>Strategic Value (Pipeline Build)</strong></td><td>🟢 8/10</td><td>Getting on VSPTS as a sub positions Changeis for the recompete; establishes HSI national security footprint</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Immediate Action Plan -->
+  <div class="section">
+    <div class="section-header">Immediate Action Plan (Next 5 Business Days)</div>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Action</th><th>Owner</th><th>Deadline</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Contact Jacob Westerfeld (<a href="mailto:Jacob.Westerfeld@ice.dhs.gov">Jacob.Westerfeld@ice.dhs.gov</a>) to confirm solicitation status and whether award has been made or is pending</td>
+          <td>Varun / BD Lead</td>
+          <td>April 7, 2026</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Check NITAAC e-GOS portal for any active VSPTS task order solicitation (requires a CIO-SP3 partner account)</td>
+          <td>BD / Contracts</td>
+          <td>April 7, 2026</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Reach out to known CIO-SP3 SB prime contacts (e.g., Arch Systems, Astor &amp; Sanders, Technatomy, Steampunk) to determine if they're pursuing VSPTS and need a DHS O&amp;M sub</td>
+          <td>Varun / BD</td>
+          <td>April 8, 2026</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>If award is not yet made: identify the bridge contract (70CMSD19FR0000029) incumbent via USAspending FOIA lookup — incumbent likely has inside track</td>
+          <td>BD Analyst</td>
+          <td>April 9, 2026</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Monitor APFS for status update on F2025070039 — if award date slips, re-evaluate pursuit timeline</td>
+          <td>VM2 (auto)</td>
+          <td>Ongoing</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>If sub-opportunity identified: prepare 1-page Changeis capability summary for VSPTS O&amp;M (highlight SEVIS, USCIS, DHS FISMA, FFP delivery track record)</td>
+          <td>BD / Proposals</td>
+          <td>April 10, 2026</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Forecast Intelligence -->
+  <div class="section">
+    <div class="section-header">Forecast Notes &amp; Strategic Intelligence</div>
+    <ul>
+      <li><strong>New Requirement carve-out:</strong> This is the first time VSPTS has been acquired as a standalone O&amp;M contract, separate from broader VSP international operations support. This means there is no direct incumbent — an unusually level playing field (if Changeis had the vehicle).</li>
+      <li><strong>CIO-SP3 vehicle headwinds:</strong> CIO-SP4 was cancelled (Feb 2026) and CIO-SP3 extended to April 2027. NITAAC has signaled future IT acquisitions may shift to GSA vehicles (aligned with EO 14240). If a follow-on VSPTS recompete occurs after April 2027, it may land on a GSA vehicle where Changeis IS positioned (MAS IT, OASIS+, STARS III).</li>
+      <li><strong>National security vetting is a high-priority mission:</strong> The current administration's emphasis on immigration enforcement and border security makes VSPTS a protected program. Budget risk is low. Continuity of this system is a non-negotiable mission requirement for HSI.</li>
+      <li><strong>VSPTS interface redesign:</strong> OIG-22-70 recommended and ICE concurred with redesigning the VSPTS interface to fix data transfer issues. The O&amp;M contractor will own this ongoing modernization work — a richer scope than pure maintenance.</li>
+      <li><strong>Clearance requirements:</strong> VSPTS handles law enforcement sensitive (LES) data including terrorism nexus records with 75-year retention. Personnel will require at minimum a Secret clearance; expect TS/SCI for some roles. This is a barrier to entry that favors cleared small businesses.</li>
+      <li><strong>FFP pricing:</strong> At $2–5M over 4 years, this averages $500K–$1.25M per year. For a team of 3–6 FTEs doing O&amp;M, this is a market-rate FFP. ICE uses FFP to push risk to the contractor — stable scope means this is manageable.</li>
+    </ul>
+  </div>
+
+  <!-- Go/No-Go Summary -->
+  <div class="section">
+    <div class="section-header">Final Recommendation</div>
+    <div class="verdict-box watch">
+      <div class="verdict-label">Recommendation for Changeis / Varun Malhotra</div>
+      <div class="verdict-headline">PURSUE AS SUBCONTRACTOR IMMEDIATELY — 48-Hour Decision Window</div>
+      <div class="verdict-body">
+        <strong>Do not pursue as prime</strong> — vehicle gap is disqualifying. <strong>Pursue as subcontractor</strong> if a CIO-SP3 prime partner can be identified within 48 hours. Changeis's active ICE/SEVIS contract ($35M, ongoing through Jan 2027) is a strong credential that a CIO-SP3 prime would value. The call to Jacob Westerfeld should happen today to confirm whether the window is still open.<br><br>
+        <strong>If the window is closed</strong> (award imminent or made): Monitor the award, identify the winner, and position for the recompete — which may land on a GSA vehicle where Changeis is already positioned. Flag this program for the FY2030 recompete pipeline.
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Sources -->
+  <div class="section">
+    <div class="section-header">Data Sources</div>
+    <ul>
+      <li><a href="https://apfs-cloud.dhs.gov/record/70039/public-print/" target="_blank">APFS F2025070039 Public Record — apfs-cloud.dhs.gov</a></li>
+      <li><a href="https://www.archives.gov/files/records-mgmt/rcs/schedules/departments/department-of-homeland-security/rg-0567/n1-567-10-005_sf115.pdf" target="_blank">VSPTS-NET Records Schedule (NARA N1-567-10-05) — archives.gov</a></li>
+      <li><a href="https://tracreports.org/tracker/dynadata/2022_09/OIG-22-70-Sep22.2.pdf" target="_blank">OIG-22-70: ICE and CBP Should Improve Visa Security Program Screening (Sep 2022) — DHS OIG</a></li>
+      <li><a href="https://www.brennancenter.org/sites/default/files/Industry%20Day%20Presentation_0.pdf" target="_blank">ICE HSI National Security Investigations Division Industry Day — brennancenter.org</a></li>
+      <li><a href="https://orangeslices.ai/dhs-ice-hsi-to-award-visa-security-program-international-operations-support-services-bridge-contract/" target="_blank">VSP Bridge Contract Forecast (Jul 2024) — OrangeSlices.ai</a></li>
+      <li><a href="https://nitaac.nih.gov/gwacs/cio-sp3-small-business" target="_blank">CIO-SP3 Small Business GWAC — NITAAC NIH</a></li>
+      <li><a href="https://www.nextgov.com/modernization/2026/02/nitaac-finally-pulls-plug-cio-sp4/411120/" target="_blank">NITAAC Cancels CIO-SP4, Extends CIO-SP3 to April 2027 — Nextgov/FCW</a></li>
+      <li><a href="https://changeis.com/contract-vehicles/" target="_blank">Changeis Contract Vehicles — changeis.com</a></li>
+      <li><a href="https://www.highergov.com/contract/47QTCA18D0078-70CTD022FR0000005/" target="_blank">Changeis ICE SEVIS Contract ($35.3M) — HigherGov</a></li>
+      <li><a href="https://catalog.data.gov/dataset/visa-security-program" target="_blank">Visa Security Program Dataset — Data.gov / ICE</a></li>
+    </ul>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Deep Dive: ICE VSPTS F2025070039",
+  "task_date": "2026-04-06",
+  "deliverable_file": "deep-dive-ice-vspts-541519-0039-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-ice-vspts-541519-0039-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Generate a deep-dive analysis for APFS opportunity F2025070039. Agency: ICE/M&A/CIO. Title: Visa Security Program Tracking System (VSPTS). NAICS: 541519. Dollar Range: $2M to $5M. Contract Vehicle: NITAAC CIO-SP3. Anticipated Award: 04/26/2026 (IMMINENT — 20 days away). RAG Score: 0.631 (MODERATE). Tasks: (1) Read full APFS JSON, (2) Research VSPTS program, (3) Check SAM.gov, (4) USAspending ICE CIO 541519, (5) CIO-SP3 eligibility for Changeis, (6) Competitive landscape, (7) Capability matrix from RAG, (8) Go/No-Go, (9) Forecast notes.",
+  "approach": "Read APFS JSON from /home/user/workspace/cron_tracking/6f5371ab/apfs_F2025070039.json. Ran parallel web research: VSPTS program background (OIG reports, NARA records schedule, ICE industry day docs), SAM.gov solicitation search, USAspending ICE CIO 541519 contract landscape, CIO-SP3 status and Changeis vehicle holdings, competitive landscape (NITAAC top holders, ICE IT incumbents). Synthesized into structured deep dive with Go/No-Go verdict.",
+  "key_findings": [
+    "VSPTS is ICE/HSI's system of record for visa security vetting at 45 consular posts in 29 countries — mission-critical counterterrorism infrastructure",
+    "This is a NEW standalone contract — VSPTS O&M was previously bundled in broader VSP support (70CMSD19FR0000029); no direct incumbent exists",
+    "CRITICAL GAP: Changeis does not hold CIO-SP3 or CIO-SP3 SB — the required vehicle. Sub-contractor route is only viable path",
+    "Award is anticipated April 26, 2026 (~20 days from analysis); solicitation was projected January 26, 2026 and routes exclusively through NITAAC e-GOS (not SAM.gov)",
+    "CIO-SP4 was cancelled Feb 2026; CIO-SP3 extended to April 29, 2027 — future recompetes may shift to GSA vehicles where Changeis IS positioned",
+    "Changeis has an active ICE contract (SEVIS/SEVP, $35.3M via GSA MAS) that provides strong DHS credibility for sub-contractor teaming pitch"
+  ],
+  "dead_ends": [
+    "No active SAM.gov VSPTS solicitation found — CIO-SP3 RFPs route only through NITAAC e-GOS, not publicly indexed",
+    "Incumbent contractor for bridge contract 70CMSD19FR0000029 not identified in public records — USAspending lookup inconclusive",
+    "Changeis contract vehicles page confirmed no CIO-SP3 holding"
+  ],
+  "assumptions": [
+    "Analysis date is April 6, 2026; anticipated award date April 26, 2026 creates ~20-day window",
+    "Solicitation was released to CIO-SP3 holders via e-GOS around January 26, 2026 per APFS estimate",
+    "No set-aside designation in APFS record means competition is open to all CIO-SP3 holders (not restricted to SB)",
+    "VSPTS handles LES/sensitive data requiring Secret or higher clearances"
+  ],
+  "open_questions": [
+    "Has the VSPTS solicitation already been awarded? Has the April 26 award date slipped?",
+    "Who was the incumbent on the VSP bridge contract (70CMSD19FR0000029)? Are they positioned for VSPTS?",
+    "Is there a small business set-aside planned that wasn't captured in APFS?",
+    "Which CIO-SP3 SB primes are already competing and might need Changeis as a sub?"
+  ],
+  "data_sources": [
+    {"name": "APFS F2025070039 JSON", "url": "/home/user/workspace/cron_tracking/6f5371ab/apfs_F2025070039.json"},
+    {"name": "APFS Public Record", "url": "https://apfs-cloud.dhs.gov/record/70039/public-print/"},
+    {"name": "VSPTS-NET NARA Records Schedule", "url": "https://www.archives.gov/files/records-mgmt/rcs/schedules/departments/department-of-homeland-security/rg-0567/n1-567-10-005_sf115.pdf"},
+    {"name": "OIG-22-70 VSP Audit", "url": "https://tracreports.org/tracker/dynadata/2022_09/OIG-22-70-Sep22.2.pdf"},
+    {"name": "ICE HSI Industry Day (VSPTS/PATRIOT/MANTIS)", "url": "https://www.brennancenter.org/sites/default/files/Industry%20Day%20Presentation_0.pdf"},
+    {"name": "VSP Bridge Contract (OrangeSlices)", "url": "https://orangeslices.ai/dhs-ice-hsi-to-award-visa-security-program-international-operations-support-services-bridge-contract/"},
+    {"name": "NITAAC CIO-SP3 SB Page", "url": "https://nitaac.nih.gov/gwacs/cio-sp3-small-business"},
+    {"name": "CIO-SP4 Cancellation (Nextgov)", "url": "https://www.nextgov.com/modernization/2026/02/nitaac-finally-pulls-plug-cio-sp4/411120/"},
+    {"name": "Changeis Contract Vehicles", "url": "https://changeis.com/contract-vehicles/"},
+    {"name": "Changeis ICE SEVIS Contract (HigherGov)", "url": "https://www.highergov.com/contract/47QTCA18D0078-70CTD022FR0000005/"}
+  ],
+  "next_steps": [
+    "Call / email Jacob Westerfeld (Jacob.Westerfeld@ice.dhs.gov) today to confirm solicitation and award status",
+    "Identify CIO-SP3 SB primes competing on VSPTS and pitch Changeis as ICE/DHS O&M sub",
+    "Monitor APFS F2025070039 for award date updates",
+    "If award is made: identify winner, note for FY2030 recompete pipeline",
+    "Track NITAAC successor vehicle to CIO-SP3 — future buys may move to GSA MAS/OASIS+"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 12,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "Multi-source deep dive: APFS JSON read, 4 parallel search batches, 4 URL fetches, HTML generation. Typical deep-dive cost range."
+  }
+}</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span>📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span>✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span>☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · ICE VSPTS Tracking System Deep Dive · April 6, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Hidden JSON context block -->
+<script type="application/json" id="vm2-context-data">{
+  "task_name": "Deep Dive: ICE VSPTS F2025070039",
+  "task_date": "2026-04-06",
+  "deliverable_file": "deep-dive-ice-vspts-541519-0039-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-ice-vspts-541519-0039-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Generate a deep-dive analysis for APFS opportunity F2025070039. Agency: ICE/M&A/CIO. Title: Visa Security Program Tracking System (VSPTS). NAICS: 541519. Dollar Range: $2M to $5M. Contract Vehicle: NITAAC CIO-SP3. Anticipated Award: 04/26/2026. RAG Score: 0.631 (MODERATE). Tasks: APFS JSON read, VSPTS research, SAM.gov check, USAspending, CIO-SP3 eligibility, competitive landscape, capability matrix, Go/No-Go.",
+  "approach": "Read APFS JSON. Ran parallel web research on VSPTS program (OIG, NARA, ICE industry day), SAM.gov status, USAspending ICE CIO 541519, CIO-SP3 current status and Changeis vehicle holdings, and competitive landscape. Synthesized findings into structured deep dive.",
+  "key_findings": [
+    "VSPTS is ICE/HSI system of record for visa security vetting at 45 consular posts in 29 countries",
+    "New standalone contract — no direct incumbent; previously bundled in broader VSP support",
+    "CRITICAL GAP: Changeis does not hold CIO-SP3 — sub-contractor route is only viable path",
+    "Award anticipated April 26, 2026 (~20 days); solicitation routes through NITAAC e-GOS only",
+    "CIO-SP4 cancelled Feb 2026; CIO-SP3 extended to April 29, 2027",
+    "Changeis active ICE contract ($35.3M SEVIS) provides strong credential for teaming"
+  ],
+  "dead_ends": [
+    "No active SAM.gov VSPTS solicitation — e-GOS only",
+    "Bridge contract incumbent not publicly identified",
+    "Changeis confirmed not a CIO-SP3 holder"
+  ],
+  "assumptions": [
+    "Analysis date April 6, 2026; award date April 26, 2026",
+    "No set-aside = open CIO-SP3 competition",
+    "VSPTS requires Secret/TS clearances"
+  ],
+  "open_questions": [
+    "Has VSPTS solicitation already been awarded?",
+    "Who is the VSP bridge contract incumbent?",
+    "Which CIO-SP3 SB primes are competing on VSPTS?"
+  ],
+  "data_sources": [
+    "APFS JSON F2025070039",
+    "APFS public record: https://apfs-cloud.dhs.gov/record/70039/public-print/",
+    "OIG-22-70: https://tracreports.org/tracker/dynadata/2022_09/OIG-22-70-Sep22.2.pdf",
+    "NITAAC CIO-SP3 SB: https://nitaac.nih.gov/gwacs/cio-sp3-small-business",
+    "CIO-SP4 cancelled: https://www.nextgov.com/modernization/2026/02/nitaac-finally-pulls-plug-cio-sp4/411120/",
+    "Changeis contract vehicles: https://changeis.com/contract-vehicles/",
+    "Changeis ICE SEVIS: https://www.highergov.com/contract/47QTCA18D0078-70CTD022FR0000005/"
+  ],
+  "next_steps": [
+    "Contact Jacob Westerfeld (Jacob.Westerfeld@ice.dhs.gov) to confirm solicitation status",
+    "Identify CIO-SP3 SB primes competing on VSPTS",
+    "Monitor APFS for award date updates",
+    "Flag for FY2030 recompete pipeline"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 12,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "Multi-source deep dive with 4 parallel search batches, URL fetches, and full HTML generation."
+  }
+}</script>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-ice-vspts-541519-0039-2026-04-06.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the ICE VSPTS Deep Dive (F2025070039).
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Has the VSPTS solicitation already been awarded or is the window still open?
+- Who is the VSP bridge contract (70CMSD19FR0000029) incumbent?
+- Which CIO-SP3 SB primes should Changeis target for teaming?
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    });
+  }
+
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: ICE VSPTS Deep Dive F2025070039');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Open questions:
+- Has the VSPTS solicitation already been awarded?
+- Who is the VSP bridge contract incumbent?
+- Which CIO-SP3 SB primes should Changeis target for teaming?
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  const todoistTitle = encodeURIComponent('Follow up: ICE VSPTS Deep Dive F2025070039');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
