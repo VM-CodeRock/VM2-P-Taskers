@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Honcho MCP Server — Persistent Cross-Session Memory for Perplexity Computer — April 6, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 18px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section p { margin-bottom: 10px; }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+  .section h3 {
+    font-size: 17px; font-weight: 700; color: var(--navy);
+    margin: 18px 0 8px;
+  }
+  [data-theme="dark"] .section h3 { color: #d8d8d8; }
+  .section h4 {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    margin: 14px 0 6px;
+  }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Cards row */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) {
+    .cards-row { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-num {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .card h4 {
+    font-size: 16px; font-weight: 700; margin-bottom: 6px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .card h4 { color: #e2e2e2; }
+  .card p { font-size: 13.5px; line-height: 1.5; margin-bottom: 6px; }
+  .card ul { padding-left: 16px; margin: 0; }
+  .card li { font-size: 13.5px; margin-bottom: 3px; line-height: 1.45; }
+
+  /* Stat box row */
+  .stat-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin: 14px 0;
+  }
+  @media (max-width: 700px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 12px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .stat-num {
+    font-family: system-ui, sans-serif;
+    font-size: 24px; font-weight: 800;
+    color: var(--red); display: block; margin-bottom: 4px;
+  }
+  .stat-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.07em;
+  }
+
+  /* Steps */
+  .steps { counter-reset: step; margin-top: 8px; }
+  .step {
+    display: flex; gap: 12px; align-items: flex-start;
+    margin-bottom: 10px; font-size: 15px;
+  }
+  .step-num {
+    flex-shrink: 0; width: 26px; height: 26px;
+    background: var(--navy); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    margin-top: 1px;
+  }
+  [data-theme="dark"] .step-num { background: var(--red); }
+  .step-text { flex: 1; }
+  .step-text strong { font-weight: 700; }
+
+  /* Callout box */
+  .callout {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--red);
+    padding: 12px 16px;
+    font-size: 14px; color: var(--text-muted);
+    margin: 14px 0; border-radius: 0 4px 4px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  /* Inline code */
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 10px 0;
+  }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    background: none; border: none; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    margin-top: 10px;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 12px; line-height: 1.5;
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 500px; overflow-y: auto;
+  }
+
+  /* Continue panel */
+  .continue-panel {
+    margin-top: 36px; padding: 20px;
+    background: var(--panel-bg);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Technical Documentation</div>
+    <h1>Honcho MCP Server</h1>
+    <div class="hero-sub">Persistent Cross-Session Memory for Perplexity Computer</div>
+    <div class="hero-date">April 6, 2026 · Changeis / VM2 · Version 2.0</div>
+  </div>
+
+  <!-- At a Glance -->
+  <div class="section">
+    <div class="stat-row">
+      <div class="stat-box">
+        <span class="stat-num">6</span>
+        <span class="stat-label">MCP Tools</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num">v2.1</span>
+        <span class="stat-label">Honcho SDK</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num">3</span>
+        <span class="stat-label">Endpoints</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num">0</span>
+        <span class="stat-label">State on Server</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. Architecture Overview -->
+  <div class="section">
+    <div class="section-header">1. Architecture Overview</div>
+    <p>The Honcho MCP Server acts as a thin translation layer between Perplexity Computer and the <a href="https://honcho.dev" target="_blank">Honcho</a> conversational memory platform. It exposes 6 MCP tools that give every Perplexity session access to persistent, cross-session memory — eliminating context loss from compaction.</p>
+
+    <table>
+      <thead><tr><th>Component</th><th>Role</th><th>Technology</th></tr></thead>
+      <tbody>
+        <tr><td>Perplexity Computer</td><td>AI assistant (any session)</td><td>MCP Client (Streamable HTTP)</td></tr>
+        <tr><td>Honcho MCP Server</td><td>Protocol bridge + tool host</td><td>Python FastMCP on Railway</td></tr>
+        <tr><td>Honcho API (v3)</td><td>Memory storage + reasoning</td><td>REST API + Dialectic Engine</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>Design Principle:</strong> The server is stateless — all memory lives in Honcho. If Railway restarts or the server redeploys, nothing is lost. Honcho's Dialectic engine continuously reasons over stored messages to build a rich, evolving user model.
+    </div>
+  </div>
+
+  <!-- 2. Session Lifecycle -->
+  <div class="section">
+    <div class="section-header">2. Session Lifecycle</div>
+    <p>Every Perplexity Computer session follows a three-phase pattern. This is automated via a global memory instruction — no manual intervention required.</p>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-num">Phase 1</div>
+        <h4>Start</h4>
+        <p><strong>Tool:</strong> <code>bootstrap_context</code></p>
+        <p>Pulls curated memory brief: user profile, representation, peer card, and recent conclusions.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">Phase 2</div>
+        <h4>Work</h4>
+        <p><strong>Tool:</strong> <code>store_memory</code></p>
+        <p>Stores new facts, preferences, decisions, and project state as they emerge during the session.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">Phase 3</div>
+        <h4>End</h4>
+        <p><strong>Tool:</strong> <code>closeout_session</code></p>
+        <p>Writes session summary, key decisions, new preferences, and open items back to Honcho.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Result:</strong> The next session's bootstrap picks up exactly where the previous session left off. Compaction no longer causes rework or token waste.
+    </div>
+  </div>
+
+  <!-- 3. MCP Tool Reference -->
+  <div class="section">
+    <div class="section-header">3. MCP Tool Reference</div>
+
+    <h3>bootstrap_context</h3>
+    <p><strong>When:</strong> First call every session</p>
+    <p>Retrieves curated user profile, working representation, peer card, and recent conclusions from Honcho. Accepts optional <code>search_query</code> to focus on a specific topic and <code>max_conclusions</code> to control volume.</p>
+    <p style="font-size:13px;color:var(--text-muted)"><strong>Parameters:</strong> peer_id, max_conclusions, search_query</p>
+
+    <h3>store_memory</h3>
+    <p><strong>When:</strong> When a durable fact is learned</p>
+    <p>Stores facts, preferences, project state, corrections, or decisions. Creates a dedicated Honcho session, adds the peer, and writes the tagged message. Honcho's engine auto-reasons over it.</p>
+    <p style="font-size:13px;color:var(--text-muted)"><strong>Parameters:</strong> content (required), memory_type, peer_id</p>
+
+    <h3>lookup_memory</h3>
+    <p><strong>When:</strong> Need a specific past fact</p>
+    <p>Semantic search over Honcho's derived conclusions. Returns content, observer/observed IDs, session, and timestamp.</p>
+    <p style="font-size:13px;color:var(--text-muted)"><strong>Parameters:</strong> query (required), top_k</p>
+
+    <h3>search_messages</h3>
+    <p><strong>When:</strong> Need raw past interactions</p>
+    <p>Hybrid text + vector search over all stored messages. Falls back to workspace-level search if peer-level fails.</p>
+    <p style="font-size:13px;color:var(--text-muted)"><strong>Parameters:</strong> query (required), peer_id, limit</p>
+
+    <h3>ask_honcho</h3>
+    <p><strong>When:</strong> Need synthesized insight</p>
+    <p>Natural-language Q&amp;A via Honcho's Dialectic API. Reasons over all stored knowledge to answer questions about the user that no single lookup could provide. Supports reasoning levels: minimal through max.</p>
+    <p style="font-size:13px;color:var(--text-muted)"><strong>Parameters:</strong> question (required), peer_id, reasoning_level</p>
+
+    <h3>closeout_session</h3>
+    <p><strong>When:</strong> Last call every session</p>
+    <p>Writes session summary, decisions, preferences, and open items. Also stores key items as direct conclusions for fast retrieval in future bootstraps.</p>
+    <p style="font-size:13px;color:var(--text-muted)"><strong>Parameters:</strong> summary (required), key_decisions, new_preferences, open_items, peer_id</p>
+  </div>
+
+  <!-- 4. Memory Schema -->
+  <div class="section">
+    <div class="section-header">4. Memory Schema</div>
+    <p>Organize stored memories into semantic types for optimal retrieval and reasoning:</p>
+
+    <table>
+      <thead><tr><th>Type</th><th>What to Store</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><code>preference</code></td><td>How the user likes things done</td><td>User prefers bullet-point executive summaries under 500 words</td></tr>
+        <tr><td><code>fact</code></td><td>Durable facts about the user</td><td>User is President of Changeis Inc, a GovCon firm</td></tr>
+        <tr><td><code>project_state</code></td><td>Current state of ongoing work</td><td>OASIS+ proposal: Section L compliance matrix 80% complete</td></tr>
+        <tr><td><code>account_context</code></td><td>Tools, services, agency details</td><td>Perplexity setup: morning-routine, vm2-opp-deep-dive skills</td></tr>
+        <tr><td><code>correction</code></td><td>Things the user corrected</td><td>User corrected: use 'Changeis' not 'ChangeIS'</td></tr>
+        <tr><td><code>decision</code></td><td>Decisions made during sessions</td><td>Selected ABC Corp as teaming partner for FBI ITSSS</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. Deployment & Configuration -->
+  <div class="section">
+    <div class="section-header">5. Deployment &amp; Configuration</div>
+
+    <h3>GitHub Repository</h3>
+    <p>Source code: <a href="https://github.com/VM-CodeRock/honcho-mcp-server" target="_blank">github.com/VM-CodeRock/honcho-mcp-server</a> (private, branch: <code>master</code>). Railway auto-deploys on push.</p>
+
+    <h3>Railway Environment Variables</h3>
+    <table>
+      <thead><tr><th>Variable</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>HONCHO_API_KEY</code></td><td>(secret)</td><td>From app.honcho.dev/api-keys</td></tr>
+        <tr><td><code>HONCHO_ENVIRONMENT</code></td><td>production</td><td>Use 'local' for self-hosted Honcho</td></tr>
+        <tr><td><code>HONCHO_WORKSPACE_ID</code></td><td>perplexity</td><td>Auto-created on first use</td></tr>
+        <tr><td><code>HONCHO_PEER_ID</code></td><td>varun</td><td>Default peer for primary user</td></tr>
+        <tr><td><code>MCP_API_KEY</code></td><td>hmc-a7f3e9...</td><td>Reserved for future auth use</td></tr>
+        <tr><td><code>PORT</code></td><td>8080</td><td>Railway may override</td></tr>
+        <tr><td><code>HOST</code></td><td>0.0.0.0</td><td>Required for Railway</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Server Endpoints</h3>
+    <table>
+      <thead><tr><th>Path</th><th>Method</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>/mcp</code></td><td>POST</td><td>MCP Streamable HTTP transport (protocol endpoint)</td></tr>
+        <tr><td><code>/health</code></td><td>GET</td><td>Health check — returns server status and SDK version</td></tr>
+        <tr><td><code>/</code></td><td>GET</td><td>Server info and endpoint discovery</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. Perplexity Connector Registration -->
+  <div class="section">
+    <div class="section-header">6. Perplexity Connector Registration</div>
+    <p>Navigate to <a href="https://perplexity.ai" target="_blank">perplexity.ai</a> → Settings → Connectors → + Custom connector (Remote):</p>
+
+    <table>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Name</td><td>Honcho Memory</td></tr>
+        <tr><td>Description</td><td>Persistent memory layer — bootstraps context at session start, closes out at session end</td></tr>
+        <tr><td>MCP Server URL</td><td><code>https://web-production-1cfeca.up.railway.app/mcp</code></td></tr>
+        <tr><td>Authentication</td><td>None</td></tr>
+        <tr><td>Transport</td><td>Streamable HTTP</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>Important:</strong> The URL must end with <code>/mcp</code> (not just the domain). Transport must be Streamable HTTP — SSE transport causes <code>FETCHER_HTML_STATUS_CODE_ERROR</code> in Perplexity's validator.
+    </div>
+  </div>
+
+  <!-- 7. Automation Setup -->
+  <div class="section">
+    <div class="section-header">7. Automation Setup</div>
+    <p>The bootstrap/closeout lifecycle is automated via two mechanisms that reinforce each other:</p>
+
+    <h3>Perplexity Global Memory</h3>
+    <p>A persistent instruction stored in Perplexity's built-in memory tells every new session to:</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Call <code>bootstrap_context</code></strong> at the start of every session</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Call <code>store_memory</code></strong> proactively during the session for durable facts</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Call <code>closeout_session</code></strong> at the end (or on "wrap up", "done", "close out")</div>
+      </div>
+    </div>
+
+    <h3>Honcho Self-Reinforcing Protocol</h3>
+    <p>The same workflow protocol is stored in Honcho itself. When <code>bootstrap_context</code> runs, it returns this instruction as part of the user's preferences — ensuring the protocol persists even if Perplexity's memory is cleared.</p>
+
+    <div class="callout">
+      <strong>No manual action needed.</strong> New sessions automatically bootstrap and close out. The dual-storage approach (Perplexity memory + Honcho memory) provides redundancy — the protocol survives even if one system is reset.
+    </div>
+  </div>
+
+  <!-- 8. Prompts for Existing Sessions -->
+  <div class="section">
+    <div class="section-header">8. Prompts for Existing Sessions</div>
+    <p>For sessions that started before the automation was set up, paste these prompts to sync with Honcho:</p>
+
+    <h3>Load Context into an Active Session</h3>
+    <pre>Use Honcho Memory. Call bootstrap_context to load my cross-session memory.
+Then store the key facts, decisions, project state, and open items from
+THIS session into Honcho using store_memory (one call per major topic).
+When done syncing, confirm what was stored.</pre>
+
+    <h3>Close Out Any Session</h3>
+    <pre>Use Honcho Memory. Call closeout_session with a summary of this session —
+include what was accomplished, key decisions, new preferences, and any
+open items for next time.</pre>
+  </div>
+
+  <!-- 9. Technical Stack -->
+  <div class="section">
+    <div class="section-header">9. Technical Stack</div>
+    <table>
+      <thead><tr><th>Component</th><th>Version</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Python</td><td>3.12</td><td>Docker base image (slim)</td></tr>
+        <tr><td>honcho-ai</td><td>2.1.0</td><td>Honcho Python SDK — v3 API paths</td></tr>
+        <tr><td>mcp[cli]</td><td>&ge;1.20.0</td><td>FastMCP framework with custom_route support</td></tr>
+        <tr><td>uvicorn</td><td>&ge;0.30.0</td><td>ASGI server</td></tr>
+        <tr><td>starlette</td><td>&ge;0.38.0</td><td>HTTP routing (health, root endpoints)</td></tr>
+        <tr><td>httpx</td><td>&ge;0.27.0</td><td>Async HTTP client (honcho-ai dependency)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Key Implementation Details</h3>
+    <ul>
+      <li><strong>Async pattern:</strong> All Honcho calls use <code>.aio</code> accessors (<code>peer.aio.context()</code>, <code>session.aio.add_messages()</code>) to avoid blocking the event loop. Peer and session objects are obtained via <code>await honcho.aio.peer()</code> and <code>await honcho.aio.session()</code>.</li>
+      <li><strong>Lazy initialization:</strong> The Honcho client is created at server startup, but the first API call (workspace creation, peer get-or-create) is deferred to the first tool invocation. This prevents the MCP handshake from hanging on Honcho API latency.</li>
+      <li><strong>Error handling:</strong> Every tool catches <code>HonchoAuthError</code> explicitly and returns a clear message pointing to the <code>HONCHO_API_KEY</code> environment variable — no opaque "Unauthorized" errors.</li>
+    </ul>
+  </div>
+
+  <!-- 10. Troubleshooting -->
+  <div class="section">
+    <div class="section-header">10. Troubleshooting</div>
+    <table>
+      <thead><tr><th>Issue</th><th>Resolution</th></tr></thead>
+      <tbody>
+        <tr><td>Honcho authentication failed</td><td>Verify <code>HONCHO_API_KEY</code> in Railway. Get a fresh key at <a href="https://app.honcho.dev/api-keys" target="_blank">app.honcho.dev/api-keys</a>.</td></tr>
+        <tr><td>Connector validation fails in Perplexity</td><td>URL must be <code>https://your-url/mcp</code>. Transport: Streamable HTTP. Auth: None.</td></tr>
+        <tr><td>404 errors from Honcho API</td><td>Ensure <code>honcho-ai&ge;2.1.0</code> in requirements.txt (not honcho-core, which uses deprecated v2 paths).</td></tr>
+        <tr><td>Bootstrap returns empty profile</td><td>Send <code>store_memory</code> calls first to seed Honcho with data. The reasoning engine needs input to work with.</td></tr>
+        <tr><td>Railway deploy fails</td><td>Check Railway logs. Usually a missing env var or Docker build timeout.</td></tr>
+        <tr><td>MCP handshake not completing</td><td>Test with: <code>curl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d '{...initialize...}' https://your-url/mcp</code></td></tr>
+        <tr><td>Tools not auto-triggering in new sessions</td><td>Re-store the global memory instruction. Say: "Remember that I use Honcho Memory for persistent cross-session context..." (see Section 7).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Source References -->
+  <div class="section">
+    <div class="section-header">11. Source References</div>
+    <ul>
+      <li><a href="https://docs.honcho.dev/v2/documentation/reference/sdk" target="_blank">Honcho SDK Reference</a></li>
+      <li><a href="https://docs.honcho.dev/v3/documentation/introduction/quickstart" target="_blank">Honcho Quickstart (v3)</a></li>
+      <li><a href="https://pypi.org/project/honcho-ai/" target="_blank">honcho-ai on PyPI</a></li>
+      <li><a href="https://plasticlabs.mintlify.app/v3/api-reference/endpoint/sessions/add-peers-to-session" target="_blank">Honcho API — Add Peers to Session</a></li>
+      <li><a href="https://github.com/VM-CodeRock/honcho-mcp-server" target="_blank">GitHub Repository</a></li>
+      <li><a href="https://web-production-1cfeca.up.railway.app" target="_blank">Railway Deployment</a></li>
+    </ul>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Honcho MCP Server — Technical Documentation",
+  "task_date": "2026-04-06",
+  "deliverable_file": "honcho-mcp-server-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/honcho-mcp-server-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [
+    "agent-memory-2026-03-28.html",
+    "vm2-system-guide-2026-03-27.html"
+  ],
+  "original_instructions": "Build and deploy a Honcho MCP Server for Perplexity Computer: persistent cross-session memory using honcho-ai 2.1.0 SDK, FastMCP, Railway deployment. Then document and publish as a deliverable.",
+  "approach": "1) Researched honcho-ai v2.1.0 API surface — introspected classes. 2) Rewrote server.py from honcho-core to honcho-ai with async .aio accessors. 3) Deployed to Railway via GitHub auto-deploy. 4) Debugged auth errors, verified all 6 tools. 5) Set up dual-redundancy automation (Perplexity memory + Honcho). 6) Updated README.md and documentation. 7) Generated PDF deliverable, then converted to VM2 HTML format.",
+  "key_findings": [
+    "honcho-ai 2.1.0 SDK uses .aio property for async access — not separate async methods",
+    "peer.message('content') is sync/local (no API call) — safe in async context",
+    "FastMCP constructor accepts name, host, port, streamable_http_path, lifespan (no version parameter)",
+    "mcp.custom_route(path, methods) decorator for /health and / endpoints",
+    "mcp.streamable_http_app() returns Starlette app with lifespan",
+    "Perplexity connector requires Streamable HTTP transport — SSE causes FETCHER_HTML_STATUS_CODE_ERROR",
+    "Dual-storage automation (Perplexity memory + Honcho) provides protocol redundancy"
+  ],
+  "dead_ends": [
+    "honcho-core package — uses deprecated v2 API paths, returns 404s on Honcho v3",
+    "SSE transport — Perplexity's connector validator rejects it",
+    "FastMCP version parameter — not supported by current FastMCP constructor"
+  ],
+  "assumptions": [
+    "Honcho API key is valid and deployed in Railway env vars",
+    "Perplexity Computer connector is registered and active",
+    "Railway auto-deploys from GitHub master branch pushes"
+  ],
+  "open_questions": [
+    "Should we add rate limiting or request authentication to the MCP endpoint?",
+    "How will memory scale as session count grows — any pruning strategy needed?",
+    "Should multiple peers be supported (team access to shared memory)?"
+  ],
+  "data_sources": [
+    "Honcho SDK Reference — https://docs.honcho.dev/v2/documentation/reference/sdk",
+    "Honcho Quickstart (v3) — https://docs.honcho.dev/v3/documentation/introduction/quickstart",
+    "honcho-ai on PyPI — https://pypi.org/project/honcho-ai/",
+    "Honcho API — Add Peers to Session — https://plasticlabs.mintlify.app/v3/api-reference/endpoint/sessions/add-peers-to-session",
+    "GitHub Repository — https://github.com/VM-CodeRock/honcho-mcp-server"
+  ],
+  "next_steps": [
+    "Monitor Honcho memory growth and set up pruning/archival if needed",
+    "Evaluate adding MCP_API_KEY authentication to the endpoint",
+    "Consider multi-peer support for team-shared memory",
+    "Add session analytics/logging for usage tracking"
+  ]
+}</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · Honcho MCP Server — Technical Documentation · April 6, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Hidden JSON context -->
+<script type="application/json" id="vm2-context-data">{
+  "task_name": "Honcho MCP Server — Technical Documentation",
+  "task_date": "2026-04-06",
+  "deliverable_file": "honcho-mcp-server-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/honcho-mcp-server-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": ["agent-memory-2026-03-28.html", "vm2-system-guide-2026-03-27.html"]
+}</script>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    document.getElementById('themeBtn').textContent = next === 'dark' ? '◑ Light' : '◑ Dark';
+    localStorage.setItem('theme', next);
+  }
+  (function() {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.getElementById('themeBtn').textContent = '◑ Light';
+    }
+  })();
+
+  // Context slug toggle
+  function toggleContext() {
+    const body = document.getElementById('ctxBody');
+    const arrow = document.querySelector('#ctxToggle .arrow');
+    if (body.style.display === 'block') {
+      body.style.display = 'none';
+      arrow.textContent = '▶';
+    } else {
+      body.style.display = 'block';
+      arrow.textContent = '▼';
+    }
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Follow-up prompt
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/honcho-mcp-server-2026-04-06.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the Honcho MCP Server.
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off. The context slug contains: original instructions, approach taken, key findings, dead ends, assumptions, open questions, data sources used, and next steps.
+
+Open questions from last session:
+- Should we add rate limiting or request authentication to the MCP endpoint?
+- How will memory scale as session count grows — any pruning strategy needed?
+- Should multiple peers be supported (team access to shared memory)?
+
+Suggested next steps:
+- Monitor Honcho memory growth and set up pruning/archival if needed
+- Evaluate adding MCP_API_KEY authentication to the endpoint
+- Consider multi-peer support for team-shared memory
+- Add session analytics/logging for usage tracking
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: Honcho MCP Server');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: Honcho MCP Server');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
