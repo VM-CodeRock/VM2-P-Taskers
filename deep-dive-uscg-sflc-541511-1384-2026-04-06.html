@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: USCG SFLC E-RCM NLP Analytics (F2025071384) — April 6, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --green: #2a7a3b;
+    --amber: #a06c00;
+    --amber-bg: #fff8e6;
+    --amber-border: #f0c040;
+    --red-bg: #fff0f0;
+    --red-border: #e0a0a0;
+    --green-bg: #f0fff4;
+    --green-border: #80c0a0;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --amber-bg: #2a2210;
+    --amber-border: #806000;
+    --red-bg: #2a1010;
+    --red-border: #802020;
+    --green-bg: #102010;
+    --green-border: #306040;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* KPI Cards */
+  .kpi-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 700px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px;
+    box-shadow: var(--card-shadow);
+    text-align: center;
+  }
+  .kpi-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); margin-bottom: 5px;
+  }
+  .kpi-value {
+    font-size: 20px; font-weight: 700;
+    color: var(--navy); line-height: 1.2;
+  }
+  [data-theme="dark"] .kpi-value { color: #e2e2e2; }
+  .kpi-sub {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint); margin-top: 3px;
+  }
+
+  /* Cards row */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) { .cards-row { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-num {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .card h4 {
+    font-size: 15px; font-weight: 700; margin-bottom: 6px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .card h4 { color: #e2e2e2; }
+  .card ul { padding-left: 16px; margin: 0; }
+  .card li { font-size: 13px; margin-bottom: 3px; line-height: 1.45; }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Signal badges */
+  .signal {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .signal-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .signal-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .signal-red { background: var(--red-bg); color: #c53a3a; border: 1px solid var(--red-border); }
+
+  /* Verdict box */
+  .verdict-box {
+    border-radius: 8px; padding: 18px 22px; margin: 16px 0;
+    border: 2px solid var(--amber-border);
+    background: var(--amber-bg);
+  }
+  .verdict-box.go { border-color: var(--green-border); background: var(--green-bg); }
+  .verdict-box.no-go { border-color: var(--red-border); background: var(--red-bg); }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--amber); margin-bottom: 6px;
+  }
+  .verdict-box.go .verdict-label { color: var(--green); }
+  .verdict-box.no-go .verdict-label { color: var(--red); }
+  .verdict-title {
+    font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 6px;
+  }
+  [data-theme="dark"] .verdict-title { color: #e2e2e2; }
+  .verdict-body { font-size: 14.5px; line-height: 1.6; }
+
+  /* RAG Score bar */
+  .rag-bar-wrap { margin: 10px 0; }
+  .rag-bar-bg {
+    background: var(--border); border-radius: 4px; height: 10px;
+    position: relative; overflow: hidden;
+  }
+  .rag-bar-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, #2a7a3b 0%, #f0c040 50%, #c53a3a 100%);
+    position: absolute; left: 0; top: 0; width: 100%;
+  }
+  .rag-marker {
+    position: absolute; top: -3px; width: 4px; height: 16px;
+    background: var(--navy); border-radius: 2px;
+    transform: translateX(-50%);
+  }
+  .rag-labels {
+    display: flex; justify-content: space-between;
+    font-family: system-ui, sans-serif; font-size: 11px; color: var(--text-faint);
+    margin-top: 3px;
+  }
+
+  /* Checklist */
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li {
+    position: relative; padding-left: 22px; margin-bottom: 5px; font-size: 14.5px;
+  }
+  .checklist li::before {
+    content: '✓'; position: absolute; left: 0; top: 0;
+    color: var(--red); font-weight: 700; font-size: 14px;
+  }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  .cost-note {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--red);
+    padding: 8px 14px;
+    font-size: 13px; color: var(--text-muted);
+    margin-top: 10px; border-radius: 0 4px 4px 0;
+  }
+
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;
+  }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+  .callout {
+    background: var(--surface);
+    border-left: 3px solid var(--navy);
+    padding: 10px 16px;
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+    margin: 10px 0;
+    box-shadow: var(--card-shadow);
+  }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive</div>
+    <h1>USCG SFLC E-RCM NLP Analytics</h1>
+    <div class="hero-sub">APFS Forecast F2025071384 · Maintenance Data Readiness &amp; Enhanced Reliability Centered Maintenance</div>
+    <div class="hero-date">April 6, 2026 &nbsp;·&nbsp; NAICS 541511 &nbsp;·&nbsp; USCG/SFLC &nbsp;·&nbsp; RAG: 0.638 MODERATE</div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Dollar Range</div>
+      <div class="kpi-value">$2M–$5M</div>
+      <div class="kpi-sub">FFP · New Requirement</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Award Quarter</div>
+      <div class="kpi-value">Q4 FY26</div>
+      <div class="kpi-sub">Anticipated Aug 1, 2026</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Sol. Release</div>
+      <div class="kpi-value">Mar 2, 2026</div>
+      <div class="kpi-sub">APFS Forecast Date</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Contract End</div>
+      <div class="kpi-value">Jul 31, 2031</div>
+      <div class="kpi-sub">~5-Year PoP</div>
+    </div>
+  </div>
+
+  <!-- Opportunity Snapshot -->
+  <div class="section">
+    <div class="section-header">Opportunity Snapshot</div>
+    <table>
+      <thead><tr><th>Field</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td><strong>APFS Number</strong></td><td><a href="https://apfs-cloud.dhs.gov/record/71384/public-print/" target="_blank">F2025071384</a></td></tr>
+        <tr><td><strong>Agency</strong></td><td>USCG Surface Forces Logistics Center (SFLC), DHS</td></tr>
+        <tr><td><strong>Title</strong></td><td>USCG SFLC Maintenance Data Readiness and Analysis for Enhanced Reliability Centered Maintenance</td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541511 – Custom Computer Programming Services</td></tr>
+        <tr><td><strong>Contract Vehicle</strong></td><td>GWAC (specific vehicle TBD — OASIS+, Alliant 3, or CIO-SP3 SB likely)</td></tr>
+        <tr><td><strong>Contract Type</strong></td><td>Firm Fixed Price (FFP)</td></tr>
+        <tr><td><strong>Set-Aside</strong></td><td>N/A (TBD — Small Business Program listed as TBD)</td></tr>
+        <tr><td><strong>Competition</strong></td><td>Full &amp; Open (YES)</td></tr>
+        <tr><td><strong>Place of Performance</strong></td><td>Baltimore, MD</td></tr>
+        <tr><td><strong>POC</strong></td><td>Jonathan Cox · <a href="mailto:jonathan.w.cox2@uscg.mil">jonathan.w.cox2@uscg.mil</a> · (571) 614-5494</td></tr>
+        <tr><td><strong>Alt POC</strong></td><td>Courtney Brown · <a href="mailto:courtney.l.brown1@uscg.mil">courtney.l.brown1@uscg.mil</a> · (571) 610-6922</td></tr>
+        <tr><td><strong>SB Specialist</strong></td><td>Ramona Hatfield · (571) 607-2504</td></tr>
+        <tr><td><strong>Changeis RAG Score</strong></td><td>0.638 – MODERATE</td></tr>
+        <tr><td><strong>Published</strong></td><td>January 20, 2026</td></tr>
+        <tr><td><strong>Status</strong></td><td>FORECAST – New Requirement, No Prior Contract</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- What They Want -->
+  <div class="section">
+    <div class="section-header">What They Want: Full Requirement Analysis</div>
+    <div class="callout">
+      <strong>Core Ask:</strong> An AI-powered NLP analytic model, pre-trained on naval ship structure and machinery terminology, to identify, extract, index, enhance quality, and analyze unstructured equipment failure reports and technical data from at least the last 5 years — deployed in a FedRAMP-approved environment and currently utilized for Naval Ship equipment analysis.
+    </div>
+    <p style="margin-top:12px;">The USCG SFLC requirement breaks into two integrated work streams:</p>
+
+    <div class="two-col" style="margin-top:14px;">
+      <div class="card">
+        <div class="card-num">Work Stream 1 — Core</div>
+        <h4>NLP/AI Analytic Engine</h4>
+        <ul>
+          <li>Pre-trained on naval ship structure &amp; machinery terminology</li>
+          <li>Extract, index &amp; quality-enhance unstructured failure reports (5+ yr history)</li>
+          <li>Must be <em>currently deployed</em> on Naval Ship equipment</li>
+          <li>FedRAMP-approved cloud environment required</li>
+          <li>AI-powered analytic model (LLM-class implied)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Work Stream 2 — Pilot</div>
+        <h4>Digitalization Automation Prototypes</h4>
+        <ul>
+          <li>Data-driven decision making tools</li>
+          <li>Extracting additional data elements from maintenance documents</li>
+          <li>Broader NLP/LLM application development</li>
+          <li>Chatbots for maintenance personnel</li>
+          <li>RPA / intelligent automation workflows</li>
+        </ul>
+      </div>
+    </div>
+
+    <p style="margin-top:14px; font-size:15px;"><strong>Critical Discriminator:</strong> The RFP language "The model shall be <em>currently utilized</em> to analyze Naval Ship equipment" is a strong signal that the government has a specific incumbent vendor or known solution in mind. This is a qualifying threshold — not just a desired capability.</p>
+  </div>
+
+  <!-- E-RCM &amp; NLP in Naval Maintenance Context -->
+  <div class="section">
+    <div class="section-header">Technical Domain: E-RCM and NLP in Naval Maintenance</div>
+    <p>Reliability-Centered Maintenance (RCM) is a systematic methodology — codified in <a href="https://www.sae.org/standards/content/ja1011/" target="_blank">SAE JA1011</a> — for determining the most effective maintenance approach for physical assets based on function, failure modes, and consequences. The "Enhanced" variant (E-RCM) integrates AI and digital technologies to overcome traditional RCM's resource-intensive limitations.</p>
+
+    <div class="cards-row" style="margin-top:14px;">
+      <div class="card">
+        <div class="card-num">E-RCM Foundation</div>
+        <h4>Why NLP is Central</h4>
+        <ul>
+          <li>Naval maintenance records are largely unstructured free-text (work orders, failure narratives, technician notes)</li>
+          <li>NLP extracts structured failure mode data from narrative reports automatically</li>
+          <li>LLMs enable semantic search across 5+ years of maintenance history</li>
+          <li>Reduces FMEA analysis time from 6–18 months to days</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Navy Precedent</div>
+        <h4>Active Programs</h4>
+        <ul>
+          <li><strong>NAVSEA/Unstructured.io:</strong> Feb 2026 — AI-enabled data access for fleet decision-making in ASW &amp; surface warfare; unstructured data to AI-ready formats</li>
+          <li><strong>Charles River Analytics:</strong> $6.6M over 8.5 yr for NAVSEA predictive maintenance; probabilistic programming for fault prediction</li>
+          <li><strong>SNAPPR (Navy STP):</strong> NLP on 2Kilo Logs for Aegis Weapons System; fuses unstructured logs with sensor data for maintenance optimization</li>
+          <li><strong>Illumination Works:</strong> Navy edge data management for RCM/CBM — condition-based maintenance readiness</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">FedRAMP Requirement</div>
+        <h4>Deployment Constraint</h4>
+        <ul>
+          <li>All AI solutions for government must be FedRAMP authorized (OMB M-24-10 mandate)</li>
+          <li>Commercial AI via cloud = FedRAMP required for agency use</li>
+          <li>AWS GovCloud, Azure Government, Google Cloud Gov are primary FedRAMP environments</li>
+          <li>Pre-trained naval domain models on FedRAMP = very narrow vendor set</li>
+        </ul>
+      </div>
+    </div>
+
+    <p style="margin-top:14px; font-size:15px;">The USCG SFLC requirement mirrors active Navy NAVSEA initiatives — the <a href="https://unstructured.io/blog/unstructured-awarded-navsea-contract" target="_blank">Unstructured.io NAVSEA award</a> (Feb 2026) is the closest public analog, suggesting the government has already validated this technical approach and is now scaling it to Coast Guard surface forces.</p>
+  </div>
+
+  <!-- USCG SFLC IT Spending Context -->
+  <div class="section">
+    <div class="section-header">USCG SFLC IT Spending &amp; Contract Landscape</div>
+    <p>SFLC IT spending in NAICS 541511 is limited in public USAspending data, but adjacent USCG IT contracts reveal the competitive environment and preferred vehicles:</p>
+
+    <table>
+      <thead><tr><th>Contract / Award</th><th>Awardee</th><th>Value</th><th>Vehicle</th><th>Scope</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>SFLC BOD IT Services (F2025069220)</td>
+          <td><strong>CACI, Inc.</strong> (incumbent)</td>
+          <td>Up to $20M</td>
+          <td>GWAC</td>
+          <td>Program mgmt consulting, legacy app maintenance, cybersecurity, vulnerability mgmt for SFLC</td>
+        </tr>
+        <tr>
+          <td>SFLC Project Mgmt &amp; Logistics (MECP)</td>
+          <td><strong>Insight Technology Solutions, LLC</strong></td>
+          <td>$4.35M</td>
+          <td>GSA OASIS SB</td>
+          <td>PM &amp; logistical support for Medium Endurance Cutter product line</td>
+        </tr>
+        <tr>
+          <td>ALC IT ISD Support (Recompete)</td>
+          <td><strong>Oasys International</strong> (incumbent)</td>
+          <td>~$120M (protested)</td>
+          <td>GSA VETS 2</td>
+          <td>ALMIS, CG-LIMS, ALC-LSS enterprise IT services</td>
+        </tr>
+        <tr>
+          <td>USCG Program Support (OASIS)</td>
+          <td><strong>Java Productions, Inc.</strong></td>
+          <td>$1.9M</td>
+          <td>GSA OASIS UR</td>
+          <td>Program support services to USCG; 6 bidders</td>
+        </tr>
+        <tr>
+          <td>NAVSEA NLP/AI (Unstructured.io)</td>
+          <td><strong>Unstructured.io</strong> + Elastic</td>
+          <td>Undisclosed</td>
+          <td>Direct</td>
+          <td>AI-enabled unstructured data for fleet decision-making — ASW &amp; surface warfare (Feb 2026)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">Sources: <a href="https://www.highergov.com/contract-forecast/sflc-bod-it-services-1119586/" target="_blank">HigherGov SFLC BOD</a> · <a href="https://orangeslices.ai/contract-award-us-coast-guard-surface-forces-logistics-center-sflc-support/" target="_blank">OrangeSlices MECP</a> · <a href="https://unstructured.io/blog/unstructured-awarded-navsea-contract" target="_blank">Unstructured.io NAVSEA</a></p>
+
+    <p style="margin-top:12px; font-size:15px;"><strong>SFLC IT Pattern:</strong> SFLC consistently uses GWACs (OASIS/OASIS+, VETS 2) for IT services. CACI holds the broad IT support contract. No incumbent exists on this specific E-RCM requirement — it is a genuine new requirement with no contract history.</p>
+  </div>
+
+  <!-- Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">Competitive Landscape</div>
+    <table>
+      <thead><tr><th>Competitor</th><th>Naval/USCG Footprint</th><th>NLP/AI Capability</th><th>Threat Level</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Unstructured.io</strong></td>
+          <td>NAVSEA Feb 2026 direct award for nearly identical use case</td>
+          <td>Core product is naval-domain unstructured data ETL + LLM; FedRAMP pathway</td>
+          <td><span class="signal signal-red">Very High</span></td>
+        </tr>
+        <tr>
+          <td><strong>Booz Allen Hamilton</strong></td>
+          <td>Pervasive Navy/DHS footprint; multiple USCG relationships</td>
+          <td>$800M AI revenue FY25; Neptune AI for federal; FedRAMP cloud capabilities</td>
+          <td><span class="signal signal-red">Very High</span></td>
+        </tr>
+        <tr>
+          <td><strong>CACI Inc.</strong></td>
+          <td>Incumbent on SFLC BOD IT Services; established SFLC relationship</td>
+          <td>Strong analytics; less known for domain-specific NLP/LLM</td>
+          <td><span class="signal signal-amber">High</span></td>
+        </tr>
+        <tr>
+          <td><strong>Leidos</strong></td>
+          <td>Major Navy/DHS contractor; NAVSEA relationships</td>
+          <td>Defense AI platforms; predictive maintenance portfolio</td>
+          <td><span class="signal signal-amber">High</span></td>
+        </tr>
+        <tr>
+          <td><strong>Charles River Analytics</strong></td>
+          <td>NAVSEA $6.6M predictive maintenance contract (8.5 yr)</td>
+          <td>Probabilistic programming for naval fault prediction; ship systems RCM</td>
+          <td><span class="signal signal-amber">High</span></td>
+        </tr>
+        <tr>
+          <td><strong>Illumination Works</strong></td>
+          <td>Navy edge data management for RCM/CBM use cases</td>
+          <td>Metadata-driven analytics for ship operational readiness</td>
+          <td><span class="signal signal-amber">Moderate</span></td>
+        </tr>
+        <tr>
+          <td><strong>Insight Technology Solutions</strong></td>
+          <td>Active SFLC OASIS SB task order for MECP logistical support</td>
+          <td>Program management focus; limited NLP depth</td>
+          <td><span class="signal signal-amber">Moderate</span></td>
+        </tr>
+        <tr>
+          <td><strong>Changeis Inc.</strong></td>
+          <td>No USCG/SFLC direct history; DOT/FMCSA/Volpe primary base</td>
+          <td>Data analytics, cloud, DevOps; no documented naval NLP/LLM</td>
+          <td>Pursuing</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">The "currently utilized on Naval Ship equipment" language heavily advantages players with active Navy domain NLP deployments (Unstructured.io, Charles River, BAH).</p>
+  </div>
+
+  <!-- Changeis RAG Results -->
+  <div class="section">
+    <div class="section-header">Changeis Capability Match — RAG Analysis</div>
+    <p>The APFS RAG system scored Changeis at <strong>0.638 (MODERATE)</strong> against this requirement. The RAG matched Changeis past performance primarily from DOT/Volpe/FMCSA work — data analysis, system operations, and program support — rather than NLP or AI-specific contracts.</p>
+
+    <div class="rag-bar-wrap">
+      <div style="font-family:system-ui;font-size:12px;color:var(--text-muted);margin-bottom:4px;">RAG Score: 0.638 — MODERATE</div>
+      <div class="rag-bar-bg">
+        <div class="rag-bar-fill"></div>
+        <div class="rag-marker" style="left: 63.75%;"></div>
+      </div>
+      <div class="rag-labels"><span>0.0 (No Match)</span><span>0.5 (Moderate)</span><span>1.0 (Strong)</span></div>
+    </div>
+
+    <table style="margin-top:14px;">
+      <thead><tr><th>RAG Match</th><th>Task Order</th><th>End Client</th><th>Score</th><th>Relevant Capability</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>6913G622F400001</code></td>
+          <td>V3132168</td>
+          <td>DOT / FMCSA / Volpe</td>
+          <td>0.638</td>
+          <td>Data analysis, system operations, data validation and release (ACE/AIM, SMS, ELD), monthly reporting, BPR</td>
+        </tr>
+        <tr>
+          <td><code>6913G620F400115</code></td>
+          <td>V3132051</td>
+          <td>DOT / FAA / FMCSA / Volpe</td>
+          <td>0.620</td>
+          <td>Multi-system data operations, ACE enforcement tools, ELD data management, periodic reporting workflows</td>
+        </tr>
+        <tr>
+          <td><code>6913G620F400059</code></td>
+          <td>V3132012</td>
+          <td>DOT / FAA / FMCSA / Volpe</td>
+          <td>0.612</td>
+          <td>eRODS/ELD system support, operations &amp; maintenance, test plans, software releases</td>
+        </tr>
+        <tr>
+          <td><code>6913G621F400039</code></td>
+          <td>V3132127</td>
+          <td>DOT / FMCSA / Volpe</td>
+          <td>0.609</td>
+          <td>Safety programs data analysis, BPR design, current state analysis, data analysis reports, program support</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:12px; font-size:15px;"><strong>Assessment:</strong> The RAG matches on <em>data operations and analysis</em> (ACE/AIM data processing, SMS data validation, ELD data management) — not on NLP, AI, or maintenance domain expertise. The semantic similarity is around federal IT data management workflows, which is related but not aligned to the core E-RCM discriminator.</p>
+
+    <div class="two-col" style="margin-top:16px;">
+      <div>
+        <strong style="font-size:14px;">Changeis Capability Strengths (Mapped)</strong>
+        <ul class="checklist" style="margin-top:8px;">
+          <li>Federal data analytics and reporting pipelines (FMCSA/Volpe)</li>
+          <li>Large-scale data validation and release workflows</li>
+          <li>System operations and maintenance (DOT enterprise systems)</li>
+          <li>Business process reengineering (BPR) support</li>
+          <li>Cloud computing integration</li>
+          <li>OASIS+ prime (UR, SB, WOSB) — strong GWAC position</li>
+          <li>FFP contract experience at DOT/Volpe</li>
+        </ul>
+      </div>
+      <div>
+        <strong style="font-size:14px;">Critical Gaps</strong>
+        <ul style="padding-left:20px; margin-top:8px;">
+          <li style="font-size:14.5px; margin-bottom:4px; color:var(--red);">No documented NLP/LLM implementation experience</li>
+          <li style="font-size:14.5px; margin-bottom:4px; color:var(--red);">No naval/maritime domain knowledge or terminology</li>
+          <li style="font-size:14.5px; margin-bottom:4px; color:var(--red);">No FedRAMP-deployed AI product — critical threshold</li>
+          <li style="font-size:14.5px; margin-bottom:4px; color:var(--red);">No prior USCG or DHS SFLC relationship</li>
+          <li style="font-size:14.5px; margin-bottom:4px; color:var(--red);">No maintenance/reliability domain work (RCM, CBM, FMEA)</li>
+          <li style="font-size:14.5px; margin-bottom:4px; color:var(--red);">No prior Coast Guard past performance</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- GWAC Vehicle Analysis -->
+  <div class="section">
+    <div class="section-header">GWAC Vehicle Analysis</div>
+    <p>The APFS record specifies "GWAC" without naming the specific vehicle. Based on USCG/SFLC patterns and the acquisition profile (NAICS 541511, FFP, $2M–$5M, FY26 award), three vehicles are most likely:</p>
+
+    <div class="cards-row" style="margin-top:12px;">
+      <div class="card">
+        <div class="card-num">Most Likely</div>
+        <h4>OASIS+</h4>
+        <ul>
+          <li>GSA's primary professional services GWAC; NAICS 541511 in scope under Technical &amp; Engineering domain</li>
+          <li>USCG SFLC has used OASIS SB recently (MECP, Program Support)</li>
+          <li>Changeis holds OASIS+ UR, SB, and WOSB — <strong>prime positions</strong></li>
+          <li>No ceiling; 10-year PoP; all contract types including FFP</li>
+          <li>Contract: <a href="https://www.gsa.gov/oasis-plus" target="_blank">GSA OASIS+</a></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Possible</div>
+        <h4>Alliant 3</h4>
+        <ul>
+          <li>GSA's newest IT GWAC — went live March 10, 2026; ordering open</li>
+          <li>Broad scope: AI, distributed ledger, RPA, emerging tech — all in scope</li>
+          <li>Primary NAICS 541512 (scope not limited to it) — 541511 eligible</li>
+          <li>76 prime awards; Changeis status on Alliant 3 needs verification</li>
+          <li>Up to $75B ceiling estimate; 10-year PoP</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Less Likely</div>
+        <h4>CIO-SP3 / VETS 2</h4>
+        <ul>
+          <li>CIO-SP3: NIH-managed; USCG has used it but fading (CIO-SP4 in transition)</li>
+          <li>VETS 2: SDVOSB set-aside — would require set-aside designation; APFS currently says N/A</li>
+          <li>Alliant 2: Expires June 2028; still viable but superseded by Alliant 3 for new awards</li>
+          <li>DHS EAGLE II / SPARC: DHS-specific vehicles less commonly used at SFLC for new IT</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:14px;">
+      <strong>Changeis GWAC Position:</strong> Changeis holds three OASIS+ primes (UR: 47QRCA25DU072 · SB: 47QRCA25DS260 · WOSB: 47QRCA24DW284) across Management &amp; Advisory and Technical &amp; Engineering domains. If the GWAC is OASIS+, Changeis has a prime position to respond — no teaming barrier on the vehicle itself. Source: <a href="https://changeis.com/oasis-plus/" target="_blank">changeis.com/oasis-plus</a>
+    </div>
+  </div>
+
+  <!-- Go/No-Go Assessment -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Recommendation</div>
+
+    <div class="verdict-box" style="border-color:var(--amber-border); background:var(--amber-bg);">
+      <div class="verdict-label">Recommendation</div>
+      <div class="verdict-title">CONDITIONAL — Pursue Only with a Qualified Teaming Partner</div>
+      <div class="verdict-body">
+        Changeis has the <strong>GWAC vehicle</strong> (OASIS+), the <strong>data analytics pedigree</strong>, and the <strong>delivery infrastructure</strong> to credibly pursue this requirement — but the core technical discriminator (pre-trained naval NLP model, currently deployed on Naval Ship equipment, in a FedRAMP environment) is a <strong>threshold requirement Changeis cannot meet as a prime alone</strong>. A targeted teaming strategy is the only viable path to a competitive bid.
+      </div>
+    </div>
+
+    <table style="margin-top:16px;">
+      <thead><tr><th>Factor</th><th>Assessment</th><th>Signal</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>GWAC Vehicle Position</strong></td>
+          <td>OASIS+ prime (UR + SB + WOSB) — if vehicle is OASIS+, no barrier</td>
+          <td><span class="signal signal-green">Strong</span></td>
+        </tr>
+        <tr>
+          <td><strong>Data Analytics Capability</strong></td>
+          <td>Demonstrated at DOT/Volpe/FMCSA — data pipelines, validation, reporting</td>
+          <td><span class="signal signal-green">Moderate+</span></td>
+        </tr>
+        <tr>
+          <td><strong>NLP/AI Capability</strong></td>
+          <td>Not documented in past performance or public capabilities</td>
+          <td><span class="signal signal-red">Gap</span></td>
+        </tr>
+        <tr>
+          <td><strong>Naval Domain Expertise</strong></td>
+          <td>No maritime/naval/ship maintenance domain history</td>
+          <td><span class="signal signal-red">Gap</span></td>
+        </tr>
+        <tr>
+          <td><strong>"Currently Deployed" Requirement</strong></td>
+          <td>Model must already be operational on Naval Ship equipment — threshold criterion</td>
+          <td><span class="signal signal-red">Critical Gap</span></td>
+        </tr>
+        <tr>
+          <td><strong>FedRAMP AI Deployment</strong></td>
+          <td>No documented FedRAMP-deployed AI product</td>
+          <td><span class="signal signal-red">Gap</span></td>
+        </tr>
+        <tr>
+          <td><strong>USCG/DHS Relationship</strong></td>
+          <td>No prior USCG or SFLC past performance</td>
+          <td><span class="signal signal-amber">Weak</span></td>
+        </tr>
+        <tr>
+          <td><strong>Competition Intensity</strong></td>
+          <td>Unstructured.io, BAH, Charles River all have near-perfect fit; new requirement means no incumbent advantage for Changeis</td>
+          <td><span class="signal signal-red">High Competition</span></td>
+        </tr>
+        <tr>
+          <td><strong>Contract Value Fit</strong></td>
+          <td>$2M–$5M is right in Changeis's wheelhouse; 5-year base</td>
+          <td><span class="signal signal-green">Good Fit</span></td>
+        </tr>
+        <tr>
+          <td><strong>FFP Contract Type</strong></td>
+          <td>Changeis has FFP experience; manageable risk if scope is well-defined</td>
+          <td><span class="signal signal-green">Favorable</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Teaming Strategy -->
+  <div class="section">
+    <div class="section-header">Recommended Teaming Strategy</div>
+    <p>If pursuing, Changeis should position as <strong>prime / integrator</strong> bringing federal IT delivery, program management, and GWAC vehicle access — while a domain-specialist teaming partner provides the naval NLP/AI solution.</p>
+
+    <div class="cards-row" style="margin-top:12px;">
+      <div class="card">
+        <div class="card-num">Option A — Ideal</div>
+        <h4>Team with Naval NLP Specialist</h4>
+        <ul>
+          <li>Identify vendors with existing naval ship NLP models (FedRAMP deployed)</li>
+          <li>Candidates: smaller AI firms targeting Navy (not Unstructured.io/BAH who may prime)</li>
+          <li>Changeis role: prime, PM, federal IT integration, OASIS+ vehicle</li>
+          <li>Partner role: core NLP/AI engine, naval domain expertise</li>
+          <li>Value-add: Changeis brings DOT data pipeline rigor + delivery accountability</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Option B — Alternative</div>
+        <h4>Sub to a Strong Prime</h4>
+        <ul>
+          <li>Approach Unstructured.io, Charles River Analytics, or Illumination Works</li>
+          <li>Offer OASIS+ SB vehicle access, federal delivery support, PM capacity</li>
+          <li>Lower risk; builds USCG past performance for future opportunities</li>
+          <li>Revenue upside limited but relationship investment is high value</li>
+          <li>Targets USCG as a new agency for Changeis expansion</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Option C — Pass</div>
+        <h4>Monitor &amp; Revisit at RFP</h4>
+        <ul>
+          <li>Solicitation release ~March 2, 2026 (may be delayed)</li>
+          <li>Read RFP carefully — if "currently deployed on Naval Ship" is a strict requirement, pass</li>
+          <li>If requirement softens (e.g., "capable of" or "experience with"), re-evaluate</li>
+          <li>Track Jonathan Cox contacts for future SFLC opportunities</li>
+          <li>Build USCG pipeline via smaller entry-point contracts first</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forecast Notes -->
+  <div class="section">
+    <div class="section-header">Forecast Notes &amp; Risk Flags</div>
+    <table>
+      <thead><tr><th>Item</th><th>Note</th><th>Risk</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Solicitation Slippage</strong></td>
+          <td>Sol. date was March 2, 2026 — already past at time of this analysis. No RFP visible on SAM.gov (forecast item). Likely delayed into Q2/Q3 FY26.</td>
+          <td><span class="signal signal-amber">Monitor</span></td>
+        </tr>
+        <tr>
+          <td><strong>"Currently Utilized" Language</strong></td>
+          <td>Strong indicator of a specific solution in mind (possible directed/wired requirement). May favor vendors who participated in market research or pilot.</td>
+          <td><span class="signal signal-red">High</span></td>
+        </tr>
+        <tr>
+          <td><strong>Small Business Status TBD</strong></td>
+          <td>APFS says SB Program = TBD. If set-aside as SB or WOSB, field narrows — benefits Changeis as WOSB/SB OASIS+ holder.</td>
+          <td><span class="signal signal-amber">Watch</span></td>
+        </tr>
+        <tr>
+          <td><strong>New Requirement — No Incumbent</strong></td>
+          <td>First-time procurement; no prior contract to reference. Open playing field structurally, but technical threshold is high.</td>
+          <td><span class="signal signal-green">Neutral</span></td>
+        </tr>
+        <tr>
+          <td><strong>GWAC Unspecified</strong></td>
+          <td>If the GWAC turns out to be one where Changeis lacks a prime (e.g., Alliant 3 if not yet awarded to Changeis), teaming becomes essential for vehicle access.</td>
+          <td><span class="signal signal-amber">Verify</span></td>
+        </tr>
+        <tr>
+          <td><strong>Baltimore PoP</strong></td>
+          <td>SFLC headquarters is in Baltimore, MD. On-site presence may be required for some tasks.</td>
+          <td><span class="signal signal-amber">Operational</span></td>
+        </tr>
+        <tr>
+          <td><strong>RAG Score 0.638</strong></td>
+          <td>MODERATE — reflects semantic similarity of Changeis data analytics work to requirement; not a capability confirmation on NLP/AI specifically.</td>
+          <td><span class="signal signal-amber">Context</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Action Items -->
+  <div class="section">
+    <div class="section-header">Immediate Action Items</div>
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-num">Now (April 2026)</div>
+        <h4>Intelligence &amp; Outreach</h4>
+        <ul>
+          <li>Reach out to Jonathan Cox / Courtney Brown to request a capability briefing — confirm whether solicitation is delayed and gather any market research RFI updates</li>
+          <li>Confirm Changeis Alliant 3 prime status (awarded March 10, 2026)</li>
+          <li>Research teaming partners with naval NLP/AI (specifically FedRAMP-deployed models)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Q2 FY26</div>
+        <h4>RFP Watch &amp; Decision</h4>
+        <ul>
+          <li>Set SAM.gov alert on NAICS 541511 + USCG SFLC / DHS</li>
+          <li>Monitor apfs-cloud.dhs.gov for record F2025071384 updates</li>
+          <li>Upon RFP release: evaluate "currently utilized" language — if a strict threshold, execute Option B or C above</li>
+          <li>Begin teaming discussions no later than 30 days before RFP close</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-num">Longer Term</div>
+        <h4>USCG Relationship Building</h4>
+        <ul>
+          <li>SFLC BOD IT Services recompete (up to $20M, CACI incumbent) — monitor for opportunity to compete or sub</li>
+          <li>Smaller SFLC entry point opportunities on OASIS+ SB — use to build past performance</li>
+          <li>Consider formal capability statement tailored to USCG SFLC maintenance IT mission</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context Slug -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Deep Dive: USCG SFLC F2025071384",
+  "task_date": "2026-04-06",
+  "deliverable_file": "deep-dive-uscg-sflc-541511-1384-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-uscg-sflc-541511-1384-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Generate a deep-dive analysis for APFS opportunity F2025071384. Agency: USCG Surface Forces Logistics Center (SFLC). Title: USCG SFLC Maintenance Data Readiness and Analysis for Enhanced Reliability Centered Maintenance. NAICS: 541511 - Custom Computer Programming Services. Dollar Range: $2M to $5M. Contract Vehicle: GWAC. Anticipated Award: 08/01/2026. Solicitation Release: 03/02/2026. Contact: Jonathan Cox (jonathan.w.cox2@uscg.mil). RAG Score: 0.638 (MODERATE). Description: Enhanced Reliability Centered Maintenance (E-RCM) via NLP tools for maintenance data analysis. Tasks: 1. Read full RAG results from APFS JSON. 2. USAspending: USCG SFLC spending patterns in NAICS 541511. 3. Research E-RCM and NLP applications in military maintenance. 4. Competitive landscape: Who does USCG SFLC IT/analytics work? 5. Capability matrix from RAG matches. 6. Go/No-Go: Which GWAC? Changeis AI/NLP capabilities? USCG experience? 7. FORECAST notes.",
+  "approach": "Read APFS JSON for full RAG results and requirement text. Ran parallel web research on E-RCM/NLP in naval maintenance, USCG SFLC IT contract landscape, GWAC vehicles, and Changeis capabilities. USAspending API queried (limited results due to SFLC subtier naming). Synthesized into structured Go/No-Go framework with teaming strategy.",
+  "key_findings": [
+    "Critical threshold: RFP requires model 'currently utilized to analyze Naval Ship equipment' — this language likely targets a specific existing solution (e.g., Unstructured.io just won a NAVSEA contract for nearly identical use case in Feb 2026)",
+    "Changeis RAG 0.638 matches on data operations/analytics (DOT/Volpe/FMCSA) — not on NLP, AI, or naval domain — creating significant capability gaps vs. requirement discriminators",
+    "Changeis holds OASIS+ prime positions (UR, SB, WOSB) which is the most likely GWAC vehicle for this procurement — strong vehicle position",
+    "SFLC uses OASIS and OASIS SB regularly for IT services; CACI incumbent on broad SFLC BOD IT; no incumbent on this specific E-RCM requirement",
+    "Recommendation: CONDITIONAL — pursue only with a qualified naval NLP/AI teaming partner; consider subcontracting to a stronger prime (Unstructured.io, Charles River, BAH) to build USCG past performance"
+  ],
+  "dead_ends": [
+    "USAspending API returned no results for SFLC NAICS 541511 specifically — subtier agency name mismatch; data limited",
+    "Changeis capabilities page (changeis.com/capabilities) showed no documented AI, NLP, or machine learning capabilities"
+  ],
+  "assumptions": [
+    "The GWAC vehicle will be OASIS+ (most consistent with recent SFLC IT award patterns)",
+    "Solicitation date March 2, 2026 has slipped — no public RFP visible at time of analysis",
+    "The 'currently utilized on Naval Ship equipment' language is a threshold requirement, not merely desired"
+  ],
+  "open_questions": [
+    "Has the solicitation been released? Is there an RFI or sources sought notice that preceded it?",
+    "Did Changeis participate in any USCG market research sessions related to this requirement?",
+    "Does Changeis hold an Alliant 3 prime position (awarded March 10, 2026)?",
+    "Is there a small business set-aside designation planned? (TBD in APFS)",
+    "Has Jonathan Cox or Courtney Brown been contacted for a capabilities briefing?"
+  ],
+  "data_sources": [
+    {"name": "APFS F2025071384", "url": "https://apfs-cloud.dhs.gov/record/71384/public-print/"},
+    {"name": "Changeis OASIS+ page", "url": "https://changeis.com/oasis-plus/"},
+    {"name": "Unstructured.io NAVSEA Award", "url": "https://unstructured.io/blog/unstructured-awarded-navsea-contract"},
+    {"name": "Charles River Analytics NAVSEA", "url": "https://cra.com/advancing-predictive-maintenance-capabilities-for-naval-systems/"},
+    {"name": "HigherGov SFLC BOD IT", "url": "https://www.highergov.com/contract-forecast/sflc-bod-it-services-1119586/"},
+    {"name": "OrangeSlices SFLC MECP", "url": "https://orangeslices.ai/contract-award-us-coast-guard-surface-forces-logistics-center-sflc-support/"},
+    {"name": "GSA OASIS+ Buyers Guide", "url": "https://www.gsa.gov/buy-through-us/products-and-services/professional-services/buy-services/oasis-plus/buyers-guide/buyers-guide-printable"},
+    {"name": "GSA Alliant 3", "url": "https://www.gsa.gov/technology/it-contract-vehicles-and-purchasing-programs/gwacs/alliant-3"},
+    {"name": "Factory AI RCM Guide", "url": "https://f7i.ai/blog/reliability-centered-maintenance-ai-guide"},
+    {"name": "Navy SNAPPR NLP Quad Chart", "url": "https://navystp.com/vtm/open_file?type=quad&id=N68335-19-C-0116"},
+    {"name": "Local APFS JSON", "url": "/home/user/workspace/cron_tracking/6f5371ab/apfs_F2025071384.json"}
+  ],
+  "next_steps": [
+    "Contact Jonathan Cox / Courtney Brown at USCG SFLC for capability briefing — (571) 614-5494",
+    "Verify Changeis Alliant 3 prime status",
+    "Identify naval NLP/AI teaming partners (focus: FedRAMP-deployed, naval domain pre-trained models)",
+    "Set SAM.gov alert: NAICS 541511, USCG/SFLC, DHS",
+    "Monitor APFS F2025071384 for solicitation release",
+    "Decision point: upon RFP release, re-evaluate 'currently utilized' threshold language before committing BD resources"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "Multiple parallel web searches for E-RCM/NLP naval landscape, USCG SFLC contract history, GWAC vehicles, competitor landscape; APFS JSON read (~68KB); reference HTML read; USAspending API calls"
+  }
+}</div>
+  </div>
+
+  <!-- Hidden JSON -->
+  <script type="application/json" id="vm2-context-data">{
+  "task_name": "Deep Dive: USCG SFLC F2025071384",
+  "task_date": "2026-04-06",
+  "deliverable_file": "deep-dive-uscg-sflc-541511-1384-2026-04-06.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-uscg-sflc-541511-1384-2026-04-06.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Generate a deep-dive analysis for APFS opportunity F2025071384. Agency: USCG SFLC. E-RCM NLP analytics. $2M-$5M FFP. GWAC. RAG 0.638 MODERATE.",
+  "approach": "Read APFS JSON, ran E-RCM/NLP research, USCG SFLC competitive landscape, GWAC vehicle analysis, Changeis capability gap assessment, Go/No-Go recommendation.",
+  "key_findings": [
+    "Critical threshold: 'currently utilized on Naval Ship equipment' language likely targets specific existing solution",
+    "Changeis RAG 0.638 matches data analytics (DOT/Volpe) not NLP/AI or naval domain",
+    "Changeis holds OASIS+ prime (UR/SB/WOSB) — strong vehicle position if OASIS+ selected",
+    "Unstructured.io won near-identical NAVSEA contract Feb 2026 — primary competitor",
+    "Recommendation: CONDITIONAL — pursue only with qualified naval NLP/AI teaming partner"
+  ],
+  "dead_ends": [
+    "USAspending API returned no SFLC NAICS 541511 results",
+    "Changeis capabilities page shows no documented AI/NLP work"
+  ],
+  "assumptions": [
+    "GWAC vehicle will be OASIS+",
+    "Solicitation date March 2, 2026 has slipped",
+    "Currently utilized language is a threshold requirement"
+  ],
+  "open_questions": [
+    "Has solicitation been released?",
+    "Does Changeis hold Alliant 3 prime?",
+    "Small business set-aside designation TBD",
+    "Has POC been contacted?"
+  ],
+  "data_sources": [
+    {"name": "APFS F2025071384", "url": "https://apfs-cloud.dhs.gov/record/71384/public-print/"},
+    {"name": "Changeis OASIS+", "url": "https://changeis.com/oasis-plus/"},
+    {"name": "Unstructured.io NAVSEA", "url": "https://unstructured.io/blog/unstructured-awarded-navsea-contract"},
+    {"name": "HigherGov SFLC BOD IT", "url": "https://www.highergov.com/contract-forecast/sflc-bod-it-services-1119586/"},
+    {"name": "GSA OASIS+", "url": "https://www.gsa.gov/oasis-plus"},
+    {"name": "GSA Alliant 3", "url": "https://www.gsa.gov/technology/it-contract-vehicles-and-purchasing-programs/gwacs/alliant-3"}
+  ],
+  "next_steps": [
+    "Contact Jonathan Cox (571) 614-5494 for capability briefing",
+    "Verify Changeis Alliant 3 prime status",
+    "Identify naval NLP/AI teaming partners",
+    "Set SAM.gov alert for NAICS 541511 USCG/SFLC",
+    "Monitor APFS F2025071384 for RFP release"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "Parallel searches for E-RCM NLP naval landscape, USCG SFLC contracts, GWAC vehicles; APFS JSON 68KB; reference HTML; USAspending API calls"
+  }
+}</script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · USCG SFLC E-RCM NLP Analytics (F2025071384) · April 6, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up prompt
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-uscg-sflc-541511-1384-2026-04-06.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the USCG SFLC E-RCM NLP Analytics deep dive.
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Has the solicitation been released on SAM.gov?
+- Does Changeis hold an Alliant 3 prime position?
+- Small business set-aside designation is TBD — has this been clarified?
+- Has Jonathan Cox (571-614-5494) been contacted for a capability briefing?
+
+Suggested next steps:
+- Identify specific naval NLP/AI teaming partners for this pursuit
+- Confirm RFP status and gather any new solicitation details
+- Build a capability gap response plan if pursuing
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: USCG SFLC E-RCM NLP Analytics (F2025071384)');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: USCG SFLC E-RCM NLP Deep Dive (F2025071384)');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}\n\nNext: Contact Jonathan Cox, verify Alliant 3 prime status, identify naval NLP teaming partners`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
