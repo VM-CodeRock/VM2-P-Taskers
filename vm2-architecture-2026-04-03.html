@@ -64,8 +64,8 @@
 <div class="container">
 
 <div class="doc-header">
-  <h1>VM2 System Architecture <span class="version-badge">v3.1 — April 2026</span></h1>
-  <div class="meta">Last updated: April 6, 2026 &nbsp;·&nbsp; Prepared for Varun Malhotra, President — Changeis Inc. &nbsp;·&nbsp; Perplexity Computer</div>
+  <h1>VM2 System Architecture <span class="version-badge">v3.2 — April 2026</span></h1>
+  <div class="meta">Last updated: April 6, 2026 (v3.2) &nbsp;·&nbsp; Prepared for Varun Malhotra, President — Changeis Inc. &nbsp;·&nbsp; Perplexity Computer</div>
 </div>
 
 <div class="toc">
@@ -159,8 +159,27 @@
   <li>Daily Auto-Helper scans non-VM2 tasks and surfaces ones where AI could help</li>
   <li>Completed tasks receive <code>vm2-done</code> label</li>
   <li><strong>API:</strong> REST v1 with pagination (<code>https://api.todoist.com/api/v1/tasks</code>). Connector limited to 50 results — always use direct REST API with pagination for comprehensive fetches.</li>
-  <li><strong>Key label IDs:</strong> VM2 = <code>2183231010</code>, vm2-opp = <code>2183369880</code></li>
+  <li><strong>Key labels:</strong> VM2 = <code>2183231010</code>, vm2-opp = <code>2183369880</code>, vm2-recurring (new v3.2)</li>
 </ul>
+
+<h3>2.5.1 Recurring Task Model (v3.2)</h3>
+<p>Recurring Todoist tasks (e.g., daily SAM checks, weekly reviews) use a three-label system:</p>
+<table>
+  <tr><th>Label Combo</th><th>Behavior</th></tr>
+  <tr><td><code>VM2</code> only</td><td>One-shot task. Execute when due/overdue. Add <code>vm2-done</code> on completion.</td></tr>
+  <tr><td><code>VM2</code> + <code>vm2-recurring</code></td><td>Execute ONLY if <code>due.date == today</code> (exact match). Skip overdue — prevents catch-up loops. <code>vm2-done</code> label is ignored for eligibility.</td></tr>
+  <tr><td><code>VM2</code> + <code>vm2-done</code> (no recurring)</td><td>Completed one-shot. Skipped permanently.</td></tr>
+</table>
+
+<p><strong>Delivery Log:</strong> After each recurring execution, the cron appends a timestamped link to the task’s description in Todoist:</p>
+<pre>
+── VM2 Delivery Log ──
+✓ 2026-04-06 — https://vm2-p-taskers-production.up.railway.app/faa-daily-sam-2026-04-06.html
+✓ 2026-04-07 — https://vm2-p-taskers-production.up.railway.app/faa-daily-sam-2026-04-07.html
+</pre>
+<p>This builds a running history of all deliverables directly on the task — no portal searching needed.</p>
+
+<p><strong>State tracking:</strong> <code>/home/user/workspace/cron_tracking/todoist_vm2/recurring_state.json</code> records <code>{task_id: last_execution_date}</code> to prevent double-runs within the same day (hourly cron).</p>
 
 <h3>2.6 Dropbox Backup</h3>
 <ul>
@@ -435,6 +454,7 @@ Deep Dive Monitor (:45 past each hour)
 <h2 id="changelog">12. Change Log</h2>
 <table class="changelog">
   <tr><th>Date</th><th>Version</th><th>Change</th></tr>
+  <tr><td>Apr 6, 2026</td><td>v3.2</td><td><strong>Recurring task model.</strong> Added <code>vm2-recurring</code> label for tasks that repeat on a schedule. These execute only on their due date (not overdue) and build a delivery log in the Todoist task description. 9 recurring tasks migrated. Prevents catch-up loops and lost deliverable links.</td></tr>
   <tr><td>Apr 6, 2026</td><td>v3.1</td><td><strong>Removed auto-dive.</strong> Combined Daily Brief no longer auto-creates Todoist tasks for STRONG opportunities. Deep dives are now manual-only — triggered by Varun clicking buttons on the daily brief. Added §7 Opportunity Intelligence Pipeline with full data flow. Expanded cron table to all 12 active crons with IDs and schedules. Added portal.html governance rule (§2.1). Added git conflict resolution guidance.</td></tr>
   <tr><td>Apr 3, 2026</td><td>v3.0</td><td>Full architecture refresh. vm2-wrapup v2.1 with Dropbox diff sync. 310 deliverables in repo.</td></tr>
   <tr><td>Mar 28, 2026</td><td>—</td><td>vm2-wrapup skill recreated after cron cancellation (id: 3b217572)</td></tr>
