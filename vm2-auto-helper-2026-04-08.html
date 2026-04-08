@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todoist Auto-Helper — 2026-04-08</title>
+<!-- Charter not on Google Fonts; Georgia serves as the serif fallback -->
+<style>
+  :root {
+    --navy:#1B2A4A; --red:#c53a3a; --red-hover:#a82e2e;
+    --bg:#FAFAF8; --surface:#FFFFFF; --surface-alt:#F4F3F0; --border:#D4D1CA;
+    --text:#1a1a1a; --text-muted:#5a5a5a; --code-bg:#F0EFEC; --card-shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg:#1B2A4A; --topbar-text:#FFFFFF; --link:#1B2A4A;
+    --btn-bg:#1B2A4A; --btn-text:#fff; --btn-secondary-bg:#F0EFEC; --btn-secondary-text:#1B2A4A; --btn-secondary-border:#D4D1CA;
+    --slug-bg:#F6F5F2; --slug-border:#D4D1CA; --panel-bg:#F0EFEC;
+  }
+  [data-theme="dark"] {
+    --bg:#111318; --surface:#1a1d25; --surface-alt:#22252e; --border:#333740;
+    --text:#d8d8d8; --text-muted:#8a8e96; --code-bg:#22252e;
+    --slug-bg:#1a1d25; --slug-border:#333740; --panel-bg:#22252e;
+    --card-shadow:0 1px 3px rgba(0,0,0,0.3),0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg:#c53a3a; --btn-text:#fff; --btn-secondary-bg:#22252e; --btn-secondary-text:#d8d8d8; --btn-secondary-border:#333740;
+    --link:#7eb3e0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:Charter,Georgia,'Times New Roman',serif;background:var(--bg);color:var(--text);line-height:1.55;font-size:16px;-webkit-font-smoothing:antialiased;}
+  .topbar{position:sticky;top:0;z-index:100;background:var(--topbar-bg);color:var(--topbar-text);font-family:system-ui,-apple-system,sans-serif;font-size:13px;font-weight:600;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;letter-spacing:.02em;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+  .topbar-left{display:flex;align-items:center;gap:8px;}
+  .topbar-dot{color:var(--red);font-size:18px;}
+  .theme-toggle{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:system-ui,sans-serif;transition:background .2s;}
+  .theme-toggle:hover{background:rgba(255,255,255,0.22);}
+  .container{max-width:860px;margin:0 auto;padding:0 24px;}
+  .hero{text-align:center;padding:48px 0 36px;border-bottom:2px solid var(--border);margin-bottom:36px;}
+  .hero-badge{display:inline-block;font-family:system-ui,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;background:var(--red);color:#fff;padding:3px 12px;border-radius:3px;margin-bottom:16px;}
+  .hero h1{font-size:36px;font-weight:700;color:var(--navy);line-height:1.15;margin-bottom:8px;}
+  [data-theme="dark"] .hero h1{color:#e2e2e2;}
+  .hero-sub{font-size:18px;color:var(--text-muted);font-style:italic;margin-bottom:6px;}
+  .section-title{font-family:system-ui,sans-serif;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin:18px 0 10px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 16px 14px;margin:14px 0;box-shadow:var(--card-shadow);}
+  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;}
+  .card-title{font-size:20px;font-weight:700;}
+  .card-meta{font-family:system-ui,sans-serif;font-size:12px;color:var(--text-muted);margin-top:4px;}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;}
+  .card-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn{display:inline-block;text-decoration:none;background:var(--btn-bg);color:var(--btn-text);padding:8px 10px;border-radius:8px;font-family:system-ui,sans-serif;font-size:12px;font-weight:700;}
+  .btn-secondary{background:var(--btn-secondary-bg);color:var(--btn-secondary-text);border:1px solid var(--btn-secondary-border);}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px;}
+  .grid h3{font-family:system-ui,sans-serif;font-size:13px;color:var(--red);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+  ul{padding-left:18px;}
+  .desc{margin-top:12px;font-family:system-ui,sans-serif;font-size:13px;color:var(--text-muted);}
+  .desc-body{margin-top:6px;white-space:pre-wrap;}
+  .slug-panel{background:var(--slug-bg);border:1px solid var(--slug-border);border-radius:10px;padding:14px;margin:22px 0;}
+  .slug-grid{display:grid;grid-template-columns:1fr;gap:10px;}
+  .slug-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;overflow:auto;}
+  pre{background:var(--code-bg);padding:10px;border-radius:8px;overflow:auto;}
+  .panel{background:var(--panel-bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin:18px 0;}
+  .panel-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+  .footer{margin:40px 0 28px;color:var(--text-muted);font-family:system-ui,sans-serif;font-size:12px;text-align:center;}
+  @media (max-width: 720px){.grid{grid-template-columns:1fr;}.card-head{flex-direction:column;}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left"><span class="topbar-dot">•</span><span>VM2 · Perplexity Computer</span></div>
+    <button class="theme-toggle" id="themeToggle">Toggle Theme</button>
+  </div>
+  <div class="container">
+    <div class="hero">
+      <div class="hero-badge">Auto-Helper</div>
+      <h1>Todoist Auto-Helper</h1>
+      <div class="hero-sub">AI-suitable non-VM2 tasks — 2026-04-08</div>
+      <div class="card-meta">Total tasks returned: 50 · Non-VM2 tasks: 45 · Suggestions: 12</div>
+    </div>
+
+    <div class="section-title">Suggestions</div>
+    
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Research personal social media strategy</div>
+          <div class="card-meta">Project: <span class="mono">Development</span> · Priority: 3 · AI score: 6 · Due: None</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Research%20personal%20social%20media%20strategy&body=Todoist%20Task%3A%20Research%20personal%20social%20media%20strategy%0AProject%3A%20Development%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D662R7jmwxGwFHH4j%0ADue%3A%20None%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Summarize%20key%20takeaways%20and%20actionable%20recommendations%20from%20linked%20material%20or%20topic%20research.%0A-%20Turn%20a%20vague%20goal%20into%20a%20structured%20plan%20with%20milestones%2C%20owners%2C%20and%20risks.%0A%0ASuggested%20approach%3A%0A-%20Collect%203%E2%80%937%20credible%20sources%20and%20extract%20the%20most%20useful%2C%20non-obvious%20takeaways.%0A-%20Deliver%20a%201-page%20summary%20%2B%20decision/options%20table%20and%20suggested%20next%20actions.%0A-%20Clarify%20objective%2C%20constraints%2C%20and%20definition%20of%20done%3B%20then%20propose%20phased%20plan.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=662R7jmwxGwFHH4j" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Summarize key takeaways and actionable recommendations from linked material or topic research.</li><li>Turn a vague goal into a structured plan with milestones, owners, and risks.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Collect 3–7 credible sources and extract the most useful, non-obvious takeaways.</li><li>Deliver a 1-page summary + decision/options table and suggested next actions.</li><li>Clarify objective, constraints, and definition of done; then propose phased plan.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Create Strategy Circle for PMS</div>
+          <div class="card-meta">Project: <span class="mono">Changeis Performance Management System</span> · Priority: 3 · AI score: 5 · Due: None</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Create%20Strategy%20Circle%20for%20PMS&body=Todoist%20Task%3A%20Create%20Strategy%20Circle%20for%20PMS%0AProject%3A%20Changeis%20Performance%20Management%20System%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D662RJGH7phPgGW95%0ADue%3A%20None%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Turn%20a%20vague%20goal%20into%20a%20structured%20plan%20with%20milestones%2C%20owners%2C%20and%20risks.%0A%0ASuggested%20approach%3A%0A-%20Clarify%20objective%2C%20constraints%2C%20and%20definition%20of%20done%3B%20then%20propose%20phased%20plan.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=662RJGH7phPgGW95" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Turn a vague goal into a structured plan with milestones, owners, and risks.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Clarify objective, constraints, and definition of done; then propose phased plan.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">[Review Refinu Assessment](https://user.refinu.com/dashboard)</div>
+          <div class="card-meta">Project: <span class="mono">6V32xjHwrvvjhWPh</span> · Priority: 3 · AI score: 5 · Due: None</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%5BReview%20Refinu%20Assessment%5D%28https%3A//user.refinu.com/dashboard%29&body=Todoist%20Task%3A%20%5BReview%20Refinu%20Assessment%5D%28https%3A//user.refinu.com/dashboard%29%0AProject%3A%206V32xjHwrvvjhWPh%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D6RXQ5Wj34wH7fcP3%0ADue%3A%20None%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Summarize%20key%20takeaways%20and%20actionable%20recommendations%20from%20linked%20material%20or%20topic%20research.%0A-%20Build%20a%20quick%20cost/benefit%20and%20cancel/keep%20recommendation%2C%20with%20cancel%20steps%20checklist.%0A%0ASuggested%20approach%3A%0A-%20Collect%203%E2%80%937%20credible%20sources%20and%20extract%20the%20most%20useful%2C%20non-obvious%20takeaways.%0A-%20Deliver%20a%201-page%20summary%20%2B%20decision/options%20table%20and%20suggested%20next%20actions.%0A-%20Pull%20pricing/usage/alternatives%3B%20draft%20recommendation%20and%20short%20notes%20for%20records.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=6RXQ5Wj34wH7fcP3" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Summarize key takeaways and actionable recommendations from linked material or topic research.</li><li>Build a quick cost/benefit and cancel/keep recommendation, with cancel steps checklist.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Collect 3–7 credible sources and extract the most useful, non-obvious takeaways.</li><li>Deliver a 1-page summary + decision/options table and suggested next actions.</li><li>Pull pricing/usage/alternatives; draft recommendation and short notes for records.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Review YouTube TV subscription</div>
+          <div class="card-meta">Project: <span class="mono">6CrfCWr9MhrpR6Px</span> · Priority: 2 · AI score: 5 · Due: 2026-05-05</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20YouTube%20TV%20subscription&body=Todoist%20Task%3A%20Review%20YouTube%20TV%20subscription%0AProject%3A%206CrfCWr9MhrpR6Px%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D67FC6R52q4C5rRgx%0ADue%3A%202026-05-05%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Build%20a%20quick%20cost/benefit%20and%20cancel/keep%20recommendation%2C%20with%20cancel%20steps%20checklist.%0A%0ASuggested%20approach%3A%0A-%20Pull%20pricing/usage/alternatives%3B%20draft%20recommendation%20and%20short%20notes%20for%20records.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=67FC6R52q4C5rRgx" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Build a quick cost/benefit and cancel/keep recommendation, with cancel steps checklist.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Pull pricing/usage/alternatives; draft recommendation and short notes for records.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Review Cody AI Subscription (100/month) (every 1-month)</div>
+          <div class="card-meta">Project: <span class="mono">6frj9WmxXhJ3rjRJ</span> · Priority: 2 · AI score: 5 · Due: 2026-05-04</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20Cody%20AI%20Subscription%20%28100/month%29%20%28every%201-month%29&body=Todoist%20Task%3A%20Review%20Cody%20AI%20Subscription%20%28100/month%29%20%28every%201-month%29%0AProject%3A%206frj9WmxXhJ3rjRJ%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D6C62m95hCQgF92CG%0ADue%3A%202026-05-04%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Build%20a%20quick%20cost/benefit%20and%20cancel/keep%20recommendation%2C%20with%20cancel%20steps%20checklist.%0A%0ASuggested%20approach%3A%0A-%20Pull%20pricing/usage/alternatives%3B%20draft%20recommendation%20and%20short%20notes%20for%20records.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=6C62m95hCQgF92CG" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Build a quick cost/benefit and cancel/keep recommendation, with cancel steps checklist.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Pull pricing/usage/alternatives; draft recommendation and short notes for records.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">https://www.ccclub.org/Default.aspx?p=dynamicmodule&amp;pageid=399789&amp;ssid=323042&amp;vnf=1 (Check out Congo Candidates for Membership)</div>
+          <div class="card-meta">Project: <span class="mono">6CrfCWr9J6fx3Rvw</span> · Priority: 2 · AI score: 5 · Due: 2026-05-04</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20https%3A//www.ccclub.org/Default.aspx%3Fp%3Ddynamicmodule%26pageid%3D399789%26ssid%3D323042%26vnf%3D1%20%28Check%20out%20Congo%20Candidates%20for%20Membership%29&body=Todoist%20Task%3A%20https%3A//www.ccclub.org/Default.aspx%3Fp%3Ddynamicmodule%26pageid%3D399789%26ssid%3D323042%26vnf%3D1%20%28Check%20out%20Congo%20Candidates%20for%20Membership%29%0AProject%3A%206CrfCWr9J6fx3Rvw%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D662Hc3fvVQP8wfjP%0ADue%3A%202026-05-04%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Summarize%20key%20takeaways%20and%20actionable%20recommendations%20from%20linked%20material%20or%20topic%20research.%0A%0ASuggested%20approach%3A%0A-%20Collect%203%E2%80%937%20credible%20sources%20and%20extract%20the%20most%20useful%2C%20non-obvious%20takeaways.%0A-%20Deliver%20a%201-page%20summary%20%2B%20decision/options%20table%20and%20suggested%20next%20actions.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=662Hc3fvVQP8wfjP" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Summarize key takeaways and actionable recommendations from linked material or topic research.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Collect 3–7 credible sources and extract the most useful, non-obvious takeaways.</li><li>Deliver a 1-page summary + decision/options table and suggested next actions.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Apple Reveri subscription review (25/montb every 16th)</div>
+          <div class="card-meta">Project: <span class="mono">6frj9WmxXhJ3rjRJ</span> · Priority: 2 · AI score: 5 · Due: 2026-04-10</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Apple%20Reveri%20subscription%20review%20%2825/montb%20every%2016th%29&body=Todoist%20Task%3A%20Apple%20Reveri%20subscription%20review%20%2825/montb%20every%2016th%29%0AProject%3A%206frj9WmxXhJ3rjRJ%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D6V5wxqvpM2mCvhX9%0ADue%3A%202026-04-10%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Build%20a%20quick%20cost/benefit%20and%20cancel/keep%20recommendation%2C%20with%20cancel%20steps%20checklist.%0A%0ASuggested%20approach%3A%0A-%20Pull%20pricing/usage/alternatives%3B%20draft%20recommendation%20and%20short%20notes%20for%20records.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=6V5wxqvpM2mCvhX9" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Build a quick cost/benefit and cancel/keep recommendation, with cancel steps checklist.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Pull pricing/usage/alternatives; draft recommendation and short notes for records.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Wisp Flow Pro Subscription (annual @ $144 on Spark 1941). Renews every tomorrow</div>
+          <div class="card-meta">Project: <span class="mono">6frj9WmxXhJ3rjRJ</span> · Priority: 1 · AI score: 5 · Due: 2026-05-05</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Wisp%20Flow%20Pro%20Subscription%20%28annual%20%40%20%24144%20on%20Spark%201941%29.%20Renews%20every%20tomorrow&body=Todoist%20Task%3A%20Wisp%20Flow%20Pro%20Subscription%20%28annual%20%40%20%24144%20on%20Spark%201941%29.%20Renews%20every%20tomorrow%0AProject%3A%206frj9WmxXhJ3rjRJ%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D6frj9R5gRHwFGgGr%0ADue%3A%202026-05-05%0A%0ADescription%3A%0AFlow%20Pro%0AGet%20access%20to%20unlimited%20words%2C%20AI%20commands%2C%20and%20early%20access%20to%20new%20features%20with%20Flow%20Pro.%0ABilled%20annually%0A%24144.00%20per%20Seats%0A%0AWhy%20AI%20can%20help%3A%0A-%20Build%20a%20quick%20cost/benefit%20and%20cancel/keep%20recommendation%2C%20with%20cancel%20steps%20checklist.%0A%0ASuggested%20approach%3A%0A-%20Pull%20pricing/usage/alternatives%3B%20draft%20recommendation%20and%20short%20notes%20for%20records.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=6frj9R5gRHwFGgGr" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Build a quick cost/benefit and cancel/keep recommendation, with cancel steps checklist.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Pull pricing/usage/alternatives; draft recommendation and short notes for records.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">Flow Pro
+Get access to unlimited words, AI commands, and early access to new features with Flow Pro.
+Billed annually
+$144.00 per Seats</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Download Upwork Statement for the month</div>
+          <div class="card-meta">Project: <span class="mono">Corporate</span> · Priority: 2 · AI score: 4 · Due: 2026-05-05</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Download%20Upwork%20Statement%20for%20the%20month&body=Todoist%20Task%3A%20Download%20Upwork%20Statement%20for%20the%20month%0AProject%3A%20Corporate%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D662QGqrW9VQCxPpX%0ADue%3A%202026-05-05%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Provide%20a%20step-by-step%20checklist%20and%20template%20for%20filing/recording%20the%20output.%0A%0ASuggested%20approach%3A%0A-%20Draft%20checklist%20%2B%20filing%20naming%20convention%3B%20optionally%20draft%20email%20to%20accountant.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=662QGqrW9VQCxPpX" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Provide a step-by-step checklist and template for filing/recording the output.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Draft checklist + filing naming convention; optionally draft email to accountant.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Operations research project</div>
+          <div class="card-meta">Project: <span class="mono">Innovation</span> · Priority: 3 · AI score: 3 · Due: None</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Operations%20research%20project&body=Todoist%20Task%3A%20Operations%20research%20project%0AProject%3A%20Innovation%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D662R7Vr3mWh4X58J%0ADue%3A%20None%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Summarize%20key%20takeaways%20and%20actionable%20recommendations%20from%20linked%20material%20or%20topic%20research.%0A%0ASuggested%20approach%3A%0A-%20Collect%203%E2%80%937%20credible%20sources%20and%20extract%20the%20most%20useful%2C%20non-obvious%20takeaways.%0A-%20Deliver%20a%201-page%20summary%20%2B%20decision/options%20table%20and%20suggested%20next%20actions.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=662R7Vr3mWh4X58J" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Summarize key takeaways and actionable recommendations from linked material or topic research.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Collect 3–7 credible sources and extract the most useful, non-obvious takeaways.</li><li>Deliver a 1-page summary + decision/options table and suggested next actions.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Review undated backlog for this week</div>
+          <div class="card-meta">Project: <span class="mono">6V39g3hc8wqgm2WV</span> · Priority: 2 · AI score: 3 · Due: 2026-04-07</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20undated%20backlog%20for%20this%20week&body=Todoist%20Task%3A%20Review%20undated%20backlog%20for%20this%20week%0AProject%3A%206V39g3hc8wqgm2WV%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D662R6rHwcCM2qfp8%0ADue%3A%202026-04-07%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Build%20a%20quick%20cost/benefit%20and%20cancel/keep%20recommendation%2C%20with%20cancel%20steps%20checklist.%0A%0ASuggested%20approach%3A%0A-%20Pull%20pricing/usage/alternatives%3B%20draft%20recommendation%20and%20short%20notes%20for%20records.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=662R6rHwcCM2qfp8" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Build a quick cost/benefit and cancel/keep recommendation, with cancel steps checklist.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Pull pricing/usage/alternatives; draft recommendation and short notes for records.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Read http://www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/ (A Quick Overview of the Momentum Planners - Productive Flourishing -)</div>
+          <div class="card-meta">Project: <span class="mono">Weekly GTD</span> · Priority: 2 · AI score: 3 · Due: None</div>
+        </div>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Read%20http%3A//www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/%20%28A%20Quick%20Overview%20of%20the%20Momentum%20Planners%20-%20Productive%20Flourishing%20-%29&body=Todoist%20Task%3A%20Read%20http%3A//www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/%20%28A%20Quick%20Overview%20of%20the%20Momentum%20Planners%20-%20Productive%20Flourishing%20-%29%0AProject%3A%20Weekly%20GTD%0ATask%20URL%3A%20https%3A//todoist.com/showTask%3Fid%3D662RCQc5mVQ2fc3g%0ADue%3A%20None%0A%0ADescription%3A%0A%28none%29%0A%0AWhy%20AI%20can%20help%3A%0A-%20Summarize%20key%20takeaways%20and%20actionable%20recommendations%20from%20linked%20material%20or%20topic%20research.%0A-%20Turn%20a%20vague%20goal%20into%20a%20structured%20plan%20with%20milestones%2C%20owners%2C%20and%20risks.%0A%0ASuggested%20approach%3A%0A-%20Collect%203%E2%80%937%20credible%20sources%20and%20extract%20the%20most%20useful%2C%20non-obvious%20takeaways.%0A-%20Deliver%20a%201-page%20summary%20%2B%20decision/options%20table%20and%20suggested%20next%20actions.%0A-%20Clarify%20objective%2C%20constraints%2C%20and%20definition%20of%20done%3B%20then%20propose%20phased%20plan.">Task VM2</a>
+          <a class="btn btn-secondary" href="https://todoist.com/showTask?id=662RCQc5mVQ2fc3g" target="_blank" rel="noopener">Open in Todoist</a>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <h3>Why AI can help</h3>
+          <ul><li>Summarize key takeaways and actionable recommendations from linked material or topic research.</li><li>Turn a vague goal into a structured plan with milestones, owners, and risks.</li></ul>
+        </div>
+        <div>
+          <h3>Suggested approach</h3>
+          <ul><li>Collect 3–7 credible sources and extract the most useful, non-obvious takeaways.</li><li>Deliver a 1-page summary + decision/options table and suggested next actions.</li><li>Clarify objective, constraints, and definition of done; then propose phased plan.</li></ul>
+        </div>
+      </div>
+      <div class="desc"><strong>Description:</strong><div class="desc-body">(none)</div></div>
+    </div>
+    
+
+    <div class="slug-panel">
+      <div class="section-title">Context Slug</div>
+      <div class="slug-grid">
+        <div class="slug-box"><strong>Deliverable</strong><div class="mono">vm2-auto-helper-2026-04-08.html</div><div class="mono">https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-04-08.html</div></div>
+        <div class="slug-box"><strong>Context JSON (visible)</strong><pre>{
+  &quot;task_name&quot;: &quot;Todoist Auto-Helper&quot;,
+  &quot;task_date&quot;: &quot;2026-04-08&quot;,
+  &quot;deliverable_file&quot;: &quot;vm2-auto-helper-2026-04-08.html&quot;,
+  &quot;railway_url&quot;: &quot;https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-04-08.html&quot;,
+  &quot;version&quot;: 1,
+  &quot;prior_versions&quot;: [],
+  &quot;related_deliverables&quot;: [],
+  &quot;original_instructions&quot;: &quot;# Deliverable Specification for VM2 Tasks\n\n## Output Requirements\nEach deliverable must be a SINGLE self-contained HTML file following the VM2 Changeis style.\n\n### Style\n- Use the EXACT same HTML/CSS structure as the reference file at `/home/user/workspace/VM2-P-Taskers/vm2-system-guide-2026-03-27.html`\n- Navy topbar (#1B2A4A) with \&quot;VM2 \u00b7 Perplexity Computer\&quot; branding + Dark/Light toggle\n- Charter/Georgia serif headings, system-ui sans-serif body\n- Red accent #c53a3a for section headers\n- Max-width 860px centered container\n- Light/dark theme toggle (data-theme attribute on html)\n- Tables with navy header row (#1B2A4A, white text), alternating row backgrounds\n\n### Mandatory Sections at Bottom (CRITICAL \u2014 ALL ARE REQUIRED)\n\n**Every deliverable MUST include ALL four sections below. Omitting any of these is a failed deliverable.**\n\n1. **Session Context** (collapsible details/summary) showing ALL of:\n   - Original Instructions (full task instructions, not abbreviated)\n   - Approach (methodology used)\n   - Key Findings (3-5 bullet points minimum)\n   - Dead Ends (what didn&#x27;t work or wasn&#x27;t available)\n   - Assumptions (what was assumed)\n   - Open Questions (remaining unknowns)\n   - Data Sources (with URLs where applicable)\n   - Next Steps (actionable follow-ups)\n\n2. **Hidden JSON block**: `&lt;script type=\&quot;application/json\&quot; id=\&quot;vm2-context-data\&quot;&gt;` with ALL fields:\n   - task_name, task_date, deliverable_file, railway_url, version (1), prior_versions ([]),\n   - related_deliverables, original_instructions, approach, key_findings, dead_ends,\n   - assumptions, open_questions, data_sources, next_steps\n   - **cost_estimate** (REQUIRED \u2014 never omit): `{ \&quot;model\&quot;: \&quot;claude-sonnet-4-6\&quot;, \&quot;model_pricing\&quot;: \&quot;$3/$15 per 1M tokens\&quot;, \&quot;input_tokens_est\&quot;: \&quot;~50,000\&quot;, \&quot;output_tokens_est\&quot;: \&quot;~8,000\&quot;, \&quot;search_calls\&quot;: 5, \&quot;subagent_calls\&quot;: 0, \&quot;cost_conservative\&quot;: \&quot;$0.25\&quot;, \&quot;cost_ceiling\&quot;: \&quot;$0.50\&quot;, \&quot;notes\&quot;: \&quot;Brief description of cost factors\&quot; }`\n   - Even if exact costs are unknown, provide reasonable estimates based on task complexity\n\n3. **Continue This Work panel** with 3 buttons:\n   - Copy Follow-Up Prompt (copies a pre-built prompt with the deliverable URL + context)\n   - Email to VM2 (mailto:vm2.viru@gmail.com with subject + body)\n   - Create Todoist Follow-Up (calls /api/todoist/tasks or falls back to todoist.com/add)\n\n4. **Footer**: \&quot;Changeis Confidential \u00b7 [Title] \u00b7 [Date] \u00b7 VM2 Deliverable\&quot;\n\n### File Naming\nSave to: `/home/user/workspace/VM2-P-Taskers/{slug}-YYYY-MM-DD.html`\n\n### Railway URL\nEach deliverable&#x27;s Railway URL is: `https://vm2-p-taskers-production.up.railway.app/{slug}-YYYY-MM-DD.html`\n\n### portal.html Entry Format (CRITICAL)\nWhen adding entries to portal.html, EVERY row MUST use this exact format:\n```html\n&lt;tr data-date=\&quot;YYYY-MM-DD\&quot; data-type=\&quot;Type Name\&quot;&gt;\n&lt;td class=\&quot;col-date\&quot;&gt;YYYY-MM-DD&lt;/td&gt;\n&lt;td class=\&quot;col-title\&quot;&gt;&lt;a href=\&quot;filename.html\&quot;&gt;Title&lt;/a&gt;&lt;/td&gt;\n&lt;td class=\&quot;col-type\&quot;&gt;&lt;span class=\&quot;badge badge-{badgeclass}\&quot;&gt;Type Name&lt;/span&gt;&lt;/td&gt;\n&lt;td class=\&quot;col-link\&quot;&gt;&lt;a class=\&quot;link-icon\&quot; href=\&quot;filename.html\&quot; title=\&quot;Open\&quot;&gt;\u2197&lt;/a&gt;&lt;/td&gt;\n&lt;/tr&gt;\n```\n\n**Required attributes:**\n- `data-date=\&quot;YYYY-MM-DD\&quot;` on the `&lt;tr&gt;` \u2014 this drives date filtering\n- `data-type=\&quot;Type Name\&quot;` on the `&lt;tr&gt;` \u2014 this drives type filtering\n- Date displayed as `YYYY-MM-DD` (not \&quot;Mar 29\&quot; or other formats)\n- All four `&lt;td&gt;` cells with proper classes: `col-date`, `col-title`, `col-type`, `col-link`\n- Badge class options: `badge-research` (Research Brief), `badge-monitoring` (Compliance, Auto-Helper, Monitoring), `badge-brief` (Intelligence Brief, Daily Brief, Newsletter), `badge-research` (Deep Dive, Strategy, Tech, Architecture, Weekly Digest)\n- Link href should be the LOCAL filename (not the full Railway URL)\n\n**DO NOT:**\n- Use raw `&lt;tr&gt;&lt;td&gt;` without data attributes\n- Use short date formats like \&quot;Mar 29\&quot; in the display\n- Omit the link column\n- Add entries outside the `&lt;tbody&gt;` (e.g., stray `&lt;ul&gt;` elements)\n- Touch index.html (it&#x27;s an immutable redirect stub)\n\n### CRITICAL RULES\n- Plain HTML only, NO encryption, NO StaticCrypt\n- Use the reference file for exact CSS/JS \u2014 copy the structure closely\n- The deliverable must be self-contained (all CSS inline, no external dependencies)&quot;,
+  &quot;approach&quot;: [
+    &quot;Fetch tasks via Todoist connector.&quot;,
+    &quot;Exclude tasks already labeled VM2 (or done variants).&quot;,
+    &quot;Use heuristics to rank tasks likely to benefit from AI assistance.&quot;,
+    &quot;Generate a branded HTML page with mailto delegation buttons and required VM2 context panels.&quot;
+  ],
+  &quot;key_findings&quot;: [
+    &quot;Found 50 total Todoist tasks returned by connector; 45 do not carry the VM2 label.&quot;,
+    &quot;Identified 12 non-VM2 tasks that appear well-suited for AI help (research/review/planning).&quot;,
+    &quot;Generated one-click mailto buttons to delegate any suggestion to VM2 via email.&quot;
+  ],
+  &quot;dead_ends&quot;: [
+    &quot;Todoist connector returned a maximum of 50 tasks for unfiltered search; additional paging parameters were not available in the tool schema.&quot;
+  ],
+  &quot;assumptions&quot;: [
+    &quot;Tasks with label &#x27;VM2&#x27; or &#x27;v2-done&#x27; are handled by a separate hourly process and are excluded here.&quot;,
+    &quot;Heuristic keyword scoring is sufficient for a daily shortlist; it may miss some tasks that could benefit from AI.&quot;
+  ],
+  &quot;open_questions&quot;: [
+    &quot;Is there an alternate Todoist tool available for paginated task export to ensure the full task set beyond the first 50?&quot;
+  ],
+  &quot;data_sources&quot;: [
+    {
+      &quot;name&quot;: &quot;Todoist connector: todoist-search-tasks output&quot;,
+      &quot;url&quot;: &quot;(connector output file tool_calls/call_external_tool/output_mnpxut56.json)&quot;
+    }
+  ],
+  &quot;next_steps&quot;: [
+    &quot;If needed, enhance task retrieval to paginate or pull per-project to cover &gt;50 tasks.&quot;,
+    &quot;Add optional grouping by project and due date to make daily triage faster.&quot;
+  ],
+  &quot;cost_estimate&quot;: {
+    &quot;model&quot;: &quot;claude-sonnet-4-6&quot;,
+    &quot;model_pricing&quot;: &quot;$3/$15 per 1M tokens&quot;,
+    &quot;input_tokens_est&quot;: &quot;~15,000&quot;,
+    &quot;output_tokens_est&quot;: &quot;~3,000&quot;,
+    &quot;search_calls&quot;: 0,
+    &quot;subagent_calls&quot;: 0,
+    &quot;cost_conservative&quot;: &quot;$0.05&quot;,
+    &quot;cost_ceiling&quot;: &quot;$0.15&quot;,
+    &quot;notes&quot;: &quot;Mostly connector data processing + HTML generation.&quot;
+  }
+}</pre></div>
+      </div>
+    </div>
+
+    <details class="panel">
+      <summary style="cursor:pointer;font-family:system-ui,sans-serif;font-weight:800;">Session Context</summary>
+      <div style="margin-top:10px;">
+        <div class="section-title">Original Instructions</div>
+        <pre># Deliverable Specification for VM2 Tasks
+
+## Output Requirements
+Each deliverable must be a SINGLE self-contained HTML file following the VM2 Changeis style.
+
+### Style
+- Use the EXACT same HTML/CSS structure as the reference file at `/home/user/workspace/VM2-P-Taskers/vm2-system-guide-2026-03-27.html`
+- Navy topbar (#1B2A4A) with &quot;VM2 · Perplexity Computer&quot; branding + Dark/Light toggle
+- Charter/Georgia serif headings, system-ui sans-serif body
+- Red accent #c53a3a for section headers
+- Max-width 860px centered container
+- Light/dark theme toggle (data-theme attribute on html)
+- Tables with navy header row (#1B2A4A, white text), alternating row backgrounds
+
+### Mandatory Sections at Bottom (CRITICAL — ALL ARE REQUIRED)
+
+**Every deliverable MUST include ALL four sections below. Omitting any of these is a failed deliverable.**
+
+1. **Session Context** (collapsible details/summary) showing ALL of:
+   - Original Instructions (full task instructions, not abbreviated)
+   - Approach (methodology used)
+   - Key Findings (3-5 bullet points minimum)
+   - Dead Ends (what didn&#x27;t work or wasn&#x27;t available)
+   - Assumptions (what was assumed)
+   - Open Questions (remaining unknowns)
+   - Data Sources (with URLs where applicable)
+   - Next Steps (actionable follow-ups)
+
+2. **Hidden JSON block**: `&lt;script type=&quot;application/json&quot; id=&quot;vm2-context-data&quot;&gt;` with ALL fields:
+   - task_name, task_date, deliverable_file, railway_url, version (1), prior_versions ([]),
+   - related_deliverables, original_instructions, approach, key_findings, dead_ends,
+   - assumptions, open_questions, data_sources, next_steps
+   - **cost_estimate** (REQUIRED — never omit): `{ &quot;model&quot;: &quot;claude-sonnet-4-6&quot;, &quot;model_pricing&quot;: &quot;$3/$15 per 1M tokens&quot;, &quot;input_tokens_est&quot;: &quot;~50,000&quot;, &quot;output_tokens_est&quot;: &quot;~8,000&quot;, &quot;search_calls&quot;: 5, &quot;subagent_calls&quot;: 0, &quot;cost_conservative&quot;: &quot;$0.25&quot;, &quot;cost_ceiling&quot;: &quot;$0.50&quot;, &quot;notes&quot;: &quot;Brief description of cost factors&quot; }`
+   - Even if exact costs are unknown, provide reasonable estimates based on task complexity
+
+3. **Continue This Work panel** with 3 buttons:
+   - Copy Follow-Up Prompt (copies a pre-built prompt with the deliverable URL + context)
+   - Email to VM2 (mailto:vm2.viru@gmail.com with subject + body)
+   - Create Todoist Follow-Up (calls /api/todoist/tasks or falls back to todoist.com/add)
+
+4. **Footer**: &quot;Changeis Confidential · [Title] · [Date] · VM2 Deliverable&quot;
+
+### File Naming
+Save to: `/home/user/workspace/VM2-P-Taskers/{slug}-YYYY-MM-DD.html`
+
+### Railway URL
+Each deliverable&#x27;s Railway URL is: `https://vm2-p-taskers-production.up.railway.app/{slug}-YYYY-MM-DD.html`
+
+### portal.html Entry Format (CRITICAL)
+When adding entries to portal.html, EVERY row MUST use this exact format:
+```html
+&lt;tr data-date=&quot;YYYY-MM-DD&quot; data-type=&quot;Type Name&quot;&gt;
+&lt;td class=&quot;col-date&quot;&gt;YYYY-MM-DD&lt;/td&gt;
+&lt;td class=&quot;col-title&quot;&gt;&lt;a href=&quot;filename.html&quot;&gt;Title&lt;/a&gt;&lt;/td&gt;
+&lt;td class=&quot;col-type&quot;&gt;&lt;span class=&quot;badge badge-{badgeclass}&quot;&gt;Type Name&lt;/span&gt;&lt;/td&gt;
+&lt;td class=&quot;col-link&quot;&gt;&lt;a class=&quot;link-icon&quot; href=&quot;filename.html&quot; title=&quot;Open&quot;&gt;↗&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+```
+
+**Required attributes:**
+- `data-date=&quot;YYYY-MM-DD&quot;` on the `&lt;tr&gt;` — this drives date filtering
+- `data-type=&quot;Type Name&quot;` on the `&lt;tr&gt;` — this drives type filtering
+- Date displayed as `YYYY-MM-DD` (not &quot;Mar 29&quot; or other formats)
+- All four `&lt;td&gt;` cells with proper classes: `col-date`, `col-title`, `col-type`, `col-link`
+- Badge class options: `badge-research` (Research Brief), `badge-monitoring` (Compliance, Auto-Helper, Monitoring), `badge-brief` (Intelligence Brief, Daily Brief, Newsletter), `badge-research` (Deep Dive, Strategy, Tech, Architecture, Weekly Digest)
+- Link href should be the LOCAL filename (not the full Railway URL)
+
+**DO NOT:**
+- Use raw `&lt;tr&gt;&lt;td&gt;` without data attributes
+- Use short date formats like &quot;Mar 29&quot; in the display
+- Omit the link column
+- Add entries outside the `&lt;tbody&gt;` (e.g., stray `&lt;ul&gt;` elements)
+- Touch index.html (it&#x27;s an immutable redirect stub)
+
+### CRITICAL RULES
+- Plain HTML only, NO encryption, NO StaticCrypt
+- Use the reference file for exact CSS/JS — copy the structure closely
+- The deliverable must be self-contained (all CSS inline, no external dependencies)</pre>
+        <div class="section-title">Approach</div>
+        <ul><li>Fetch tasks via Todoist connector.</li><li>Exclude tasks already labeled VM2 (or done variants).</li><li>Use heuristics to rank tasks likely to benefit from AI assistance.</li><li>Generate a branded HTML page with mailto delegation buttons and required VM2 context panels.</li></ul>
+        <div class="section-title">Key Findings</div>
+        <ul><li>Found 50 total Todoist tasks returned by connector; 45 do not carry the VM2 label.</li><li>Identified 12 non-VM2 tasks that appear well-suited for AI help (research/review/planning).</li><li>Generated one-click mailto buttons to delegate any suggestion to VM2 via email.</li></ul>
+        <div class="section-title">Dead Ends</div>
+        <ul><li>Todoist connector returned a maximum of 50 tasks for unfiltered search; additional paging parameters were not available in the tool schema.</li></ul>
+        <div class="section-title">Assumptions</div>
+        <ul><li>Tasks with label &#x27;VM2&#x27; or &#x27;v2-done&#x27; are handled by a separate hourly process and are excluded here.</li><li>Heuristic keyword scoring is sufficient for a daily shortlist; it may miss some tasks that could benefit from AI.</li></ul>
+        <div class="section-title">Open Questions</div>
+        <ul><li>Is there an alternate Todoist tool available for paginated task export to ensure the full task set beyond the first 50?</li></ul>
+        <div class="section-title">Data Sources</div>
+        <ul><li>Todoist connector: todoist-search-tasks output — (connector output file tool_calls/call_external_tool/output_mnpxut56.json)</li></ul>
+        <div class="section-title">Next Steps</div>
+        <ul><li>If needed, enhance task retrieval to paginate or pull per-project to cover &gt;50 tasks.</li><li>Add optional grouping by project and due date to make daily triage faster.</li></ul>
+      </div>
+    </details>
+
+    <script type="application/json" id="vm2-context-data">{"task_name": "Todoist Auto-Helper", "task_date": "2026-04-08", "deliverable_file": "vm2-auto-helper-2026-04-08.html", "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-04-08.html", "version": 1, "prior_versions": [], "related_deliverables": [], "original_instructions": "# Deliverable Specification for VM2 Tasks\n\n## Output Requirements\nEach deliverable must be a SINGLE self-contained HTML file following the VM2 Changeis style.\n\n### Style\n- Use the EXACT same HTML/CSS structure as the reference file at `/home/user/workspace/VM2-P-Taskers/vm2-system-guide-2026-03-27.html`\n- Navy topbar (#1B2A4A) with \"VM2 \u00b7 Perplexity Computer\" branding + Dark/Light toggle\n- Charter/Georgia serif headings, system-ui sans-serif body\n- Red accent #c53a3a for section headers\n- Max-width 860px centered container\n- Light/dark theme toggle (data-theme attribute on html)\n- Tables with navy header row (#1B2A4A, white text), alternating row backgrounds\n\n### Mandatory Sections at Bottom (CRITICAL \u2014 ALL ARE REQUIRED)\n\n**Every deliverable MUST include ALL four sections below. Omitting any of these is a failed deliverable.**\n\n1. **Session Context** (collapsible details/summary) showing ALL of:\n   - Original Instructions (full task instructions, not abbreviated)\n   - Approach (methodology used)\n   - Key Findings (3-5 bullet points minimum)\n   - Dead Ends (what didn't work or wasn't available)\n   - Assumptions (what was assumed)\n   - Open Questions (remaining unknowns)\n   - Data Sources (with URLs where applicable)\n   - Next Steps (actionable follow-ups)\n\n2. **Hidden JSON block**: `<script type=\"application/json\" id=\"vm2-context-data\">` with ALL fields:\n   - task_name, task_date, deliverable_file, railway_url, version (1), prior_versions ([]),\n   - related_deliverables, original_instructions, approach, key_findings, dead_ends,\n   - assumptions, open_questions, data_sources, next_steps\n   - **cost_estimate** (REQUIRED \u2014 never omit): `{ \"model\": \"claude-sonnet-4-6\", \"model_pricing\": \"$3/$15 per 1M tokens\", \"input_tokens_est\": \"~50,000\", \"output_tokens_est\": \"~8,000\", \"search_calls\": 5, \"subagent_calls\": 0, \"cost_conservative\": \"$0.25\", \"cost_ceiling\": \"$0.50\", \"notes\": \"Brief description of cost factors\" }`\n   - Even if exact costs are unknown, provide reasonable estimates based on task complexity\n\n3. **Continue This Work panel** with 3 buttons:\n   - Copy Follow-Up Prompt (copies a pre-built prompt with the deliverable URL + context)\n   - Email to VM2 (mailto:vm2.viru@gmail.com with subject + body)\n   - Create Todoist Follow-Up (calls /api/todoist/tasks or falls back to todoist.com/add)\n\n4. **Footer**: \"Changeis Confidential \u00b7 [Title] \u00b7 [Date] \u00b7 VM2 Deliverable\"\n\n### File Naming\nSave to: `/home/user/workspace/VM2-P-Taskers/{slug}-YYYY-MM-DD.html`\n\n### Railway URL\nEach deliverable's Railway URL is: `https://vm2-p-taskers-production.up.railway.app/{slug}-YYYY-MM-DD.html`\n\n### portal.html Entry Format (CRITICAL)\nWhen adding entries to portal.html, EVERY row MUST use this exact format:\n```html\n<tr data-date=\"YYYY-MM-DD\" data-type=\"Type Name\">\n<td class=\"col-date\">YYYY-MM-DD</td>\n<td class=\"col-title\"><a href=\"filename.html\">Title</a></td>\n<td class=\"col-type\"><span class=\"badge badge-{badgeclass}\">Type Name</span></td>\n<td class=\"col-link\"><a class=\"link-icon\" href=\"filename.html\" title=\"Open\">\u2197</a></td>\n</tr>\n```\n\n**Required attributes:**\n- `data-date=\"YYYY-MM-DD\"` on the `<tr>` \u2014 this drives date filtering\n- `data-type=\"Type Name\"` on the `<tr>` \u2014 this drives type filtering\n- Date displayed as `YYYY-MM-DD` (not \"Mar 29\" or other formats)\n- All four `<td>` cells with proper classes: `col-date`, `col-title`, `col-type`, `col-link`\n- Badge class options: `badge-research` (Research Brief), `badge-monitoring` (Compliance, Auto-Helper, Monitoring), `badge-brief` (Intelligence Brief, Daily Brief, Newsletter), `badge-research` (Deep Dive, Strategy, Tech, Architecture, Weekly Digest)\n- Link href should be the LOCAL filename (not the full Railway URL)\n\n**DO NOT:**\n- Use raw `<tr><td>` without data attributes\n- Use short date formats like \"Mar 29\" in the display\n- Omit the link column\n- Add entries outside the `<tbody>` (e.g., stray `<ul>` elements)\n- Touch index.html (it's an immutable redirect stub)\n\n### CRITICAL RULES\n- Plain HTML only, NO encryption, NO StaticCrypt\n- Use the reference file for exact CSS/JS \u2014 copy the structure closely\n- The deliverable must be self-contained (all CSS inline, no external dependencies)", "approach": ["Fetch tasks via Todoist connector.", "Exclude tasks already labeled VM2 (or done variants).", "Use heuristics to rank tasks likely to benefit from AI assistance.", "Generate a branded HTML page with mailto delegation buttons and required VM2 context panels."], "key_findings": ["Found 50 total Todoist tasks returned by connector; 45 do not carry the VM2 label.", "Identified 12 non-VM2 tasks that appear well-suited for AI help (research/review/planning).", "Generated one-click mailto buttons to delegate any suggestion to VM2 via email."], "dead_ends": ["Todoist connector returned a maximum of 50 tasks for unfiltered search; additional paging parameters were not available in the tool schema."], "assumptions": ["Tasks with label 'VM2' or 'v2-done' are handled by a separate hourly process and are excluded here.", "Heuristic keyword scoring is sufficient for a daily shortlist; it may miss some tasks that could benefit from AI."], "open_questions": ["Is there an alternate Todoist tool available for paginated task export to ensure the full task set beyond the first 50?"], "data_sources": [{"name": "Todoist connector: todoist-search-tasks output", "url": "(connector output file tool_calls/call_external_tool/output_mnpxut56.json)"}], "next_steps": ["If needed, enhance task retrieval to paginate or pull per-project to cover >50 tasks.", "Add optional grouping by project and due date to make daily triage faster."], "cost_estimate": {"model": "claude-sonnet-4-6", "model_pricing": "$3/$15 per 1M tokens", "input_tokens_est": "~15,000", "output_tokens_est": "~3,000", "search_calls": 0, "subagent_calls": 0, "cost_conservative": "$0.05", "cost_ceiling": "$0.15", "notes": "Mostly connector data processing + HTML generation."}}</script>
+
+    <div class="panel" id="continuePanel">
+      <div class="section-title">Continue This Work</div>
+      <div class="card-meta">Use the buttons below to continue, email VM2, or create a Todoist follow-up.</div>
+      <div class="panel-actions">
+        <a class="btn" href="#" id="copyFollowup">Copy Follow-Up Prompt</a>
+        <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Auto-Helper%20Digest%202026-04-08&body=See%20deliverable%3A%20https%3A//vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-04-08.html%0A%0ATop%20suggestions%3A%0A-%20Research%20personal%20social%20media%20strategy%0A-%20Create%20Strategy%20Circle%20for%20PMS%0A-%20%5BReview%20Refinu%20Assessment%5D%28https%3A//user.refinu.com/dashboard%29%0A-%20Review%20YouTube%20TV%20subscription%0A-%20Review%20Cody%20AI%20Subscription%20%28100/month%29%20%28every%201-month%29%0A-%20https%3A//www.ccclub.org/Default.aspx%3Fp%3Ddynamicmodule%26pageid%3D399789%26ssid%3D323042%26vnf%3D1%20%28Check%20out%20Congo%20Candidates%20for%20Membership%29%0A-%20Apple%20Reveri%20subscription%20review%20%2825/montb%20every%2016th%29%0A-%20Wisp%20Flow%20Pro%20Subscription%20%28annual%20%40%20%24144%20on%20Spark%201941%29.%20Renews%20every%20tomorrow%0A-%20Download%20Upwork%20Statement%20for%20the%20month%0A-%20Operations%20research%20project%0A-%20Review%20undated%20backlog%20for%20this%20week%0A-%20Read%20http%3A//www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/%20%28A%20Quick%20Overview%20of%20the%20Momentum%20Planners%20-%20Productive%20Flourishing%20-%29">Email to VM2</a>
+        <a class="btn btn-secondary" href="https://todoist.com/add" target="_blank" rel="noopener">Create Todoist Follow-Up</a>
+      </div>
+      <pre id="followupText" style="display:none;">Continue the Todoist Auto-Helper work using this deliverable: https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-04-08.html
+
+Please: (1) review the suggestion cards, (2) improve heuristics/grouping, and (3) ensure full task coverage beyond the first 50 tasks if possible.</pre>
+    </div>
+
+    <div class="footer">Changeis Confidential · Todoist Auto-Helper · 2026-04-08 · VM2 Deliverable</div>
+  </div>
+<script>
+
+(function() {
+  const root = document.documentElement;
+  const toggle = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('vm2-theme');
+  if (saved) root.setAttribute('data-theme', saved);
+  toggle.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('vm2-theme', next);
+  });
+  const copyBtn = document.getElementById('copyFollowup');
+  copyBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const text = document.getElementById('followupText').innerText;
+    navigator.clipboard.writeText(text);
+    copyBtn.innerText = 'Copied';
+    setTimeout(()=>copyBtn.innerText='Copy Follow-Up Prompt', 900);
+  });
+})();
+
+</script>
+</body>
+</html>
