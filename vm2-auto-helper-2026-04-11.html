@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM2 Auto-Helper — Saturday, April 11, 2026</title>
+<style>
+:root {
+  --navy: #002855;
+  --gold: #B8860B;
+  --light-bg: #f5f5f0;
+  --dark-bg: #1a1a2e;
+  --card-bg: #ffffff;
+  --card-bg-dark: #16213e;
+  --text: #333333;
+  --text-dark: #e0e0e0;
+  --border: #dee2e6;
+  --border-dark: #2a2a4a;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: Georgia, 'Times New Roman', serif; background: var(--light-bg); color: var(--text); }
+body.dark { background: var(--dark-bg); color: var(--text-dark); }
+.topbar { background: var(--navy); color: white; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+.topbar h1 { font-family: Charter, Georgia, serif; font-size: 1.3rem; font-weight: 600; }
+.topbar .date { font-size: 0.85rem; opacity: 0.8; }
+.toggle-btn { background: rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 14px; border-radius:4px; cursor:pointer; font-size:0.8rem; }
+.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.summary-card { background: var(--card-bg); border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
+body.dark .summary-card { background: var(--card-bg-dark); }
+.summary-card .num { font-size: 2rem; font-weight: 700; color: var(--navy); }
+body.dark .summary-card .num { color: var(--gold); }
+.summary-card .label { font-size: 0.8rem; color: #666; margin-top: 4px; }
+body.dark .summary-card .label { color: #aaa; }
+.section-title { font-family: Charter, Georgia, serif; font-size: 1.2rem; color: var(--navy); margin: 24px 0 12px; border-bottom: 2px solid var(--gold); padding-bottom: 6px; }
+body.dark .section-title { color: var(--gold); }
+.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.filter-btn { padding: 6px 14px; border-radius: 16px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+.filter-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+body.dark .filter-btn { background: var(--card-bg-dark); color: var(--text-dark); border-color: var(--border-dark); }
+body.dark .filter-btn.active { background: var(--gold); color: #000; }
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.task-card { background: var(--card-bg); border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid var(--navy); transition: transform 0.2s; }
+.task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+body.dark .task-card { background: var(--card-bg-dark); }
+.card-header { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.type-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: var(--navy); color: white; font-weight: 600; }
+.type-research { background: #1565c0; }
+.type-writing { background: #6a1b9a; }
+.type-communication { background: #00838f; }
+.type-analysis { background: #e65100; }
+.type-planning { background: #2e7d32; }
+.type-tracking { background: #4527a0; }
+.type-learning { background: #00695c; }
+.type-development { background: #283593; }
+.type-support { background: #546e7a; }
+.due-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: #fff3e0; color: #e65100; }
+body.dark .due-badge { background: #3e2723; }
+.pri-indicator { font-size: 0.65rem; color: #999; margin-left: auto; }
+.task-title { font-family: Charter, Georgia, serif; font-size: 0.95rem; margin-bottom: 6px; color: var(--navy); }
+body.dark .task-title { color: var(--gold); }
+.task-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.project-name { font-size: 0.75rem; color: #666; background: #f0f0f0; padding: 2px 8px; border-radius: 8px; }
+body.dark .project-name { background: #2a2a4a; color: #aaa; }
+.label-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; background: #e3f2fd; color: #1565c0; }
+body.dark .label-badge { background: #1a237e; color: #90caf9; }
+.approach { font-size: 0.8rem; color: #555; line-height: 1.4; margin-bottom: 12px; }
+body.dark .approach { color: #bbb; }
+.task-vm2-btn { display: inline-block; padding: 6px 16px; background: var(--navy); color: white; text-decoration: none; border-radius: 4px; font-size: 0.8rem; font-weight: 600; transition: background 0.2s; }
+.task-vm2-btn:hover { background: var(--gold); }
+.type-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+.type-table th, .type-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; font-size: 0.85rem; }
+body.dark .type-table th, body.dark .type-table td { border-color: var(--border-dark); }
+.type-table th { background: var(--navy); color: white; }
+body.dark .type-table th { background: #16213e; color: var(--gold); }
+.slug-section { margin-top: 40px; padding: 16px; background: #f8f8f8; border: 1px solid #ddd; border-radius: 8px; font-size: 0.8rem; }
+body.dark .slug-section { background: #16213e; border-color: #2a2a4a; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <h1>VM2 Auto-Helper</h1>
+    <div class="date">Saturday, April 11, 2026</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button class="toggle-btn" onclick="document.body.classList.toggle('dark')">Toggle Theme</button>
+  </div>
+</div>
+<div class="container">
+  <div class="summary-grid">
+    <div class="summary-card"><div class="num">45</div><div class="label">AI-Helpable Tasks</div></div>
+    <div class="summary-card"><div class="num">7</div><div class="label">Help Categories</div></div>
+    <div class="summary-card"><div class="num">12</div><div class="label">With Due Dates</div></div>
+    <div class="summary-card"><div class="num">18</div><div class="label">High Priority</div></div>
+  </div>
+
+  <h2 class="section-title">Category Breakdown</h2>
+  <table class="type-table">
+    <tr><th>Help Type</th><th>Count</th></tr>
+    <tr><td>Support</td><td>28</td></tr>
+<tr><td>Analysis</td><td>7</td></tr>
+<tr><td>Learning</td><td>3</td></tr>
+<tr><td>Development</td><td>2</td></tr>
+<tr><td>Planning</td><td>2</td></tr>
+<tr><td>Research</td><td>2</td></tr>
+<tr><td>Writing</td><td>1</td></tr>
+
+  </table>
+
+  <h2 class="section-title">Task Suggestions</h2>
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="analysis">Analysis</button><button class="filter-btn" data-filter="development">Development</button><button class="filter-btn" data-filter="learning">Learning</button><button class="filter-btn" data-filter="planning">Planning</button><button class="filter-btn" data-filter="research">Research</button><button class="filter-btn" data-filter="support">Support</button><button class="filter-btn" data-filter="writing">Writing</button>
+  </div>
+
+  <div class="cards-grid">
+    <div class="task-card support pri-4">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        <span class="due-badge">2026-04-11T07:00:00</span>
+        <span class="pri-indicator">P4</span>
+      </div>
+      <h3 class="task-title">🕔Om Tat Sat</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20🕔Om%20Tat%20Sat&body=Task:%20🕔Om%20Tat%20Sat%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-4">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        <span class="due-badge">2026-11-28</span>
+        <span class="pri-indicator">P4</span>
+      </div>
+      <h3 class="task-title">Happy Anniversary Mama and Mami</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Happy%20Anniversary%20Mama%20and%20Mami&body=Task:%20Happy%20Anniversary%20Mama%20and%20Mami%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-4">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        <span class="due-badge">2027-02-04</span>
+        <span class="pri-indicator">P4</span>
+      </div>
+      <h3 class="task-title">2\4 Jessica Underwood</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%202\4%20Jessica%20Underwood&body=Task:%202\4%20Jessica%20Underwood%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-4">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        <span class="due-badge">2027-02-08</span>
+        <span class="pri-indicator">P4</span>
+      </div>
+      <h3 class="task-title">2\8 Lloyd Eddy</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%202\8%20Lloyd%20Eddy&body=Task:%202\8%20Lloyd%20Eddy%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card learning pri-4">
+      <div class="card-header">
+        <span class="type-badge type-learning">Learning</span>
+        
+        <span class="pri-indicator">P4</span>
+      </div>
+      <h3 class="task-title">(G) Read 1 book/month</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">Goals</span><span class="label-badge">Monthly</span>
+      </div>
+      <p class="approach">Research summaries, book notes, key takeaways.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20(G)%20Read%201%20book/month&body=Task:%20(G)%20Read%201%20book/month%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card development pri-4">
+      <div class="card-header">
+        <span class="type-badge type-development">Development</span>
+        
+        <span class="pri-indicator">P4</span>
+      </div>
+      <h3 class="task-title">(G) Build Management Team</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">Goals</span>
+      </div>
+      <p class="approach">Research approaches, draft specifications.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20(G)%20Build%20Management%20Team&body=Task:%20(G)%20Build%20Management%20Team%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card planning pri-4">
+      <div class="card-header">
+        <span class="type-badge type-planning">Planning</span>
+        
+        <span class="pri-indicator">P4</span>
+      </div>
+      <h3 class="task-title">(G) Weekly Planning</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">Goals</span><span class="label-badge">Weekly</span>
+      </div>
+      <p class="approach">Organize, create agendas, research logistics.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20(G)%20Weekly%20Planning&body=Task:%20(G)%20Weekly%20Planning%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-4">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P4</span>
+      </div>
+      <h3 class="task-title">(G) Weekly Munnu Activity</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">Goals</span><span class="label-badge">Weekly</span>
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20(G)%20Weekly%20Munnu%20Activity&body=Task:%20(G)%20Weekly%20Munnu%20Activity%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-4">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P4</span>
+      </div>
+      <h3 class="task-title">(G) Weekly Kriya</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">Goals</span><span class="label-badge">Weekly</span>
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20(G)%20Weekly%20Kriya&body=Task:%20(G)%20Weekly%20Kriya%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-3">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P3</span>
+      </div>
+      <h3 class="task-title">07 - The Coaching Habit</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%2007%20-%20The%20Coaching%20Habit&body=Task:%2007%20-%20The%20Coaching%20Habit%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-3">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P3</span>
+      </div>
+      <h3 class="task-title">12- The Bulletproof Diet</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%2012-%20The%20Bulletproof%20Diet&body=Task:%2012-%20The%20Bulletproof%20Diet%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-3">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P3</span>
+      </div>
+      <h3 class="task-title">13 - Tools of Titans</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%2013%20-%20Tools%20of%20Titans&body=Task:%2013%20-%20Tools%20of%20Titans%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-3">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P3</span>
+      </div>
+      <h3 class="task-title">14 - The Subtle Art of Not Giving a F*ck</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%2014%20-%20The%20Subtle%20Art%20of%20Not%20Giving%20a%20F*ck&body=Task:%2014%20-%20The%20Subtle%20Art%20of%20Not%20Giving%20a%20F*ck%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card research pri-3">
+      <div class="card-header">
+        <span class="type-badge type-research">Research</span>
+        
+        <span class="pri-indicator">P3</span>
+      </div>
+      <h3 class="task-title">Research personal social media strategy</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Web research and analysis to gather relevant information.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Research%20personal%20social%20media%20strategy&body=Task:%20Research%20personal%20social%20media%20strategy%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card writing pri-3">
+      <div class="card-header">
+        <span class="type-badge type-writing">Writing</span>
+        
+        <span class="pri-indicator">P3</span>
+      </div>
+      <h3 class="task-title">Create Strategy Circle for PMS</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">Desk</span>
+      </div>
+      <p class="approach">Draft content based on context and requirements.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Create%20Strategy%20Circle%20for%20PMS&body=Task:%20Create%20Strategy%20Circle%20for%20PMS%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card analysis pri-3">
+      <div class="card-header">
+        <span class="type-badge type-analysis">Analysis</span>
+        
+        <span class="pri-indicator">P3</span>
+      </div>
+      <h3 class="task-title">[Review Refinu Assessment](https://user.refinu.com/dashboard)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Analyze data, compare options, generate insights.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20[Review%20Refinu%20Assessment](https://user.refinu.com/dashboard)&body=Task:%20[Review%20Refinu%20Assessment](https://user.refinu.com/dashboard)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-3">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P3</span>
+      </div>
+      <h3 class="task-title">What are my top 3 tasks for the day?</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">5m</span>
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20What%20are%20my%20top%203%20tasks%20for%20the%20day?&body=Task:%20What%20are%20my%20top%203%20tasks%20for%20the%20day?%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card research pri-3">
+      <div class="card-header">
+        <span class="type-badge type-research">Research</span>
+        
+        <span class="pri-indicator">P3</span>
+      </div>
+      <h3 class="task-title">Operations research project</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Web research and analysis to gather relevant information.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Operations%20research%20project&body=Task:%20Operations%20research%20project%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card analysis pri-2">
+      <div class="card-header">
+        <span class="type-badge type-analysis">Analysis</span>
+        <span class="due-badge">2026-04-11</span>
+        <span class="pri-indicator">P2</span>
+      </div>
+      <h3 class="task-title">Review undated backlog for this week</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Analyze data, compare options, generate insights.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20undated%20backlog%20for%20this%20week&body=Task:%20Review%20undated%20backlog%20for%20this%20week%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card analysis pri-2">
+      <div class="card-header">
+        <span class="type-badge type-analysis">Analysis</span>
+        <span class="due-badge">2026-05-04</span>
+        <span class="pri-indicator">P2</span>
+      </div>
+      <h3 class="task-title">Review Cody AI Subscription (100/month) (every 1-month)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Analyze data, compare options, generate insights.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20Cody%20AI%20Subscription%20(100/month)%20(every%201-month)&body=Task:%20Review%20Cody%20AI%20Subscription%20(100/month)%20(every%201-month)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card analysis pri-2">
+      <div class="card-header">
+        <span class="type-badge type-analysis">Analysis</span>
+        <span class="due-badge">2026-05-04</span>
+        <span class="pri-indicator">P2</span>
+      </div>
+      <h3 class="task-title">https://www.ccclub.org/Default.aspx?p=dynamicmodule&amp;pageid=399789&amp;ssid=323042&amp;vnf=1 (Check out Congo Candidates for Membership)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Analyze data, compare options, generate insights.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20https://www.ccclub.org/Default.aspx?p=dynamicmodule%26pageid=399789%26ssid=323042%26vnf=1%20(Check%20out%20Congo%20Candidates%20for%20Membership)&body=Task:%20https://www.ccclub.org/Default.aspx?p=dynamicmodule%26pageid=399789%26ssid=323042%26vnf=1%20(Check%20out%20Congo%20Candidates%20for%20Membership)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card analysis pri-2">
+      <div class="card-header">
+        <span class="type-badge type-analysis">Analysis</span>
+        <span class="due-badge">2026-05-05</span>
+        <span class="pri-indicator">P2</span>
+      </div>
+      <h3 class="task-title">Review YouTube TV subscription</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Analyze data, compare options, generate insights.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20YouTube%20TV%20subscription&body=Task:%20Review%20YouTube%20TV%20subscription%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-2">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        <span class="due-badge">2026-05-05</span>
+        <span class="pri-indicator">P2</span>
+      </div>
+      <h3 class="task-title">Download Upwork Statement for the month</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">15m</span>
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Download%20Upwork%20Statement%20for%20the%20month&body=Task:%20Download%20Upwork%20Statement%20for%20the%20month%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card analysis pri-2">
+      <div class="card-header">
+        <span class="type-badge type-analysis">Analysis</span>
+        <span class="due-badge">2026-05-10</span>
+        <span class="pri-indicator">P2</span>
+      </div>
+      <h3 class="task-title">Apple Reveri subscription review (25/montb every 16th)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Analyze data, compare options, generate insights.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Apple%20Reveri%20subscription%20review%20(25/montb%20every%2016th)&body=Task:%20Apple%20Reveri%20subscription%20review%20(25/montb%20every%2016th)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-2">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P2</span>
+      </div>
+      <h3 class="task-title">[[outlook=id3=aWQ9MDAwMDAwMDA5Rjk4QjVEQkZFNDIxNzQ0QjJCNjg2QTQ0NDZDQTIwQTA3MDBCQkJCQTJBOTAxOTE5OTQ0QTY0QzdCOTlBQjFCRTAwOTAwMDAwMDAwMDEwRDAwMDBCQkJCQTJBOTAxOTE5OTQ0QTY0QzdCOTlBQjFCRTAwOTAwMDE1OUU5QkQxRTAwMDA7bWlkPTxETTJQUjA2TUI4NzkxODg4MEZEMkJFQUFGNjM3NkM4NEQ3MDMwQERNMlBSMDZNQjg3OS5uYW1wcmQwNi5wcm9kLm91dGxvb2suY29tPg==, See Ted Video]]</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20[[outlook=id3=aWQ9MDAwMDAwMDA5Rjk4QjVEQkZFNDIxNzQ0QjJCNjg2QTQ0NDZDQTIwQTA3MDBCQkJCQTJBOTAxOTE5OTQ0QTY0QzdCOTlBQjFCRTAwOTAwMDAwMDAwMDEwRDAwMDBCQkJCQTJBOTAxOTE5OTQ0QTY0QzdCOTlBQjFCRTAwOTAwMDE1OUU5QkQxRTAwMDA7bWlkPTxETTJQUjA2TUI4NzkxODg4MEZEMkJFQUFGNjM3NkM4NEQ3MDMwQERNMlBSMDZNQjg3OS5uYW1wcmQwNi5wcm9kLm91dGxvb2suY29tPg==,%20See%20Ted%20Video]]&body=Task:%20[[outlook=id3=aWQ9MDAwMDAwMDA5Rjk4QjVEQkZFNDIxNzQ0QjJCNjg2QTQ0NDZDQTIwQTA3MDBCQkJCQTJBOTAxOTE5OTQ0QTY0QzdCOTlBQjFCRTAwOTAwMDAwMDAwMDEwRDAwMDBCQkJCQTJBOTAxOTE5OTQ0QTY0QzdCOTlBQjFCRTAwOTAwMDE1OUU5QkQxRTAwMDA7bWlkPTxETTJQUjA2TUI4NzkxODg4MEZEMkJFQUFGNjM3NkM4NEQ3MDMwQERNMlBSMDZNQjg3OS5uYW1wcmQwNi5wcm9kLm91dGxvb2suY29tPg==,%20See%20Ted%20Video]]%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card planning pri-2">
+      <div class="card-header">
+        <span class="type-badge type-planning">Planning</span>
+        
+        <span class="pri-indicator">P2</span>
+      </div>
+      <h3 class="task-title">Read http://www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/ (A Quick Overview of the Momentum Planners - Productive Flourishing -)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">2P</span>
+      </div>
+      <p class="approach">Organize, create agendas, research logistics.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Read%20http://www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/%20(A%20Quick%20Overview%20of%20the%20Momentum%20Planners%20-%20Productive%20Flourishing%20-)&body=Task:%20Read%20http://www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/%20(A%20Quick%20Overview%20of%20the%20Momentum%20Planners%20-%20Productive%20Flourishing%20-)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card development pri-2">
+      <div class="card-header">
+        <span class="type-badge type-development">Development</span>
+        
+        <span class="pri-indicator">P2</span>
+      </div>
+      <h3 class="task-title">[ZBrain - Build a ChatGPT App](https://zbrain.ai/)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research approaches, draft specifications.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20[ZBrain%20-%20Build%20a%20ChatGPT%20App](https://zbrain.ai/)&body=Task:%20[ZBrain%20-%20Build%20a%20ChatGPT%20App](https://zbrain.ai/)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card analysis pri-2">
+      <div class="card-header">
+        <span class="type-badge type-analysis">Analysis</span>
+        
+        <span class="pri-indicator">P2</span>
+      </div>
+      <h3 class="task-title">https://www.manager-tools.com/manager-tools-basics (Review MT Basics)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Analyze data, compare options, generate insights.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20https://www.manager-tools.com/manager-tools-basics%20(Review%20MT%20Basics)&body=Task:%20https://www.manager-tools.com/manager-tools-basics%20(Review%20MT%20Basics)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        <span class="due-badge">2026-05-05</span>
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">Wisp Flow Pro Subscription (annual @ $144 on Spark 1941). Renews every tomorrow</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Wisp%20Flow%20Pro%20Subscription%20(annual%20@%20$144%20on%20Spark%201941).%20Renews%20every%20tomorrow&body=Task:%20Wisp%20Flow%20Pro%20Subscription%20(annual%20@%20$144%20on%20Spark%201941).%20Renews%20every%20tomorrow%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        <span class="due-badge">2027-02-27</span>
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">Viezcas, Adriana 2/27/2013</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Viezcas,%20Adriana%202/27/2013&body=Task:%20Viezcas,%20Adriana%202/27/2013%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">[AutoIt - AutoIt](https://www.autoitscript.com/site/autoit/)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20[AutoIt%20-%20AutoIt](https://www.autoitscript.com/site/autoit/)&body=Task:%20[AutoIt%20-%20AutoIt](https://www.autoitscript.com/site/autoit/)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">https://www.carlfriedrik.com/products/vallance-slim-leather-briefcase?variant=35918448400 (Vallance) - Great looking briefcase in leather</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20https://www.carlfriedrik.com/products/vallance-slim-leather-briefcase?variant=35918448400%20(Vallance)%20-%20Great%20looking%20briefcase%20in%20leather&body=Task:%20https://www.carlfriedrik.com/products/vallance-slim-leather-briefcase?variant=35918448400%20(Vallance)%20-%20Great%20looking%20briefcase%20in%20leather%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card learning pri-1">
+      <div class="card-header">
+        <span class="type-badge type-learning">Learning</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">http://intro.mydario.com/DarioGlucoseMeter/intro1.php?utm_source=facebook&amp;utm_medium=cpm&amp;utm_campaign=dongle (My Dario)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research summaries, book notes, key takeaways.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20http://intro.mydario.com/DarioGlucoseMeter/intro1.php?utm_source=facebook%26utm_medium=cpm%26utm_campaign=dongle%20(My%20Dario)&body=Task:%20http://intro.mydario.com/DarioGlucoseMeter/intro1.php?utm_source=facebook%26utm_medium=cpm%26utm_campaign=dongle%20(My%20Dario)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">Get in touch with Nature</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Get%20in%20touch%20with%20Nature&body=Task:%20Get%20in%20touch%20with%20Nature%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">HR for Humans:  Welcome to Behavioral Economics - The Power of the
+ Nudge</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20HR%20for%20Humans:%20%20Welcome%20to%20Behavioral%20Economics%20-%20The%20Power%20of%20the
+%20Nudge&body=Task:%20HR%20for%20Humans:%20%20Welcome%20to%20Behavioral%20Economics%20-%20The%20Power%20of%20the
+%20Nudge%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">[Three Waypoints On The Journey | Conscious Leadership Group Blog](https://conscious.is/blogs/three-waypoints-on-the-journey)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">CLG</span>
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20[Three%20Waypoints%20On%20The%20Journey%20|%20Conscious%20Leadership%20Group%20Blog](https://conscious.is/blogs/three-waypoints-on-the-journey)&body=Task:%20[Three%20Waypoints%20On%20The%20Journey%20|%20Conscious%20Leadership%20Group%20Blog](https://conscious.is/blogs/three-waypoints-on-the-journey)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">[Travel Services &amp; Solutions For Members // Marchay](https://marchay.com/service/)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20[Travel%20Services%20%26%20Solutions%20For%20Members%20//%20Marchay](https://marchay.com/service/)&body=Task:%20[Travel%20Services%20%26%20Solutions%20For%20Members%20//%20Marchay](https://marchay.com/service/)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card learning pri-1">
+      <div class="card-header">
+        <span class="type-badge type-learning">Learning</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">Manager Tools Book</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research summaries, book notes, key takeaways.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Manager%20Tools%20Book&body=Task:%20Manager%20Tools%20Book%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">Efficient Elements for presentations - Efficient Elements PPT Addin. Looks good.</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Efficient%20Elements%20for%20presentations%20-%20Efficient%20Elements%20PPT%20Addin.%20Looks%20good.&body=Task:%20Efficient%20Elements%20for%20presentations%20-%20Efficient%20Elements%20PPT%20Addin.%20Looks%20good.%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">Thync</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Thync&body=Task:%20Thync%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">[What Does it Look Like to Feel Emotions Consciously? | Conscious Leadership Group Blog](https://conscious.is/blogs/what-does-it-look-like-to-feel-emotions-consciously)</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        <span class="label-badge">CLG</span>
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20[What%20Does%20it%20Look%20Like%20to%20Feel%20Emotions%20Consciously?%20|%20Conscious%20Leadership%20Group%20Blog](https://conscious.is/blogs/what-does-it-look-like-to-feel-emotions-consciously)&body=Task:%20[What%20Does%20it%20Look%20Like%20to%20Feel%20Emotions%20Consciously?%20|%20Conscious%20Leadership%20Group%20Blog](https://conscious.is/blogs/what-does-it-look-like-to-feel-emotions-consciously)%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">[Riverside.fm - Record Podcasts And Videos From Anywhere](https://riverside.fm/) #YPO #Ideas</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20[Riverside.fm%20-%20Record%20Podcasts%20And%20Videos%20From%20Anywhere](https://riverside.fm/)%20#YPO%20#Ideas&body=Task:%20[Riverside.fm%20-%20Record%20Podcasts%20And%20Videos%20From%20Anywhere](https://riverside.fm/)%20#YPO%20#Ideas%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">[Munch | Content Repurposing Done Smart.](https://www.getmunch.com/)? #AI #YPO</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20[Munch%20|%20Content%20Repurposing%20Done%20Smart.](https://www.getmunch.com/)?%20#AI%20#YPO&body=Task:%20[Munch%20|%20Content%20Repurposing%20Done%20Smart.](https://www.getmunch.com/)?%20#AI%20#YPO%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">Goleman Leadership Styles</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Goleman%20Leadership%20Styles&body=Task:%20Goleman%20Leadership%20Styles%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+<div class="task-card support pri-1">
+      <div class="card-header">
+        <span class="type-badge type-support">Support</span>
+        
+        <span class="pri-indicator">P1</span>
+      </div>
+      <h3 class="task-title">Oarsandalps</h3>
+      <div class="task-meta">
+        <span class="project-name">Unknown</span>
+        
+      </div>
+      <p class="approach">Research context, prepare materials, draft action plans.</p>
+      <a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Oarsandalps&body=Task:%20Oarsandalps%0A%0AProject:%20Unknown%0A%0APlease%20execute%20this%20task." class="task-vm2-btn">Task VM2</a>
+    </div>
+  </div>
+
+  <div class="slug-section">
+    <h3 style="margin-bottom:8px;">Session Context</h3>
+    <pre style="white-space:pre-wrap;font-size:0.75rem;">
+{
+  "deliverable": "vm2-auto-helper-2026-04-11.html",
+  "type": "todoist-auto-helper",
+  "generated": "2026-04-11T11:10:14Z",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-04-11.html",
+  "tasks_scanned": 50,
+  "suggestions": 45,
+  "cost_estimate": "$0.15 (Todoist API + HTML generation)"
+}
+    </pre>
+    <p style="margin-top:8px;font-size:0.8rem;">
+      <strong>Continue This Work:</strong> Open a new Perplexity Computer session and say:
+      "Continue work on vm2-auto-helper-2026-04-11. The deliverable is at https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-04-11.html"
+    </p>
+  </div>
+</div>
+<script>
+document.querySelectorAll('.filter-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    var filter = btn.getAttribute('data-filter');
+    document.querySelectorAll('.task-card').forEach(function(card) {
+      if (filter === 'all' || card.classList.contains(filter)) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>
