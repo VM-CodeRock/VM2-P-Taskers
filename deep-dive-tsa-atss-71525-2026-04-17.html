@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: TSA ATSS — Acceptance Testing Support — F2025071525</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --go-green: #2a7a3b;
+    --go-green-bg: #e8f5ec;
+    --warn-orange: #b85c00;
+    --warn-orange-bg: #fff3e0;
+    --info-blue: #1b4fa8;
+    --info-blue-bg: #e8f0fb;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --go-green-bg: #162b1c;
+    --warn-orange-bg: #2a1800;
+    --info-blue-bg: #111e38;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 18px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Cards row */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) {
+    .cards-row { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .card-value {
+    font-size: 20px; font-weight: 700; color: var(--navy); line-height: 1.2;
+  }
+  [data-theme="dark"] .card-value { color: #e2e2e2; }
+  .card-sub {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-muted); margin-top: 3px;
+  }
+
+  /* Callout boxes */
+  .callout {
+    border-left: 4px solid var(--red);
+    background: var(--surface-alt);
+    padding: 12px 16px; border-radius: 0 6px 6px 0;
+    margin: 12px 0; font-size: 14.5px;
+  }
+  .callout-go {
+    border-left: 4px solid #2a7a3b;
+    background: var(--go-green-bg);
+    padding: 12px 16px; border-radius: 0 6px 6px 0;
+    margin: 12px 0; font-size: 14.5px;
+  }
+  .callout-warn {
+    border-left: 4px solid #b85c00;
+    background: var(--warn-orange-bg);
+    padding: 12px 16px; border-radius: 0 6px 6px 0;
+    margin: 12px 0; font-size: 14.5px;
+  }
+  .callout-info {
+    border-left: 4px solid #1b4fa8;
+    background: var(--info-blue-bg);
+    padding: 12px 16px; border-radius: 0 6px 6px 0;
+    margin: 12px 0; font-size: 14.5px;
+  }
+
+  /* Go/No-Go verdict */
+  .verdict-box {
+    background: var(--go-green-bg);
+    border: 2px solid #2a7a3b;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: #2a7a3b; margin-bottom: 4px;
+  }
+  .verdict-text {
+    font-size: 32px; font-weight: 700; color: #2a7a3b; line-height: 1;
+  }
+  .verdict-sub {
+    font-size: 14px; color: var(--text-muted); margin-top: 6px;
+  }
+
+  /* RAG score bar */
+  .score-bar-wrap { margin: 10px 0; }
+  .score-bar-label {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-muted); margin-bottom: 4px;
+    display: flex; justify-content: space-between;
+  }
+  .score-bar-track {
+    width: 100%; background: var(--border); border-radius: 4px; height: 10px;
+  }
+  .score-bar-fill {
+    height: 10px; border-radius: 4px;
+    background: linear-gradient(to right, #2a7a3b, #4caf70);
+  }
+
+  /* Tags */
+  .tag {
+    display: inline-block; font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+    background: var(--surface-alt); color: var(--text-muted);
+    border: 1px solid var(--border); margin: 2px;
+  }
+  .tag-navy { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .tag-red { background: var(--red); color: #fff; border-color: var(--red); }
+  .tag-green { background: #2a7a3b; color: #fff; border-color: #2a7a3b; }
+  .tag-warn { background: #b85c00; color: #fff; border-color: #b85c00; }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Note */
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  /* Matrix rating */
+  .rating-high { color: #2a7a3b; font-weight: 700; }
+  .rating-med { color: #b85c00; font-weight: 700; }
+  .rating-low { color: #c53a3a; font-weight: 700; }
+
+  /* Steps */
+  .steps { margin-top: 8px; }
+  .step {
+    display: flex; gap: 12px; align-items: flex-start;
+    margin-bottom: 10px; font-size: 15px;
+  }
+  .step-num {
+    flex-shrink: 0; width: 26px; height: 26px;
+    background: var(--navy); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    margin-top: 1px;
+  }
+  [data-theme="dark"] .step-num { background: var(--red); }
+  .step-text { flex: 1; }
+
+  /* Cluster grid */
+  .cluster-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    margin-top: 12px;
+  }
+  @media (max-width: 600px) { .cluster-grid { grid-template-columns: 1fr; } }
+  .cluster-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .cluster-card.highlight {
+    border-color: var(--red);
+    border-width: 2px;
+  }
+  .cluster-title {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  [data-theme="dark"] .cluster-title { color: #e2e2e2; }
+  .cluster-badge {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 3px;
+    background: var(--red); color: #fff;
+    margin-left: 6px; vertical-align: middle;
+  }
+  .cluster-detail {
+    font-size: 13px; color: var(--text-muted); line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark/Light</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · TSA · F2025071525</div>
+    <h1>Acceptance Testing Support Services (ATSS)</h1>
+    <div class="hero-sub">Transportation Security Administration — Office of Security Capabilities (OSC)</div>
+    <div class="hero-date">Created: 2026-04-17 &nbsp;·&nbsp; APFS Award: Q1 FY2027 &nbsp;·&nbsp; &gt;$100M IDC &nbsp;·&nbsp; RAG Score: 0.6908 (STRONG) &nbsp;·&nbsp; <strong style="color:var(--red)">SOLICITATION MAY BE LIVE</strong></div>
+  </div>
+
+  <!-- Executive Summary -->
+  <div class="section">
+    <div class="section-header">Executive Summary</div>
+    <p>TSA's Acceptance Testing Support Services (ATSS) contract is a follow-on recompete of the incumbent Blanket Purchase Agreement held by <strong>Science Applications International Corporation (SAIC)</strong> (BPA #70T04021A7672N004, awarded 2021, ceiling confirmed via USAspending). The new Indefinite Delivery Contract (IDC) is estimated at <strong>over $100M over 5 years</strong> (January 2027 – January 2032), with solicitation estimated for release <strong>March 1, 2026</strong> — meaning the RFP may already be published or imminent as of this writing (April 17, 2026).</p>
+    <br>
+    <p>ATSS is one of four simultaneous TSA Testing &amp; Evaluation contract recompetes worth <strong>$300M+ combined</strong>, creating a unique strategic cluster opportunity for Changeis. SAIC has held TSA's acceptance testing work for multiple contract cycles and has publicly branded its ATSS capability — making them a deeply entrenched incumbent. The scope is demanding: Factory Acceptance Testing (FAT), Site Acceptance Testing (SAT), Operational Readiness Testing (ORT), Verification Testing (VT), test article development and maintenance (8,000+ articles), and logistics support for 5,000+ annual tests across 430+ airports nationwide.</p>
+    <br>
+    <p>The RAG score of <strong>0.6908 (STRONG)</strong> reflects meaningful capability alignment through Changeis's FAA/DOT testing and systems engineering portfolio. Critical gaps exist in direct TSA/DHS past performance and physical test article logistics operations. The recommended posture is <strong>GO — Conditional</strong>, subject to identifying a qualified teaming partner with TSE field operations experience, given the earliest solicitation timeline in the TSA T&amp;E cluster.</p>
+
+    <div class="verdict-box">
+      <div class="verdict-label">Go / No-Go Assessment</div>
+      <div class="verdict-text">GO (Conditional)</div>
+      <div class="verdict-sub">Pursue with teaming strategy — subcontract TSE field ops / logistics; Changeis leads on PM, T&amp;E methodology, data analysis | pWin: 15–22% as prime | URGENT: Solicitation release est. 03/01/2026 — verify SAM.gov immediately</div>
+    </div>
+  </div>
+
+  <!-- APFS Details -->
+  <div class="section">
+    <div class="section-header">APFS Opportunity Details</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>APFS Number</strong></td><td>F2025071525</td></tr>
+        <tr><td><strong>Title</strong></td><td>Acceptance Testing Support Services (ATSS)</td></tr>
+        <tr><td><strong>Agency</strong></td><td>Transportation Security Administration (TSA / DHS)</td></tr>
+        <tr><td><strong>Office</strong></td><td>TSA Office of Security Capabilities (OSC)</td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541330 — Engineering Services</td></tr>
+        <tr><td><strong>Estimated Value</strong></td><td>Over $100,000,000 (IDC ceiling)</td></tr>
+        <tr><td><strong>Contract Vehicle</strong></td><td>Indefinite Delivery Contract (IDC)</td></tr>
+        <tr><td><strong>Competition</strong></td><td>Full &amp; Open (No Set-Aside)</td></tr>
+        <tr><td><strong>Contract Type</strong></td><td>Follow-On to Existing Contract (Recompete)</td></tr>
+        <tr><td><strong>Award Quarter</strong></td><td>Q1 FY2027</td></tr>
+        <tr><td><strong>Est. Solicitation Release</strong></td><td>March 1, 2026 — <strong style="color:var(--red)">MAY ALREADY BE LIVE</strong></td></tr>
+        <tr><td><strong>Anticipated Award Date</strong></td><td>December 31, 2026</td></tr>
+        <tr><td><strong>Period of Performance</strong></td><td>January 3, 2027 – January 2, 2032 (5 years)</td></tr>
+        <tr><td><strong>Place of Performance</strong></td><td>Alexandria, VA (airport and factory locations nationwide)</td></tr>
+        <tr><td><strong>POC</strong></td><td>Richard Chandler — <a href="mailto:Richard.Chandler1@tsa.dhs.gov">Richard.Chandler1@tsa.dhs.gov</a></td></tr>
+        <tr><td><strong>Published</strong></td><td>August 28, 2025</td></tr>
+        <tr><td><strong>Incumbent</strong></td><td>Science Applications International Corporation (SAIC)</td></tr>
+        <tr><td><strong>Incumbent BPA</strong></td><td>#70T04021A7672N004 — confirmed via APFS and USAspending</td></tr>
+        <tr><td><strong>RAG Score</strong></td><td>0.6908 (STRONG)</td></tr>
+        <tr><td><strong>Top RAG Matches</strong></td><td>FAA_CLMRS (0.6908 top), 6913G621F400004 (0.5954), 6913G620F400113 (0.5628)</td></tr>
+        <tr><td><strong>Todoist Task</strong></td><td>6gQ3C7gx4CvmwM7r</td></tr>
+      </tbody>
+    </table>
+
+    <br>
+    <div class="callout-warn">
+      <strong>URGENT — Solicitation Timeline:</strong> The estimated solicitation release date was <strong>March 1, 2026</strong>. This deep dive is dated April 17, 2026 — the RFP may already be live on SAM.gov. A SAM.gov search confirmed a prior ATSS notice (sources sought) but the new competition should be searched immediately at <a href="https://sam.gov" target="_blank">sam.gov</a> using keywords "Acceptance Testing Support Services" + agency "Transportation Security Administration." Contact Richard Chandler (Richard.Chandler1@tsa.dhs.gov) immediately to confirm status and obtain any pre-solicitation materials.
+    </div>
+  </div>
+
+  <!-- TSA T&E Cluster Strategy -->
+  <div class="section">
+    <div class="section-header">TSA T&amp;E Cluster Strategy — $300M+ Simultaneous Recompetes</div>
+    <p>TSA is recompeting all four of its Testing &amp; Evaluation BPAs simultaneously, creating an unprecedented cluster opportunity. The July 2025 TSA "Testing Re-competes" Sources Sought (SAM.gov #26463f76c80e4b798cf7a1fd084cd3c6) confirmed that TSA may restructure these into different contract vehicles to improve cost efficiency. ATSS has the <strong>earliest solicitation and award timeline in the cluster.</strong></p>
+
+    <div class="cluster-grid" style="margin-top:14px;">
+      <div class="cluster-card highlight">
+        <div class="cluster-title">ATSS <span class="cluster-badge">THIS OPPORTUNITY</span></div>
+        <div class="cluster-detail">
+          <strong>F2025071525</strong> · &gt;$100M · 5yr IDC<br>
+          Incumbent: SAIC (BPA #70T04021A7672N004)<br>
+          Sol. Release: <strong>03/01/2026 (MAY BE LIVE)</strong><br>
+          Award: Q1 FY2027 (12/31/2026)<br>
+          POC: Richard Chandler
+        </div>
+      </div>
+      <div class="cluster-card">
+        <div class="cluster-title">DTSS</div>
+        <div class="cluster-detail">
+          <strong>F2025071486</strong> · $50–100M · 5yr IDC<br>
+          Incumbent: Battelle Memorial Institute<br>
+          Sol. Release: ~03/12/2026 (See separate deep dive)<br>
+          Award: Q4 FY2026<br>
+          POC: Shirelle Richardson
+        </div>
+      </div>
+      <div class="cluster-card">
+        <div class="cluster-title">OTSS</div>
+        <div class="cluster-detail">
+          <strong>F2025071485</strong> · $100M+ · 5yr IDC<br>
+          Incumbent: SAIC ($150M BPA, 53% used)<br>
+          Sol. Release: ~03/01/2027<br>
+          Award: Q4 FY2027<br>
+          POC: Joseph Furtek
+        </div>
+      </div>
+      <div class="cluster-card">
+        <div class="cluster-title">ITSS</div>
+        <div class="cluster-detail">
+          <strong>F2025071456</strong> · $50–100M · 5yr IDC<br>
+          Incumbent: Analytical Services &amp; Materials (AS&amp;M)<br>
+          Sol. Release: ~Q1 FY2027<br>
+          Award: Q1 FY2027<br>
+          POC: TBD
+        </div>
+      </div>
+    </div>
+
+    <br>
+    <div class="callout-info">
+      <strong>Cluster Strategy Insight:</strong> The TSA Sources Sought (July 2025) explicitly noted that TSA has not decided on contract vehicle structure and is evaluating whether to consolidate some of the four BPAs. This suggests TSA may: (a) run four separate competitions (current APFS forecast), (b) consolidate ATSS + DTSS or ATSS + OTSS into a single vehicle, or (c) create a master IDIQ with task order lots. If TSA consolidates ATSS + OTSS, the incumbent (SAIC) would hold both. Changeis should monitor for any consolidation signals.
+    </div>
+    <br>
+    <div class="callout-go">
+      <strong>Cluster Win Strategy:</strong> Even a sub-prime position on one TSA T&amp;E vehicle creates the DHS past performance record needed to compete as prime on subsequent vehicles. The optimal approach is to <strong>prioritize ATSS as the beachhead</strong> (earliest timeline, SAIC incumbent — potentially more vulnerable than Battelle on DTSS), then leverage any award or meaningful performance as a subcontractor to build toward a DTSS or ITSS prime position in the next cycle.
+    </div>
+  </div>
+
+  <!-- RAG Analysis -->
+  <div class="section">
+    <div class="section-header">RAG Engine Analysis — Capability Alignment</div>
+
+    <div class="callout-info">
+      <strong>RAG Query Used:</strong> "TSA Acceptance Testing Support Services ATSS Factory Acceptance Testing FAT Site Acceptance Testing SAT Operational Readiness Testing ORT Verification Testing VT transportation security equipment TSE airport factory locations test article development logistics" — Top N: 50
+    </div>
+
+    <div class="score-bar-wrap">
+      <div class="score-bar-label"><span>Overall RAG Match Score</span><span><strong>0.6908 — STRONG</strong></span></div>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:69.08%"></div></div>
+    </div>
+    <p class="note">Score &gt;0.65 indicates strong conceptual alignment. Score reflects T&amp;E methodology overlap from FAA/DOT portfolio; no direct TSA/DHS field acceptance testing present in Changeis corpus.</p>
+
+    <br>
+    <p><strong>Top RAG Matches:</strong></p>
+    <table>
+      <thead>
+        <tr><th>Rank</th><th>Task Order</th><th>APFS Contract #</th><th>Client</th><th>Composite Score</th><th>Best Chunk</th><th>Relevance to ATSS</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>FAA_CLMRS</td>
+          <td>—</td>
+          <td>FAA</td>
+          <td class="rating-high">0.6939</td>
+          <td>0.5627</td>
+          <td>Operational Test, Production Readiness Test (PRT), System Integration &amp; Test, Test Readiness Reviews (TRRs), test planning and execution — directly mirrors FAT/SAT/ORT methodology</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>V3242019</td>
+          <td>6913G620F400034</td>
+          <td>DOT/FAA/Volpe</td>
+          <td class="rating-high">0.6468</td>
+          <td>~0.51</td>
+          <td>FAA Transportation Modeling System Support; complex multi-system integration and testing; logistics coordination</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>V3132047</td>
+          <td>6913G621F400004 (APFS: 0.5954)</td>
+          <td>DOT/FAA/FMCSA/Volpe</td>
+          <td class="rating-high">0.5230</td>
+          <td>~0.48</td>
+          <td>Program effectiveness &amp; analytical studies; screening systems analysis; test case development</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>V3412056</td>
+          <td>6913G621F400071N</td>
+          <td>FAA/Volpe</td>
+          <td class="rating-med">0.4907</td>
+          <td>~0.46</td>
+          <td>Spectrum engineering — analytical/evaluation methodology analogous to acceptance test analysis</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>V3132194</td>
+          <td>6913G620F400113 (APFS: 0.5628)</td>
+          <td>FMCSA/Volpe</td>
+          <td class="rating-med">0.4757</td>
+          <td>~0.45</td>
+          <td>State safety program support; planning, logistics, training — overlaps ATSS logistics/training requirements</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>V3412061</td>
+          <td>—</td>
+          <td>FAA/Volpe</td>
+          <td class="rating-med">0.4668</td>
+          <td>~0.44</td>
+          <td>Conference planning &amp; logistics; education and training support — applicable to ATSS training program development</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>V3132063</td>
+          <td>—</td>
+          <td>DOT/FAA/Volpe</td>
+          <td class="rating-med">0.4465</td>
+          <td>~0.43</td>
+          <td>Explosives/AA&amp;E sensitive material systems — Satellite Motor Surveillance; information systems</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>FMCSA_URS</td>
+          <td>—</td>
+          <td>FMCSA</td>
+          <td class="rating-med">0.4020</td>
+          <td>~0.39</td>
+          <td>Test cases, test accounts, UAT methodology, configuration management — applicable to ATSS test procedure development</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">20 total matches returned with scores from 0.6939 down to 0.3587. All top matches reflect Changeis/Volpe DOT/FAA transportation systems testing, logistics, and analytical program support.</p>
+
+    <br>
+    <div class="callout">
+      <strong>RAG Interpretation for ATSS:</strong> The FAA CLMRS match (score 0.6939) is highly relevant — it explicitly covers Operational Testing, Production Readiness Testing, Test Readiness Reviews, and system integration testing. The APFS-specified matches (6913G621F400004 and 6913G620F400113) align on complex multi-agency program support and logistics coordination — directly applicable to ATSS's nationwide airport logistics scope. The lower score relative to DTSS (0.6908 vs 0.7451) reflects that ATSS requires more hands-on field operations (airport FAT/SAT) versus the lab-based TSIF work of DTSS. Changeis's strengths are most evident in the program management, test planning, data analysis, and reporting layers of ATSS — not the physical test execution at airports/factories.
+    </div>
+  </div>
+
+  <!-- USAspending Research -->
+  <div class="section">
+    <div class="section-header">USAspending Research — Incumbent Contract &amp; Spending History</div>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-label">Incumbent</div>
+        <div class="card-value">SAIC</div>
+        <div class="card-sub">Science Applications International Corporation — Reston, VA. Large business. $7B+ annual revenue.</div>
+      </div>
+      <div class="card">
+        <div class="card-label">BPA Parent</div>
+        <div class="card-value">70T04021A7672N004</div>
+        <div class="card-sub">Confirmed via APFS record and USAspending award search. TSA-awarded 2021.</div>
+      </div>
+      <div class="card">
+        <div class="card-label">New IDC Est. Value</div>
+        <div class="card-value">&gt;$100M</div>
+        <div class="card-sub">5-year IDC. Significant scale-up from BPA task order history ($7–14M per annual call).</div>
+      </div>
+    </div>
+
+    <br>
+    <p><strong>SAIC ATSS BPA Task Order History (USAspending — BPA #70T04021A7672N004):</strong></p>
+    <table>
+      <thead>
+        <tr><th>Award ID</th><th>Period</th><th>Obligated Amount</th><th>Type</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>70T04021F7672N069</td><td>Sep 2021 – Apr 2023</td><td class="rating-high">$14,338,905</td><td>BPA Call</td><td>Initial ATSS task order post-BPA award; largest single call</td></tr>
+        <tr><td>70T04023F7672N004</td><td>Apr 2023 – Jan 2024</td><td>$7,993,354</td><td>BPA Call</td><td>FY2023 bridge period</td></tr>
+        <tr><td>70T04024F7672N001</td><td>Jan 2024 – Jan 2025</td><td>$8,638,116</td><td>BPA Call</td><td>FY2024 annual renewal; slight uptick vs FY2023</td></tr>
+        <tr><td>70T04025F7672N002</td><td>Jan 2025 – Mar 2026</td><td>$7,241,802</td><td>BPA Call</td><td>Extended through March 2026 — bridge to recompete</td></tr>
+        <tr><td>70T04026F7672N005</td><td>Mar 2026 – Mar 2027</td><td>$3,157,522</td><td>BPA Call</td><td>Awarded March 17, 2026 — active bridge during recompete</td></tr>
+      </tbody>
+    </table>
+    <p class="note">Source: USAspending.gov keyword search "Acceptance Testing" under TSA / DHS funding agency. Total confirmed ATSS obligations (2021–2026): ~$41.4M across 5 task orders. The latest task order (70T04026F7672N005, Mar 2026–Mar 2027, $3.2M) is a bridge call to maintain operations during the recompete period — confirming SAIC will be in place through the anticipated new contract award (Dec 2026).</p>
+
+    <br>
+    <div class="callout-warn">
+      <strong>Historical Context — Pre-SAIC Incumbent:</strong> Prior to SAIC, Battelle Memorial Institute held TSA acceptance testing contracts (confirmed via USAspending: HSTS0412JCT6021, $35.3M delivery order, 2012–2015; HSTS0411JCT8500, $31.6M, 2010–2012; 70T04018F1CAP6444, $7.2M BPA call, 2018–2019). Battelle's acceptance testing BPA ($18.3M call, 2019–2020) transitioned to SAIC under the 2021 recompete. This demonstrates that TSA does switch incumbents — creating precedent that SAIC is displceable.
+    </div>
+
+    <br>
+    <p><strong>SAIC's ATSS Work Scope (from SAIC public case study):</strong></p>
+    <ul>
+      <li>Comprehensive FAT/SAT for checkpoint and baggage screening systems at OEM factories and airports</li>
+      <li>Maintenance and management of 8,000+ test articles (ANSI test kits, ISAT bag sets, threat surrogates)</li>
+      <li>End-to-end logistics support: storage, shipping, 24-hour test article deployment capability</li>
+      <li>Operational Readiness Testing (ORT) support: triggered by software/hardware changes, relocations, or extended downtime</li>
+      <li>ANSI CT Detection Testing per ANSI N42.45-2015 methodology on CT machines</li>
+      <li>Network Acceptance Testing (NAT) for networked screening systems</li>
+      <li>Average: <strong>5,000+ tests annually</strong> across 430+ federalized airports</li>
+      <li>Cybersecurity testing of checkpoint systems at multiple domestic locations</li>
+      <li>Canine decoy logistics: 60+ airports (CONUS, Hawaii, Puerto Rico, Alaska)</li>
+      <li>Coordination with DHS OCIO, Network Operations Security Center, and Office of CFO on enterprise systems testing</li>
+    </ul>
+  </div>
+
+  <!-- Capability Matrix -->
+  <div class="section">
+    <div class="section-header">Capability Matrix — Changeis vs. ATSS Requirements</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Capability Domain</th>
+          <th>ATSS Requirement</th>
+          <th>Changeis Strength</th>
+          <th>Rating</th>
+          <th>Gap / Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>T&amp;E Program Management</strong></td>
+          <td>Multi-task IDC PM; scheduling 5,000+ annual tests; master test schedule; resource management</td>
+          <td>FAA ATAPS II ($103M IDC, multi-task PM); Volpe/DOT portfolio PM; Earned Value Management experience</td>
+          <td class="rating-high">HIGH</td>
+          <td>Highlight ATAPS II as direct analog; develop TSE-specific PM framework for proposal</td>
+        </tr>
+        <tr>
+          <td><strong>Acceptance Test Planning &amp; Procedures</strong></td>
+          <td>Develop/update/maintain FAT, SAT, ORT, VT, NAT, ISAT test procedures for checkpoint and baggage systems</td>
+          <td>FAA CLMRS: Operational Test planning, Test Readiness Reviews, test procedure development; FMCSA URS test case development</td>
+          <td class="rating-high">HIGH</td>
+          <td>Bridge FAA T&amp;E procedure framework to TSA 8-step acceptance test process; subcontractor provides TSE domain knowledge</td>
+        </tr>
+        <tr>
+          <td><strong>Data Collection &amp; Analysis</strong></td>
+          <td>Test data capture, repository management, analytical reporting for each test event</td>
+          <td>Strong data analytics; FAA DAMIS data management; Volpe RD&amp;T portfolio data; visual analytics capability</td>
+          <td class="rating-high">HIGH</td>
+          <td>Invest in TSE test data tools; develop test repository architecture concept for proposal</td>
+        </tr>
+        <tr>
+          <td><strong>Field Test Execution (FAT/SAT)</strong></td>
+          <td>Physical test execution at OEM factories and 430+ airports nationwide; rapid deployment (24-hr notice)</td>
+          <td>No direct airport/factory field test execution experience documented in Changeis portfolio</td>
+          <td class="rating-low">GAP</td>
+          <td><strong>Critical teaming gap — subcontract to firm with TSA/TSE field ops experience</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Test Article Development &amp; Logistics</strong></td>
+          <td>Develop, certify, maintain, store, ship 8,000+ test articles (ANSI kits, ISAT bag sets); lifecycle/config management</td>
+          <td>No direct test article management experience; Volpe logistics coordination work is adjacent but not equivalent</td>
+          <td class="rating-low">GAP</td>
+          <td><strong>Must subcontract or hire personnel with ANSI test article and TSE logistics expertise</strong></td>
+        </tr>
+        <tr>
+          <td><strong>ANSI CT / Cybersecurity Testing</strong></td>
+          <td>ANSI N42.45-2015 CT detection testing; cybersecurity testing of checkpoint and enterprise systems</td>
+          <td>FAA CLMRS cybersecurity elements; Volpe drug &amp; alcohol testing QA systems; no direct CT/ANSI testing</td>
+          <td class="rating-med">MODERATE</td>
+          <td>Partner with ANSI-certified testing specialist; develop cyber testing approach leveraging FAA cybersecurity methodology</td>
+        </tr>
+        <tr>
+          <td><strong>Training Program Development</strong></td>
+          <td>Develop and maintain proficiency training for testers on evolving TSE technologies; MIT, ICS curriculum</td>
+          <td>FAA training support programs; DOT education &amp; learning support; multiple training-related task orders</td>
+          <td class="rating-high">HIGH</td>
+          <td>Adapt adult learning / curriculum development capability to TSE-specific training requirements</td>
+        </tr>
+        <tr>
+          <td><strong>DHS/TSA Mission Knowledge</strong></td>
+          <td>ATSA compliance, TSA acquisition protocols (AD-102), TSE qualification process, OSC organizational knowledge</td>
+          <td>Deep DOT/FAA aviation mission knowledge; DHS-adjacent domain; no direct TSA program experience documented</td>
+          <td class="rating-med">MODERATE</td>
+          <td>Hire TSA SME; contact Richard Chandler for pre-solicitation engagement; research TSA OSC structure</td>
+        </tr>
+        <tr>
+          <td><strong>Security Clearances</strong></td>
+          <td>Likely Secret-level for TSA facility access; Personnel security; background investigations</td>
+          <td>Clearance posture not confirmed in public record</td>
+          <td class="rating-med">UNKNOWN</td>
+          <td><strong>Verify cleared staff count; plan for cleared subcontractor workforce</strong></td>
+        </tr>
+        <tr>
+          <td><strong>NAICS 541330 Eligibility</strong></td>
+          <td>Engineering Services (primary NAICS)</td>
+          <td>541330 confirmed as primary Changeis NAICS code</td>
+          <td class="rating-high">HIGH</td>
+          <td>None — confirmed eligible and experienced</td>
+        </tr>
+        <tr>
+          <td><strong>Geographic Reach</strong></td>
+          <td>CONUS + OCONUS; 430+ airports; simultaneous multi-site operations; surge capability</td>
+          <td>Primarily DC metro/Northern Virginia base; FAA/Volpe work at multiple locations but not 430-site scale</td>
+          <td class="rating-med">MODERATE</td>
+          <td>Subcontractor must have national field presence; build out surge staffing plan for proposal</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">Competitive Landscape</div>
+    <p>Full &amp; Open competition — Changeis competes against SAIC (deeply entrenched incumbent) and potentially other large and mid-tier contractors with DHS/TSA footprints.</p>
+    <br>
+    <table>
+      <thead>
+        <tr><th>Competitor</th><th>Profile</th><th>TSA/DHS T&amp;E Footprint</th><th>Threat Level</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SAIC</strong></td>
+          <td>Large business; $7B+ revenue; Reston, VA</td>
+          <td><strong>ATSS incumbent</strong> (BPA #70T04021A7672N004, $41M+ obligated); also OTSS incumbent ($150M BPA, 53% used); TSA testing partner 10+ years; published ATSS case study as a marquee capability</td>
+          <td class="rating-high">VERY HIGH (Incumbent)</td>
+        </tr>
+        <tr>
+          <td><strong>Battelle Memorial Institute</strong></td>
+          <td>Non-profit R&amp;D; $5B+ revenue; Columbus, OH</td>
+          <td>Former ATSS incumbent (2010–2021, $65M+ over multiple cycles); current DTSS incumbent; DHS S&amp;T TSL certification testing (~$19M)</td>
+          <td class="rating-high">HIGH (Former Incumbent)</td>
+        </tr>
+        <tr>
+          <td><strong>Analytical Services &amp; Materials (AS&amp;M)</strong></td>
+          <td>Mid-tier; space/defense testing focus</td>
+          <td>TSA ITSS incumbent ($50–100M BPA #70T04021A7672N003); integrated testing experience adjacent to ATSS</td>
+          <td class="rating-med">MODERATE</td>
+        </tr>
+        <tr>
+          <td><strong>Leidos</strong></td>
+          <td>Large business; $15B+ revenue; Reston, VA</td>
+          <td>TSA Checkpoint Sustainment ($2.6B, Jan 2025); TSE deployment prime ($470M IDIQ, 2021); deep TSE maintenance/logistics knowledge that overlaps ATSS test article logistics</td>
+          <td class="rating-med">MODERATE-HIGH</td>
+        </tr>
+        <tr>
+          <td><strong>Booz Allen Hamilton / Teledyne / MITRE</strong></td>
+          <td>Large and FFRDC; broad DHS portfolio</td>
+          <td>DHS advisory and analysis; less focused on operational T&amp;E field execution; FFRDCs cannot compete commercially</td>
+          <td class="rating-low">LOW–MODERATE</td>
+        </tr>
+        <tr>
+          <td><strong>Smaller/Mid-Tier TSE Specialists</strong></td>
+          <td>Firms like Global Systems Technologies ($554K 2019 ATSS sub-award); niche testing houses</td>
+          <td>Smaller firms have appeared on TSA ATSS BPA sub-awards; may be potential teaming partners rather than prime competitors</td>
+          <td class="rating-low">LOW (as prime)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <br>
+    <div class="callout-warn">
+      <strong>SAIC Incumbent Advantage Assessment:</strong> SAIC's position is formidable — they hold both ATSS and OTSS BPAs simultaneously, making them the most deeply embedded TSA T&amp;E contractor. Their public case study explicitly describes ATSS operations, signaling heavy investment in brand and retention. However, the shift from BPA to IDC structure, the 2–3x scale-up, and TSA's stated desire to improve "cost efficiency" (per July 2025 Sources Sought) create vulnerability. Additionally, SAIC also holds the OTSS recompete which may spread their capture resources. If Changeis can identify a compelling price advantage and strong teaming partner, SAIC is beatable.
+    </div>
+
+    <br>
+    <p><strong>Leidos Risk Factor:</strong> Leidos's January 2025 win of the $2.6B TSA Checkpoint Sustainment contract gives them intimate knowledge of TSE maintenance, deployment, and airport operations — overlapping significantly with ATSS logistics and test article management requirements. If Leidos chooses to pursue ATSS, they would be a serious threat. Monitor their SAM.gov activity around the ATSS solicitation.
+    </p>
+
+    <br>
+    <p><strong>Changeis Competitive Positioning:</strong></p>
+    <ul>
+      <li><span class="tag tag-green">NAICS 541330 Core</span> — Primary engineering services NAICS; direct eligibility</li>
+      <li><span class="tag tag-green">ATAPS II Analog</span> — $103M FAA IDC demonstrates equivalent scale PM capability</li>
+      <li><span class="tag tag-green">FAA T&amp;E Pedigree</span> — Operational testing methodology, TRRs, data analysis via CLMRS</li>
+      <li><span class="tag tag-warn">No TSA Past Performance</span> — Critical gap; TSA evaluators will scrutinize DHS-specific past performance</li>
+      <li><span class="tag tag-warn">No Airport Field Ops</span> — ATSS's core physical test execution at 430+ airports is not represented in portfolio</li>
+      <li><span class="tag tag-warn">Vs. Very Large Incumbents</span> — SAIC + Battelle have combined $80M+ in TSA ATSS/testing history</li>
+      <li><span class="tag tag-navy">Teaming = Solution</span> — Right teaming partner converts gaps to strengths</li>
+    </ul>
+  </div>
+
+  <!-- Go/No-Go Assessment -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Assessment</div>
+
+    <div class="verdict-box">
+      <div class="verdict-label">Recommendation</div>
+      <div class="verdict-text">GO — Conditional</div>
+      <div class="verdict-sub">Pursue as prime with teaming strategy | Probability of Win (pWin): 15–22% as prime | Sub-prime pWin: 35–45% | IMMEDIATE action required — solicitation may be live</div>
+    </div>
+
+    <br>
+    <p><strong>Factors Favoring GO:</strong></p>
+    <div class="callout-go">
+      <ul>
+        <li><strong>RAG Score 0.6908 — STRONG:</strong> Strong T&amp;E methodology alignment across FAA/DOT portfolio; FAA CLMRS match directly covers operational test and readiness testing frameworks</li>
+        <li><strong>Cluster Beachhead Value:</strong> ATSS win or meaningful sub position establishes TSA past performance enabling future DTSS, OTSS, ITSS pursuits worth $250M+</li>
+        <li><strong>Full &amp; Open Competition:</strong> No set-aside restricts participation; all qualified offerors evaluated on equal terms</li>
+        <li><strong>TSA Scale-Up Creates Opening:</strong> New IDC ceiling (&gt;$100M) is 2–3x historical BPA spending ($41M over 5 years); scope expansion may favor fresh competition</li>
+        <li><strong>SAIC Bandwidth Risk:</strong> SAIC simultaneously defending ATSS and OTSS recompetes — internal resource competition may dilute proposal quality</li>
+        <li><strong>Cost Efficiency Mandate:</strong> TSA's July 2025 Sources Sought explicitly cited "more effectively and/or cost efficiently" — cost-competitive proposals will be rewarded</li>
+        <li><strong>TSA Contract Switches Incumbents:</strong> Historical precedent — Battelle displaced by SAIC in 2021; SAIC can be displaced if a credible alternative is offered</li>
+        <li><strong>NAICS 541330 Primary:</strong> Engineering Services is Changeis's core NAICS; no eligibility barrier</li>
+      </ul>
+    </div>
+
+    <br>
+    <p><strong>Factors Creating Risk:</strong></p>
+    <div class="callout-warn">
+      <ul>
+        <li><strong>SAIC Incumbent Depth:</strong> SAIC has 5+ years of ATSS operations, 8,000+ test articles under configuration management, cleared airport personnel, and established TSA relationships</li>
+        <li><strong>No DHS/TSA Past Performance:</strong> TSA evaluators will score past performance; Changeis has zero DHS customer history — FAA analog helpful but not equivalent</li>
+        <li><strong>Field Operations Gap:</strong> Physical test execution at OEM factories and 430 airports requires a workforce and logistics infrastructure Changeis does not currently have</li>
+        <li><strong>Test Article Management:</strong> 8,000+ test articles (ANSI kits, threat surrogates, bag sets) requiring certification, storage, and 24-hour deployment is a specialized discipline not in Changeis's portfolio</li>
+        <li><strong>SOLICITATION URGENCY:</strong> Estimated release was March 1, 2026 — if already released, response time may be extremely compressed. Verify SAM.gov immediately.</li>
+        <li><strong>Leidos Dark Horse:</strong> If Leidos pursues ATSS leveraging their TSE checkpoint sustainment experience, the competitive field becomes significantly harder</li>
+      </ul>
+    </div>
+
+    <br>
+    <p><strong>Recommended Pursuit Posture:</strong></p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>IMMEDIATE: Verify SAM.gov solicitation status today.</strong> Search SAM.gov for "Acceptance Testing Support Services" + TSA. If RFP is live, determine response deadline. Contact Richard Chandler (Richard.Chandler1@tsa.dhs.gov) immediately to confirm status and request pre-solicitation communication if still in pre-RFP phase. This is the highest-priority action.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Identify teaming partner with TSE/airport field ops experience</strong> — Target: a cleared firm with prior TSA acceptance testing experience (e.g., former Battelle ATSS staff spinoffs, mid-tier testing specialists, Global Systems Technologies from 2019 sub-award). This partner brings field test execution capability; Changeis brings program management, methodology, and data analytics as the prime.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Explore sub-prime to Battelle or AS&amp;M</strong> — Both are facing recompetes on adjacent contracts. Approaching Battelle (currently DTSS incumbent, former ATSS incumbent) to team on ATSS — with Changeis as PM/systems engineering sub — is a lower-risk path that builds TSA past performance for the next recompete cycle.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text"><strong>Develop competitive cost model</strong> — Model blended labor rate 10–15% below SAIC's expected rate. SAIC's annual ATSS task orders (~$8M/year) imply a large labor-heavy workforce. A leaner team with efficient logistics and data-driven test scheduling could offer compelling cost efficiency aligned with TSA's stated objective.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-text"><strong>Request ATSS RFI/Industry Day materials</strong> — TSA often conducts pre-solicitation exchanges. Per the July 2025 Sources Sought, TSA offered optional one-on-one meetings with respondents. Determine if Changeis responded to the August 2025 Sources Sought — if not, a direct outreach to Richard Chandler as follow-up is still appropriate.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-text"><strong>Monitor for TSA cluster consolidation</strong> — If TSA combines ATSS + DTSS or ATSS + OTSS, the IDC value grows significantly and SAIC's incumbent position becomes even stronger. Changeis should assess whether to pivot to a sub-prime strategy in a consolidation scenario.</div>
+      </div>
+    </div>
+
+    <br>
+    <table>
+      <thead>
+        <tr><th>Assessment Dimension</th><th>Score</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Technical Alignment (RAG)</td><td class="rating-high">STRONG (0.6908)</td><td>T&amp;E methodology, test planning, data analysis — strong FAA analog coverage</td></tr>
+        <tr><td>Past Performance Match</td><td class="rating-med">MODERATE</td><td>FAA T&amp;E is adjacent; zero TSA/DHS — must team to bridge</td></tr>
+        <tr><td>Incumbent Vulnerability</td><td class="rating-med">MODERATE</td><td>SAIC is strong but not unbeatable; historical precedent shows TSA switches incumbents</td></tr>
+        <tr><td>Competitive Field</td><td class="rating-low">CHALLENGING</td><td>SAIC + Battelle + potential Leidos; resource-intensive full &amp; open competition</td></tr>
+        <tr><td>Teaming Opportunity</td><td class="rating-high">GOOD</td><td>Multiple displaced incumbents and niche TSE firms available for teaming</td></tr>
+        <tr><td>Strategic Value (if won)</td><td class="rating-high">VERY HIGH</td><td>&gt;$100M, 5-yr; beachhead for $300M TSA T&amp;E cluster; DHS footprint establishment</td></tr>
+        <tr><td>Timeline Risk</td><td class="rating-low">HIGH RISK</td><td>Solicitation est. release 03/01/2026 — may already be live; compressed capture window</td></tr>
+        <tr><td>Overall Recommendation</td><td class="rating-high">GO (Conditional)</td><td>Act immediately; verify solicitation status; activate teaming conversations today</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Action Items -->
+  <div class="section">
+    <div class="section-header">Action Items &amp; Timeline</div>
+    <table>
+      <thead>
+        <tr><th>Priority</th><th>Action</th><th>Owner</th><th>Deadline</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag tag-red">P0 — TODAY</span></td>
+          <td>Search SAM.gov for ATSS solicitation — confirm if RFP is live. Determine response deadline.</td>
+          <td>BD Lead</td>
+          <td>Today (Apr 17)</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-red">P0 — TODAY</span></td>
+          <td>Email Richard Chandler (Richard.Chandler1@tsa.dhs.gov) — confirm solicitation status and request any pre-solicitation communications.</td>
+          <td>BD Lead</td>
+          <td>Today (Apr 17)</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-red">P1 — Immediate</span></td>
+          <td>Identify 2–3 teaming partner candidates with TSE field test execution and airport logistics experience. Initiate NDA discussions.</td>
+          <td>BD Lead + Contracts</td>
+          <td>5 days</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-red">P1 — Immediate</span></td>
+          <td>Cross-reference with DTSS capture strategy (deep dive 2026-04-17). Determine if Changeis pursues ATSS as prime and DTSS as sub, or parallel prime pursuits.</td>
+          <td>BD/Strategy Lead</td>
+          <td>5 days</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-warn">P2 — Near-Term</span></td>
+          <td>Assess Changeis cleared personnel posture — verify count and level of active clearances. Begin planning for TSA-cleared subcontractor workforce.</td>
+          <td>HR + Security Officer</td>
+          <td>2 weeks</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-warn">P2 — Near-Term</span></td>
+          <td>Research TSA OSC (Office of Security Capabilities) organizational structure, key stakeholders, and testing program priorities. Build relationship map.</td>
+          <td>BD Lead</td>
+          <td>2 weeks</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-warn">P2 — Near-Term</span></td>
+          <td>Develop competitive cost model — model blended rate 10–15% below SAIC's ~$8M/year annual burn. Identify cost efficiency levers for proposal.</td>
+          <td>Pricing + BD</td>
+          <td>3 weeks</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-navy">P3 — Strategic</span></td>
+          <td>Monitor SAM.gov for OTSS and ITSS solicitations — coordinate cluster pursuit strategy. Prioritize which vehicle Changeis leads on vs. supports as sub.</td>
+          <td>BD Lead</td>
+          <td>Ongoing</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-navy">P3 — Strategic</span></td>
+          <td>If ATSS solicitation is live: make Go/No-Bid decision within 5 business days based on response deadline and team assembly status.</td>
+          <td>Leadership</td>
+          <td>Per solicitation</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" onclick="toggleContext(this)">
+      <span class="arrow">▶</span>
+      Session Context (Methodology, Findings, Data Sources)
+    </button>
+    <div class="context-body">ORIGINAL INSTRUCTIONS:
+Execute an APFS opportunity deep-dive analysis for Changeis Inc. on TSA ATSS (F2025071525).
+Contract details: Acceptance Testing Support Services, TSA, NAICS 541330, >$100M IDC,
+Full & Open, Q1 FY2027 award, solicitation est. 03/01/2026, POP 01/03/2027–01/02/2032.
+
+APPROACH:
+1. Read deliverable-specs.md for format requirements
+2. Called RAG Engine (POST /match) with ATSS-specific query, top_n=50
+3. Searched USAspending API for TSA acceptance testing contracts under BPA #70T04021A7672N004
+4. Searched SAM.gov for ATSS solicitation (confirmed July 2025 Sources Sought and prior 2014 SSN)
+5. Fetched SAIC case study page for scope details
+6. Cross-referenced DTSS deep dive for TSA T&E cluster context
+7. Searched GovConWire, Airport Technology, BidNet for competitive intelligence
+8. Fetched TSA Testing Recompetes RFI (SAM.gov #26463f76c80e4b798cf7a1fd084cd3c6)
+
+KEY FINDINGS:
+• SAIC confirmed as ATSS incumbent via APFS record and USAspending — BPA #70T04021A7672N004
+• USAspending confirms 5 ATSS task orders totaling ~$41.4M (2021–2026); latest bridge call
+  (70T04026F7672N005, $3.2M, Mar 2026–Mar 2027) shows SAIC maintaining operations during recompete
+• ATSS scope is vast: 5,000+ annual tests, 430+ airports, 8,000+ test articles, 24-hr deployment
+• SAM.gov: Estimated solicitation release was 03/01/2026 — RFP may already be live as of Apr 17, 2026
+• RAG Engine returned 20 matches; top score 0.6939 (FAA CLMRS) — strong T&E methodology alignment
+• TSA July 2025 Sources Sought confirmed ATSS is one of 4 simultaneous T&E recompetes; TSA
+  evaluating consolidation options
+• Battelle was former ATSS incumbent (2010–2021, $65M+) displaced by SAIC — precedent for switching
+• Leidos ($2.6B TSA checkpoint sustainment, Jan 2025) identified as dark horse competitor
+• ITESS reference on SAM.gov is Army program (MAPS vehicle), not TSA
+
+DEAD ENDS:
+• USAspending direct award URL lookup for BPA parent returned "No Award found" — used keyword search instead
+• G2Xchange ATSS article was paywalled beyond metadata
+• The SAM.gov ATSS solicitation URL found (981186ce29d6f1fcde07171fd9232de6) is a 2014 Sources Sought, not the 2026 RFP
+• New ATSS RFP (if released) was not found in SAM.gov during this session — status unconfirmed
+
+ASSUMPTIONS:
+• ATSS scope derived from 2020 OATSS RFI and SAIC public case study as best available proxies
+• Annual ATSS burn rate ~$8M/year estimated from BPA call history
+• Solicitation was not found in SAM search; assumed either not yet released or released under different title
+• SAIC blended rates not directly confirmed; estimated from contract structure
+
+OPEN QUESTIONS:
+• Is the ATSS RFP currently live on SAM.gov? What is the response deadline?
+• Has TSA decided on consolidation (ATSS + OTSS single vehicle)?
+• What security clearance level is required for ATSS work?
+• Did TSA hold one-on-one industry meetings after August 2025 Sources Sought? Was Changeis invited?
+• What is the contract structure (single-award IDC vs. multiple-award)?
+
+DATA SOURCES:
+• APFS: https://apfs-cloud.dhs.gov/record/71525/public-print/
+• SAM.gov TSA Testing Recompetes: https://sam.gov/opp/26463f76c80e4b798cf7a1fd084cd3c6/view
+• SAIC ATSS case study: https://www.saic.com/what-we-do/case-studies/supporting-tsa-mission-airport-security-testing
+• USAspending keyword search: https://www.usaspending.gov
+• GovConWire SAIC OT&E: https://www.govconwire.com/articles/tsa-saic-100m-recompete-contract-ote-forecast
+• Airport Technology SAIC $150M: https://www.airport-technology.com/news/saic-tsa-systems-evaluation/
+• BidNet TSA Testing Recompetes: https://www.bidnetdirect.com/virginia/solicitations/closed-bids/statewide/TSA-Testing-Re-competes/2619234842
+• DTSS Deep Dive cross-reference: /home/user/workspace/VM2-P-Taskers/deep-dive-tsa-dtss-71486-2026-04-17.html
+• GSA OATSS RFI PDF: https://buy.gsa.gov/api/system/files/documents/Management__Advisory_Services_RFI_1_pdf_(revisions_included).pdf
+• MeriTalk Leidos TSA: https://www.meritalk.com/articles/leidos-wins-2-6b-to-support-tsa-security-equipment/
+• RAG Engine: https://changeis-bd-rag-production.up.railway.app/match
+
+NEXT STEPS:
+1. TODAY: Verify ATSS solicitation status on SAM.gov and contact Richard Chandler
+2. 5 days: Identify teaming partner with TSE field ops experience
+3. Coordinate cluster strategy with DTSS deep dive findings
+4. Make Go/No-Bid decision once solicitation confirmed and deadline known</div>
+  </div>
+
+  <!-- Hidden JSON block -->
+  <script type="application/json" id="vm2-context-data">
+  {
+    "task_name": "Deep Dive: TSA ATSS F2025071525",
+    "task_date": "2026-04-17",
+    "deliverable_file": "deep-dive-tsa-atss-71525-2026-04-17.html",
+    "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-atss-71525-2026-04-17.html",
+    "version": 1,
+    "prior_versions": [],
+    "created_date": "2026-04-17",
+    "revised_date": null,
+    "related_deliverables": [
+      "deep-dive-tsa-dtss-71486-2026-04-17.html",
+      "deep-dive-tsa-otss-71485-2026-04-17.html"
+    ],
+    "original_instructions": "Execute APFS opportunity deep-dive analysis for ATSS (F2025071525). TSA, NAICS 541330, >$100M IDC, Full & Open, Q1 FY2027, solicitation est. 03/01/2026. Call RAG Engine, research USAspending, check SAM.gov, generate capability matrix, Go/No-Go assessment with cluster strategy.",
+    "approach": "RAG Engine query (top_n=50), USAspending API keyword search, SAM.gov solicitation research, SAIC case study fetch, DTSS cross-reference, competitive intelligence via web search.",
+    "key_findings": [
+      "SAIC confirmed as ATSS incumbent (BPA #70T04021A7672N004) with ~$41.4M obligated across 5 task orders (2021-2026)",
+      "Latest SAIC bridge call (70T04026F7672N005, $3.2M, Mar 2026-Mar 2027) confirms recompete is active",
+      "ATSS solicitation estimated 03/01/2026 — may already be released; SAM.gov status unconfirmed",
+      "RAG top match FAA_CLMRS (0.6939) covers operational test, production readiness testing, TRRs — strong methodology overlap",
+      "TSA July 2025 Sources Sought confirmed 4-contract T&E cluster recompete with consolidation option",
+      "Battelle was former ATSS incumbent (2010-2021, $65M+) displaced by SAIC — historical precedent for switching",
+      "Leidos ($2.6B checkpoint sustainment, Jan 2025) is a dark horse ATSS competitor"
+    ],
+    "dead_ends": [
+      "USAspending direct BPA parent URL returned no results; used keyword search instead",
+      "G2Xchange ATSS article paywalled beyond title metadata",
+      "SAM.gov ATSS URL (981186ce) is a 2014 Sources Sought, not the 2026 RFP",
+      "New ATSS RFP not found in SAM.gov during research session"
+    ],
+    "assumptions": [
+      "ATSS scope derived from 2020 OATSS RFI and SAIC public case study as best proxies for current requirements",
+      "Annual burn ~$8M/year estimated from BPA task order history",
+      "Solicitation assumed either not yet released or released under different SAM.gov title",
+      "ITESS SAM notice was Army MAPS vehicle, not TSA ATSS"
+    ],
+    "open_questions": [
+      "Is the ATSS RFP currently live on SAM.gov? What is the response deadline?",
+      "Will TSA consolidate ATSS with OTSS into a single vehicle?",
+      "What security clearance level is required for ATSS work?",
+      "Did TSA hold post-Sources Sought one-on-one meetings? Was Changeis invited?",
+      "Single-award vs. multiple-award IDC structure?"
+    ],
+    "data_sources": [
+      {"name": "APFS F2025071525", "url": "https://apfs-cloud.dhs.gov/record/71525/public-print/"},
+      {"name": "SAM.gov TSA Testing Recompetes Sources Sought", "url": "https://sam.gov/opp/26463f76c80e4b798cf7a1fd084cd3c6/view"},
+      {"name": "SAIC ATSS Case Study", "url": "https://www.saic.com/what-we-do/case-studies/supporting-tsa-mission-airport-security-testing"},
+      {"name": "USAspending.gov", "url": "https://www.usaspending.gov"},
+      {"name": "GovConWire SAIC OT&E", "url": "https://www.govconwire.com/articles/tsa-saic-100m-recompete-contract-ote-forecast"},
+      {"name": "Airport Technology SAIC TSA", "url": "https://www.airport-technology.com/news/saic-tsa-systems-evaluation/"},
+      {"name": "MeriTalk Leidos TSA $2.6B", "url": "https://www.meritalk.com/articles/leidos-wins-2-6b-to-support-tsa-security-equipment/"},
+      {"name": "GSA OATSS RFI PDF", "url": "https://buy.gsa.gov/api/system/files/documents/Management__Advisory_Services_RFI_1_pdf_(revisions_included).pdf"},
+      {"name": "BidNet TSA Testing Recompetes", "url": "https://www.bidnetdirect.com/virginia/solicitations/closed-bids/statewide/TSA-Testing-Re-competes/2619234842"}
+    ],
+    "next_steps": [
+      "TODAY: Verify ATSS solicitation status on SAM.gov; contact Richard Chandler",
+      "5 days: Identify teaming partner with TSE field ops experience; initiate NDA discussions",
+      "Coordinate cluster strategy across ATSS, DTSS, OTSS, ITSS pursuits",
+      "Make Go/No-Bid decision once solicitation confirmed and response deadline known"
+    ],
+    "cost_estimate": {
+      "model": "claude-sonnet-4-6",
+      "model_pricing": "$3/$15 per 1M tokens",
+      "input_tokens_est": "~55,000",
+      "output_tokens_est": "~9,000",
+      "search_calls": 8,
+      "subagent_calls": 0,
+      "cost_conservative": "$0.30",
+      "cost_ceiling": "$0.55",
+      "notes": "Multiple web searches, RAG API call, USAspending API calls, SAM.gov and SAIC page fetches, DTSS reference read, full HTML generation"
+    }
+  }
+  </script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Use these shortcuts to follow up on this deep dive.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">📋 Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up%3A%20TSA%20ATSS%20Deep%20Dive%20F2025071525&body=Please%20follow%20up%20on%20the%20TSA%20ATSS%20deep%20dive%20(F2025071525).%20Deliverable%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fdeep-dive-tsa-atss-71525-2026-04-17.html%0A%0AKey%20follow-up%20actions%3A%0A1.%20Verify%20ATSS%20solicitation%20on%20SAM.gov%20(est.%20release%2003%2F01%2F2026%20-%20may%20be%20live)%0A2.%20Contact%20Richard%20Chandler%20(Richard.Chandler1%40tsa.dhs.gov)%0A3.%20Identify%20teaming%20partner%20for%20TSE%20field%20ops">✉️ Email to VM2</a>
+      <button class="btn btn-secondary" onclick="createTodoist()">✅ Create Todoist Follow-Up</button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential &nbsp;·&nbsp; Deep Dive: TSA ATSS — Acceptance Testing Support — F2025071525 &nbsp;·&nbsp; 2026-04-17 &nbsp;·&nbsp; VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+
+  function toggleContext(btn) {
+    btn.classList.toggle('open');
+    const body = btn.nextElementSibling;
+    body.classList.toggle('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function copyFollowUp() {
+    const prompt = `Please follow up on the TSA ATSS deep dive (F2025071525 — Acceptance Testing Support Services).
+
+Deliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-atss-71525-2026-04-17.html
+
+Key follow-up actions needed:
+1. Verify ATSS solicitation status on SAM.gov (estimated release 03/01/2026 — may already be live)
+2. Contact Richard Chandler (Richard.Chandler1@tsa.dhs.gov) to confirm RFP status
+3. Identify teaming partner with TSE field operations and airport logistics experience
+4. Coordinate with DTSS deep dive (F2025071486) for TSA T&E cluster strategy
+5. Make Go/No-Bid decision once solicitation confirmed
+
+Context: SAIC is the incumbent (BPA #70T04021A7672N004, ~$41M obligated since 2021). New IDC est. >$100M over 5 years. RAG score 0.6908 (STRONG). Solicitation may already be released.`;
+    navigator.clipboard.writeText(prompt).then(() => showToast('Follow-up prompt copied!'));
+  }
+
+  function createTodoist() {
+    const url = 'https://todoist.com/add?content=Follow+up+on+TSA+ATSS+deep+dive+F2025071525+-+verify+SAM.gov+solicitation+%26+contact+Richard+Chandler&due=today';
+    window.open(url, '_blank');
+  }
+</script>
+
+</body>
+</html>
