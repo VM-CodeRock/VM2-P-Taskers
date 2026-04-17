@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: CBP ADAPT AI — F2026072662</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --deep-navy: #002060;
+    --brand-blue: #2E6DA4;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --teal: #008B8B;
+    --green: #2D7D4A;
+    --purple: #6B4C9A;
+    --orange: #D97D2A;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --muted: #888888;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --callout-bg: #E8F4F8;
+    --callout-border: #008B8B;
+    --row-alt: #F2F6FA;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --muted: #8a8e96;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --callout-bg: #1a2535;
+    --callout-border: #008B8B;
+    --row-alt: #1e2231;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 44px 0 32px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-size: 30px; font-weight: 700; color: var(--navy);
+    line-height: 1.2; margin-bottom: 6px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 16px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* KPI Grid */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 30px;
+  }
+  @media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    text-align: center;
+  }
+  .kpi-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-faint); margin-bottom: 4px;
+  }
+  .kpi-value {
+    font-size: 20px; font-weight: 700; color: var(--navy);
+    font-family: system-ui, sans-serif;
+  }
+  [data-theme="dark"] .kpi-value { color: #e2e2e2; }
+  .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: system-ui, sans-serif; }
+
+  /* Sections */
+  .section { margin-bottom: 28px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 5px;
+    margin-bottom: 14px;
+  }
+  .section p { font-size: 15px; line-height: 1.65; margin-bottom: 10px; }
+  .section ul, .section ol { padding-left: 20px; margin-bottom: 10px; }
+  .section li { font-size: 15px; margin-bottom: 5px; line-height: 1.55; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13.5px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Callout */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 3px solid var(--callout-border);
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout-title {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--teal); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 5px;
+  }
+  .callout p { font-size: 14px; margin-bottom: 0; }
+
+  /* Status badges inline */
+  .badge-inline {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 3px;
+    vertical-align: middle;
+  }
+  .badge-green { background: #e6f4eb; color: #2D7D4A; }
+  .badge-orange { background: #fdf0e0; color: #D97D2A; }
+  .badge-red { background: #fde8e8; color: #c53a3a; }
+  .badge-blue { background: #e8f0fc; color: #1B2A4A; }
+  .badge-purple { background: #f0eaf9; color: #6B4C9A; }
+  .badge-teal { background: #e0f4f4; color: #008B8B; }
+
+  /* Score bar */
+  .score-wrap { margin: 8px 0; }
+  .score-bar-bg {
+    height: 10px; background: var(--border);
+    border-radius: 5px; overflow: hidden; margin-top: 4px;
+  }
+  .score-bar-fill { height: 100%; border-radius: 5px; }
+
+  /* Go/No-Go verdict */
+  .verdict-box {
+    background: var(--surface);
+    border: 2px solid var(--green);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: var(--card-shadow);
+  }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--green); margin-bottom: 8px;
+  }
+  .verdict-headline {
+    font-size: 22px; font-weight: 700; color: var(--navy);
+    font-family: system-ui, sans-serif; margin-bottom: 6px;
+  }
+  [data-theme="dark"] .verdict-headline { color: #e2e2e2; }
+  .verdict-sub { font-size: 14px; color: var(--text-muted); }
+
+  /* 2-col grid */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+  .mini-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .mini-card h4 {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 8px;
+  }
+  .mini-card ul { padding-left: 16px; margin: 0; }
+  .mini-card li { font-size: 13.5px; margin-bottom: 4px; line-height: 1.45; }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* RAG match section */
+  .rag-match {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 8px 0;
+    box-shadow: var(--card-shadow);
+  }
+  .rag-match-title {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .rag-match-title { color: #ccc; }
+  .rag-match-meta {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+  .rag-excerpt {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; line-height: 1.5;
+  }
+
+  strong { font-weight: 700; }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · APFS F2026072662</div>
+    <h1>CBP ADAPT — AI Development &amp; Advanced Program Transformation</h1>
+    <div class="hero-sub">CBP / Office of Information and Technology (OIT) · Passenger Systems Program Directorate</div>
+    <div class="hero-date" style="color:var(--muted);font-size:13px;margin-top:6px;">Created: 2026-04-17</div>
+  </div>
+
+  <!-- KPI Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Dollar Range</div>
+      <div class="kpi-value">$50M</div>
+      <div class="kpi-sub">$20M–$50M ceiling</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Award Target</div>
+      <div class="kpi-value">Q3 FY26</div>
+      <div class="kpi-sub">~Apr 20, 2026</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Period of Perf.</div>
+      <div class="kpi-value">5 Yrs</div>
+      <div class="kpi-sub">May 2026 – Apr 2031</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">RAG Score</div>
+      <div class="kpi-value">0.663</div>
+      <div class="kpi-sub">MODERATE — Competitive</div>
+    </div>
+  </div>
+
+  <!-- Opportunity Snapshot -->
+  <div class="section">
+    <div class="section-header">Opportunity Snapshot</div>
+    <table>
+      <thead><tr><th>Field</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td><strong>APFS Number</strong></td><td>F2026072662</td></tr>
+        <tr><td><strong>Title</strong></td><td>AI Development &amp; Advanced Program Transformation (ADAPT)</td></tr>
+        <tr><td><strong>Organization</strong></td><td>CBP / Office of Information and Technology (OIT) — Information Technology Requirements Office (ITRO)</td></tr>
+        <tr><td><strong>Directorate</strong></td><td>Passenger Systems Program Directorate (PSPD)</td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541512 — Computer Systems Design Services</td></tr>
+        <tr><td><strong>Contract Type</strong></td><td>Firm Fixed Price (FFP)</td></tr>
+        <tr><td><strong>Vehicle</strong></td><td>IDIQ TO/DO — Non-Strategic Sourcing Multiple Award Contract</td></tr>
+        <tr><td><strong>Set-Aside</strong></td><td>Small Business (SB) — ESB acquisition strategy</td></tr>
+        <tr><td><strong>Competition</strong></td><td>Full &amp; Open to SB — New Requirement, No Incumbent</td></tr>
+        <tr><td><strong>Est. Solicitation Release</strong></td><td>January 19, 2026 (published Dec 11, 2025)</td></tr>
+        <tr><td><strong>Anticipated Award</strong></td><td>April 20, 2026 (Q3 FY2026)</td></tr>
+        <tr><td><strong>Period of Performance</strong></td><td>May 1, 2026 – April 30, 2031 (5 years)</td></tr>
+        <tr><td><strong>Place of Performance</strong></td><td>Ashburn, VA</td></tr>
+        <tr><td><strong>Requirements Contact</strong></td><td>Gary Orr — <a href="mailto:Gary.Orr@cbp.dhs.gov">Gary.Orr@cbp.dhs.gov</a> — (317) 614-4573</td></tr>
+        <tr><td><strong>SBS Coordinator</strong></td><td>Ivette Jorge — <a href="mailto:CBP-IPOP@CBP.DHS.GOV">CBP-IPOP@CBP.DHS.GOV</a></td></tr>
+        <tr><td><strong>Contracting Office</strong></td><td>Information Technology (ITCD)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Requirement Breakdown -->
+  <div class="section">
+    <div class="section-header">What CBP Is Asking For</div>
+    <p>ADAPT is a three-pillar AI and program transformation contract supporting the Passenger Systems Program Directorate (PSPD), which oversees CBP's passenger processing technology including the TECS system. The work is split across three functional areas:</p>
+
+    <p><strong>2.1 — AI-Driven Software Development</strong> <span class="badge-inline badge-purple">Core Pillar</span></p>
+    <ul>
+      <li>Develop software, reusable code, and DevOps capabilities using <strong>LLMs and CBP-approved AI tools</strong> — automation, scalability, CI/CD integration</li>
+      <li>Use AI tools to <strong>accelerate software delivery</strong> and automate unit test case creation and execution</li>
+      <li>Streamline trouble ticket disposition and closure</li>
+      <li>Implement consistent UX/UI across all device types using AI and LLMs</li>
+      <li>Support new development and UX/UI projects; systems integration under COR direction</li>
+    </ul>
+
+    <p style="margin-top:10px;"><strong>2.2 — Program Support</strong> <span class="badge-inline badge-blue">Management Layer</span></p>
+    <ul>
+      <li>Respond to CBP documentation/reporting requirements including <strong>TECS acquisition program</strong> needs</li>
+      <li>Support acquisition milestones: business case reviews, operational analyses, PMRs, system health/risk reporting</li>
+      <li>Support DHS <strong>Cost Wise Readiness (CWR)</strong> initiative; track required metrics</li>
+      <li>Support GAO and DHS OIG audits; identify/document/track program risks per TECS and PSPD guidelines</li>
+      <li>Develop and automate standardized performance reports; collaborate with CBP Records and Information Management (RIM)</li>
+    </ul>
+
+    <p style="margin-top:10px;"><strong>2.3 — Research &amp; Analysis</strong> <span class="badge-inline badge-teal">Advisory Layer</span></p>
+    <ul>
+      <li>Cloud optimization research: architecture review, open-source alternatives, cost avoidance identification</li>
+      <li>Coordinate with <strong>Azure, AWS, and CBP MAGE (ModulAr GCP Environment)</strong> teams to resolve technical issues</li>
+      <li>Advise PSPD Program Manager on solutions; participate in change request reviews</li>
+      <li>Liaise across CTO, CDO, system integrators, and cloud account representatives</li>
+      <li>Provide independent assessments of cloud solutions and efficiency opportunities to PSPD leadership</li>
+    </ul>
+
+    <div class="callout">
+      <div class="callout-title">Key Technical Environment</div>
+      <p>PSPD manages CBP's core passenger processing systems (TECS), deployed on a multi-cloud architecture spanning Microsoft Azure, AWS, and CBP's proprietary ModulAr GCP Environment (MAGE). The ADAPT contractor must operate fluently across all three platforms and interface directly with CBP's Cloud Infrastructure Management (CIM) team.</p>
+    </div>
+  </div>
+
+  <!-- Market Context -->
+  <div class="section">
+    <div class="section-header">Market &amp; Agency Context</div>
+
+    <p><strong>CBP OIT AI Investment Trajectory.</strong> CBP's Office of Information and Technology has been aggressively building AI capabilities since FY2022. The agency's AI Center of Innovation (AI COI) leads strategic transformation with 57 active innovation projects as of FY2022, with nearly half focused on AI &amp; Analytics. CBP's OIT Strategy 2024–2028 explicitly prioritizes AI/ML integration across mission systems.</p>
+
+    <p><strong>PSPD Technology Context.</strong> The Passenger Systems Program Directorate oversees CBP's largest passenger-facing IT investments — including TECS (the backbone passenger processing system), biometric systems, and traveler vetting tools. In 2025, CBP's PSPD issued an RFP for a <strong>$100M+ Traveler Processing &amp; Vetting Software (TPVS) 2.0</strong> contract, signaling aggressive modernization spend in the directorate. ADAPT is a parallel initiative bringing AI acceleration to PSPD's software development lifecycle.</p>
+
+    <p><strong>Competitive AI Awards at CBP.</strong> CBP has been actively awarding AI-adjacent contracts in 2025–2026, including a Clearview AI facial recognition contract for tactical targeting (15 licenses, NTC), and IT-Strat's recent win of the $600M CBP Application Development and O&amp;M BPA (April 2026). The DHS/CBP ecosystem is one of the most active in federal IT for AI-augmented contracting. ADAPT represents a focused small-business set-aside within this larger wave.</p>
+
+    <p><strong>No Incumbent — Green Field.</strong> ADAPT is a new requirement with no prior contract. This is a significant structural advantage: there is no incumbent to displace, no protest risk from a displaced awardee, and no legacy relationship to overcome. The field is open to any qualified SB.</p>
+
+    <table>
+      <thead><tr><th>Factor</th><th>Assessment</th><th>Impact on Changeis</th></tr></thead>
+      <tbody>
+        <tr><td>No incumbent</td><td><span class="badge-inline badge-green">Favorable</span></td><td>No relationship gap to close; all offerors start even</td></tr>
+        <tr><td>SB set-aside</td><td><span class="badge-inline badge-green">Favorable</span></td><td>Changeis qualifies; eliminates large prime competition</td></tr>
+        <tr><td>FFP contract type</td><td><span class="badge-inline badge-orange">Moderate</span></td><td>Requires tight scoping; risk of under-pricing AI work</td></tr>
+        <tr><td>IDIQ TO/DO vehicle</td><td><span class="badge-inline badge-blue">Neutral</span></td><td>Task order structure provides scope flexibility</td></tr>
+        <tr><td>Multi-cloud environment</td><td><span class="badge-inline badge-orange">Moderate</span></td><td>Azure + AWS + GCP breadth required; Changeis strong on AWS/Azure</td></tr>
+        <tr><td>Ashburn, VA PoP</td><td><span class="badge-inline badge-green">Favorable</span></td><td>Changeis HQ Arlington — minimal commute, local presence</td></tr>
+        <tr><td>Q3 FY26 award</td><td><span class="badge-inline badge-orange">Tight</span></td><td>Solicitation likely already released or imminent — act fast</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Capability Matrix -->
+  <div class="section">
+    <div class="section-header">Capability Matrix — Changeis vs. ADAPT Requirements</div>
+
+    <p>Changeis brings direct, demonstrable capability across all three ADAPT pillars. The VM2 AI system itself — a live production AI operating system handling BD research, document generation, and program automation — is a concrete proof point for Pillar 2.1 AI-driven development, delivered by Changeis's own team.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28%;">ADAPT Requirement</th>
+          <th style="width:14%;">Pillar</th>
+          <th style="width:20%;">Changeis Capability</th>
+          <th style="width:14%;">Strength</th>
+          <th style="width:24%;">Proof Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>LLM/AI-driven software development &amp; DevOps</td>
+          <td>2.1</td>
+          <td>AI-augmented development, CI/CD pipelines, GitOps</td>
+          <td><span class="badge-inline badge-green">Strong</span></td>
+          <td>VM2 system (live LLM automation); FAA CI/CD pipelines; GitHub GitOps delivery</td>
+        </tr>
+        <tr>
+          <td>Automated test case creation &amp; execution</td>
+          <td>2.1</td>
+          <td>Automated testing frameworks (pytest, Selenium, JMeter)</td>
+          <td><span class="badge-inline badge-green">Strong</span></td>
+          <td>FAA CLMRS automated integration testing platform; ATEPS II shift-left testing</td>
+        </tr>
+        <tr>
+          <td>UX/UI consistency across device types using AI</td>
+          <td>2.1</td>
+          <td>UI/UX design &amp; agile delivery</td>
+          <td><span class="badge-inline badge-blue">Solid</span></td>
+          <td>HUD BPR task order (V3132151) — UI design, wireframes, agile lifecycle management</td>
+        </tr>
+        <tr>
+          <td>Software development &amp; systems integration</td>
+          <td>2.1</td>
+          <td>Full-stack development, API integration, systems engineering</td>
+          <td><span class="badge-inline badge-green">Strong</span></td>
+          <td>FAA NAS multi-system integration; FMCSA Drug &amp; Alcohol Clearinghouse (V3132051)</td>
+        </tr>
+        <tr>
+          <td>Acquisition milestone support (PMRs, business case reviews)</td>
+          <td>2.2</td>
+          <td>Program management, acquisition support</td>
+          <td><span class="badge-inline badge-green">Strong</span></td>
+          <td>CBP HCPS $20M contract (CBP/OFAM); FAA CLMRS $60M Supply Chain Transformation — directing $270M in concurrent programs</td>
+        </tr>
+        <tr>
+          <td>Risk identification, documentation, tracking (TECS/PSPD)</td>
+          <td>2.2</td>
+          <td>Risk management, program documentation</td>
+          <td><span class="badge-inline badge-blue">Solid</span></td>
+          <td>Mature QC/Risk Management planning across FAA ATO programs</td></tr>
+        <tr>
+          <td>Automated standardized reporting</td>
+          <td>2.2</td>
+          <td>Data visualization, automated reporting (Tableau, Power BI)</td>
+          <td><span class="badge-inline badge-green">Strong</span></td>
+          <td>FMCSA Analysis Division (V3132249) — Tableau-based reporting, AI/ML capabilities</td>
+        </tr>
+        <tr>
+          <td>GAO/OIG audit support</td>
+          <td>2.2</td>
+          <td>Compliance documentation, audit response</td>
+          <td><span class="badge-inline badge-blue">Solid</span></td>
+          <td>CBP/DHS compliance support track record; USCIS workforce analysis contract</td>
+        </tr>
+        <tr>
+          <td>Cloud optimization research (Azure/AWS/GCP)</td>
+          <td>2.3</td>
+          <td>Multi-cloud architecture, optimization, cost avoidance</td>
+          <td><span class="badge-inline badge-blue">Solid</span></td>
+          <td>AWS Landing Zone compliance automation; Kubernetes autoscaling; Datadog observability; cloud review experience from FMCSA/FAA work</td>
+        </tr>
+        <tr>
+          <td>Independent technical assessments to PSPD leadership</td>
+          <td>2.3</td>
+          <td>Technical advisory, CTO/CDO liaison</td>
+          <td><span class="badge-inline badge-green">Strong</span></td>
+          <td>FAA Technical Operations architecture advisory; FMCSA Motor Carrier Safety Applied Analysis (V3132047)</td>
+        </tr>
+        <tr>
+          <td>DHS Cost Wise Readiness (CWR) metric tracking</td>
+          <td>2.2</td>
+          <td>Program metrics, cost analysis</td>
+          <td><span class="badge-inline badge-orange">Developing</span></td>
+          <td>DHS CBP experience via HCPS; DHS CWR framework familiarity — specific CWR experience not documented in RAG corpus</td>
+        </tr>
+        <tr>
+          <td>TECS acquisition program documentation</td>
+          <td>2.2</td>
+          <td>CBP/OIT familiarity</td>
+          <td><span class="badge-inline badge-orange">Gap</span></td>
+          <td>CBP relationship exists (HCPS/OFAM) but TECS-specific IT system experience not evidenced — key gap to address</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:14px;">
+      <div class="callout-title">VM2 as a Live Proof Point</div>
+      <p>The VM2 AI operating system — built and operated by Changeis — demonstrates exactly what ADAPT requires: LLM-driven automation, AI-accelerated workflow delivery, automated report generation, DevOps pipelines, and multi-source data integration. This is not theoretical capability — it is a production system running daily. VM2 should be explicitly referenced in the ADAPT proposal as an internal AI delivery case study.</p>
+    </div>
+  </div>
+
+  <!-- RAG Engine Results -->
+  <div class="section">
+    <div class="section-header">RAG Engine — Nearest Past Performance Matches</div>
+    <p>The Changeis RAG engine scored this opportunity at <strong>0.6629 (MODERATE)</strong>. The top corpus matches surface relevant past performance, though the strongest signals come from DOT/Volpe work rather than DHS/CBP IT. This reinforces the importance of highlighting the CBP HCPS contract and VM2 as AI proof points in the proposal.</p>
+
+    <div class="rag-match">
+      <div class="rag-match-title">Rank 1 — HUD BPR Application Development &amp; Agile Lifecycle (V3132151)</div>
+      <div class="rag-match-meta">Contract: 6913G621F400047 · Score: 0.609 · Clients: DOT/Volpe · Doc Types: AWARD, SOW, TORFP</div>
+      <div class="rag-excerpt">"Tasks focus on technology delivery, business analysis, agile process management, graphical user interface (GUI) design, and application development to aid the customer in achieving agency's goal of business process/system modernization with improved user experience and technology advances."</div>
+    </div>
+
+    <div class="rag-match">
+      <div class="rag-match-title">Rank 2 — FMCSA Motor Carrier Safety Applied Analysis (V3132047)</div>
+      <div class="rag-match-meta">Contract: 6913G620F400113 · Score: 0.605 · Clients: DOT/FAA/FMCSA/Volpe · Doc Types: AWARD, SOW, TORFP</div>
+      <div class="rag-excerpt">"Provide support for new code development… Using an Agile-based approach… Git version control… Azure DevOps… Data Science and Analysis capabilities including AI/machine learning capabilities; Large dataset analysis; Multiple data source integration."</div>
+    </div>
+
+    <div class="rag-match">
+      <div class="rag-match-title">Rank 4 — Corporate Capability Statement (Changeis)</div>
+      <div class="rag-match-meta">Contract: CORPORATE · Score: 0.511 · Clients: DOT/FAA/FMCSA/FTA/NHTSA/Volpe</div>
+      <div class="rag-excerpt">"Digital factories will enable quality gating and approvals, 100% compliance with HA/DR standards, automated documentation reviews, and chain of thought logging on all decisions to enable transparent oversight and accountability… Kubernetes autoscaling; AWS Landing Zone compliance automation; Datadog observability stack."</div>
+    </div>
+
+    <p style="margin-top:10px;font-size:13.5px;color:var(--text-muted);">
+      <strong>Gap Note:</strong> No DHS/CBP OIT-specific IT contracts appear in the top RAG matches. The corpus reflects Changeis's DOT/Volpe lineage. For ADAPT, the CBP HCPS $20M award (Nov 2024) and any DHS/OIT relationships should be surfaced explicitly in proposal past performance. Consider requesting DHS IDIQ vehicle access if not already held.
+    </p>
+  </div>
+
+  <!-- Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">Competitive Landscape</div>
+    <p>As a new SB set-aside with no incumbent, the competitive field is wide open. Expected competitors will be small businesses with DHS/CBP OIT IT history and AI/ML credentials:</p>
+
+    <div class="two-col">
+      <div class="mini-card">
+        <h4>Likely Competitor Profile</h4>
+        <ul>
+          <li>SB (under 541512 size standard: $34M avg annual receipts)</li>
+          <li>DHS/CBP OIT IDIQ vehicle holders</li>
+          <li>Active CBP passenger systems experience (TECS, biometrics, PSPD)</li>
+          <li>AI/ML and DevOps credentials (DoD/IC or civil agencies)</li>
+          <li>Ashburn/Northern VA presence</li>
+        </ul>
+      </div>
+      <div class="mini-card">
+        <h4>Changeis Differentiators</h4>
+        <ul>
+          <li>Live VM2 AI system — production LLM automation proof point</li>
+          <li>Active CBP relationship (HCPS $20M, Nov 2024)</li>
+          <li>Arlington, VA HQ — optimal proximity to Ashburn PoP</li>
+          <li>Multi-agency DHS portfolio (CBP, USCIS)</li>
+          <li>"Digital factory" AI governance framework — aligns with CBP's responsible AI mandate</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:14px;">
+      <div class="callout-title">Risk: IDIQ Vehicle Access</div>
+      <p>ADAPT is structured as a task order against an existing IDIQ. Changeis must verify it holds or can access the specific CBP OIT IDIQ vehicle through which this TO will be issued. This is the most critical near-term BD action: confirm vehicle eligibility with Gary Orr or the ITCD contracting office before investing further pursuit resources.</p>
+    </div>
+  </div>
+
+  <!-- Go/No-Go Verdict -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Assessment</div>
+
+    <div class="verdict-box">
+      <div class="verdict-label">Recommendation</div>
+      <div class="verdict-headline">✓ PURSUE — Conditional GO</div>
+      <div class="verdict-sub">Strong strategic fit; pursue actively pending IDIQ vehicle verification and CBP OIT relationship development with Gary Orr.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Factor</th><th>Weight</th><th>Score (1–5)</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Technical Capability Fit</td><td>25%</td><td>4/5</td><td>Strong AI/ML, DevOps, program support match; TECS gap is real but bridgeable</td></tr>
+        <tr><td>Past Performance Relevance</td><td>20%</td><td>3/5</td><td>DOT/Volpe analogous; CBP HCPS adds DHS color — need more OIT-specific credentialing</td></tr>
+        <tr><td>Competitive Position</td><td>20%</td><td>4/5</td><td>No incumbent; SB set-aside narrows field; VM2 is a genuine differentiator</td></tr>
+        <tr><td>Customer Relationship</td><td>15%</td><td>2/5</td><td>CBP relationship exists (OFAM) but OIT/PSPD/Gary Orr relationship not established — critical gap</td></tr>
+        <tr><td>Strategic Value</td><td>10%</td><td>5/5</td><td>CBP OIT foothold; AI proof point contract; 5-year $50M ceiling is transformational for Changeis</td></tr>
+        <tr><td>Probability of Win</td><td>10%</td><td>3/5</td><td>Estimated pWin 25–40% depending on vehicle access and relationship development before RFP</td></tr>
+        <tr style="font-weight:700;"><td>Weighted Score</td><td>100%</td><td style="color:var(--green);">3.45 / 5.0</td><td>Above GO threshold of 3.0</td></tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:14px;"><strong>Key Conditions for Pursuit:</strong></p>
+    <ol>
+      <li><strong>Verify IDIQ vehicle access</strong> — Confirm Changeis is an awardee on the CBP OIT IDIQ through which ADAPT will be issued. If not, explore teaming with a vehicle holder or pursuing a prerequisite MAC award.</li>
+      <li><strong>Engage Gary Orr (Requirements Contact)</strong> — Schedule a capabilities briefing within 2 weeks. Focus on AI/LLM development capability and the VM2 proof point. Gary Orr at (317) 614-4573.</li>
+      <li><strong>Pursue TECS knowledge gap</strong> — Research TECS system architecture, find any available documentation, and identify potential teaming partners with PSPD/TECS experience.</li>
+      <li><strong>Confirm solicitation status</strong> — Estimated release was January 19, 2026. Verify current status on SAM.gov / APFS; if released, obtain the RFP immediately.</li>
+    </ol>
+  </div>
+
+  <!-- Next Steps Action Plan -->
+  <div class="section">
+    <div class="section-header">Action Plan — Immediate Steps</div>
+    <table>
+      <thead><tr><th>#</th><th>Action</th><th>Owner</th><th>Deadline</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Verify IDIQ vehicle eligibility for ADAPT task order</td>
+          <td>BD / Contracts</td>
+          <td>April 21, 2026</td>
+          <td><span class="badge-inline badge-red">Critical</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Check SAM.gov/APFS for solicitation release status; obtain RFP if released</td>
+          <td>BD</td>
+          <td>April 18, 2026</td>
+          <td><span class="badge-inline badge-red">Critical</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Contact Gary Orr — schedule capabilities briefing; lead with VM2 + AI DevOps story</td>
+          <td>Varun / BD Lead</td>
+          <td>April 21, 2026</td>
+          <td><span class="badge-inline badge-red">Critical</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Identify teaming partners with TECS/PSPD system experience</td>
+          <td>BD</td>
+          <td>April 25, 2026</td>
+          <td><span class="badge-inline badge-orange">High</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Draft 2-page capability brief for CBP OIT ADAPT — AI/ML + program transformation focus</td>
+          <td>Proposals</td>
+          <td>April 25, 2026</td>
+          <td><span class="badge-inline badge-orange">High</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Contact Ivette Jorge (SBS Coordinator) at CBP-IPOP@CBP.DHS.GOV — confirm SB eligibility and vehicle guidance</td>
+          <td>BD</td>
+          <td>April 25, 2026</td>
+          <td><span class="badge-inline badge-orange">High</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>Review PSPD/TECS publicly available architecture documentation; assess technical gap</td>
+          <td>Technical</td>
+          <td>April 30, 2026</td>
+          <td><span class="badge-inline badge-blue">Medium</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>Assess FFP pricing risk for 5-year AI development contract; draft preliminary LOE model</td>
+          <td>Finance / Technical</td>
+          <td>May 2, 2026</td>
+          <td><span class="badge-inline badge-blue">Medium</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Session Context (collapsible) -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">ORIGINAL INSTRUCTIONS:
+Execute an APFS opportunity deep-dive analysis for Changeis Inc.
+- APFS Number: F2026072662
+- Title: AI Development &amp; Advanced Program Transformation (ADAPT)
+- Organization: CBP/OIT
+- NAICS: 541512 - Computer Systems Design Services
+- Dollar Range: $20M to $50M
+- Contact: Gary Orr / Gary.Orr@cbp.dhs.gov
+- RAG Score: 0.6629
+- Todoist Task ID: 6gQ3C77q9mqx48cr
+
+APPROACH:
+1. Read deliverable-specs.md and reference HTML structure
+2. Extracted full APFS record from apfs_opportunities_latest.json for F2026072662
+3. Called Changeis RAG Engine API (POST /match) with ADAPT requirement text — received top 5 matches
+4. Researched CBP OIT AI/ML contracts, PSPD background, TECS system, and competitive landscape via web search
+5. Analyzed CBP OIT acquisition trends (AI COI, TPVS 2.0, IT-Strat $600M BPA, Clearview AI)
+6. Assessed Changeis capabilities against all three ADAPT pillars using RAG corpus and corporate knowledge
+7. Built Changeis-branded HTML deliverable per spec file
+
+KEY FINDINGS:
+- ADAPT is a green-field SB set-aside — no incumbent, full competition within SB pool
+- $20M-$50M FFP IDIQ task order for 5 years (May 2026–Apr 2031), Ashburn VA, Q3 FY26 award
+- Three pillars: AI-driven software dev (LLMs, DevOps, test automation), Program Support (TECS/PMR/audit), Research &amp; Analysis (cloud optimization, multi-cloud)
+- RAG top match score 0.609 (HUD BPR agile dev); corporate capability statement at 0.511 with AI governance language
+- Changeis has active CBP relationship via $20M HCPS contract (Nov 2024) — but PSPD/OIT/TECS-specific experience is a documented gap
+- VM2 AI system is a live LLM automation proof point directly aligned to ADAPT Pillar 2.1
+- CBP requires Azure + AWS + GCP (MAGE) multi-cloud fluency — Changeis strong on Azure/AWS, GCP less documented
+- Estimated pWin 25–40% conditional on IDIQ vehicle access and Gary Orr relationship development
+
+DEAD ENDS:
+- RAG Engine fetch_url call failed (disallow by robots on Railway URL) — resolved via curl POST
+- USAspending.gov direct search blocked by robots.txt; found CBP 541512 context via web search instead
+- APFS JSON file too large to read directly; extracted via Python grep by APFS number
+
+ASSUMPTIONS:
+- Solicitation release date of Jan 19, 2026 was estimated; actual release date may differ — verify on SAM.gov
+- Changeis SB size standard under NAICS 541512 is $34M avg annual receipts — assumed eligible
+- RAG score of 0.6629 represents the pre-call system score; live API call returned 0.609 for top match (V3132151)
+- FFP contract type requires careful pricing discipline for a 5-year AI work order structure
+
+OPEN QUESTIONS:
+- Is Changeis currently an awardee on the specific CBP OIT IDIQ through which ADAPT will be issued?
+- Has the solicitation been released (est. Jan 19, 2026)? If so, what is the proposal due date?
+- Does Changeis have any prior TECS or PSPD system exposure through teaming or subcontracting?
+- What is Changeis's GCP / MAGE environment experience depth?
+- Is there an existing relationship with Gary Orr or the ITCD contracting office?
+
+DATA SOURCES:
+- /home/user/workspace/cron_tracking/apfs_monitor/apfs_opportunities_latest.json (F2026072662 full record)
+- https://apfs-cloud.dhs.gov/record/72662/public-print/ (APFS public record)
+- https://changeis-bd-rag-production.up.railway.app/match (Changeis RAG Engine — live API call)
+- https://www.highergov.com/contract-forecast/ai-development-advanced-program-transformation-1133873/ (HigherGov forecast)
+- https://changeis.com/news/changeis-inc-awarded-20m-dhs-cbp-human-capital-program-support-hcps-contract/ (Changeis CBP HCPS news)
+- https://www.govconwire.com/articles/cbp-proposals-traveler-processing-and-vetting-software-2-contract (CBP TPVS 2.0)
+- https://orangeslices.ai/protest-filed-department-of-homeland-security-united-states-customs-and-border-protection/ (IT-Strat $600M CBP BPA)
+- https://fedscoop.com/dhs-cbp-contract-biometric-facial-recognition-ai/ (CBP Clearview AI)
+- https://www.linkedin.com/pulse/artificial-intelligence-ai-harness-key-insights-us-cbp-bhagowalia (CBP AI COI)
+
+NEXT STEPS:
+- Verify IDIQ vehicle access (most critical — cannot bid without vehicle)
+- Contact Gary Orr (317-614-4573) for capabilities briefing within one week
+- Check SAM.gov for actual solicitation release and proposal due date
+- Identify teaming partners with TECS/PSPD experience
+- Draft 2-page capability brief leading with VM2 AI system as proof point
+- Assess FFP pricing risk model for 5-year AI development work</div>
+  </div>
+
+  <!-- Hidden JSON block -->
+  <script type="application/json" id="vm2-context-data">{
+  "task_name": "Deep Dive: CBP ADAPT AI F2026072662",
+  "task_date": "2026-04-17",
+  "deliverable_file": "deep-dive-cbp-adapt-72662-2026-04-17.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-adapt-72662-2026-04-17.html",
+  "version": 1,
+  "prior_versions": [],
+  "created_date": "2026-04-17",
+  "revised_date": null,
+  "related_deliverables": [],
+  "original_instructions": "Execute an APFS opportunity deep-dive analysis for Changeis Inc. APFS F2026072662 — AI Development & Advanced Program Transformation (ADAPT), CBP/OIT, $20M-$50M, NAICS 541512, contact Gary Orr.",
+  "approach": "Read APFS JSON for full opportunity record, called RAG Engine API, researched CBP OIT AI contracts and PSPD context via web search, assessed Changeis capability matrix against three ADAPT pillars, produced Go/No-Go with action plan.",
+  "key_findings": [
+    "ADAPT is a green-field SB set-aside — no incumbent, open competition, $20M-$50M FFP IDIQ task order, 5 years",
+    "Three pillars: AI-driven software dev (LLMs, DevOps, test automation), Program Support (TECS/PMR/audit), Cloud R&A",
+    "VM2 AI system is a live production proof point directly aligned to ADAPT Pillar 2.1 requirements",
+    "Changeis has active CBP relationship via $20M HCPS contract but PSPD/OIT/TECS-specific experience is a gap",
+    "Recommendation: CONDITIONAL GO — pursue pending IDIQ vehicle verification and Gary Orr engagement",
+    "Most critical near-term action: verify IDIQ vehicle access before investing proposal resources"
+  ],
+  "dead_ends": [
+    "RAG Engine fetch_url call failed — resolved via curl POST with correct query field format",
+    "USAspending.gov direct search blocked by robots.txt — found CBP context via web search",
+    "APFS JSON file too large to read directly — extracted via Python grep by APFS number"
+  ],
+  "assumptions": [
+    "Solicitation release of Jan 19, 2026 was estimated — actual status requires SAM.gov verification",
+    "Changeis SB eligible under NAICS 541512 $34M size standard",
+    "RAG live API score 0.609 for top match vs APFS-recorded 0.6629 — minor discrepancy from query formulation"
+  ],
+  "open_questions": [
+    "Is Changeis on the specific CBP OIT IDIQ vehicle for this task order?",
+    "Has the solicitation been released? What is the proposal due date?",
+    "Does Changeis have prior TECS or PSPD exposure through teaming or subcontracting?",
+    "What is Changeis GCP/MAGE environment experience depth?",
+    "Is there an existing relationship with Gary Orr or ITCD contracting office?"
+  ],
+  "data_sources": [
+    "APFS JSON: /home/user/workspace/cron_tracking/apfs_monitor/apfs_opportunities_latest.json (F2026072662)",
+    "APFS public record: https://apfs-cloud.dhs.gov/record/72662/public-print/",
+    "Changeis RAG Engine API: https://changeis-bd-rag-production.up.railway.app/match",
+    "HigherGov: https://www.highergov.com/contract-forecast/ai-development-advanced-program-transformation-1133873/",
+    "Changeis HCPS award: https://changeis.com/news/changeis-inc-awarded-20m-dhs-cbp-human-capital-program-support-hcps-contract/",
+    "CBP TPVS 2.0: https://www.govconwire.com/articles/cbp-proposals-traveler-processing-and-vetting-software-2-contract",
+    "IT-Strat CBP BPA: https://orangeslices.ai/protest-filed-department-of-homeland-security-united-states-customs-and-border-protection/",
+    "CBP AI COI: https://www.linkedin.com/pulse/artificial-intelligence-ai-harness-key-insights-us-cbp-bhagowalia"
+  ],
+  "next_steps": [
+    "Verify IDIQ vehicle access — most critical blocker",
+    "Contact Gary Orr within one week for capabilities briefing",
+    "Check SAM.gov for solicitation release and proposal due date",
+    "Identify teaming partners with TECS/PSPD experience",
+    "Draft 2-page capability brief with VM2 as lead AI proof point",
+    "Build FFP pricing risk model for 5-year AI development"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.38",
+    "cost_ceiling": "$0.65",
+    "notes": "Moderate research depth with APFS JSON extraction, live RAG API call, 3 web search rounds, and full HTML deliverable generation"
+  }
+}</script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span>📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span>✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span>☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · CBP ADAPT AI Deep Dive (F2026072662) · April 17, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up prompt
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-adapt-72662-2026-04-17.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the CBP ADAPT AI Deep Dive (F2026072662).
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Is Changeis on the specific CBP OIT IDIQ vehicle for this task order?
+- Has the solicitation been released? What is the proposal due date?
+- Does Changeis have prior TECS or PSPD exposure through teaming?
+
+Suggested next steps:
+- Verify IDIQ vehicle access
+- Contact Gary Orr for capabilities briefing
+- Draft 2-page capability brief with VM2 as lead AI proof point
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into Perplexity Computer');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: CBP ADAPT AI Deep Dive F2026072662');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: CBP ADAPT AI Deep Dive F2026072662');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
