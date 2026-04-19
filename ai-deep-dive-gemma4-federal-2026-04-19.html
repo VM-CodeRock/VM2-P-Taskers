@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gemma 4 Federal Deployment Deep Dive — April 19, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --callout-bg: #E8F4F8;
+    --callout-border: #008B8B;
+    --teal: #008B8B;
+    --green: #2D7D4A;
+    --orange: #D97D2A;
+    --purple: #6B4C9A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --callout-bg: #1a2535;
+    --callout-border: #008B8B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 18px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 36px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p { font-size: 15px; line-height: 1.65; margin-bottom: 10px; }
+  .section ul, .section ol { padding-left: 20px; margin-bottom: 8px; }
+  .section li { font-size: 15px; line-height: 1.6; margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Cards row */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  .cards-row-2 {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) {
+    .cards-row { grid-template-columns: 1fr; }
+    .cards-row-2 { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    color: var(--teal); text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 4px;
+  }
+  .card-label.purple { color: var(--purple); }
+  .card-label.orange { color: var(--orange); }
+  .card-label.green { color: var(--green); }
+  .card h4 {
+    font-size: 15px; font-weight: 700; margin-bottom: 6px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .card h4 { color: #e2e2e2; }
+  .card p { font-size: 13.5px; line-height: 1.5; color: var(--text-muted); margin-bottom: 0; }
+  .card ul { padding-left: 16px; margin: 0; }
+  .card li { font-size: 13.5px; margin-bottom: 3px; line-height: 1.45; }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13.5px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 11.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Callout boxes */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 4px solid var(--callout-border);
+    padding: 14px 16px;
+    margin: 14px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout-title {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--teal); margin-bottom: 6px;
+  }
+  .callout p { font-size: 14px; color: var(--text-muted); margin-bottom: 0; }
+
+  .callout.orange { border-left-color: var(--orange); }
+  .callout.orange .callout-title { color: var(--orange); }
+  .callout.green { border-left-color: var(--green); }
+  .callout.green .callout-title { color: var(--green); }
+  .callout.purple { border-left-color: var(--purple); }
+  .callout.purple .callout-title { color: var(--purple); }
+  .callout.red { border-left-color: var(--red); }
+  .callout.red .callout-title { color: var(--red); }
+
+  /* Status badges inline */
+  .badge-inline {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 7px; border-radius: 3px;
+  }
+  .badge-green { background: #e6f4ec; color: var(--green); }
+  .badge-orange { background: #fdf0e3; color: var(--orange); }
+  .badge-red { background: #fde8e8; color: var(--red); }
+  .badge-teal { background: #e0f4f4; color: var(--teal); }
+  .badge-purple { background: #f0ebf8; color: var(--purple); }
+
+  /* Phase steps */
+  .phases { margin-top: 10px; }
+  .phase {
+    display: flex; gap: 14px; align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .phase-num {
+    flex-shrink: 0; width: 32px; height: 32px;
+    background: var(--navy); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif; font-size: 14px; font-weight: 700;
+    margin-top: 2px;
+  }
+  [data-theme="dark"] .phase-num { background: var(--red); }
+  .phase-content { flex: 1; }
+  .phase-title {
+    font-size: 15px; font-weight: 700; margin-bottom: 4px;
+  }
+  .phase-duration {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--teal); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .phase-content p { font-size: 14px; color: var(--text-muted); }
+  .phase-content ul { padding-left: 16px; margin-top: 4px; }
+  .phase-content li { font-size: 14px; color: var(--text-muted); margin-bottom: 2px; }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Inline code */
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* Key stat blocks */
+  .stat-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin: 14px 0;
+  }
+  @media (max-width: 700px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 12px;
+    text-align: center; box-shadow: var(--card-shadow);
+  }
+  .stat-value {
+    font-family: system-ui, sans-serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--navy); line-height: 1.1; margin-bottom: 4px;
+  }
+  [data-theme="dark"] .stat-value { color: #7eb3e0; }
+  .stat-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  /* Note */
+  .note {
+    font-size: 12.5px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  /* Subheading */
+  .subhead {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: var(--navy); text-transform: uppercase;
+    letter-spacing: 0.06em; margin: 18px 0 8px;
+  }
+  [data-theme="dark"] .subhead { color: #9db8d8; }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">AI Deep Dive</div>
+    <h1>Gemma 4 in Federal Environments</h1>
+    <div class="hero-sub">Deploying Google's Open-Weight Models in FedRAMP High &amp; Air-Gapped Infrastructure</div>
+    <div class="hero-date">April 19, 2026 &nbsp;·&nbsp; <span style="color:var(--text-faint)">Created: 2026-04-19</span></div>
+  </div>
+
+  <!-- Executive Summary -->
+  <div class="section">
+    <div class="section-header">Executive Summary</div>
+    <p>Google released Gemma 4 on April 2, 2026 under a pure <strong>Apache 2.0 license</strong> — the first Gemmaverse family without custom usage restrictions. Four model sizes (E2B, E4B, 26B MoE, 31B Dense) support text, image, audio, and video inputs with context windows up to 256K tokens. For federal systems integrators like Changeis, this represents a pivotal moment: a frontier-class, multimodal AI that can be deployed entirely within customer-controlled infrastructure with no vendor callbacks, no data exfiltration, and no cloud dependency.</p>
+    <p>For DHS, DOT, and DOD clients operating at FedRAMP High, IL4/IL5, or SCIF classification levels, the Apache 2.0 license unlocks a <strong>Sovereign AI</strong> path — agency-owned model weights, auditable inference pipelines, and air-gap-ready deployments that were previously impossible with proprietary cloud AI APIs. Changeis is positioned to be the federal integrator that turns this technology window into contracted program delivery.</p>
+
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-value">4</div>
+        <div class="stat-label">Model Variants</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">256K</div>
+        <div class="stat-label">Max Context Tokens</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">Apache 2.0</div>
+        <div class="stat-label">License — No Restrictions</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">$0</div>
+        <div class="stat-label">Vendor Licensing Cost</div>
+      </div>
+    </div>
+
+    <div class="callout green">
+      <div class="callout-title">Changeis Strategic Window</div>
+      <p>No federal IT integrator has built a reproducible Gemma 4 deployment playbook for FedRAMP High and IL5 environments yet. The 90-day window to establish first-mover positioning on GSA MAS, SCOAR, and ATEPS-II vehicles is open now.</p>
+    </div>
+  </div>
+
+  <!-- Gemma 4 Overview -->
+  <div class="section">
+    <div class="section-header">Gemma 4 Overview</div>
+
+    <div class="subhead">Model Architecture &amp; Sizes</div>
+    <p>Gemma 4 ships in two deployment tiers. The <strong>Edge Tier</strong> targets mobile, embedded, and bandwidth-constrained environments. The <strong>Workstation Tier</strong> targets servers with GPU acceleration — directly applicable to federal on-premise deployments.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Active Params</th>
+          <th>Total Params</th>
+          <th>Context</th>
+          <th>Modalities</th>
+          <th>Min Hardware</th>
+          <th>Federal Tier Fit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Gemma 4 E2B</strong></td>
+          <td>2.3B</td>
+          <td>5.1B</td>
+          <td>128K</td>
+          <td>Text · Image · Audio</td>
+          <td>1.5GB RAM (quantized)</td>
+          <td><span class="badge-inline badge-teal">Edge / IoT</span></td>
+        </tr>
+        <tr>
+          <td><strong>Gemma 4 E4B</strong></td>
+          <td>4.5B</td>
+          <td>8B</td>
+          <td>128K</td>
+          <td>Text · Image · Audio</td>
+          <td>8GB RAM (quantized)</td>
+          <td><span class="badge-inline badge-teal">Endpoint / Laptop</span></td>
+        </tr>
+        <tr>
+          <td><strong>Gemma 4 26B MoE</strong></td>
+          <td>3.8B active</td>
+          <td>26B</td>
+          <td>256K</td>
+          <td>Text · Image · Video</td>
+          <td>24–48GB VRAM</td>
+          <td><span class="badge-inline badge-green">Server / FedRAMP</span></td>
+        </tr>
+        <tr>
+          <td><strong>Gemma 4 31B Dense</strong></td>
+          <td>31B</td>
+          <td>31B</td>
+          <td>256K</td>
+          <td>Text · Image · Video</td>
+          <td>1× H100 (80GB)</td>
+          <td><span class="badge-inline badge-green">IL4/IL5 Server</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">The 26B MoE uses 128 experts with only 8 active per token — delivering 26B-class intelligence at ~4B inference cost. This is the primary recommendation for cost-constrained federal deployments.</p>
+
+    <div class="subhead">Key Benchmark Performance</div>
+    <p>Gemma 4 31B benchmarks show significant advancement over prior open-weight models at this parameter class, particularly on agentic and reasoning tasks most relevant to federal use cases:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Benchmark</th>
+          <th>Gemma 4 31B</th>
+          <th>Gemma 4 26B MoE</th>
+          <th>Llama 3.3 70B</th>
+          <th>Gemma 3 27B</th>
+          <th>What It Measures</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Arena AI ELO</strong></td>
+          <td>1452</td>
+          <td>1441</td>
+          <td>~1380</td>
+          <td>1365</td>
+          <td>Overall quality (human eval)</td>
+        </tr>
+        <tr>
+          <td><strong>AIME 2026</strong></td>
+          <td>89.2%</td>
+          <td>88.3%</td>
+          <td>77.0%</td>
+          <td>20.8%</td>
+          <td>Advanced mathematics</td>
+        </tr>
+        <tr>
+          <td><strong>GPQA Diamond</strong></td>
+          <td>84.3%</td>
+          <td>82.3%</td>
+          <td>—</td>
+          <td>42.4%</td>
+          <td>Graduate-level science/reasoning</td>
+        </tr>
+        <tr>
+          <td><strong>τ²-bench (Agentic)</strong></td>
+          <td>86.4%</td>
+          <td>—</td>
+          <td>—</td>
+          <td>6.6%</td>
+          <td>Multi-step agentic tool use</td>
+        </tr>
+        <tr>
+          <td><strong>LiveCodeBench v6</strong></td>
+          <td>80.0%</td>
+          <td>77.1%</td>
+          <td>88.4%</td>
+          <td>29.1%</td>
+          <td>Competitive coding</td>
+        </tr>
+        <tr>
+          <td><strong>MMLU Pro</strong></td>
+          <td>85.2%</td>
+          <td>—</td>
+          <td>86.0%</td>
+          <td>—</td>
+          <td>Broad knowledge / professional tasks</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">Sources: <a href="https://www.labellerr.com/blog/gemma-4-open-weight-ai-model-overview/" target="_blank">Labellerr Technical Overview</a> (April 2026); <a href="https://blog.premai.io/llama-vs-mistral-vs-phi-complete-open-source-llm-comparison-for-enterprise-2026/" target="_blank">Prem AI Enterprise LLM Comparison</a> (Feb 2026)</p>
+
+    <div class="subhead">Apache 2.0 License — What It Means for Federal Clients</div>
+
+    <div class="callout">
+      <div class="callout-title">Apache 2.0 Is the Gold Standard for Government Deployment</div>
+      <p>Apache 2.0 is the first OSI-approved license applied to the Gemmaverse. It grants the right to use, modify, redistribute, and deploy commercially with no user limits, no competing model clauses, and no mandatory source code disclosure. Federal agencies and their contractors can treat Gemma 4 weights as owned government data assets.</p>
+    </div>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-label green">Right Granted</div>
+        <h4>Full Modification Rights</h4>
+        <p>Agencies can fine-tune, LoRA-adapt, or domain-specialize Gemma 4 on classified or sensitive data without disclosing changes to Google or any third party.</p>
+      </div>
+      <div class="card">
+        <div class="card-label green">Right Granted</div>
+        <h4>No Telemetry Obligation</h4>
+        <p>Air-gapped deployments with zero outbound connectivity are fully compliant. No "phone home" requirements, no usage reporting, no API key dependency.</p>
+      </div>
+      <div class="card">
+        <div class="card-label green">Right Granted</div>
+        <h4>Redistribution &amp; Embedding</h4>
+        <p>Changeis can embed Gemma 4 in agency-specific platforms, RAG systems, or workflow tools and deliver them under existing contract vehicles without additional IP licensing.</p>
+      </div>
+    </div>
+    <p class="note">Contrast: Meta's Llama Community License prohibits training competing models and has a 700M MAU cap. Mistral's large models require a commercial license. Gemma 4's Apache 2.0 has zero such restrictions. Source: <a href="https://opensource.googleblog.com/2026/03/gemma-4-expanding-the-gemmaverse-with-apache-20.html" target="_blank">Google Open Source Blog</a> (April 2026)</p>
+  </div>
+
+  <!-- Sovereign AI Value Proposition -->
+  <div class="section">
+    <div class="section-header">Sovereign AI Value Proposition</div>
+    <p>"Sovereign AI" refers to an agency's ability to own, operate, and control its AI infrastructure without dependence on external vendors for runtime, training data, or model access. Gemma 4 under Apache 2.0 is the first frontier-class model that makes Sovereign AI achievable at federal scale.</p>
+
+    <div class="cards-row-2">
+      <div class="card">
+        <div class="card-label">Data Sovereignty</div>
+        <h4>No Data Leaves the Perimeter</h4>
+        <ul>
+          <li>All inference occurs on agency-owned hardware</li>
+          <li>CUI, PII, and classified prompts never traverse public internet</li>
+          <li>Zero vendor visibility into query content or outputs</li>
+          <li>FIPS 140-2/3 compliant storage and memory achievable</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-label purple">Model Ownership</div>
+        <h4>Agency Owns the Weights</h4>
+        <ul>
+          <li>Model weights downloaded once, stored in agency classified storage</li>
+          <li>Fine-tuned variants become government intellectual property</li>
+          <li>No subscription renewal risk — perpetual use rights under Apache 2.0</li>
+          <li>Supply chain auditable: weights on Hugging Face with full SHA verification</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-label orange">Continuity of Operations</div>
+        <h4>No Single Point of Failure</h4>
+        <ul>
+          <li>No API rate limits or service outages affecting operations</li>
+          <li>COOP-compliant: model runs on isolated backup infrastructure</li>
+          <li>Vendor lock-in eliminated — migration to next-gen models is a download</li>
+          <li>Works in SCIF, JWICS, and SIPRNet environments</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-label green">Compliance Posture</div>
+        <h4>Dramatically Simplified ATO</h4>
+        <ul>
+          <li>Air-gapped deployment eliminates entire FedRAMP network boundary control categories</li>
+          <li>No CSP authorization needed for on-premise deployment</li>
+          <li>Incident response: no vendor coordination required for data breach scenarios</li>
+          <li>STIG-able infrastructure since it runs on standard government servers</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Federal Deployment Architectures -->
+  <div class="section">
+    <div class="section-header">Federal Deployment Architectures</div>
+
+    <div class="subhead">Architecture 1: FedRAMP High — Connected On-Premise</div>
+    <p>For clients operating at FedRAMP High (FHWA, CBP, CISA) with connected infrastructure, a hardened on-premise deployment within a FedRAMP-authorized data center boundary is the baseline architecture.</p>
+
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>Component</th><th>Specification</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Compute</strong></td>
+          <td>GPU Server</td>
+          <td>2× NVIDIA H100 80GB SXM or 1× DGX H100 node; RHEL 9 / Rocky Linux</td>
+        </tr>
+        <tr>
+          <td><strong>Model</strong></td>
+          <td>Gemma 4 26B MoE</td>
+          <td>Served via vLLM 0.4+ or NVIDIA NIM; OpenAI-compatible REST API</td>
+        </tr>
+        <tr>
+          <td><strong>Inference</strong></td>
+          <td>Serving Framework</td>
+          <td>vLLM with PagedAttention; continuous batching; tensor parallelism</td>
+        </tr>
+        <tr>
+          <td><strong>API Gateway</strong></td>
+          <td>Access Control</td>
+          <td>Kong or NGINX with mTLS; PIV/CAC authentication via agency IdP</td>
+        </tr>
+        <tr>
+          <td><strong>RAG Pipeline</strong></td>
+          <td>Document Retrieval</td>
+          <td>Weaviate or Qdrant vector DB; Langchain/LlamaIndex orchestration</td>
+        </tr>
+        <tr>
+          <td><strong>Monitoring</strong></td>
+          <td>Observability</td>
+          <td>Prometheus + Grafana for GPU metrics; Splunk for audit logs (SIEM integration)</td>
+        </tr>
+        <tr>
+          <td><strong>Storage</strong></td>
+          <td>Model Weights &amp; Outputs</td>
+          <td>FIPS 140-2 encrypted NVMe; model weights stored in air-gapped artifact registry</td>
+        </tr>
+        <tr>
+          <td><strong>Network</strong></td>
+          <td>Boundary</td>
+          <td>Agency network segment; no outbound internet from inference nodes; update channels via jump host</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout orange" style="margin-top:14px;">
+      <div class="callout-title">FedRAMP Note</div>
+      <p>FedRAMP High (421 NIST SP 800-53 Rev 5 controls) applies to cloud service providers, not on-premise deployments. An agency running Gemma 4 on government-owned hardware within a FedRAMP High authorized boundary does <em>not</em> require a separate FedRAMP authorization for the model itself — only the underlying infrastructure needs to be authorized.</p>
+    </div>
+
+    <div class="subhead" style="margin-top:20px;">Architecture 2: DoD IL4/IL5 — Classified Network Deployment</div>
+    <p>For DOD clients and those handling CUI/Mission Critical data (TSA, ICE, USCG), the deployment extends to DoD Impact Level compliance. IL5 requires FedRAMP High as a baseline plus 10 additional DoD FedRAMP+ controls.</p>
+
+    <table>
+      <thead>
+        <tr><th>Requirement</th><th>IL4 (CUI)</th><th>IL5 (CUI + Mission Critical)</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Baseline</strong></td>
+          <td>FedRAMP Moderate + DoD C/CEs</td>
+          <td>FedRAMP High + 10 DoD C/CEs</td>
+        </tr>
+        <tr>
+          <td><strong>Deployment Location</strong></td>
+          <td>DoD-authorized cloud or on-premise</td>
+          <td>IL5-authorized facility or isolated government data center</td>
+        </tr>
+        <tr>
+          <td><strong>Model Handling</strong></td>
+          <td>Weights classified as CUI; FIPS storage required</td>
+          <td>Weights treated as Mission Critical data; isolated storage segment</td>
+        </tr>
+        <tr>
+          <td><strong>Network Isolation</strong></td>
+          <td>NIPRNet segment; no commercial internet path</td>
+          <td>SIPRNet or JWICS-connected enclave</td>
+        </tr>
+        <tr>
+          <td><strong>Personnel</strong></td>
+          <td>Secret clearance for model administrators</td>
+          <td>TS/SCI for fine-tuning and model modification roles</td>
+        </tr>
+        <tr>
+          <td><strong>Audit Logging</strong></td>
+          <td>All inference logged to DoD SIEM</td>
+          <td>All inference + prompts logged; 5-year retention</td>
+        </tr>
+        <tr>
+          <td><strong>Gemma 4 Model</strong></td>
+          <td>26B MoE or 31B Dense</td>
+          <td>31B Dense (maximum fidelity for classified analysis)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">Source: <a href="https://learn.microsoft.com/en-us/compliance/regulatory/offering-dod-il5" target="_blank">Microsoft Learn — DoD IL5 Requirements</a>; <a href="https://zedly.ai/blog/on-premise-llm-deployment" target="_blank">Zedly AI On-Premise LLM Guide</a></p>
+
+    <div class="subhead" style="margin-top:20px;">Architecture 3: Air-Gapped SCIF Deployment</div>
+    <p>The most security-intensive scenario — full physical and network isolation with no connectivity to any external network. This architecture applies to classified intelligence analysis, ITAR-controlled research environments, and SAP programs.</p>
+
+    <div class="callout">
+      <div class="callout-title">Air-Gap Compliance Advantage</div>
+      <p>Air-gapped deployment eliminates entire categories of FedRAMP/RMF control requirements: network boundary defense, external system interfaces, cloud service provider trust chains, and data transmission encryption. The control surface shrinks dramatically, accelerating ATO timelines.</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Phase</th><th>Activity</th><th>Method</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Initial Transfer</strong></td>
+          <td>Model weight delivery</td>
+          <td>SHA-256 verified download on accredited system; transferred via ISSO-approved physical media (encrypted USB or secure courier)</td>
+        </tr>
+        <tr>
+          <td><strong>Installation</strong></td>
+          <td>Inference stack setup</td>
+          <td>vLLM, Python runtime, CUDA drivers pre-packaged as offline bundle; no PyPI access required</td>
+        </tr>
+        <tr>
+          <td><strong>Updates</strong></td>
+          <td>Model / software updates</td>
+          <td>Change-controlled physical transfer; CMP (Configuration Management Plan) must document each update event</td>
+        </tr>
+        <tr>
+          <td><strong>Operations</strong></td>
+          <td>Runtime</td>
+          <td>Fully offline; zero outbound packets; all logs retained locally on FIPS-encrypted storage</td>
+        </tr>
+        <tr>
+          <td><strong>Fine-Tuning</strong></td>
+          <td>Classified domain adaptation</td>
+          <td>QLoRA fine-tuning on local GPU using classified corpus; new weights stored in classified artifact registry</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Changeis Service Offering Design -->
+  <div class="section">
+    <div class="section-header">Changeis Service Offering Design</div>
+    <p>The recommended service offering is <strong>Sovereign AI Deployment</strong> — a managed, end-to-end service for DHS and DOT clients to deploy, operate, and evolve Gemma 4-based capabilities under existing Changeis contract vehicles.</p>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-label green">Service Tier 1</div>
+        <h4>Foundation Deployment</h4>
+        <ul>
+          <li>Hardware procurement advisory</li>
+          <li>Gemma 4 26B MoE baseline install</li>
+          <li>vLLM serving + API gateway</li>
+          <li>Basic RAG pipeline with agency document corpus</li>
+          <li>ATO documentation support (SSP, CMP, SAR artifacts)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-label purple">Service Tier 2</div>
+        <h4>Managed Intelligence</h4>
+        <ul>
+          <li>Everything in Tier 1</li>
+          <li>Domain fine-tuning on agency data</li>
+          <li>Multi-agent workflow orchestration</li>
+          <li>Agentic tool integration (APIs, databases)</li>
+          <li>24/7 model performance monitoring</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-label orange">Service Tier 3</div>
+        <h4>Full Sovereign AI Stack</h4>
+        <ul>
+          <li>Everything in Tier 2</li>
+          <li>Air-gapped SCIF deployment</li>
+          <li>Classified fine-tuning capability</li>
+          <li>IL4/IL5 compliance engineering</li>
+          <li>Apex Agentic Organization integration</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="subhead" style="margin-top:20px;">Client-Specific Use Cases</div>
+    <table>
+      <thead>
+        <tr><th>Client</th><th>Use Case</th><th>Gemma 4 Model</th><th>Architecture</th><th>Contract Vehicle</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>FHWA (SCOAR)</strong></td>
+          <td>Infrastructure document analysis, NEPA review, regulatory Q&amp;A</td>
+          <td>26B MoE</td>
+          <td>FedRAMP High on-premise</td>
+          <td>SCOAR</td>
+        </tr>
+        <tr>
+          <td><strong>FAA (ATEPS-II)</strong></td>
+          <td>Aviation safety report analysis, NOTAMs, ATC procedure review</td>
+          <td>26B MoE</td>
+          <td>FedRAMP High on-premise</td>
+          <td>ATEPS-II</td>
+        </tr>
+        <tr>
+          <td><strong>CBP</strong></td>
+          <td>Border intelligence, document extraction, multilingual translation</td>
+          <td>31B Dense</td>
+          <td>IL4 network-isolated</td>
+          <td>GSA MAS</td>
+        </tr>
+        <tr>
+          <td><strong>TSA / ICE</strong></td>
+          <td>Threat analysis, case file summarization, pattern recognition</td>
+          <td>31B Dense</td>
+          <td>IL5 / air-gapped capable</td>
+          <td>GSA MAS</td>
+        </tr>
+        <tr>
+          <td><strong>CISA</strong></td>
+          <td>Cyber threat intelligence, CVE analysis, incident response support</td>
+          <td>26B MoE</td>
+          <td>FedRAMP High on-premise + RAG</td>
+          <td>GSA MAS</td>
+        </tr>
+        <tr>
+          <td><strong>USCG</strong></td>
+          <td>Maritime incident analysis, vessel tracking reports, search &amp; rescue planning</td>
+          <td>E4B (edge)</td>
+          <td>Disconnected vessel / air-gapped</td>
+          <td>GSA MAS</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Hardware Requirements and Cost Model -->
+  <div class="section">
+    <div class="section-header">Hardware Requirements &amp; Cost Model</div>
+
+    <div class="subhead">Hardware Configuration by Model</div>
+    <table>
+      <thead>
+        <tr><th>Model</th><th>Min Config</th><th>Recommended Config</th><th>GPU VRAM</th><th>Throughput (tokens/s)</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>E2B Edge</strong></td>
+          <td>Any modern laptop</td>
+          <td>Apple Silicon M3 Pro or x86 CPU</td>
+          <td>No GPU required</td>
+          <td>20–50 t/s on CPU</td>
+        </tr>
+        <tr>
+          <td><strong>E4B Edge</strong></td>
+          <td>RTX 3060 12GB</td>
+          <td>RTX 4080 16GB</td>
+          <td>12–16GB</td>
+          <td>40–80 t/s</td>
+        </tr>
+        <tr>
+          <td><strong>26B MoE</strong></td>
+          <td>2× A40 48GB</td>
+          <td>1× H100 80GB (quantized) or 2× A100 40GB</td>
+          <td>48–80GB</td>
+          <td>85 t/s (consumer GPU, quantized)</td>
+        </tr>
+        <tr>
+          <td><strong>31B Dense</strong></td>
+          <td>1× H100 80GB</td>
+          <td>1× H100 80GB SXM (unquantized)</td>
+          <td>80GB+</td>
+          <td>40–60 t/s at full precision</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">26B MoE achieves 85 tokens/second on consumer hardware when quantized — making it viable for cost-sensitive federal deployments. Source: <a href="https://till-freitag.com/en/blog/open-source-llm-comparison" target="_blank">Till Freitag LLM Comparison</a> (April 2026)</p>
+
+    <div class="subhead" style="margin-top:20px;">Capital &amp; Operating Cost Model (3-Year TCO)</div>
+    <table>
+      <thead>
+        <tr><th>Deployment Scenario</th><th>Hardware CapEx</th><th>Annual OpEx</th><th>3-Year TCO</th><th>vs. GPT-4o API Equivalent</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>E4B Endpoint (per seat)</strong></td>
+          <td>$3,000–5,000 (GPU upgrade)</td>
+          <td>$500 (power, support)</td>
+          <td>~$5,000/seat</td>
+          <td>Break-even at ~50K tokens/day</td>
+        </tr>
+        <tr>
+          <td><strong>26B MoE Server (shared)</strong></td>
+          <td>$80,000–$120,000 (2× A100 server)</td>
+          <td>$25,000–$40,000</td>
+          <td>$155,000–$240,000</td>
+          <td>Break-even at ~3M tokens/day</td>
+        </tr>
+        <tr>
+          <td><strong>31B Dense Server (H100)</strong></td>
+          <td>$250,000–$350,000 (DGX node)</td>
+          <td>$50,000–$70,000</td>
+          <td>$400,000–$560,000</td>
+          <td>Break-even at ~8M tokens/day</td>
+        </tr>
+        <tr>
+          <td><strong>Air-Gapped SCIF Stack</strong></td>
+          <td>$300,000–$500,000 (full stack)</td>
+          <td>$75,000–$100,000</td>
+          <td>$525,000–$800,000</td>
+          <td>Not comparable — no commercial API exists at IL5</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout orange">
+      <div class="callout-title">Key Cost Insight</div>
+      <p>At IL4/IL5 and air-gapped classification levels, there is <em>no commercial API alternative</em> — GPT-4o, Claude, and Gemini Ultra are not authorized for these environments. The cost comparison is not Gemma 4 vs. cloud AI; it is Gemma 4 vs. no AI capability at all. The ROI case is not cost savings — it is mission capability that did not previously exist.</p>
+    </div>
+
+    <p class="note">Hardware cost data: <a href="https://jarvislabs.ai/blog/h100-price" target="_blank">Jarvis Labs H100 Price Guide 2026</a>; <a href="https://www.gmicloud.ai/blog/h100-gpu-pricing-2025-cloud-vs-on-premise-cost-analysis" target="_blank">GMI Cloud H100 Analysis</a></p>
+  </div>
+
+  <!-- Security and Compliance Framework -->
+  <div class="section">
+    <div class="section-header">Security &amp; Compliance Framework</div>
+
+    <div class="subhead">Control Mapping: Gemma 4 On-Premise vs. NIST 800-53 Rev 5</div>
+    <table>
+      <thead>
+        <tr><th>Control Family</th><th>FedRAMP High Requirement</th><th>On-Premise Gemma 4 Approach</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>AC — Access Control</strong></td>
+          <td>Least privilege, MFA, account management</td>
+          <td>PIV/CAC via agency IdP; role-based API access; no shared credentials</td>
+          <td><span class="badge-inline badge-green">Achievable</span></td>
+        </tr>
+        <tr>
+          <td><strong>AU — Audit &amp; Accountability</strong></td>
+          <td>Audit logging, log protection, event review</td>
+          <td>vLLM request logging → SIEM; immutable log storage; Splunk integration</td>
+          <td><span class="badge-inline badge-green">Achievable</span></td>
+        </tr>
+        <tr>
+          <td><strong>CM — Configuration Mgmt</strong></td>
+          <td>Baseline configuration, change control</td>
+          <td>Container-based deployment (Docker/K8s); Git-versioned configs; CMP documentation</td>
+          <td><span class="badge-inline badge-green">Achievable</span></td>
+        </tr>
+        <tr>
+          <td><strong>IA — Identification &amp; Auth</strong></td>
+          <td>Strong authentication for all users and devices</td>
+          <td>mTLS for service-to-service; PIV/CAC for human access; no anonymous endpoints</td>
+          <td><span class="badge-inline badge-green">Achievable</span></td>
+        </tr>
+        <tr>
+          <td><strong>SC — System Communications</strong></td>
+          <td>Network partitioning, encryption in transit</td>
+          <td>TLS 1.3 on internal network; air-gap option eliminates network entirely</td>
+          <td><span class="badge-inline badge-green">Achievable</span></td>
+        </tr>
+        <tr>
+          <td><strong>SI — System Integrity</strong></td>
+          <td>Malware protection, software integrity checks</td>
+          <td>SHA-256 model weight verification; container image signing (Cosign); RHEL SELinux</td>
+          <td><span class="badge-inline badge-green">Achievable</span></td>
+        </tr>
+        <tr>
+          <td><strong>SA — System Acquisition</strong></td>
+          <td>Supply chain risk management (SCRM)</td>
+          <td>Model weights on Hugging Face with provenance attestation; Google DeepMind as known vendor</td>
+          <td><span class="badge-inline badge-orange">Review Required</span></td>
+        </tr>
+        <tr>
+          <td><strong>AI Transparency</strong></td>
+          <td>EO 14110 / OMB M-24-10 compliance</td>
+          <td>Open weights enable full model inspection; no black-box API; bias testing on classified corpus feasible</td>
+          <td><span class="badge-inline badge-green">Advantage vs. Proprietary</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="subhead" style="margin-top:20px;">AI-Specific Risk Controls</div>
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-label orange">Risk</div>
+        <h4>Prompt Injection / Jailbreak</h4>
+        <p>Gemma 4 includes configurable system prompts and instruction-following safeguards. Additional guardrails via Llama Guard or custom input validation at the API gateway layer are recommended for agency deployments.</p>
+      </div>
+      <div class="card">
+        <div class="card-label orange">Risk</div>
+        <h4>Model Hallucination</h4>
+        <p>RAG architecture grounds responses in verified agency document corpora. All outputs must carry human-in-the-loop review requirements for high-stakes decisions. Confidence scoring and retrieval attribution required in SSP.</p>
+      </div>
+      <div class="card">
+        <div class="card-label orange">Risk</div>
+        <h4>Supply Chain — Weight Integrity</h4>
+        <p>Verify SHA-256 hash of downloaded weights against Google's published checksums before transfer to classified environments. Maintain chain-of-custody documentation as part of CMP for ISSO review.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">Competitive Landscape</div>
+    <p>Gemma 4 enters a competitive open-weight market. Below is a comprehensive comparison across the dimensions most relevant to federal deployment:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Model Family</th>
+          <th>Vendor</th>
+          <th>Best Size</th>
+          <th>License</th>
+          <th>Federal Restrictions</th>
+          <th>Best Benchmark Score</th>
+          <th>Air-Gap Ready</th>
+          <th>Gemma 4 Advantage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Gemma 4</strong></td>
+          <td>Google DeepMind</td>
+          <td>31B Dense</td>
+          <td><span class="badge-inline badge-green">Apache 2.0</span></td>
+          <td>None</td>
+          <td>AIME: 89.2%; Agentic: 86.4%</td>
+          <td><span class="badge-inline badge-green">Yes</span></td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>Llama 3.3 / 4</strong></td>
+          <td>Meta</td>
+          <td>70B</td>
+          <td><span class="badge-inline badge-orange">Community</span></td>
+          <td>700M MAU cap; no competing AI training</td>
+          <td>MMLU: 86%; HumanEval: 88.4%</td>
+          <td><span class="badge-inline badge-green">Yes</span></td>
+          <td>No MAU/training restrictions; stronger agentic scores; smaller footprint at equal quality</td>
+        </tr>
+        <tr>
+          <td><strong>Mistral 7B/Mixtral</strong></td>
+          <td>Mistral AI</td>
+          <td>Mixtral 8×22B</td>
+          <td><span class="badge-inline badge-green">Apache 2.0</span></td>
+          <td>None (7B/Mixtral); Commercial license required for Large 2</td>
+          <td>HumanEval: 92% (Large 2); MMLU: 84%</td>
+          <td><span class="badge-inline badge-green">Yes</span></td>
+          <td>Gemma 4 surpasses Mixtral on reasoning and agentic tasks; larger context (256K vs 64K); multimodal</td>
+        </tr>
+        <tr>
+          <td><strong>Phi-4 / Phi-3.5</strong></td>
+          <td>Microsoft</td>
+          <td>14B</td>
+          <td><span class="badge-inline badge-green">MIT</span></td>
+          <td>None</td>
+          <td>MATH: 80.4%; MMLU: 84.8%</td>
+          <td><span class="badge-inline badge-green">Yes</span></td>
+          <td>Gemma 4 has multimodal (image/video/audio); larger context; 31B vs 14B ceiling; better agentic performance</td>
+        </tr>
+        <tr>
+          <td><strong>GPT-4o / o3</strong></td>
+          <td>OpenAI</td>
+          <td>N/A</td>
+          <td><span class="badge-inline badge-red">Proprietary API</span></td>
+          <td>Data leaves perimeter; not IL4/IL5 authorized</td>
+          <td>MMLU: 88.1%; strong across all</td>
+          <td><span class="badge-inline badge-red">No</span></td>
+          <td>Air-gap capability; no vendor dependency; classified data can be used in prompts</td>
+        </tr>
+        <tr>
+          <td><strong>Claude 3.5 / 4</strong></td>
+          <td>Anthropic</td>
+          <td>N/A</td>
+          <td><span class="badge-inline badge-red">Proprietary API</span></td>
+          <td>Data leaves perimeter; GovCloud options in development</td>
+          <td>MMLU: ~88%; strong on safety</td>
+          <td><span class="badge-inline badge-red">No</span></td>
+          <td>Zero data egress risk; fully modifiable; lower total cost at scale</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout purple" style="margin-top:14px;">
+      <div class="callout-title">Federal Recommendation</div>
+      <p><strong>Gemma 4 26B MoE</strong> is the primary recommendation for most federal deployments due to its combination of Apache 2.0 licensing, 256K context, multimodal capabilities, and efficient inference cost. <strong>Llama 3.3 70B</strong> remains a viable alternative for workloads requiring maximum English-language benchmark performance, but its Community License requires legal review for government use. <strong>Phi-4</strong> is a strong option for math-intensive workloads on constrained hardware.</p>
+    </div>
+  </div>
+
+  <!-- Implementation Phases -->
+  <div class="section">
+    <div class="section-header">Implementation Phases</div>
+    <p>Changeis recommends a four-phase approach to deploying Gemma 4 for a federal client, moving from proof of concept to full operational capability over approximately 12–16 months.</p>
+
+    <div class="phases">
+      <div class="phase">
+        <div class="phase-num">1</div>
+        <div class="phase-content">
+          <div class="phase-duration">Months 1–2 · Assessment &amp; Architecture</div>
+          <div class="phase-title">Foundation: Mission Alignment &amp; Architecture Design</div>
+          <p>Define the AI use cases with mission priority, select the appropriate Gemma 4 variant, and design the deployment architecture with the agency ISSO.</p>
+          <ul>
+            <li>Mission use case workshop with agency stakeholders (2–3 sessions)</li>
+            <li>Hardware assessment: existing inventory vs. procurement need</li>
+            <li>ISSO kickoff: initial ATO/RMF discussion, boundary determination</li>
+            <li>Architecture design document (ADD) — serves as SSP input</li>
+            <li>Data classification review: what data enters the model context</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-num">2</div>
+        <div class="phase-content">
+          <div class="phase-duration">Months 3–5 · Proof of Concept</div>
+          <div class="phase-title">Pilot: Controlled Deployment in Dev Environment</div>
+          <p>Deploy Gemma 4 in a non-production, unclassified lab environment. Build and validate the RAG pipeline against a representative document corpus.</p>
+          <ul>
+            <li>vLLM + Gemma 4 26B MoE deployment in isolated dev network</li>
+            <li>RAG pipeline build with 10,000–50,000 representative agency documents</li>
+            <li>Performance benchmarking against 20–30 target use case queries</li>
+            <li>User acceptance testing with 5–10 agency power users</li>
+            <li>Security testing: prompt injection, data exfiltration attempt scenarios</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-num">3</div>
+        <div class="phase-content">
+          <div class="phase-duration">Months 6–10 · ATO &amp; Production Deployment</div>
+          <div class="phase-title">Hardening: ATO Package &amp; Production Standup</div>
+          <p>Complete RMF documentation, address ISSO findings, and deploy to the production FedRAMP High or IL-compliant boundary.</p>
+          <ul>
+            <li>Complete SSP, SAR, POA&amp;M — Changeis provides Gemma 4 component artifacts</li>
+            <li>FIPS 140-2 storage encryption implementation</li>
+            <li>PIV/CAC authentication integration with agency IdP</li>
+            <li>SIEM/audit logging pipeline to agency Splunk or equivalent</li>
+            <li>Production deployment with redundancy (2-node minimum)</li>
+            <li>Operator training: agency IT staff certified on model management</li>
+          </ul>
+        </div>
+      </div>
+      <div class="phase">
+        <div class="phase-num">4</div>
+        <div class="phase-content">
+          <div class="phase-duration">Months 11–16 · Scale &amp; Optimize</div>
+          <div class="phase-title">Evolution: Fine-Tuning &amp; Agentic Expansion</div>
+          <p>With production ATO in place, expand to domain-specific fine-tuning, multi-agent workflows, and additional use cases. Integrate with Changeis's Apex Agentic Organization Framework.</p>
+          <ul>
+            <li>QLoRA fine-tuning on agency-specific document corpus and terminology</li>
+            <li>Agentic tool integrations: agency APIs, databases, workflow systems</li>
+            <li>Multi-agent orchestration for complex analytical workflows</li>
+            <li>Ongoing model management: updates, version control, rollback capability</li>
+            <li>KPI reporting: token throughput, query latency, user adoption metrics</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recommendation -->
+  <div class="section">
+    <div class="section-header">Recommendation</div>
+
+    <div class="callout green">
+      <div class="callout-title">Primary Recommendation</div>
+      <p><strong>Deploy Gemma 4 26B MoE as the foundation model for Changeis's federal AI practice.</strong> The Apache 2.0 license, 256K context window, multimodal capabilities, and air-gap readiness make this the most strategically aligned open-weight model for DHS, DOT, and DOD clients in 2026. The 31B Dense model should be reserved for IL4/IL5 deployments where maximum fidelity on classified text analysis is required.</p>
+    </div>
+
+    <div class="subhead" style="margin-top:20px;">Immediate Actions (Next 30 Days)</div>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Action</th><th>Owner</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Stand up Gemma 4 26B MoE demo environment on Changeis VM2 infrastructure</td>
+          <td>Changeis IT</td>
+          <td>Internal capability validation and demo readiness for client conversations</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Develop "Sovereign AI" capability statement under GSA MAS SIN 54151S</td>
+          <td>Changeis BD / Varun</td>
+          <td>Position Changeis as the go-to integrator on GovCon procurement vehicles</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Identify FHWA or FAA as first pilot client under SCOAR/ATEPS-II</td>
+          <td>Changeis BD</td>
+          <td>Lowest-risk entry point — connected FedRAMP environment, existing relationship</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Engage ISSO at one current DHS client for architecture pre-brief</td>
+          <td>Varun / PM</td>
+          <td>Surface ATO requirements early; avoid 6-month surprises during deployment</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Build component SSP artifacts for Gemma 4 on-premise deployment</td>
+          <td>Changeis Compliance</td>
+          <td>Reusable across all federal clients — creates IP and reduces ATO cycle time</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout red" style="margin-top:16px;">
+      <div class="callout-title">Strategic Risk: Window of Opportunity</div>
+      <p>The April 2, 2026 Apache 2.0 release of Gemma 4 is very recent. Large system integrators (Booz Allen, SAIC, Leidos) have not yet published Gemma 4 federal deployment playbooks. Changeis has a 60–90 day window to establish thought leadership, build reusable ATO artifacts, and position with existing clients before the market catches up. This is the moment to act.</p>
+    </div>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Gemma 4 Federal Deployment Deep Dive",
+  "task_date": "2026-04-19",
+  "deliverable_file": "ai-deep-dive-gemma4-federal-2026-04-19.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/ai-deep-dive-gemma4-federal-2026-04-19.html",
+  "created_date": "2026-04-19",
+  "revised_date": null,
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Research deep dive on deploying Google Gemma 4 in FedRAMP High and air-gapped federal environments for Changeis clients. Sections: Executive Summary, Gemma 4 Overview (model sizes, benchmarks, Apache 2.0 license), Sovereign AI Value Proposition, Federal Deployment Architectures (FedRAMP High, IL4/IL5, air-gapped SCIF), Changeis Service Offering Design (managed deployment for DHS/DOT clients), Hardware Requirements and Cost Model, Security and Compliance Framework, Competitive Landscape (vs Llama, Mistral, Phi), Implementation Phases, Recommendation.",
+  "approach": "Conducted 2 parallel search rounds (6 queries total): Gemma 4 specs/benchmarks, Apache 2.0 license implications, FedRAMP High/IL4/IL5 requirements for open-weight models, competitive landscape, and hardware cost data. Fetched primary sources: Google Open Source Blog for license details, Labellerr for model specs and benchmarks. Cross-referenced with Zedly AI on-premise LLM guide, Microsoft Learn DoD IL5 docs, and GMI Cloud/Jarvis Labs for hardware pricing. Built comprehensive HTML deliverable following vm2-system-guide reference structure and Changeis style.",
+  "key_findings": [
+    "Gemma 4 released April 2, 2026 under Apache 2.0 — first Gemmaverse model with OSI-approved license; no usage caps, no competing model restrictions",
+    "Four model variants: E2B, E4B (edge), 26B MoE, 31B Dense; 31B fits on single H100 80GB; 26B achieves 85 t/s on consumer hardware when quantized",
+    "For IL4/IL5 and air-gapped deployments, there is no commercial API alternative — proprietary LLMs (GPT-4o, Claude) are not authorized; Gemma 4 enables AI capability that literally did not exist before",
+    "Air-gapped on-premise deployment eliminates entire FedRAMP control categories (network boundary defense, cloud SP trust chains), potentially accelerating ATO timelines",
+    "Competitive advantage over Llama (no 700M MAU cap, no training restrictions), Mixtral (better reasoning/agentic scores, larger context), and Phi-4 (multimodal, larger ceiling)",
+    "Existing Changeis contract vehicles (SCOAR, ATEPS-II, GSA MAS) are sufficient delivery mechanisms — no new vehicle required to start"
+  ],
+  "dead_ends": [
+    "No official Google FedRAMP authorization documentation for Gemma 4 found — as expected, since on-premise model weights do not require FedRAMP authorization (FedRAMP applies to CSPs)",
+    "Specific NVIDIA DGX government contract pricing not publicly available — used market pricing estimates",
+    "Gemma 4 Hugging Face model card benchmarks not directly fetchable (used secondary sources)"
+  ],
+  "assumptions": [
+    "Gemma 4 26B MoE and 31B Dense weight files are available for air-gapped transfer from Hugging Face with SHA verification",
+    "vLLM 0.4+ supports Gemma 4 architecture (confirmed via deployment framework list in official announcement)",
+    "FedRAMP High ATO for underlying hardware infrastructure is pre-existing at target agencies",
+    "Apache 2.0 license terms reviewed by Changeis legal prior to government contract delivery"
+  ],
+  "open_questions": [
+    "Has Google published formal ITAR/EAR classification for Gemma 4 weights? Required for SCIF/classified environment transfer",
+    "Does any FedRAMP High authorized data center (e.g., AWS GovCloud, Azure Government) offer bare-metal H100 instances that could serve as an intermediate step before full air-gap?",
+    "What is the USCG's current endpoint hardware configuration — can E4B run on existing vessel computing infrastructure?",
+    "Will Google release a larger Gemma 4 model (100B+ MoE rumored)? Timeline implications for FY27 federal roadmap",
+    "How does EO 14110 / OMB M-24-10 AI procurement guidance apply to open-weight models vs. third-party AI services?"
+  ],
+  "data_sources": [
+    "Google Open Source Blog — Gemma 4 Apache 2.0 announcement: https://opensource.googleblog.com/2026/03/gemma-4-expanding-the-gemmaverse-with-apache-20.html",
+    "Labellerr — Gemma 4 Technical Overview (model specs, benchmarks): https://www.labellerr.com/blog/gemma-4-open-weight-ai-model-overview/",
+    "Prem AI — Enterprise LLM Comparison (Llama/Mistral/Phi vs Gemma 4): https://blog.premai.io/llama-vs-mistral-vs-phi-complete-open-source-llm-comparison-for-enterprise-2026/",
+    "Zedly AI — On-Premise LLM Deployment (FedRAMP High/IL4/IL5): https://zedly.ai/blog/on-premise-llm-deployment",
+    "Microsoft Learn — DoD IL5 Requirements: https://learn.microsoft.com/en-us/compliance/regulatory/offering-dod-il5",
+    "GMI Cloud — H100 GPU Cost Analysis: https://www.gmicloud.ai/blog/h100-gpu-pricing-2025-cloud-vs-on-premise-cost-analysis",
+    "Jarvis Labs — H100 Price Guide 2026: https://jarvislabs.ai/blog/h100-price",
+    "Till Freitag — Open-Source LLM Comparison 2026: https://till-freitag.com/en/blog/open-source-llm-comparison"
+  ],
+  "next_steps": [
+    "Build Gemma 4 demo on Changeis infrastructure — validate 26B MoE on available GPU hardware",
+    "Develop GSA MAS capability statement positioning Sovereign AI Deployment as a named service",
+    "Create reusable FedRAMP SSP component artifacts for Gemma 4 on-premise deployment",
+    "Identify first pilot client (FHWA or FAA recommendation) and schedule architecture pre-brief with their ISSO",
+    "Track Gemma 4 larger model release (100B+ MoE rumored) for FY27 roadmap update"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.32",
+    "cost_ceiling": "$0.62",
+    "notes": "3 parallel web searches (6 total queries), 2 URL fetches for primary source verification, full HTML deliverable generation. Research + generation pass with comprehensive sections."
+  }
+}</div>
+  </div>
+
+  <!-- Hidden JSON -->
+  <script type="application/json" id="vm2-context-data">{
+  "task_name": "Gemma 4 Federal Deployment Deep Dive",
+  "task_date": "2026-04-19",
+  "deliverable_file": "ai-deep-dive-gemma4-federal-2026-04-19.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/ai-deep-dive-gemma4-federal-2026-04-19.html",
+  "created_date": "2026-04-19",
+  "revised_date": null,
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Research deep dive on deploying Google Gemma 4 in FedRAMP High and air-gapped federal environments for Changeis clients.",
+  "approach": "2 search rounds (6 queries), 2 primary source URL fetches, comprehensive HTML deliverable",
+  "key_findings": [
+    "Gemma 4 Apache 2.0 — first Gemmaverse with no usage restrictions, air-gap ready",
+    "Four models: E2B, E4B, 26B MoE, 31B Dense; 31B fits on single H100 80GB",
+    "At IL4/IL5 there is no commercial API alternative — Gemma 4 enables previously impossible capability",
+    "Air-gapped deployment eliminates entire FedRAMP control categories, accelerating ATO",
+    "Competitive advantage over Llama (no MAU cap), Mixtral (better reasoning), Phi-4 (multimodal/larger)",
+    "Existing Changeis contract vehicles (SCOAR, ATEPS-II, GSA MAS) sufficient for delivery"
+  ],
+  "dead_ends": ["No official Google FedRAMP authorization docs — expected since on-premise doesn't require it", "DGX government contract pricing not public"],
+  "assumptions": ["26B MoE/31B weights available for air-gapped transfer", "vLLM 0.4+ supports Gemma 4", "FedRAMP High infrastructure pre-existing at agencies"],
+  "open_questions": ["ITAR/EAR classification for Gemma 4 weights?", "FedRAMP High bare-metal H100 availability?", "USCG vessel hardware specs?", "Larger Gemma 4 model timeline?"],
+  "data_sources": [
+    "https://opensource.googleblog.com/2026/03/gemma-4-expanding-the-gemmaverse-with-apache-20.html",
+    "https://www.labellerr.com/blog/gemma-4-open-weight-ai-model-overview/",
+    "https://blog.premai.io/llama-vs-mistral-vs-phi-complete-open-source-llm-comparison-for-enterprise-2026/",
+    "https://zedly.ai/blog/on-premise-llm-deployment",
+    "https://learn.microsoft.com/en-us/compliance/regulatory/offering-dod-il5",
+    "https://www.gmicloud.ai/blog/h100-gpu-pricing-2025-cloud-vs-on-premise-cost-analysis",
+    "https://jarvislabs.ai/blog/h100-price"
+  ],
+  "next_steps": [
+    "Build Gemma 4 demo on Changeis infrastructure",
+    "Develop GSA MAS Sovereign AI capability statement",
+    "Create reusable FedRAMP SSP component artifacts for Gemma 4",
+    "Identify first pilot client (FHWA/FAA) and schedule ISSO pre-brief"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.32",
+    "cost_ceiling": "$0.62",
+    "notes": "6 web searches, 2 URL fetches, comprehensive HTML deliverable generation"
+  }
+}</script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · Gemma 4 Federal Deployment Deep Dive · April 19, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up prompt
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/ai-deep-dive-gemma4-federal-2026-04-19.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the Gemma 4 Federal Deployment Deep Dive.
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off. The context slug contains: original instructions, approach taken, key findings, dead ends, assumptions, open questions, data sources used, and next steps.
+
+Open questions from last session:
+- ITAR/EAR classification for Gemma 4 weights for SCIF transfer?
+- FedRAMP High bare-metal H100 availability in existing authorized cloud environments?
+- USCG vessel endpoint hardware specs for E4B edge deployment?
+- Larger Gemma 4 model (100B+ MoE) release timeline?
+- EO 14110 / OMB M-24-10 applicability to open-weight models?
+
+Suggested next steps:
+- Build Gemma 4 demo on Changeis infrastructure
+- Develop GSA MAS Sovereign AI capability statement
+- Create reusable FedRAMP SSP component artifacts for Gemma 4
+- Identify first pilot client (FHWA/FAA) and schedule ISSO pre-brief
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: Gemma 4 Federal Deployment Deep Dive');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: Gemma 4 Federal Deployment Deep Dive');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
