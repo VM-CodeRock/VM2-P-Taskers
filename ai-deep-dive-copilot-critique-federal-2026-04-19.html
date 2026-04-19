@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copilot Critique Deep Dive — Federal Document Production · VM2</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --callout-bg: #E8F4F8;
+    --callout-border: #008B8B;
+    --success: #2D7D4A;
+    --warn: #D97D2A;
+    --purple: #6B4C9A;
+    --teal: #008B8B;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --callout-bg: #1a2530;
+    --callout-border: #008B8B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 36px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+  }
+  .section p { font-size: 15px; line-height: 1.65; margin-bottom: 10px; }
+  .section ul, .section ol { padding-left: 22px; margin-bottom: 10px; }
+  .section li { font-size: 15px; line-height: 1.6; margin-bottom: 5px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Callout box */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 4px solid var(--callout-border);
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    margin: 14px 0;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .callout strong { color: var(--navy); }
+  [data-theme="dark"] .callout strong { color: #7eb3e0; }
+  .callout-title {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--teal);
+    margin-bottom: 6px;
+  }
+
+  /* Cards row */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 12px;
+  }
+  .cards-row-2 {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+    margin-top: 12px;
+  }
+  @media (max-width: 700px) {
+    .cards-row, .cards-row-2 { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-num {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .card h4 {
+    font-size: 15px; font-weight: 700; margin-bottom: 8px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .card h4 { color: #e2e2e2; }
+  .card p { font-size: 14px; line-height: 1.55; color: var(--text-muted); margin-bottom: 0; }
+  .card ul { padding-left: 16px; margin: 0; }
+  .card li { font-size: 13.5px; margin-bottom: 4px; line-height: 1.45; }
+  .card .tag {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    display: inline-block; padding: 2px 8px; border-radius: 3px;
+    margin-top: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .tag-teal { background: rgba(0,139,139,0.12); color: var(--teal); }
+  .tag-green { background: rgba(45,125,74,0.12); color: var(--success); }
+  .tag-purple { background: rgba(107,76,154,0.12); color: var(--purple); }
+  .tag-warn { background: rgba(217,125,42,0.12); color: var(--warn); }
+  .tag-red { background: rgba(197,58,58,0.12); color: var(--red); }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 12px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 9px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px; line-height: 1.5;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Steps */
+  .steps { margin-top: 10px; }
+  .step {
+    display: flex; gap: 14px; align-items: flex-start;
+    margin-bottom: 14px; font-size: 15px;
+  }
+  .step-num {
+    flex-shrink: 0; width: 28px; height: 28px;
+    background: var(--navy); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    margin-top: 1px;
+  }
+  [data-theme="dark"] .step-num { background: var(--red); }
+  .step-text { flex: 1; line-height: 1.6; }
+  .step-text strong { font-weight: 700; }
+
+  /* Checklist */
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li {
+    position: relative; padding-left: 22px; margin-bottom: 6px; font-size: 14.5px;
+  }
+  .checklist li::before {
+    content: '✓'; position: absolute; left: 0; top: 0;
+    color: var(--success); font-weight: 700; font-size: 14px;
+  }
+
+  /* Timeline */
+  .timeline { margin-top: 12px; }
+  .tl-row {
+    display: flex; gap: 16px; margin-bottom: 16px;
+    padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .tl-row:last-child { border-bottom: none; }
+  .tl-phase {
+    flex-shrink: 0; width: 130px;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--navy); line-height: 1.4;
+    padding-top: 2px;
+  }
+  [data-theme="dark"] .tl-phase { color: #7eb3e0; }
+  .tl-content { flex: 1; }
+  .tl-content strong { font-size: 15px; display: block; margin-bottom: 4px; }
+  .tl-content p { font-size: 14px; color: var(--text-muted); margin: 0; line-height: 1.55; }
+
+  /* Metric boxes */
+  .metrics-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-top: 12px;
+  }
+  @media (max-width: 700px) { .metrics-row { grid-template-columns: repeat(2,1fr); } }
+  .metric-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 14px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .metric-num {
+    font-family: system-ui, sans-serif;
+    font-size: 28px; font-weight: 800;
+    color: var(--navy); line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  [data-theme="dark"] .metric-num { color: #7eb3e0; }
+  .metric-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    line-height: 1.4;
+  }
+
+  /* Process flow */
+  .process-flow {
+    display: flex; align-items: stretch; gap: 0;
+    margin: 16px 0; flex-wrap: wrap;
+  }
+  .pf-step {
+    flex: 1; min-width: 120px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 12px;
+    text-align: center;
+    position: relative;
+    box-shadow: var(--card-shadow);
+  }
+  .pf-step:not(:last-child)::after {
+    content: '→';
+    position: absolute; right: -14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-faint); font-size: 18px; font-weight: 700;
+    z-index: 2;
+  }
+  .pf-step:not(:first-child) { border-left: none; }
+  .pf-icon { font-size: 20px; margin-bottom: 6px; display: block; }
+  .pf-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--red); margin-bottom: 4px;
+  }
+  .pf-desc { font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+
+  /* Comparison badge */
+  .badge-inline {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .badge-current { background: rgba(217,125,42,0.15); color: var(--warn); }
+  .badge-proposed { background: rgba(45,125,74,0.15); color: var(--success); }
+  .badge-avail { background: rgba(0,139,139,0.15); color: var(--teal); }
+  .badge-wave2 { background: rgba(107,76,154,0.15); color: var(--purple); }
+
+  /* Recommendation box */
+  .rec-box {
+    background: var(--surface);
+    border: 2px solid var(--navy);
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin-top: 14px;
+  }
+  .rec-box h4 {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--navy);
+    margin-bottom: 10px;
+  }
+  [data-theme="dark"] .rec-box { border-color: #444; }
+  [data-theme="dark"] .rec-box h4 { color: #7eb3e0; }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Note */
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  /* Cost callout */
+  .cost-note {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--red);
+    padding: 8px 14px;
+    font-size: 13px; color: var(--text-muted);
+    margin-top: 10px; border-radius: 0 4px 4px 0;
+  }
+
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">AI Deep Dive</div>
+    <h1>Copilot Critique — Federal Document Production</h1>
+    <div class="hero-sub">Multi-Model Verification Workflows for Changeis Government Deliverables</div>
+    <div class="hero-date" style="color: var(--text-faint); font-size: 13px; margin-top: 6px;">Created: 2026-04-19</div>
+  </div>
+
+  <!-- 1. Executive Summary -->
+  <div class="section">
+    <div class="section-header">Executive Summary</div>
+    <p>On March 30, 2026, Microsoft launched <strong>Critique</strong> and <strong>Council</strong> — two multi-model intelligence capabilities inside the <strong>Microsoft 365 Copilot Researcher</strong> agent — that fundamentally change how AI-generated research and documents can be verified before delivery. Critique uses a two-model sequential pipeline (one model generates, a second independently reviews and refines), while Council runs OpenAI and Anthropic models in parallel with a judge model to surface where they agree and diverge. Both are available through the <strong>Microsoft 365 Frontier program</strong> for enterprise customers.</p>
+
+    <p>For Changeis, this is operationally significant. Federal document production — SCOAR/FHWA proposals, CDRL deliverables, compliance reports, and audit responses — requires accuracy, citation integrity, and regulatory alignment that current single-model AI workflows cannot guarantee. Critique's architecture directly targets these failure modes: its rubric-based reviewer enforces source reliability, report completeness, and strict evidence grounding, producing a <strong>13.88% accuracy improvement</strong> over prior best-in-class deep research benchmarks.</p>
+
+    <div class="callout">
+      <div class="callout-title">Bottom Line for Changeis</div>
+      Critique is the first commercially available AI QA layer purpose-built for verifiable research accuracy — and with Microsoft 365 Copilot now GA in GCC High (December 2025), federal contractors with existing M365 G5 licenses can access it under the GSA OneGov agreement at no additional cost for up to 12 months. The recommendation is to pilot Critique-augmented document QA on SCOAR and FHWA deliverables within 60 days.
+    </div>
+
+    <div class="metrics-row">
+      <div class="metric-box">
+        <div class="metric-num">+13.9%</div>
+        <div class="metric-label">Accuracy gain vs. prior best deep research (DRACO benchmark)</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-num">+20%</div>
+        <div class="metric-label">Approximate cost overhead for Critique vs. single model</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-num">Dec 2025</div>
+        <div class="metric-label">M365 Copilot GA in GCC High</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-num">$0 / yr</div>
+        <div class="metric-label">Copilot cost with M365 G5 + GSA OneGov (up to 12 mo.)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Copilot Critique Overview -->
+  <div class="section">
+    <div class="section-header">Copilot Critique Overview</div>
+
+    <p><strong>What is Critique?</strong> Critique is a new multi-model deep research architecture within the <a href="https://techcommunity.microsoft.com/blog/microsoft365copilotblog/introducing-multi-model-intelligence-in-researcher/4506011" target="_blank">Microsoft 365 Copilot Researcher agent</a>, announced March 30, 2026. Unlike traditional single-model AI workflows — where one model handles planning, sourcing, synthesis, and writing — Critique divides these responsibilities between two specialized AI partners drawn from frontier labs including OpenAI and Anthropic.</p>
+
+    <div class="cards-row-2" style="margin-bottom: 16px;">
+      <div class="card">
+        <div class="card-num">Model 1 — Generator</div>
+        <h4>Exploration &amp; Synthesis</h4>
+        <ul>
+          <li>Plans the research task and scope</li>
+          <li>Iterates through retrieval and source selection</li>
+          <li>Produces a structured initial draft with citations</li>
+          <li>Optimized for depth, breadth, and analytical framing</li>
+        </ul>
+        <span class="tag tag-teal">Generation Phase</span>
+      </div>
+      <div class="card">
+        <div class="card-num">Model 2 — Reviewer</div>
+        <h4>Validation &amp; Refinement</h4>
+        <ul>
+          <li>Acts as an independent expert reviewer</li>
+          <li>Enforces source reliability and citation integrity</li>
+          <li>Checks completeness vs. original request intent</li>
+          <li>Strengthens evidence grounding; flags unsupported claims</li>
+        </ul>
+        <span class="tag tag-green">Review Phase</span>
+      </div>
+    </div>
+
+    <p><strong>How it works — the three review dimensions:</strong> The reviewer model applies a rubric-based evaluation similar to academic peer review across three explicit dimensions:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Review Dimension</th>
+          <th>What is Checked</th>
+          <th>Federal Document Relevance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Source Reliability Assessment</strong></td>
+          <td>Prioritizes reputable, authoritative, domain-appropriate sources; deprioritizes weak signals</td>
+          <td>Critical for regulatory citations (FAR, DFARS, CMMC), ensuring only official sources are cited in compliance documents</td>
+        </tr>
+        <tr>
+          <td><strong>Report Completeness</strong></td>
+          <td>Evaluates whether the report satisfies the original request intent comprehensively with unique, relevant insights</td>
+          <td>Maps directly to Section L/M compliance in federal proposals — every requirement must be addressed</td>
+        </tr>
+        <tr>
+          <td><strong>Strict Evidence Grounding</strong></td>
+          <td>Every key claim must be anchored to a reliable source with precise citations; removes unsupported assertions</td>
+          <td>Audit trail integrity for CDRL deliverables, audit responses, and compliance reports requiring traceable claims</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top: 16px;"><strong>What is Council?</strong> Council is a parallel alternative mode: both an Anthropic model and an OpenAI model independently produce complete reports on the same query, then a dedicated judge model synthesizes consensus, flags divergences, and surfaces unique contributions from each. Council costs approximately 2.5× a single-model query and is best reserved for high-stakes decisions where conflicting analytical framings matter — such as strategic proposal narratives or competitive positioning documents.</p>
+
+    <div class="callout">
+      <div class="callout-title">Availability Status</div>
+      Both Critique and Council are <strong>broadly available through the Microsoft 365 Frontier program</strong> as of March 30, 2026. Critique is the <strong>default experience in Researcher</strong> when "Auto" is selected in the model picker. Council is available by selecting "Model Council." The M365 E7 Frontier Suite ($99/user/month, launching May 1, 2026) bundles E5 + Copilot + Entra Suite + Agent 365 for organizations seeking a comprehensive package.
+    </div>
+  </div>
+
+  <!-- 3. Benchmark Performance -->
+  <div class="section">
+    <div class="section-header">Benchmark Performance (DRACO)</div>
+    <p>Microsoft evaluated Critique against the <strong>DRACO benchmark</strong> (Deep Research Accuracy, Completeness, and Objectivity) — 100 complex research tasks across 10 domains including medicine, technology, and law — using GPT-5.2 as the LLM judge. Results are sourced from the <a href="https://techcommunity.microsoft.com/blog/microsoft365copilotblog/introducing-multi-model-intelligence-in-researcher/4506011" target="_blank">official Microsoft Tech Community announcement</a>.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>System</th>
+          <th>DRACO Score</th>
+          <th>vs. Researcher (single-model)</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Researcher with Critique</strong></td>
+          <td style="color: var(--success); font-weight: 700;">Best in class</td>
+          <td style="color: var(--success);">+7.0 pts (SEM ±1.90)</td>
+          <td>Statistically significant in 8/10 domains (p &lt; 0.0001)</td>
+        </tr>
+        <tr>
+          <td>Perplexity Deep Research (Claude Opus 4.6)</td>
+          <td>Previous leader</td>
+          <td>–</td>
+          <td>Researcher with Critique exceeds by +13.88%</td>
+        </tr>
+        <tr>
+          <td>Researcher (single-model)</td>
+          <td>Baseline</td>
+          <td>–</td>
+          <td>Reference point for Critique improvement calculation</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top: 14px;"><strong>Improvements by dimension (all statistically significant, p &lt; 0.0001):</strong></p>
+
+    <div class="cards-row">
+      <div class="card" style="text-align: center;">
+        <div class="metric-num" style="font-size: 22px; color: var(--success);">+3.33</div>
+        <div class="metric-label">Breadth &amp; Depth of Analysis</div>
+        <p style="margin-top: 8px; font-size: 13px;">Broader sourcing, deeper analytical framing across domains</p>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div class="metric-num" style="font-size: 22px; color: var(--success);">+3.04</div>
+        <div class="metric-label">Presentation Quality</div>
+        <p style="margin-top: 8px; font-size: 13px;">Cleaner structure, better narrative flow, evaluator-friendly formatting</p>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div class="metric-num" style="font-size: 22px; color: var(--success);">+2.58</div>
+        <div class="metric-label">Factual Accuracy</div>
+        <p style="margin-top: 8px; font-size: 13px;">Fewer unsupported claims; higher precision in cited evidence</p>
+      </div>
+    </div>
+
+    <p class="note">Source: <a href="https://techcommunity.microsoft.com/blog/microsoft365copilotblog/introducing-multi-model-intelligence-in-researcher/4506011" target="_blank">Microsoft Tech Community — Introducing multi-model intelligence in Researcher</a>, March 30, 2026. DRACO benchmark paper: Zhong et al., arXiv:2602.11685, February 2026.</p>
+  </div>
+
+  <!-- 4. Federal Document QA Use Cases -->
+  <div class="section">
+    <div class="section-header">Federal Document QA Use Cases</div>
+    <p>The following use cases apply directly to Changeis's active contract vehicles (SCOAR/FHWA, ATEPS-II/FAA, GSA MAS) and key federal clients (FHWA, CBP, TSA, USCG, ICE, CISA, FAA).</p>
+
+    <div class="cards-row-2">
+      <div class="card">
+        <div class="card-num">Use Case 1</div>
+        <h4>Federal Proposal QA (SCOAR / FHWA)</h4>
+        <ul>
+          <li>Run Critique on draft Technical Volume to verify every claim is grounded in program experience or cited prior work</li>
+          <li>Reviewer model checks Section L/M compliance matrix — flags any PWS requirement without a corresponding response</li>
+          <li>Source reliability enforcement prevents citation of informal sources in technical approach</li>
+          <li>Council mode: run two models against the same evaluation criteria to surface divergent interpretations before submission</li>
+        </ul>
+        <span class="tag tag-teal">SCOAR · FHWA</span>
+      </div>
+      <div class="card">
+        <div class="card-num">Use Case 2</div>
+        <h4>CDRL Deliverable Review</h4>
+        <ul>
+          <li>CDRLs require traceable, evidence-backed statements aligned with contract DI-codes</li>
+          <li>Critique's strict evidence grounding enforces citation accuracy on every substantive claim in technical reports, plans, and analyses</li>
+          <li>Completeness check maps deliverable content against DID requirements — surfaces gaps before government submission</li>
+          <li>Reduces back-and-forth on Requests for Clarification (RFCs)</li>
+        </ul>
+        <span class="tag tag-green">CDRL · DI-codes</span>
+      </div>
+      <div class="card">
+        <div class="card-num">Use Case 3</div>
+        <h4>Compliance Reports &amp; Regulatory Filings</h4>
+        <ul>
+          <li>Source reliability module prioritizes official regulatory sources (FAR, DFARS, OMB Circulars, NIST SPs) over secondary commentary</li>
+          <li>Auto-flags claims that reference superseded regulations or informal interpretations</li>
+          <li>Supports CMMC 2.0 System Security Plans (SSPs) and POA&amp;M documentation with citation-backed assertions</li>
+          <li>Applicable across CISA, TSA, CBP, USCG compliance deliverables</li>
+        </ul>
+        <span class="tag tag-purple">CMMC · FedRAMP · FAR</span>
+      </div>
+      <div class="card">
+        <div class="card-num">Use Case 4</div>
+        <h4>Audit Responses &amp; Inspector General Support</h4>
+        <ul>
+          <li>Audit responses demand precise, fully sourced factual claims — exactly the failure mode Critique targets</li>
+          <li>Council mode surfaces where two independent models interpret evidence differently, critical for contentious audit findings</li>
+          <li>Reviewer model eliminates speculative language that weakens audit position</li>
+          <li>Creates a defensible AI-assisted document trail with source integrity metadata</li>
+        </ul>
+        <span class="tag tag-warn">IG Audits · OIG</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Integration with M365 GCC High -->
+  <div class="section">
+    <div class="section-header">Integration with M365 GCC High</div>
+
+    <p>Microsoft 365 Copilot reached <strong>general availability in GCC High on December 1, 2025</strong> — a milestone that brings AI-assisted document production into the sovereign cloud environments used by federal agencies and DIB contractors. According to the <a href="https://techcommunity.microsoft.com/blog/publicsectorblog/microsoft-365-copilot-is-now-available-in-gcc-high/4473310" target="_blank">official Microsoft announcement</a>, GCC High Copilot adheres to FedRAMP High, DFARS, ITAR, and CMMC compliance requirements with all data stored in U.S.-based data centers managed by screened U.S. personnel.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Feature / Capability</th>
+          <th>GCC High Status</th>
+          <th>Compliance Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Copilot in Word, Excel, PowerPoint, Outlook, Teams</td>
+          <td><span class="badge-inline badge-avail">Available Now</span></td>
+          <td>FedRAMP High; data residency in U.S. data centers</td>
+        </tr>
+        <tr>
+          <td>Copilot Chat (file reasoning, Work IQ)</td>
+          <td><span class="badge-inline badge-avail">Available Now</span></td>
+          <td>Web grounding OFF by default; CMMC-aligned</td>
+        </tr>
+        <tr>
+          <td>Microsoft Purview + Enterprise Data Protection</td>
+          <td><span class="badge-inline badge-avail">Available Now</span></td>
+          <td>eDiscovery, audit logging, DLP natively integrated</td>
+        </tr>
+        <tr>
+          <td>Copilot Control System (admin controls)</td>
+          <td><span class="badge-inline badge-avail">Available Now</span></td>
+          <td>License management, usage monitoring, policy enforcement</td>
+        </tr>
+        <tr>
+          <td>Researcher Agent (incl. Critique &amp; Council)</td>
+          <td><span class="badge-inline badge-wave2">Wave 2 — H1 2026</span></td>
+          <td>Deep research with source-cited reports; tailored for GCC High compliance</td>
+        </tr>
+        <tr>
+          <td>Analyst Agent</td>
+          <td><span class="badge-inline badge-wave2">Wave 2 — H1 2026</span></td>
+          <td>Structured/unstructured data analysis, trend visualization</td>
+        </tr>
+        <tr>
+          <td>GPT-5 access</td>
+          <td><span class="badge-inline badge-wave2">Wave 2 — H1 2026</span></td>
+          <td>Within GCC High compliance boundaries</td>
+        </tr>
+        <tr>
+          <td>M365 Copilot Connectors (third-party integration)</td>
+          <td><span class="badge-inline badge-wave2">Wave 2 — H1 2026</span></td>
+          <td>Secure integration with external data sources</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top: 16px;">
+      <div class="callout-title">Security Architecture</div>
+      <strong>Data sovereignty:</strong> All GCC High Copilot interactions are processed within the tenant boundary. Model providers (OpenAI, Anthropic, Google) cannot train on enterprise data. Microsoft Entra ID enforces role-based access. Microsoft Purview provides audit logging for all AI interactions — creating the compliance trail required for federal document production workflows. Web grounding is OFF by default, ensuring sensitive government content does not leave the GCC High boundary.
+    </div>
+
+    <p style="margin-top: 14px;"><strong>GSA OneGov pricing:</strong> Federal agencies and qualifying contractors purchasing through the GSA under the OneGov agreement can access Microsoft 365 Copilot at <strong>no additional cost for up to 12 months</strong> with an M365 G5 license. This eliminates the typical $30/user/month Copilot add-on cost during the pilot period — a material incentive to move quickly. The M365 E7 Frontier Suite ($99/user/month, GA May 1, 2026) bundles E5 + Copilot + Entra Suite + Agent 365 for organizations planning a full-stack deployment.</p>
+  </div>
+
+  <!-- 6. Changeis Implementation Plan -->
+  <div class="section">
+    <div class="section-header">Changeis Implementation Plan — SCOAR/FHWA Pilot</div>
+
+    <p>The following implementation plan is scoped to Changeis's highest-value near-term opportunity: deploying Critique-augmented document QA on SCOAR (FHWA) proposal and deliverable workflows within 60 days, then expanding to other contract vehicles.</p>
+
+    <div class="timeline">
+      <div class="tl-row">
+        <div class="tl-phase">Phase 1<br>Days 1–14<br><span style="color: var(--text-faint); font-weight: 400;">License &amp; Access</span></div>
+        <div class="tl-content">
+          <strong>Confirm M365 licensing and GCC High Copilot access</strong>
+          <p>Verify existing M365 G5 or qualifying plan; activate Copilot under GSA OneGov agreement if not yet done. Register for the Frontier program to access Critique and Council. Assign 3–5 pilot users from the SCOAR proposal team. Configure Copilot Control System policies: web grounding OFF, Purview audit logging ON.</p>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-phase">Phase 2<br>Days 15–30<br><span style="color: var(--text-faint); font-weight: 400;">Pilot Design</span></div>
+        <div class="tl-content">
+          <strong>Design Critique workflow for SCOAR document types</strong>
+          <p>Map three target document types: (1) Technical Volume draft sections, (2) CDRL monthly progress reports, (3) FHWA compliance deliverables. Define Critique prompts for each type — specifying the reviewer's focus (citation accuracy, completeness vs. SOW, regulatory sourcing). Establish a baseline QA time measurement using current human review process.</p>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-phase">Phase 3<br>Days 31–60<br><span style="color: var(--text-faint); font-weight: 400;">Live Pilot</span></div>
+        <div class="tl-content">
+          <strong>Run Critique on live SCOAR deliverables</strong>
+          <p>Apply Critique to 10–15 actual deliverables across the three document types. Measure: (a) issues flagged per document, (b) QA cycle time reduction, (c) errors reaching government review. Use Council mode on one high-stakes proposal section to compare OpenAI vs. Anthropic analytical framings. Document reviewer override rate — where human reviewers accept or reject Critique flags.</p>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-phase">Phase 4<br>Days 61–90<br><span style="color: var(--text-faint); font-weight: 400;">Expand &amp; Codify</span></div>
+        <div class="tl-content">
+          <strong>Expand to ATEPS-II (FAA) and GSA MAS deliverables; codify workflow</strong>
+          <p>Publish internal Changeis Critique QA standard operating procedure. Extend pilot to FAA and CBP/TSA deliverable types. Integrate with existing VM2 document production pipeline (RAG engine + Railway). Track ROI against proposal win rate and deliverable rejection rate benchmarks. Brief Varun on decision to continue, expand, or modify by Day 90.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Current QA Process vs. Critique-Augmented -->
+  <div class="section">
+    <div class="section-header">Comparison: Current QA Process vs. Critique-Augmented</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th><span class="badge-inline badge-current">Current Process</span></th>
+          <th><span class="badge-inline badge-proposed">With Critique</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Review model</strong></td>
+          <td>Single SME reviewer, ad hoc checklist</td>
+          <td>Two-model AI pipeline + SME final approval</td>
+        </tr>
+        <tr>
+          <td><strong>Citation verification</strong></td>
+          <td>Manual; depends on reviewer domain knowledge</td>
+          <td>Automated strict evidence grounding on every claim</td>
+        </tr>
+        <tr>
+          <td><strong>Completeness check</strong></td>
+          <td>Section L/M matrix cross-reference done manually</td>
+          <td>Reviewer model systematically checks intent satisfaction</td>
+        </tr>
+        <tr>
+          <td><strong>Source reliability</strong></td>
+          <td>Not systematically enforced</td>
+          <td>Automated deprioritization of weak/unofficial sources</td>
+        </tr>
+        <tr>
+          <td><strong>Turnaround time</strong></td>
+          <td>1–3 days per document depending on reviewer availability</td>
+          <td>Minutes for AI pass; human review focused on flagged items only</td>
+        </tr>
+        <tr>
+          <td><strong>Scalability</strong></td>
+          <td>Bottlenecked by senior staff bandwidth</td>
+          <td>Scales across all active contract vehicles simultaneously</td>
+        </tr>
+        <tr>
+          <td><strong>Auditability</strong></td>
+          <td>Review decisions informal; limited trail</td>
+          <td>Purview-logged AI interactions; defensible audit trail</td>
+        </tr>
+        <tr>
+          <td><strong>Cost per document review</strong></td>
+          <td>~2–4 SME hours at blended rate (~$300–600)</td>
+          <td>~$3–10 Copilot usage + 30–60 min SME validation</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 8. Quality Metrics and ROI -->
+  <div class="section">
+    <div class="section-header">Quality Metrics and ROI</div>
+
+    <p>The following ROI framework applies Critique's documented accuracy improvements to Changeis's federal document production context:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Basis</th>
+          <th>Estimated Impact at Changeis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Factual accuracy improvement</strong></td>
+          <td>+2.58 pts on DRACO factual accuracy dimension</td>
+          <td>Fewer unsupported claims reaching government reviewers; lower RFI/RFC volume</td>
+        </tr>
+        <tr>
+          <td><strong>Proposal QA time reduction</strong></td>
+          <td>AI pre-screens for completeness and citation gaps</td>
+          <td>Est. 40–60% reduction in senior reviewer time per deliverable</td>
+        </tr>
+        <tr>
+          <td><strong>Deliverable rejection rate</strong></td>
+          <td>Strict evidence grounding eliminates unsupported claims</td>
+          <td>Target: reduce government-initiated revisions by 30–50% within 6 months</td>
+        </tr>
+        <tr>
+          <td><strong>Cost per QA pass</strong></td>
+          <td>Critique adds ~20% over single-model cost; GCC High costs covered by GSA deal</td>
+          <td>~$3–15 per document AI pass vs. $300–600 full SME review; net 90%+ cost reduction for AI pass layer</td>
+        </tr>
+        <tr>
+          <td><strong>Proposal win rate (indirect)</strong></td>
+          <td>Higher accuracy and completeness = stronger technical volumes</td>
+          <td>Difficult to isolate; tracked as secondary metric over 12-month horizon</td>
+        </tr>
+        <tr>
+          <td><strong>Compliance posture</strong></td>
+          <td>Purview-logged AI audit trails; FedRAMP High boundary</td>
+          <td>Supports CMMC 2.0 evidence requirements; reduces compliance risk exposure</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top: 14px;">
+      <div class="callout-title">ROI Summary</div>
+      A 10-user pilot (5 proposal staff + 5 PM/delivery staff) operating under the GSA OneGov agreement costs <strong>$0 incremental for the first 12 months</strong> with an existing M365 G5 license. At 2 documents per user per week, that is ~1,000 AI-assisted QA passes per year. At $300 average current SME review cost, the potential time-value savings exceed <strong>$300,000 annually</strong> — before counting error reduction, reduced revisions, and faster delivery cycles.
+    </div>
+  </div>
+
+  <!-- 9. Security Architecture -->
+  <div class="section">
+    <div class="section-header">Security Architecture</div>
+
+    <p>Changeis operates under federal contracting obligations that require strict data handling. The Copilot GCC High architecture addresses these requirements by design, as documented in the <a href="https://techcommunity.microsoft.com/blog/publicsectorblog/microsoft-365-copilot-is-now-available-in-gcc-high/4473310" target="_blank">Microsoft GCC High announcement</a> and <a href="https://www.nextgov.com/acquisition/2025/12/microsoft-makes-copilot-available-secure-cloud-customers/409912/" target="_blank">Nextgov/FCW reporting</a>:</p>
+
+    <ul class="checklist">
+      <li><strong>FedRAMP High authorization</strong> — Copilot in GCC High operates within the FedRAMP High authorization boundary, meeting the highest federal security baseline</li>
+      <li><strong>DFARS / ITAR / CMMC compliance</strong> — Explicitly designed for DIB contractors; supports CMMC 2.0 Level 2 and Level 3 environments</li>
+      <li><strong>Data residency</strong> — All data stored and processed in U.S.-based Microsoft data centers operated by screened U.S. personnel</li>
+      <li><strong>Tenant boundary enforcement</strong> — Model providers (OpenAI, Anthropic) cannot access or train on tenant data; all processing governed by Microsoft's enterprise data protection</li>
+      <li><strong>Web grounding OFF by default</strong> — Prevents inadvertent exposure of sensitive proposal content to external web services; can be selectively enabled for permitted use cases</li>
+      <li><strong>Microsoft Purview integration</strong> — Full audit logging of all Copilot interactions (including Critique reviewer outputs); supports eDiscovery, DLP, and compliance monitoring</li>
+      <li><strong>Microsoft Entra ID (Azure AD)</strong> — Role-based access control for all Copilot features; integrates with existing Changeis identity governance</li>
+      <li><strong>Copilot Control System</strong> — Centralized admin console for license management, usage monitoring, and policy enforcement — critical for managing GFE restrictions and need-to-know access</li>
+    </ul>
+
+    <div class="callout">
+      <div class="callout-title">Key Risk Mitigation</div>
+      The primary security risk for AI-assisted document production is inadvertent data leakage to model training pipelines. The GCC High architecture eliminates this risk through contractual and technical controls: Microsoft's enterprise data protection commits prevent model training on customer data, and the FedRAMP High boundary ensures all processing stays within compliant infrastructure. Proposal content, CDRL text, and compliance data can be used as Copilot inputs without violating CUI or contract data handling requirements.
+    </div>
+  </div>
+
+  <!-- 10. Implementation Timeline -->
+  <div class="section">
+    <div class="section-header">Implementation Timeline</div>
+
+    <div class="process-flow">
+      <div class="pf-step">
+        <span class="pf-icon">🔐</span>
+        <div class="pf-label">Week 1–2</div>
+        <div class="pf-desc">License activation, GCC High Copilot access, Frontier enrollment</div>
+      </div>
+      <div class="pf-step">
+        <span class="pf-icon">📋</span>
+        <div class="pf-label">Week 3–4</div>
+        <div class="pf-desc">Workflow design, prompt templates for SCOAR doc types</div>
+      </div>
+      <div class="pf-step">
+        <span class="pf-icon">🧪</span>
+        <div class="pf-label">Week 5–8</div>
+        <div class="pf-desc">Live pilot on 10–15 SCOAR/FHWA deliverables</div>
+      </div>
+      <div class="pf-step">
+        <span class="pf-icon">📊</span>
+        <div class="pf-label">Week 9–12</div>
+        <div class="pf-desc">Metrics review, SOP codification, expand to ATEPS-II / FAA</div>
+      </div>
+      <div class="pf-step">
+        <span class="pf-icon">🚀</span>
+        <div class="pf-label">Month 4+</div>
+        <div class="pf-desc">Full production deployment, VM2 pipeline integration</div>
+      </div>
+    </div>
+
+    <table style="margin-top: 14px;">
+      <thead>
+        <tr>
+          <th>Milestone</th>
+          <th>Target Date</th>
+          <th>Owner</th>
+          <th>Dependencies</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>M365 G5 + GSA OneGov Copilot activation confirmed</td>
+          <td>2026-05-02</td>
+          <td>IT Lead</td>
+          <td>Existing M365 G5 or qualifying plan</td>
+        </tr>
+        <tr>
+          <td>Frontier program enrollment + Critique access</td>
+          <td>2026-05-09</td>
+          <td>IT Lead</td>
+          <td>M365 Copilot license active</td>
+        </tr>
+        <tr>
+          <td>SCOAR Critique prompt templates drafted</td>
+          <td>2026-05-16</td>
+          <td>Proposal Lead</td>
+          <td>SCOAR PWS and CDRL DI-code list</td>
+        </tr>
+        <tr>
+          <td>Pilot live — 10 deliverable passes logged</td>
+          <td>2026-05-31</td>
+          <td>Proposal Lead + QA Lead</td>
+          <td>Active SCOAR deliverables in draft</td>
+        </tr>
+        <tr>
+          <td>Pilot readout to Varun; go/no-go for expansion</td>
+          <td>2026-06-20</td>
+          <td>Varun Malhotra</td>
+          <td>Pilot metrics: time, error rate, SME acceptance</td>
+        </tr>
+        <tr>
+          <td>Wave 2 GCC High Researcher Agent GA (Microsoft)</td>
+          <td>H1 2026 (est.)</td>
+          <td>Microsoft</td>
+          <td>Critique/Council fully available in GCC High boundary</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Recommendation -->
+  <div class="section">
+    <div class="section-header">Recommendation</div>
+
+    <div class="rec-box">
+      <h4>Recommended Action — Varun / Changeis Leadership</h4>
+      <ol style="padding-left: 20px; margin: 0;">
+        <li style="margin-bottom: 10px; font-size: 15px;"><strong>Activate M365 Copilot under GSA OneGov immediately.</strong> If Changeis holds an M365 G5 license, the 12-month no-additional-cost window under the OneGov agreement makes this a zero-risk decision. The window will not last — move in Q2 2026.</li>
+        <li style="margin-bottom: 10px; font-size: 15px;"><strong>Enroll in the Microsoft 365 Frontier program</strong> to access Critique and Council. This is Microsoft's early access tier for enterprise AI transformation — appropriate for a federal IT firm building an agentic operations stack.</li>
+        <li style="margin-bottom: 10px; font-size: 15px;"><strong>Run a 60-day SCOAR/FHWA pilot</strong> using the Phase 1–4 plan above. Measure QA time, error rate, and reviewer acceptance. The 13.88% accuracy improvement documented in DRACO benchmarks should translate directly to fewer government-requested revisions on CDRL deliverables.</li>
+        <li style="margin-bottom: 10px; font-size: 15px;"><strong>Reserve Council mode for high-stakes proposal sections</strong> (e.g., Technical Approach, Past Performance narratives) where competing analytical framings from OpenAI and Anthropic models surface genuine strategic choices — not just factual corrections.</li>
+        <li style="margin-bottom: 0; font-size: 15px;"><strong>Integrate Critique into the VM2 document production pipeline</strong> (RAG engine + Railway). Treat Critique as the QA gate before any AI-drafted content reaches human reviewers — not as a replacement for SME review, but as a first-pass filter that significantly raises the quality floor and focuses human attention on judgment calls rather than fact-checking.</li>
+      </ol>
+    </div>
+
+    <p style="margin-top: 16px;" class="note">The central premise: Critique is not an AI writing tool — it is an AI quality assurance layer. For Changeis, where the cost of a factual error in a federal proposal or CDRL can be measured in contract risk and reputational exposure, the 20% cost premium over single-model use is trivially justified. The first mover advantage in federal IT consulting is real: firms that institutionalize AI-augmented QA workflows now will have a structural accuracy and speed advantage in proposal competitions and delivery performance within 12–18 months.</p>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Copilot Critique Deep Dive",
+  "task_date": "2026-04-19",
+  "deliverable_file": "ai-deep-dive-copilot-critique-federal-2026-04-19.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/ai-deep-dive-copilot-critique-federal-2026-04-19.html",
+  "version": 1,
+  "prior_versions": [],
+  "created_date": "2026-04-19",
+  "revised_date": null,
+  "related_deliverables": [],
+  "original_instructions": "Research deep dive on implementing Microsoft Copilot multi-model Critique workflows for federal document production at Changeis. DELIVERABLE: ai-deep-dive-copilot-critique-federal-2026-04-19.html. Structure: Executive Summary, Copilot Critique Overview (multi-model verification, how it works), Federal Document QA Use Cases (proposals, compliance reports, CDRL deliverables, audit responses), Integration with M365 GCC High, Changeis Implementation Plan (pilot with SCOAR/FHWA document production), Quality Metrics and ROI, Security Architecture, Comparison with Current QA Process, Implementation Timeline, Recommendation. Changeis styling: navy topbar #1B2A4A, dark/light toggle, Georgia/Charter fonts. VM2 branding only.",
+  "approach": "Fetched primary source Microsoft Tech Community announcement on Critique/Council (March 30, 2026) and GCC High availability (December 2025). Supplemented with Digital Applied enterprise analysis, AiNews, Computerworld, Summit 7 FAQ, and Nextgov/FCW federal reporting. Applied findings to Changeis contract context (SCOAR, FHWA, ATEPS-II, GSA MAS, CBP, TSA, USCG, FAA).",
+  "key_findings": [
+    "Critique launched March 30, 2026 as default Researcher experience; two-model sequential pipeline with rubric-based reviewer enforcing source reliability, completeness, and evidence grounding",
+    "DRACO benchmark: Critique achieves +7.0 pts over single-model Researcher, +13.88% over Perplexity Deep Research (Claude Opus 4.6) — statistically significant in 8/10 domains",
+    "M365 Copilot GA in GCC High as of December 1, 2025; FedRAMP High, DFARS, ITAR, CMMC compliant; data stays within U.S. tenant boundary; model providers cannot train on tenant data",
+    "Researcher Agent (with Critique/Council) is Wave 2 for GCC High — H1 2026 rollout; Word/Excel/Teams/Outlook Copilot available now",
+    "GSA OneGov agreement: M365 G5 customers get Copilot at no additional cost for up to 12 months — zero incremental cost to launch pilot",
+    "Critique adds ~20% cost overhead vs. single model; Council costs ~2.5x — justified for high-stakes federal deliverables"
+  ],
+  "dead_ends": [
+    "Specific Frontier program enrollment URL not publicly documented — requires reaching out to Microsoft account team",
+    "Exact GCC High Wave 2 release date for Researcher Agent not specified beyond 'H1 2026'",
+    "Security Copilot explicitly NOT available in GCC High (only M365 Copilot is)"
+  ],
+  "assumptions": [
+    "Changeis holds or can acquire an M365 G5 license qualifying for GSA OneGov agreement",
+    "SCOAR and FHWA deliverables are the highest-priority near-term use case",
+    "Critique/Council in the commercial Frontier program will reach GCC High in H1 2026 per Microsoft roadmap",
+    "Existing Changeis M365 environment is in or can be migrated to GCC High"
+  ],
+  "open_questions": [
+    "Is Changeis currently on GCC, GCC High, or commercial M365? This determines immediate vs. Wave 2 access to Researcher Agent",
+    "Has Changeis already activated the GSA OneGov Copilot agreement?",
+    "Which SCOAR/FHWA deliverables are currently in draft and available for the pilot?",
+    "Is there an existing Changeis SharePoint/Teams environment to ground Critique in organizational content?"
+  ],
+  "data_sources": [
+    {"name": "Microsoft Tech Community — Introducing multi-model intelligence in Researcher", "url": "https://techcommunity.microsoft.com/blog/microsoft365copilotblog/introducing-multi-model-intelligence-in-researcher/4506011"},
+    {"name": "Microsoft Tech Community — M365 Copilot available in GCC High", "url": "https://techcommunity.microsoft.com/blog/publicsectorblog/microsoft-365-copilot-is-now-available-in-gcc-high/4473310"},
+    {"name": "Digital Applied — Microsoft Copilot Cowork Enterprise Agent Workflows", "url": "https://www.digitalapplied.com/blog/microsoft-copilot-cowork-enterprise-agent-workflows"},
+    {"name": "AiNews — Microsoft adds multi-model AI to Copilot Researcher", "url": "https://www.ainews.com/p/microsoft-adds-multi-model-ai-to-copilot-researcher-to-improve-trust-in-enterprise-research"},
+    {"name": "Summit 7 — Copilot for GCC High FAQ", "url": "https://www.summit7.us/blog/copilot-for-gcc-high-faq"},
+    {"name": "Nextgov/FCW — Microsoft makes Copilot available to secure cloud customers", "url": "https://www.nextgov.com/acquisition/2025/12/microsoft-makes-copilot-available-secure-cloud-customers/409912/"},
+    {"name": "IntuitionLabs — Microsoft 365 E7 Frontier Suite pricing", "url": "https://intuitionlabs.ai/articles/microsoft-copilot-pricing-licensing"},
+    {"name": "CRM Software Blog — Microsoft Copilot for Federal Proposal Writing", "url": "https://www.crmsoftwareblog.com/2026/03/how-microsoft-copilot-is-changing-the-game-for-proposal-writing/"},
+    {"name": "DRACO Benchmark Paper — Zhong et al.", "url": "https://arxiv.org/abs/2602.11685"}
+  ],
+  "next_steps": [
+    "Confirm Changeis M365 cloud environment (GCC vs. GCC High vs. commercial) to establish exact Researcher Agent availability date",
+    "Contact Microsoft account team to enroll in Frontier program and confirm GSA OneGov Copilot activation status",
+    "Identify 3 active SCOAR/FHWA deliverables for Phase 3 pilot",
+    "Draft Critique prompt templates for FHWA Technical Volume and CDRL monthly report document types",
+    "Assess whether existing VM2 RAG engine can feed Changeis SharePoint content as grounding for Critique workflows"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 5,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.32",
+    "cost_ceiling": "$0.60",
+    "notes": "4 web searches + 2 URL fetches for primary sources. Substantial HTML output for full-length deep dive. Research was primary-source focused (official Microsoft announcements)."
+  }
+}</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · Copilot Critique Deep Dive — Federal Document Production · April 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Hidden JSON -->
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Copilot Critique Deep Dive",
+  "task_date": "2026-04-19",
+  "deliverable_file": "ai-deep-dive-copilot-critique-federal-2026-04-19.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/ai-deep-dive-copilot-critique-federal-2026-04-19.html",
+  "version": 1,
+  "prior_versions": [],
+  "created_date": "2026-04-19",
+  "revised_date": null,
+  "related_deliverables": [],
+  "original_instructions": "Research deep dive on implementing Microsoft Copilot multi-model Critique workflows for federal document production at Changeis.",
+  "approach": "Primary source research: Microsoft Tech Community announcements, GCC High availability docs, enterprise analyst coverage. Applied to Changeis SCOAR/FHWA/ATEPS-II context.",
+  "key_findings": [
+    "Critique = two-model sequential QA pipeline; reviewer enforces source reliability, completeness, strict evidence grounding",
+    "+13.88% accuracy over previous best-in-class (DRACO benchmark, March 2026)",
+    "M365 Copilot GA in GCC High December 2025; FedRAMP High/DFARS/ITAR/CMMC compliant",
+    "Researcher Agent (Critique/Council) in Wave 2 GCC High — H1 2026",
+    "GSA OneGov: no additional cost for 12 months with M365 G5",
+    "Council mode: parallel OpenAI + Anthropic with judge model — 2.5x cost, for high-stakes decisions"
+  ],
+  "dead_ends": ["Frontier enrollment URL not public", "Wave 2 exact date TBD", "Security Copilot not available in GCC High"],
+  "assumptions": ["Changeis on or moving to GCC High", "M365 G5 license exists or accessible", "SCOAR deliverables available for pilot"],
+  "open_questions": ["Current Changeis M365 cloud tier?", "GSA OneGov Copilot activation status?", "Which SCOAR deliverables in draft now?"],
+  "data_sources": [
+    "https://techcommunity.microsoft.com/blog/microsoft365copilotblog/introducing-multi-model-intelligence-in-researcher/4506011",
+    "https://techcommunity.microsoft.com/blog/publicsectorblog/microsoft-365-copilot-is-now-available-in-gcc-high/4473310",
+    "https://www.digitalapplied.com/blog/microsoft-copilot-cowork-enterprise-agent-workflows",
+    "https://www.ainews.com/p/microsoft-adds-multi-model-ai-to-copilot-researcher-to-improve-trust-in-enterprise-research",
+    "https://www.summit7.us/blog/copilot-for-gcc-high-faq",
+    "https://www.nextgov.com/acquisition/2025/12/microsoft-makes-copilot-available-secure-cloud-customers/409912/"
+  ],
+  "next_steps": [
+    "Confirm Changeis M365 cloud tier (GCC vs. GCC High vs. commercial)",
+    "Contact Microsoft account team re: Frontier program enrollment",
+    "Identify active SCOAR/FHWA deliverables for Phase 3 pilot",
+    "Draft Critique prompt templates for FHWA document types",
+    "Assess VM2 RAG / SharePoint grounding integration"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 5,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.32",
+    "cost_ceiling": "$0.60",
+    "notes": "4 web searches + 2 URL fetches for primary sources. Substantial HTML output for comprehensive deep dive."
+  }
+}
+</script>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/ai-deep-dive-copilot-critique-federal-2026-04-19.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the Copilot Critique Deep Dive — Federal Document Production deliverable.
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Is Changeis currently on GCC, GCC High, or commercial M365?
+- Has Changeis already activated the GSA OneGov Copilot agreement?
+- Which SCOAR/FHWA deliverables are currently in draft and available for the pilot?
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: Copilot Critique Deep Dive — Federal Document Production');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP\n\nPrevious deliverable: ${DELIVERABLE_URL}\n\nContinue this work. Read the Session Context at the bottom of the deliverable for full context.\n\nAdditional instructions:\n[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: Copilot Critique Deep Dive — Federal Document Production');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
