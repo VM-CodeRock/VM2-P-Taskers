@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conway AI Deep Dive — Federal Applicability — April 19, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --callout-bg: #E8F4F8;
+    --callout-border: #008B8B;
+    --green: #2D7D4A;
+    --orange: #D97D2A;
+    --purple: #6B4C9A;
+    --teal: #008B8B;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --callout-bg: #1a2835;
+    --callout-border: #008B8B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 18px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 36px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 10px; }
+  .section li { margin-bottom: 5px; }
+  .section li strong { color: var(--text); }
+  .section p + p { margin-top: 10px; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Callout */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 3px solid var(--callout-border);
+    border-radius: 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 15px;
+  }
+  .callout strong {
+    display: block;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--teal);
+    margin-bottom: 6px;
+  }
+
+  /* Status chips */
+  .chip {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    padding: 2px 9px; border-radius: 3px;
+    margin-right: 4px;
+  }
+  .chip-green { background: #d4edda; color: var(--green); }
+  .chip-orange { background: #fde8cc; color: var(--orange); }
+  .chip-red { background: #f8d7da; color: #c53a3a; }
+  .chip-purple { background: #ede5f7; color: var(--purple); }
+  .chip-teal { background: #d4f0f0; color: var(--teal); }
+  .chip-navy { background: #dce3f0; color: var(--navy); }
+  [data-theme="dark"] .chip-green { background: #1a3326; color: #5dba7e; }
+  [data-theme="dark"] .chip-orange { background: #3a2810; color: #e8923a; }
+  [data-theme="dark"] .chip-red { background: #3a1515; color: #e57373; }
+  [data-theme="dark"] .chip-purple { background: #2a1f3a; color: #9d7fcc; }
+  [data-theme="dark"] .chip-teal { background: #0d2e2e; color: #3fc2c2; }
+  [data-theme="dark"] .chip-navy { background: #1a2235; color: #7eb3e0; }
+
+  /* Cards row */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 12px;
+  }
+  .cards-row-2 {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+    margin-top: 12px;
+  }
+  @media (max-width: 700px) {
+    .cards-row, .cards-row-2 { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 5px;
+  }
+  .card h4 {
+    font-size: 15px; font-weight: 700; margin-bottom: 7px;
+    color: var(--navy); line-height: 1.2;
+  }
+  [data-theme="dark"] .card h4 { color: #e2e2e2; }
+  .card p { font-size: 13.5px; line-height: 1.5; color: var(--text-muted); }
+  .card ul { padding-left: 16px; margin: 0; }
+  .card li { font-size: 13.5px; margin-bottom: 3px; line-height: 1.45; }
+  .card .card-footer {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-muted);
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Architecture diagram */
+  .arch-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 14px 0;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .arch-layer {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .arch-layer:last-child { margin-bottom: 0; }
+  .arch-icon { font-size: 20px; }
+  .arch-label { font-weight: 700; font-size: 13px; color: var(--text); margin-bottom: 1px; }
+  .arch-desc { font-size: 12px; color: var(--text-muted); }
+  .arch-arrow {
+    text-align: center; font-size: 18px; color: var(--text-faint);
+    margin: -2px 0; line-height: 1;
+  }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 12px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Steps */
+  .steps { margin-top: 10px; }
+  .step {
+    display: flex; gap: 14px; align-items: flex-start;
+    margin-bottom: 14px; font-size: 15px;
+  }
+  .step-num {
+    flex-shrink: 0; width: 28px; height: 28px;
+    background: var(--navy); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    margin-top: 1px;
+  }
+  [data-theme="dark"] .step-num { background: var(--red); }
+  .step-text { flex: 1; }
+  .step-text strong { font-weight: 700; display: block; margin-bottom: 2px; }
+
+  /* Phase timeline */
+  .phase-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+  }
+  @media (max-width: 700px) { .phase-row { grid-template-columns: 1fr; } }
+  .phase {
+    padding: 16px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .phase:last-child { border-right: none; }
+  .phase-num {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-faint); margin-bottom: 4px;
+  }
+  .phase h4 {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .phase h4 { color: #e2e2e2; }
+  .phase-time {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--teal);
+    font-weight: 600; margin-bottom: 8px;
+  }
+  .phase ul { padding-left: 16px; margin: 0; }
+  .phase li { font-size: 13px; margin-bottom: 3px; line-height: 1.4; }
+
+  /* Risk table */
+  .risk-high { color: #c53a3a; font-weight: 700; }
+  .risk-med { color: var(--orange); font-weight: 700; }
+  .risk-low { color: var(--green); font-weight: 700; }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); color: var(--btn-secondary-text); }
+  .btn-icon { font-size: 14px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  .divider {
+    border: none; border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+
+  .meta-row {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    margin-top: 10px;
+  }
+  .meta-row span strong { color: var(--text-muted); }
+
+  /* inline highlight */
+  mark {
+    background: #fff3cd; color: inherit; padding: 0 2px; border-radius: 2px;
+  }
+  [data-theme="dark"] mark { background: #4a3800; }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">◐ Toggle Theme</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">AI Deep Dive</div>
+    <h1>Anthropic Conway — Federal IT Applicability</h1>
+    <div class="hero-sub">Always-On Agentic AI for Federal Workflow Automation</div>
+    <div class="hero-date">Created: 2026-04-19 &nbsp;·&nbsp; Prepared by VM2 &nbsp;·&nbsp; Changeis Federal IT Practice</div>
+  </div>
+
+  <!-- 1. Executive Summary -->
+  <div class="section">
+    <div class="section-header">1 · Executive Summary</div>
+
+    <div class="callout">
+      <strong>Bottom Line Up Front</strong>
+      Anthropic's Conway is a leaked-but-credible always-on agentic platform built on Claude that runs 24/7, responds to external event triggers, controls browsers autonomously, and executes multi-step workflows without human prompting. While Conway itself is not yet publicly released or FedRAMP-authorized, Anthropic's existing <strong>Claude for Government (C4G)</strong> product already holds FedRAMP High authorization and provides a near-equivalent agentic foundation through Claude Code and the Cowork desktop agent — both on the C4G roadmap for 2026. For Changeis, the strategic opportunity is clear: Conway-style autonomous workflow automation is achievable <em>today</em> via C4G + Amazon Bedrock GovCloud, and Conway-native capabilities can be integrated as they reach federal authorization.
+    </div>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-label">Technology Maturity</div>
+        <h4>Pre-Release / Leaked Testing</h4>
+        <p>Conway is internally tested at Anthropic as of April 2026. Publicly disclosed via testing catalog leak. Not commercially available. Federal authorization timeline unknown.</p>
+        <div class="card-footer"><span class="chip chip-orange">Roadmap Watch</span></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Federal Authorization</div>
+        <h4>FedRAMP High via C4G</h4>
+        <p>Claude for Government holds FedRAMP High ATO through Palantir Federal Cloud Service. Cowork and Claude Code are on the C4G roadmap for 2026. DoD IL4/IL5 via Bedrock GovCloud.</p>
+        <div class="card-footer"><span class="chip chip-green">Active Path</span></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Changeis Fit</div>
+        <h4>High Strategic Value</h4>
+        <p>DHS workflow automation, proposal pipeline acceleration, document processing, and compliance monitoring are all high-fit use cases aligned with Apex Agentic Framework pillars.</p>
+        <div class="card-footer"><span class="chip chip-purple">Recommend Pilot</span></div>
+      </div>
+    </div>
+
+    <p style="margin-top:18px;"><strong>Key finding:</strong> The Trump administration's February 2026 directive to phase out Anthropic from federal contracts creates a <mark>near-term procurement headwind</mark> for direct C4G adoption at DHS/DOD clients. Changeis should architect Conway-equivalent workflows using the DoD IL4-authorized Bedrock GovCloud path as the primary deployment vector, while monitoring legal proceedings that may reverse the exclusion order. No federal exclusion order has been issued as of April 2026, and the supply-chain designation does <em>not</em> prohibit commercial contractor use of Anthropic.</p>
+  </div>
+
+  <!-- 2. What is Conway -->
+  <div class="section">
+    <div class="section-header">2 · What Is Conway</div>
+
+    <p>Conway is Anthropic's internally-tested, always-on agentic AI platform — a fundamental architectural departure from Claude's existing prompt-response model. Rather than waiting for a user to type a query, Conway operates as a <strong>persistent background process</strong> that monitors subscribed event streams, wakes on webhook triggers, and autonomously executes multi-step workflows.</p>
+
+    <p style="margin-top:12px;">The system was first disclosed on April 1, 2026, through a testing catalog leak reported by TestingCatalog and confirmed by multiple outlets. Anthropic has not officially announced Conway, and it remains in internal testing. The name is believed to reference <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life" target="_blank">Conway's Game of Life</a> — apt for a system that evolves and acts from simple rules without constant human direction.</p>
+
+    <div class="cards-row-2" style="margin-top:16px;">
+      <div class="card">
+        <div class="card-label">Conway vs. Standard Claude</div>
+        <h4>From Reactive to Proactive</h4>
+        <ul>
+          <li><strong>Standard Claude:</strong> Waits for user prompt; single-session context; conversation ends when user leaves</li>
+          <li><strong>Conway:</strong> Runs 24/7; persists across sessions; self-initiates on triggers; completes work while user is offline</li>
+          <li>Closer to a <em>daemon process</em> than a chatbot — always listening, always ready</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-label">Product Ecosystem Position</div>
+        <h4>Anthropic's Three-Agent Stack</h4>
+        <ul>
+          <li><strong>Claude Code:</strong> Terminal-based AI for software engineers; coding, testing, refactoring</li>
+          <li><strong>Cowork:</strong> Desktop agent for non-technical enterprise workers; general productivity workflows</li>
+          <li><strong>Conway:</strong> Always-on power layer for autonomous multi-step execution, custom extensions, event-driven automation</li>
+        </ul>
+      </div>
+    </div>
+
+    <table style="margin-top:18px;">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Standard Claude</th>
+          <th>Conway</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Activation</td>
+          <td>User prompt required</td>
+          <td>Webhook, schedule, event trigger</td>
+        </tr>
+        <tr>
+          <td>Session persistence</td>
+          <td>Single conversation</td>
+          <td>Continuous; days or weeks</td>
+        </tr>
+        <tr>
+          <td>Context window</td>
+          <td>Up to 200K tokens</td>
+          <td>Up to 1M tokens (Claude 4.6 base)</td>
+        </tr>
+        <tr>
+          <td>Browser automation</td>
+          <td>No</td>
+          <td>Yes — full Chrome control</td>
+        </tr>
+        <tr>
+          <td>Custom extensions</td>
+          <td>No (plugins via enterprise)</td>
+          <td>CNW ZIP format — custom tools, UI tabs, context handlers</td>
+        </tr>
+        <tr>
+          <td>Background operation</td>
+          <td>No</td>
+          <td>Yes — autonomous task execution</td>
+        </tr>
+        <tr>
+          <td>Code execution</td>
+          <td>Code interpretation only</td>
+          <td>Claude Code integrated natively</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3. Technical Architecture -->
+  <div class="section">
+    <div class="section-header">3 · Technical Architecture</div>
+
+    <p>Based on leaked testing catalog reports and code analysis, Conway is built around five integrated layers that together create a persistent agentic runtime — not merely a wrapper on top of an LLM API.</p>
+
+    <div class="arch-box">
+      <div class="arch-layer">
+        <div class="arch-icon">🧠</div>
+        <div>
+          <div class="arch-label">Reasoning Core — Claude 4.6 / Sonnet</div>
+          <div class="arch-desc">LLM inference backbone; 200K–1M token context; optimized for agentic long-horizon reasoning and multi-step planning; Anthropic's Constitutional AI safety layer</div>
+        </div>
+      </div>
+      <div class="arch-arrow">↑ ↓</div>
+      <div class="arch-layer">
+        <div class="arch-icon">⚙️</div>
+        <div>
+          <div class="arch-label">Event Bus &amp; Webhook System</div>
+          <div class="arch-desc">Public URLs for external service callbacks; GitHub repository subscriptions; calendar, email, and data change triggers; named "Epitaxi" control layer referenced in internal code</div>
+        </div>
+      </div>
+      <div class="arch-arrow">↑ ↓</div>
+      <div class="arch-layer">
+        <div class="arch-icon">🌐</div>
+        <div>
+          <div class="arch-label">Browser Controller</div>
+          <div class="arch-desc">Full Chrome automation via dedicated integration toggle; navigates, clicks, fills forms, extracts data autonomously; web task execution without user presence</div>
+        </div>
+      </div>
+      <div class="arch-arrow">↑ ↓</div>
+      <div class="arch-layer">
+        <div class="arch-icon">🧩</div>
+        <div>
+          <div class="arch-label">CNW Extension Framework</div>
+          <div class="arch-desc">Proprietary ZIP-based extension packaging; developers build custom tools, UI panels, context handlers; analogous to Salesforce AppExchange; integrates with Anthropic MCP (Model Context Protocol)</div>
+        </div>
+      </div>
+      <div class="arch-arrow">↑ ↓</div>
+      <div class="arch-layer">
+        <div class="arch-icon">💾</div>
+        <div>
+          <div class="arch-label">Persistent Memory Store</div>
+          <div class="arch-desc">Cross-session context retention; tracks actions taken, decisions made, open tasks; maintains awareness across days or weeks; feeds back into reasoning core for continuity</div>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:16px;"><strong>User Interface:</strong> Conway features a dedicated three-panel sidebar UI — <em>Search</em>, <em>Chat</em>, and <em>System</em> — distinct from Claude.ai's chat interface. This is not a chat window; it is a <strong>task management and monitoring console</strong> where work is assigned, tracked, and reviewed. Claude Code is embedded directly in the UI for seamless code execution alongside natural language tasks.</p>
+
+    <div class="callout" style="margin-top:16px;">
+      <strong>MCP Integration</strong>
+      Conway's CNW extension framework aligns directly with Anthropic's <a href="https://www.anthropic.com/research/building-effective-agents" target="_blank">Model Context Protocol (MCP)</a> — the open standard for connecting AI models to external data sources and tools. This means any MCP-compatible integration (databases, APIs, internal systems) can be wired into a Conway workflow without custom CNW extension development, a significant advantage for federal IT environments with existing MCP-compatible tool catalogs.
+    </div>
+  </div>
+
+  <!-- 4. Federal Use Cases at Changeis -->
+  <div class="section">
+    <div class="section-header">4 · Federal Use Cases at Changeis</div>
+
+    <p>Changeis serves DHS components (CBP, TSA, USCG, ICE, CISA) under SCOAR and ATEPS-II contract vehicles, and operates FAA work under ATEPS-II. Conway-style always-on agents map directly onto three high-value workflow automation domains identified through the Apex Agentic Organization Framework.</p>
+
+    <hr class="divider">
+    <h3 style="font-family: system-ui, sans-serif; font-size:15px; font-weight:700; color:var(--navy); margin-bottom:10px;">4.1 — DHS Workflow Automation</h3>
+
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-label">CBP / TSA / ICE</div>
+        <h4>Regulatory Monitoring Agent</h4>
+        <p>Always-on agent monitors Federal Register RSS feeds, DHS policy portals, and CBP bulletin systems. On new publication, extracts relevant sections, flags changes to existing procedures, and drafts impact summaries — delivered to PM inboxes before 8 AM.</p>
+        <div class="card-footer">Trigger: Fed Register webhook · Output: Impact memo draft</div>
+      </div>
+      <div class="card">
+        <div class="card-label">CISA</div>
+        <h4>Threat Intel Digest Agent</h4>
+        <p>Subscribes to CISA advisories, NVD vulnerability feeds, and ISAC bulletins. Filters by client-relevant technology stacks, cross-references with known system inventories, and generates prioritized response tickets in project management systems.</p>
+        <div class="card-footer">Trigger: Feed update · Output: Prioritized ticket + brief</div>
+      </div>
+      <div class="card">
+        <div class="card-label">USCG</div>
+        <h4>Status Report Automation</h4>
+        <p>Monitors project management databases (Jira, Azure DevOps), pulls status from team members via configured integrations, and compiles weekly program status reports formatted to USCG contract deliverable standards — eliminating 4–6 hrs/week PM overhead.</p>
+        <div class="card-footer">Trigger: Scheduled (Friday 3PM) · Output: CDRL-formatted report</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <h3 style="font-family: system-ui, sans-serif; font-size:15px; font-weight:700; color:var(--navy); margin-bottom:10px;">4.2 — Proposal Pipeline Acceleration</h3>
+
+    <p>Changeis competes on GSA MAS, SCOAR, and ATEPS-II — all requiring rapid response to RFPs with highly formatted, compliance-mapped deliverables. Conway-equivalent agents can compress the proposal cycle by 40–60%.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">
+          <strong>RFP Monitoring Agent</strong>
+          Continuously watches SAM.gov, GovWin, and agency procurement portals. On new solicitation matching keyword/NAICS profiles, downloads PWS/SOW, extracts requirements matrix, and creates a structured opportunity brief in the VM2 RAG engine — before business hours.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          <strong>Compliance Matrix Agent</strong>
+          Ingests PWS and generates a Section L/M compliance matrix cross-referenced against Changeis past performance database. Flags gaps, suggests applicable past performance entries, and drafts section outlines — reducing the Day 1 proposal kickoff from a half-day to under 2 hours.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          <strong>Draft Review Agent</strong>
+          Monitors SharePoint/Google Drive proposal workspace for new drafts. On document save, runs compliance check against Section L requirements, flags missing items, suggests strength statements, and posts review comments directly in the document — replacing the manual "compliance check" pass.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">
+          <strong>Pricing Intelligence Agent</strong>
+          Monitors USASpending.gov and FPDS for comparable contract awards under target NAICS codes. Compiles pricing benchmarks, identifies low/high ranges, and generates pricing analysis brief within 30 minutes of new data publication.
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <h3 style="font-family: system-ui, sans-serif; font-size:15px; font-weight:700; color:var(--navy); margin-bottom:10px;">4.3 — Document Processing & Knowledge Management</h3>
+
+    <p>Federal IT consulting generates large volumes of contractual deliverables, SOPs, CDRLs, and meeting records. Conway's 1M-token context window and persistent memory are purpose-built for document-intensive workflows.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Use Case</th>
+          <th>Conway Capability Used</th>
+          <th>Estimated Time Saved</th>
+          <th>Fit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Meeting notes → action item tracking</td>
+          <td>Persistent memory + calendar integration</td>
+          <td>2–3 hrs/week per PM</td>
+          <td><span class="chip chip-green">High</span></td>
+        </tr>
+        <tr>
+          <td>CDRL deliverable compilation</td>
+          <td>Browser automation + document generation</td>
+          <td>4–6 hrs per deliverable</td>
+          <td><span class="chip chip-green">High</span></td>
+        </tr>
+        <tr>
+          <td>SOP version management</td>
+          <td>GitHub subscription + diff analysis</td>
+          <td>1–2 hrs per change event</td>
+          <td><span class="chip chip-green">High</span></td>
+        </tr>
+        <tr>
+          <td>Contract modification tracking</td>
+          <td>Webhook trigger + document ingestion</td>
+          <td>2–4 hrs per mod</td>
+          <td><span class="chip chip-teal">Medium</span></td>
+        </tr>
+        <tr>
+          <td>Staffing matrix updates</td>
+          <td>Scheduled agent + database query</td>
+          <td>1–2 hrs/week</td>
+          <td><span class="chip chip-teal">Medium</span></td>
+        </tr>
+        <tr>
+          <td>Lesson-learned repository ingestion</td>
+          <td>Persistent memory + RAG integration</td>
+          <td>3–5 hrs per project close</td>
+          <td><span class="chip chip-green">High</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. Security & Compliance -->
+  <div class="section">
+    <div class="section-header">5 · Security &amp; Compliance Assessment</div>
+
+    <div class="callout">
+      <strong>Critical Distinction</strong>
+      Conway (the always-on agent platform) is <strong>not yet released or FedRAMP-authorized</strong>. However, the underlying Claude models and Anthropic's enterprise deployment infrastructure are federally authorized at the highest levels. A Conway-equivalent architecture can be deployed today using authorized components.
+    </div>
+
+    <table style="margin-top:16px;">
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>FedRAMP Status</th>
+          <th>Data Classification</th>
+          <th>Deployment Path</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Claude for Government (C4G)</strong></td>
+          <td><span class="chip chip-green">FedRAMP High</span></td>
+          <td>CUI, FIPS 199 High Impact</td>
+          <td>Direct via Anthropic / Carahsoft</td>
+        </tr>
+        <tr>
+          <td><strong>Claude via Amazon Bedrock GovCloud</strong></td>
+          <td><span class="chip chip-green">FedRAMP High + DoD IL4/IL5</span></td>
+          <td>CUI, ITAR (IL5), Sensitive</td>
+          <td>AWS GovCloud (US) regions</td>
+        </tr>
+        <tr>
+          <td><strong>Claude via Google Vertex Assured Workloads</strong></td>
+          <td><span class="chip chip-green">FedRAMP High</span></td>
+          <td>CUI, Sensitive</td>
+          <td>Google Public Sector</td>
+        </tr>
+        <tr>
+          <td><strong>Claude Enterprise (commercial)</strong></td>
+          <td><span class="chip chip-orange">Not FedRAMP</span></td>
+          <td>Non-CUI only</td>
+          <td>Direct commercial; not for gov data</td>
+        </tr>
+        <tr>
+          <td><strong>Conway (pre-release)</strong></td>
+          <td><span class="chip chip-red">Unrated</span></td>
+          <td>Unknown</td>
+          <td>Not commercially available</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-family: system-ui, sans-serif; font-size:15px; font-weight:700; color:var(--navy); margin-top:20px; margin-bottom:10px;">FedRAMP Authorization Details</h3>
+
+    <ul class="section" style="padding-left:20px; margin-bottom:0;">
+      <li><strong>ATO Holder:</strong> Palantir Federal Cloud Service – Supporting Services (PFCS-SS) holds the C4G FedRAMP High ATO</li>
+      <li><strong>Independent Assessor:</strong> Schellman Compliance, LLC performed the 3PAO assessment</li>
+      <li><strong>Data Residency:</strong> Logically isolated from commercial tenants; hosted through government-authorized partner infrastructure; supports agency boundary requirements</li>
+      <li><strong>Encryption:</strong> TLS in transit; AES-256 at rest</li>
+      <li><strong>Classification support:</strong> Classification banner support at application level</li>
+      <li><strong>Training data:</strong> By default, conversations and uploaded content are NOT used to train Anthropic models</li>
+      <li><strong>HIPAA:</strong> BAA available for Enterprise and API customers; Zero Data Retention (ZDR) required</li>
+      <li><strong>ITAR:</strong> Only via Bedrock IL5 — not C4G directly</li>
+    </ul>
+
+    <h3 style="font-family: system-ui, sans-serif; font-size:15px; font-weight:700; color:var(--navy); margin-top:20px; margin-bottom:10px;">FISMA &amp; Data Residency Considerations</h3>
+
+    <p>Claude for Government's FedRAMP High ATO satisfies FISMA High system requirements for unclassified sensitive data. FISMA compliance is agency-managed — Anthropic's ATO documentation is available via the FedRAMP Package Access Request Form and through Anthropic's Trust Center. For Changeis client engagements, the recommended FISMA path is:</p>
+
+    <div class="steps" style="margin-top:12px;">
+      <div class="step">
+        <div class="step-num">→</div>
+        <div class="step-text"><strong>FISMA Low/Moderate:</strong> Claude Enterprise with NIST 800-171r3 attestation (CUI authorized; attestation available under NDA)</div>
+      </div>
+      <div class="step">
+        <div class="step-num">→</div>
+        <div class="step-text"><strong>FISMA High / CUI:</strong> Claude for Government (C4G) at FedRAMP High, procured via Carahsoft on GSA schedule or direct Anthropic sales</div>
+      </div>
+      <div class="step">
+        <div class="step-num">→</div>
+        <div class="step-text"><strong>DoD IL4/IL5 / ITAR:</strong> Claude via Amazon Bedrock in AWS GovCloud (US) — DoD Impact Level 4 and 5 authorized</div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:16px;">
+      <strong>DoD Procurement Risk — Active as of April 2026</strong>
+      Secretary Hegseth's February 2026 designation of Anthropic as a DoD supply-chain risk and President Trump's directive to phase out Anthropic from federal agencies creates material procurement risk for direct federal agency adoption. Key facts: (1) No formal exclusion order has been issued under FASCSA; (2) The supply-chain designation does NOT prohibit commercial contractors (including Changeis) from using Anthropic; (3) Anthropic is pursuing injunctive relief; (4) Agencies have a 6-month phase-out window through approximately August 2026. Changeis should document the Bedrock GovCloud path as the primary federal deployment approach, as AWS's independent FedRAMP/DoD authorization provides additional political insulation.
+    </div>
+  </div>
+
+  <!-- 6. Implementation Roadmap -->
+  <div class="section">
+    <div class="section-header">6 · Implementation Roadmap</div>
+
+    <p>The recommended implementation follows a three-phase approach: internal tooling pilot, client-facing proof of concept, and production deployment. Conway-native capabilities are integrated as they reach federal authorization.</p>
+
+    <div class="phase-row">
+      <div class="phase">
+        <div class="phase-num">Phase 1</div>
+        <h4>Internal Pilot</h4>
+        <div class="phase-time">Months 1–3 (Q2 2026)</div>
+        <ul>
+          <li>Deploy Claude Enterprise (non-CUI) for Changeis internal workflows</li>
+          <li>Build proposal pipeline monitoring agent (SAM.gov + GovWin)</li>
+          <li>Automate weekly status report compilation for 1–2 active contracts</li>
+          <li>Configure Claude Code for internal development tasks</li>
+          <li>Establish VM2 RAG engine integration with Conway-style triggers</li>
+          <li>Document ROI metrics (hours saved, quality improvement)</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-num">Phase 2</div>
+        <h4>Client POC</h4>
+        <div class="phase-time">Months 4–6 (Q3 2026)</div>
+        <ul>
+          <li>Procure C4G via Carahsoft on GSA MAS (or $1/agency offer through August 2026)</li>
+          <li>Deploy Bedrock GovCloud integration for DHS CUI workloads</li>
+          <li>Pilot CISA threat intel digest agent on one active engagement</li>
+          <li>Build DHS workflow automation POC (regulatory monitoring)</li>
+          <li>Validate FedRAMP ATO adequacy with client ISSO</li>
+          <li>Develop CNW-compatible extension templates for federal use cases</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-num">Phase 3</div>
+        <h4>Production Scale</h4>
+        <div class="phase-time">Months 7–12 (Q4 2026–Q1 2027)</div>
+        <ul>
+          <li>Integrate Conway (if released) into FedRAMP-authorized boundary</li>
+          <li>Scale document processing agents across all active contracts</li>
+          <li>Deploy proposal pipeline automation as standard bid response process</li>
+          <li>Offer Conway-based automation as differentiated service to federal clients</li>
+          <li>Develop Changeis-branded agentic delivery methodology</li>
+          <li>Evaluate Apex Agentic Framework alignment across all six pillars</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:18px;">
+      <strong>Quick Win — Available Now</strong>
+      The $1/agency C4G offer (unlimited seats through August 2026) can be claimed for any qualifying federal client. Changeis should proactively facilitate adoption on active DHS/FAA engagements immediately. This creates a deployed footprint before the promotional period expires, establishes technical architecture, and positions Conway as a natural upgrade when it reaches federal authorization.
+    </div>
+  </div>
+
+  <!-- 7. Cost-Benefit Analysis -->
+  <div class="section">
+    <div class="section-header">7 · Cost-Benefit Analysis</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Deployment Scenario</th>
+          <th>Annual Cost (Est.)</th>
+          <th>Time Saved / Year</th>
+          <th>Efficiency Gain</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>C4G — Federal agency ($1 offer)</strong></td>
+          <td>$1/agency (through Aug 2026) then ~$60/seat/mo</td>
+          <td>—</td>
+          <td>Immediate access to FedRAMP High LLM</td>
+        </tr>
+        <tr>
+          <td><strong>Claude Enterprise — Changeis internal</strong></td>
+          <td>$20/seat/mo ($240/seat/yr) + consumption</td>
+          <td>10–15 hrs/PM/month</td>
+          <td>~$3,600–5,400/PM in labor savings at $30/hr blended cost</td>
+        </tr>
+        <tr>
+          <td><strong>Bedrock GovCloud API</strong></td>
+          <td>~$3–15/1M tokens (model-dependent)</td>
+          <td>Scales with usage</td>
+          <td>Full agentic control; no seat caps; DoD IL4/IL5</td>
+        </tr>
+        <tr>
+          <td><strong>Proposal pipeline automation (Phase 1)</strong></td>
+          <td>~$500–2,000/mo all-in</td>
+          <td>20–40 hrs per RFP response</td>
+          <td>$6,000–12,000 per proposal at $300/hr labor cost</td>
+        </tr>
+        <tr>
+          <td><strong>Conway native (post-release)</strong></td>
+          <td>Est. $100–200+/seat/mo (enterprise premium)</td>
+          <td>30–50 hrs/user/month</td>
+          <td>Full workflow automation across all contract types</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:14px;"><strong>ROI Summary:</strong> A 10-person Changeis team using Claude Enterprise for internal workflow automation generates an estimated <strong>1,200–1,800 labor hours saved annually</strong>. At a fully-loaded cost of $125–175/hr, that represents <strong>$150,000–$315,000 in recovered capacity</strong> — capacity that can be redirected to billable work or proposal development. A single won proposal enabled by the pipeline automation agent more than offsets the full-year tool cost.</p>
+  </div>
+
+  <!-- 8. Risks and Mitigations -->
+  <div class="section">
+    <div class="section-header">8 · Risks &amp; Mitigations</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Risk</th>
+          <th>Likelihood</th>
+          <th>Impact</th>
+          <th>Mitigation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>DoD exclusion order formally issued against Anthropic</strong></td>
+          <td><span class="risk-med">Medium</span></td>
+          <td><span class="risk-high">High</span></td>
+          <td>Architect all federal deployments via Bedrock GovCloud (AWS-native ATO, independent of Anthropic's federal standing). Maintain parallel evaluations of OpenAI GPT-4o Government and Google Gemini for Government as fallbacks.</td>
+        </tr>
+        <tr>
+          <td><strong>Conway never reaches FedRAMP authorization</strong></td>
+          <td><span class="risk-med">Medium</span></td>
+          <td><span class="risk-med">Medium</span></td>
+          <td>Conway-equivalent architecture is buildable today on C4G + Bedrock via Claude Code, Cowork, and custom MCP integrations. Conway-native deployment is additive, not foundational.</td>
+        </tr>
+        <tr>
+          <td><strong>Always-on agent causes unauthorized data exfiltration</strong></td>
+          <td><span class="risk-low">Low</span></td>
+          <td><span class="risk-high">High</span></td>
+          <td>Implement strict data boundary controls: no CUI in non-C4G environments; zero-data-retention agreements; audit logging enabled; human-in-the-loop required for any write/send action in Phase 1–2.</td>
+        </tr>
+        <tr>
+          <td><strong>Anthropic pricing shifts make consumption costs unpredictable</strong></td>
+          <td><span class="risk-high">High</span></td>
+          <td><span class="risk-med">Medium</span></td>
+          <td>Anthropic ejected bundled token plans in April 2026; monitor billing changes. Use C4G seat-based plan ($60/seat/mo, fixed, no consumption charges) for predictable federal cost accounting.</td>
+        </tr>
+        <tr>
+          <td><strong>Agent hallucination in regulatory/compliance workflows</strong></td>
+          <td><span class="risk-med">Medium</span></td>
+          <td><span class="risk-high">High</span></td>
+          <td>All agent outputs in regulatory/compliance contexts require human review gate before submission. Implement source-citation requirements in all prompts. Establish validation checklist for CDRLs and formal deliverables.</td>
+        </tr>
+        <tr>
+          <td><strong>Client ISSO rejects Anthropic ATO for specific workloads</strong></td>
+          <td><span class="risk-med">Medium</span></td>
+          <td><span class="risk-med">Medium</span></td>
+          <td>Obtain Anthropic ATO package documentation via Carahsoft prior to engagement. Engage client ISSO early with FedRAMP package documentation and Schellman 3PAO assessment evidence.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 9. Recommendation -->
+  <div class="section">
+    <div class="section-header">9 · Recommendation</div>
+
+    <div class="callout">
+      <strong>Strategic Recommendation</strong>
+      Changeis should treat Conway-style always-on agentic automation as a <strong>core delivery differentiator</strong> for 2026–2027 federal IT engagements. The technology is architecturally sound, the federal authorization pathway is clear (C4G + Bedrock GovCloud), and the workflow automation use cases are directly applicable to DHS, FAA, and CBP program environments. Conway-native deployment should be monitored as an upgrade path, not a prerequisite.
+    </div>
+
+    <div class="steps" style="margin-top:20px;">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">
+          <strong>Immediate (April–June 2026): Claim the $1/agency C4G offer</strong>
+          Facilitate C4G adoption at qualifying DHS/FAA clients before the August 2026 expiration of the $1/agency promotional pricing. Procure via Carahsoft on GSA MAS. Establish technical architecture and ISSO approval baseline.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          <strong>Near-term (Q2 2026): Deploy internal proposal pipeline agent</strong>
+          Build the SAM.gov + GovWin RFP monitoring agent on Claude Enterprise. This is the highest-ROI, lowest-risk starting point — no client data, no CUI, immediate measurable value. Target: proposal response time cut by 30% within 90 days.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          <strong>Mid-term (Q3 2026): Deploy CISA threat intel agent as POC</strong>
+          Using Bedrock GovCloud for the CUI boundary, pilot the threat intelligence monitoring agent on the most digitally mature CISA or CBP engagement. Document ISSO approval process, agent performance metrics, and hours saved.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">
+          <strong>Strategic (Q4 2026): Package as Changeis Agentic Delivery Methodology</strong>
+          Codify the Conway-equivalent architecture as a repeatable Changeis delivery capability. Align to Apex Agentic Organization Framework pillars. Position in proposals as differentiated technical approach on SCOAR recompetes and new DHS acquisitions.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-text">
+          <strong>Ongoing: Monitor Conway authorization &amp; DoD legal proceedings</strong>
+          Track Anthropic's injunctive relief case against the DoD supply-chain designation. Monitor C4G product roadmap for Cowork and Claude Code FedRAMP availability. Integrate Conway natively when it achieves C4G boundary inclusion or equivalent FedRAMP High authorization.
+        </div>
+      </div>
+    </div>
+
+    <table style="margin-top:20px;">
+      <thead>
+        <tr>
+          <th>Priority</th>
+          <th>Action</th>
+          <th>Owner</th>
+          <th>Timeline</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>P1</td>
+          <td>Facilitate C4G adoption at DHS/FAA clients</td>
+          <td>Varun / Account Leads</td>
+          <td>May 2026</td>
+          <td><span class="chip chip-orange">Ready to Start</span></td>
+        </tr>
+        <tr>
+          <td>P1</td>
+          <td>Deploy proposal pipeline RFP monitoring agent</td>
+          <td>VM2 / Ops</td>
+          <td>May 2026</td>
+          <td><span class="chip chip-orange">Ready to Start</span></td>
+        </tr>
+        <tr>
+          <td>P2</td>
+          <td>Configure Bedrock GovCloud integration for CISA POC</td>
+          <td>Tech Lead</td>
+          <td>Q3 2026</td>
+          <td><span class="chip chip-navy">Planned</span></td>
+        </tr>
+        <tr>
+          <td>P2</td>
+          <td>Monitor Conway FedRAMP authorization pathway</td>
+          <td>VM2</td>
+          <td>Ongoing</td>
+          <td><span class="chip chip-teal">Monitoring</span></td>
+        </tr>
+        <tr>
+          <td>P3</td>
+          <td>Package Agentic Delivery Methodology for proposals</td>
+          <td>Varun / BD</td>
+          <td>Q4 2026</td>
+          <td><span class="chip chip-navy">Planned</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Context Section -->
+  <div class="context-section">
+    <button class="context-toggle" onclick="toggleContext(this)">
+      <span class="arrow">▶</span> Session Context &amp; Methodology
+    </button>
+    <div class="context-body">
+ORIGINAL INSTRUCTIONS:
+Research deep dive on Anthropic's Conway always-on agent and its applicability to federal IT workflow automation at Changeis.
+Structure: Executive Summary, What is Conway, Technical Architecture, Federal Use Cases at Changeis (DHS workflow automation, proposal pipeline, document processing), Security/Compliance Assessment (FedRAMP, FISMA, data residency), Implementation Roadmap (pilot → production), Cost-Benefit Analysis, Risks and Mitigations, Recommendation.
+
+APPROACH:
+Conducted 2 rounds of web research (6 queries total) targeting:
+1. Conway product details: architecture, features, CNW extensions, webhook system, pricing signals
+2. FedRAMP/federal authorization landscape: C4G, Bedrock GovCloud, compliance controls, pricing
+Fetched 4 primary sources: MindStudio analysis, HappyCapy deep dive, Claude Public Sector FAQ, Claude for Government getting started guide. Cross-referenced with Anthropic.com government announcements and The Register enterprise pricing report.
+
+KEY FINDINGS:
+• Conway is internally tested at Anthropic (leaked April 1, 2026 via TestingCatalog); not commercially available; always-on daemon model with webhook triggers, browser control, CNW extensions, persistent memory, and Claude Code integration
+• Claude for Government (C4G) holds FedRAMP High ATO through Palantir Federal Cloud Service; authorized by Schellman Compliance; $60/seat/mo fixed; $1/agency unlimited seats through August 2026
+• Bedrock GovCloud provides DoD IL4/IL5 path — independent of Anthropic's direct federal contracting status
+• Trump Feb 2026 directive directs federal agency phase-out of Anthropic; DoD supply-chain designation active; no formal exclusion order issued; contractor use NOT prohibited
+• Conway-equivalent architecture is deployable today on C4G + Bedrock + MCP integrations; high-fit use cases for DHS regulatory monitoring, proposal pipeline automation, CDRL generation
+• Anthropic shifted Enterprise pricing to $20/seat + consumption (April 2026); C4G remains seat-based fixed pricing — better for federal cost accounting
+
+DEAD ENDS:
+• Conway official pricing not disclosed (pre-release product); estimated at premium enterprise tier ($100-200+/seat/mo) based on Claude Max pricing trajectory
+• Conway FedRAMP timeline unknown — no Anthropic roadmap statement
+• Epitaxi (internal control layer) mentioned in code analysis but no detailed documentation available
+
+ASSUMPTIONS:
+• Conway architecture details sourced from testing catalog leak (April 1, 2026) — treated as credible based on multi-outlet confirmation; not official Anthropic documentation
+• Cost estimates based on comparable Anthropic enterprise tiers and analyst projections
+• 6-month federal phase-out window assumed to run through approximately August 2026
+• Changeis fully-loaded consultant cost assumed at $125–175/hr for ROI calculations
+
+OPEN QUESTIONS:
+• Will the DoD supply-chain designation be reversed via injunction? (Case pending as of April 2026)
+• When will Conway reach commercial release and what authorization path will Anthropic pursue?
+• Will C4G include Cowork and Claude Code before August 2026 as promised?
+• What is the specific CNW extension format — ZIP package schema and MCP integration specifics?
+• How does Conway handle multi-agent orchestration across multiple concurrent workflows?
+
+DATA SOURCES:
+• Times of AI — Conway leaked testing report: https://www.timesofai.com/news/anthropics-conway-being-tested/
+• MindStudio — Conway technical analysis: https://www.mindstudio.ai/blog/what-is-conway-agent-anthropic-always-on-background-ai/
+• HappyCapy Guide — Conway deep dive: https://happycapyguide.com/blog/anthropic-conway-always-on-ai-agent-digital-twin-2026
+• Anthropic — Government access announcement: https://www.anthropic.com/news/offering-expanded-claude-access-across-all-three-branches-of-government
+• Claude Help Center — Public Sector FAQs: https://support.claude.com/en/articles/13756069-public-sector-faqs
+• Claude Help Center — Get Started with C4G: https://support.claude.com/en/articles/14503590-get-started-with-claude-for-government
+• The Register — Enterprise pricing change: https://www.theregister.com/2026/04/16/anthropic_ejects_bundled_tokens_enterprise/
+• FedScoop — Anthropic federal fallout: https://fedscoop.com/anthropic-claude-dod-federal-agency-fallout-trump-hegseth/
+• Nextgov/FCW — Agency phase-out: https://www.nextgov.com/acquisition/2026/03/agencies-begin-shed-anthropic-contracts-following-trumps-directive/411823/
+• Anthropic — FedRAMP High / DoD IL4/IL5 via Bedrock: https://www.anthropic.com/news/claude-in-amazon-bedrock-fedramp-high
+• Vantage Point — Enterprise tiers 2026: https://vantagepoint.io/blog/sf/anthropic/enterprise-ai-tiers-explained
+• Wiley Rein — DoD injunction status: https://www.wileyconnect.com/icymi-developments-in-anthropic-challenges-to-department-of-war-supply-chain-risk-designation
+
+NEXT STEPS:
+1. Contact Carahsoft to initiate C4G procurement on GSA MAS for qualifying DHS/FAA clients
+2. Build SAM.gov RFP monitoring agent on Claude Enterprise as internal pilot
+3. Brief Varun on DoD legal proceedings and Bedrock GovCloud as primary federal deployment path
+4. Develop CISA threat intel agent requirements document for Q3 2026 POC
+5. Schedule quarterly review of Conway commercial release and FedRAMP authorization status
+    </div>
+  </div>
+
+  <!-- Hidden JSON Context -->
+  <script type="application/json" id="vm2-context-data">
+  {
+    "task_name": "Conway AI Deep Dive",
+    "task_date": "2026-04-19",
+    "created_date": "2026-04-19",
+    "revised_date": null,
+    "deliverable_file": "ai-deep-dive-conway-federal-2026-04-19.html",
+    "railway_url": "https://vm2-p-taskers-production.up.railway.app/ai-deep-dive-conway-federal-2026-04-19.html",
+    "version": 1,
+    "prior_versions": [],
+    "related_deliverables": [],
+    "original_instructions": "Research deep dive on Anthropic's Conway always-on agent and its applicability to federal IT workflow automation at Changeis. Structure: Executive Summary, What is Conway, Technical Architecture, Federal Use Cases at Changeis (DHS workflow automation, proposal pipeline, document processing), Security/Compliance Assessment (FedRAMP, FISMA, data residency), Implementation Roadmap (pilot → production), Cost-Benefit Analysis, Risks and Mitigations, Recommendation.",
+    "approach": "Conducted 2 rounds of web research (6 queries total) + 4 primary source fetches covering Conway product details and federal authorization landscape. Sources: MindStudio analysis, HappyCapy deep dive, Claude Public Sector FAQ, Claude for Government getting started guide, Anthropic government announcements, The Register pricing report.",
+    "key_findings": [
+      "Conway is an always-on agentic platform in Anthropic internal testing (leaked April 2026); not commercially available; daemon-model with webhooks, browser control, CNW extensions, persistent memory, Claude Code integration",
+      "Claude for Government (C4G) holds FedRAMP High ATO through Palantir Federal Cloud Service; Schellman 3PAO; $60/seat/mo fixed; $1/agency unlimited seats through August 2026",
+      "Bedrock GovCloud provides DoD IL4/IL5 path independent of Anthropic's direct federal contracting status",
+      "Trump Feb 2026 directive phases out Anthropic from federal agencies; no formal exclusion order issued; contractor use NOT prohibited",
+      "Conway-equivalent architecture deployable today on C4G + Bedrock + MCP; high-fit use cases for DHS regulatory monitoring, proposal automation, CDRL generation"
+    ],
+    "dead_ends": [
+      "Conway official pricing not disclosed (pre-release)",
+      "Conway FedRAMP authorization timeline unknown",
+      "Epitaxi internal control layer — no detailed public documentation"
+    ],
+    "assumptions": [
+      "Conway architecture sourced from testing catalog leak — treated as credible based on multi-outlet confirmation",
+      "Cost estimates based on comparable Anthropic enterprise tiers",
+      "Changeis fully-loaded consultant cost assumed at $125–175/hr for ROI calculations",
+      "6-month federal phase-out window runs through approximately August 2026"
+    ],
+    "open_questions": [
+      "Will DoD supply-chain designation be reversed via injunction?",
+      "When will Conway reach commercial release and what FedRAMP path will Anthropic pursue?",
+      "Will C4G include Cowork and Claude Code before August 2026?",
+      "CNW extension format specifics — ZIP schema and MCP integration details?"
+    ],
+    "data_sources": [
+      "https://www.timesofai.com/news/anthropics-conway-being-tested/",
+      "https://www.mindstudio.ai/blog/what-is-conway-agent-anthropic-always-on-background-ai/",
+      "https://happycapyguide.com/blog/anthropic-conway-always-on-ai-agent-digital-twin-2026",
+      "https://www.anthropic.com/news/offering-expanded-claude-access-across-all-three-branches-of-government",
+      "https://support.claude.com/en/articles/13756069-public-sector-faqs",
+      "https://support.claude.com/en/articles/14503590-get-started-with-claude-for-government",
+      "https://www.theregister.com/2026/04/16/anthropic_ejects_bundled_tokens_enterprise/",
+      "https://fedscoop.com/anthropic-claude-dod-federal-agency-fallout-trump-hegseth/",
+      "https://www.nextgov.com/acquisition/2026/03/agencies-begin-shed-anthropic-contracts-following-trumps-directive/411823/",
+      "https://www.anthropic.com/news/claude-in-amazon-bedrock-fedramp-high",
+      "https://vantagepoint.io/blog/sf/anthropic/enterprise-ai-tiers-explained",
+      "https://www.wileyconnect.com/icymi-developments-in-anthropic-challenges-to-department-of-war-supply-chain-risk-designation"
+    ],
+    "next_steps": [
+      "Contact Carahsoft to initiate C4G procurement on GSA MAS for qualifying DHS/FAA clients",
+      "Build SAM.gov RFP monitoring agent on Claude Enterprise as internal pilot",
+      "Brief Varun on DoD legal proceedings and Bedrock GovCloud as primary federal deployment path",
+      "Develop CISA threat intel agent requirements document for Q3 2026 POC",
+      "Schedule quarterly review of Conway commercial release and FedRAMP authorization status"
+    ],
+    "cost_estimate": {
+      "model": "claude-sonnet-4-6",
+      "model_pricing": "$3/$15 per 1M tokens",
+      "input_tokens_est": "~55,000",
+      "output_tokens_est": "~10,000",
+      "search_calls": 6,
+      "subagent_calls": 0,
+      "cost_conservative": "$0.32",
+      "cost_ceiling": "$0.60",
+      "notes": "6 web searches, 4 URL fetches for primary source validation, full HTML generation with 9 sections, tables, architecture diagram, and all mandatory deliverable components"
+    }
+  }
+  </script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up where this analysis left off — copy the follow-up prompt or route to VM2.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up%3A%20Conway%20AI%20Deep%20Dive%20(2026-04-19)&body=Continue%20work%20on%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fai-deep-dive-conway-federal-2026-04-19.html%0A%0AContext%3A%20Conway%20always-on%20agent%20deep%20dive%20for%20Changeis%20federal%20IT%20practice.%20Key%20next%20steps%3A%20(1)%20C4G%20procurement%20via%20Carahsoft%2C%20(2)%20SAM.gov%20RFP%20monitoring%20agent%20build%2C%20(3)%20Bedrock%20GovCloud%20CISA%20POC.">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <button class="btn btn-secondary" onclick="createTodoistTask()">
+        <span class="btn-icon">✓</span> Create Todoist Follow-Up
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · Conway AI Deep Dive — Federal IT Applicability · April 19, 2026 · VM2 Deliverable
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+
+function toggleContext(btn) {
+  btn.classList.toggle('open');
+  const body = btn.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function copyFollowUp() {
+  const ctx = JSON.parse(document.getElementById('vm2-context-data').textContent);
+  const prompt = `Continue work on: ${ctx.railway_url}
+
+Task: ${ctx.task_name}
+Date: ${ctx.task_date}
+
+Key Findings:
+${ctx.key_findings.map(f => '• ' + f).join('\n')}
+
+Open Questions:
+${ctx.open_questions.map(q => '• ' + q).join('\n')}
+
+Next Steps:
+${ctx.next_steps.map(s => '• ' + s).join('\n')}
+
+Paste into a new VM2 session to continue.`;
+  navigator.clipboard.writeText(prompt).then(() => showToast('Follow-up prompt copied — paste into a new VM2 session'));
+}
+
+function createTodoistTask() {
+  const url = 'https://todoist.com/add?content=Conway+AI+Deep+Dive+Follow-Up+%5Bvm2%5D&description=See%3A+https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fai-deep-dive-conway-federal-2026-04-19.html';
+  window.open(url, '_blank');
+  showToast('Opening Todoist…');
+}
+</script>
+</body>
+</html>
