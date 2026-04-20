@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: TSA Dell Server Maintenance — F2025071677</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --green: #2D7D4A;
+    --amber: #b87300;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --green: #4caf6e;
+    --amber: #e0a020;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px 48px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 32px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.2; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Meta grid */
+  .meta-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    margin-top: 10px;
+  }
+  @media (max-width: 650px) { .meta-grid { grid-template-columns: 1fr; } }
+  .meta-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    box-shadow: var(--card-shadow);
+  }
+  .meta-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--text-faint); margin-bottom: 3px;
+  }
+  .meta-value {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    font-family: system-ui, sans-serif;
+  }
+  .meta-value.green { color: var(--green); }
+  .meta-value.amber { color: var(--amber); }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) td { background: var(--table-alt); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* Score pill */
+  .pill {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 3px;
+    letter-spacing: 0.04em;
+  }
+  .pill-green { background: #d1f0dc; color: #1f6137; }
+  .pill-amber { background: #fef3c7; color: #92400e; }
+  .pill-red { background: #fee2e2; color: #991b1b; }
+  .pill-blue { background: #dbeafe; color: #1e40af; }
+  [data-theme="dark"] .pill-green { background: #1a3d28; color: #6ddb95; }
+  [data-theme="dark"] .pill-amber { background: #3d2e0a; color: #f0c040; }
+  [data-theme="dark"] .pill-red { background: #3d1010; color: #f87171; }
+  [data-theme="dark"] .pill-blue { background: #1a2a4a; color: #93c5fd; }
+
+  /* Callout */
+  .callout {
+    background: var(--surface);
+    border-left: 3px solid var(--red);
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 14.5px;
+  }
+  .callout-green { border-left-color: var(--green); }
+  .callout-amber { border-left-color: var(--amber); }
+  .callout strong { color: var(--text); }
+
+  /* Go/No-Go box */
+  .verdict-box {
+    border: 2px solid var(--green);
+    border-radius: 8px;
+    padding: 20px 24px;
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+  }
+  .verdict-box.go { border-color: var(--green); }
+  .verdict-box.nogo { border-color: var(--red); }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-faint); margin-bottom: 4px;
+  }
+  .verdict-decision {
+    font-size: 28px; font-weight: 700;
+    color: var(--green); margin-bottom: 10px;
+  }
+  .verdict-box.nogo .verdict-decision { color: var(--red); }
+  .verdict-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-top: 14px;
+  }
+  @media (max-width: 600px) { .verdict-grid { grid-template-columns: 1fr; } }
+  .verdict-col h5 {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .verdict-col.pros h5 { color: var(--green); }
+  .verdict-col.cons h5 { color: var(--red); }
+  .verdict-col ul { padding-left: 16px; }
+  .verdict-col li { font-size: 14px; margin-bottom: 3px; }
+
+  /* Capability matrix score bar */
+  .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .score-bar {
+    height: 7px; border-radius: 4px;
+    background: var(--border); flex: 1; max-width: 80px;
+    overflow: hidden;
+  }
+  .score-bar-fill { height: 100%; border-radius: 4px; background: var(--green); }
+  .score-num {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700; color: var(--text-muted);
+  }
+
+  /* Context section */
+  .context-section {
+    margin: 28px 0 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .context-toggle {
+    width: 100%;
+    background: var(--surface-alt);
+    border: none;
+    padding: 10px 16px;
+    text-align: left;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .context-toggle .arrow { font-size: 10px; transition: transform 0.2s; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none;
+    padding: 14px 16px;
+    font-family: monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    background: var(--code-bg);
+    color: var(--text-muted);
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+  .context-body.open { display: block; }
+
+  /* Continue panel */
+  .continue-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 20px 0 16px;
+  }
+  .continue-panel h3 {
+    font-size: 16px; font-weight: 700; margin-bottom: 4px;
+  }
+  .continue-panel .subtitle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 6px;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; text-decoration: none; border: none;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; color: inherit; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    color: var(--text-faint);
+    padding: 18px 0 4px;
+    border-top: 1px solid var(--border);
+    margin-top: 24px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #222; color: #fff; border-radius: 6px;
+    padding: 8px 18px; font-family: system-ui, sans-serif; font-size: 13px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 9999;
+  }
+  .toast.show { opacity: 1; }
+
+  .cost-note {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 10px 14px;
+    font-family: system-ui, sans-serif;
+    font-size: 12.5px; color: var(--text-muted);
+    margin-top: 10px;
+  }
+
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span style="font-weight:800;font-size:15px;">VM2</span>
+    <span class="topbar-dot">·</span>
+    <span style="font-weight:400;opacity:0.85;">Opportunity Intelligence</span>
+  </div>
+  <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · APFS F2025071677</div>
+    <h1>TSA Dell Server Maintenance &amp; Support</h1>
+    <div class="hero-sub">TSA / Office of Information Technology — Springfield, VA</div>
+    <div class="hero-date">Created: 2026-04-20 &nbsp;·&nbsp; NAICS 541519 &nbsp;·&nbsp; RAG Score: 0.6858 (STRONG)</div>
+  </div>
+
+  <!-- ══ 1. EXECUTIVE SUMMARY ══ -->
+  <div class="section">
+    <div class="section-header">1. Executive Summary</div>
+
+    <div class="meta-grid">
+      <div class="meta-card">
+        <div class="meta-label">Dollar Range</div>
+        <div class="meta-value">$500K – $1M</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">RAG Score</div>
+        <div class="meta-value green">0.6858 — STRONG</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Contract Type</div>
+        <div class="meta-value">Firm Fixed Price</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Vehicle</div>
+        <div class="meta-value">GSA Schedule</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Set-Aside</div>
+        <div class="meta-value green">Full Small Business</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Award Quarter</div>
+        <div class="meta-value">Q4 FY2026 (Sep 2026)</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Solicitation Release</div>
+        <div class="meta-value">07/22/2026</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Period of Performance</div>
+        <div class="meta-value">09/28/2026 – 09/27/2028</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Incumbent</div>
+        <div class="meta-value amber">Better Direct, LLC</div>
+      </div>
+    </div>
+
+    <div class="callout callout-green" style="margin-top:16px;">
+      <strong>Bottom line:</strong> TSA OIT requires recurring Dell ProSupport Mission Critical and Post Standard Support for its Springfield, VA server fleet. This is a full small business set-aside recompetition on GSA Schedule, valued $500K–$1M over two years. The incumbent (Better Direct, LLC) is an SDVOSB/HUBZone small business — strong bidder — but Changeis has relevant Tier 2/3 IT maintenance past performance through FAA and DOT/Volpe task orders, and can build a credible challenge through a qualified Dell reseller teaming arrangement.
+    </div>
+  </div>
+
+  <!-- ══ 2. OPPORTUNITY DETAILS ══ -->
+  <div class="section">
+    <div class="section-header">2. Opportunity Details</div>
+
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>APFS Number</strong></td><td>F2025071677</td></tr>
+        <tr><td><strong>Requirements Title</strong></td><td>Dell Server Maintenance and Support</td></tr>
+        <tr><td><strong>Organization</strong></td><td>TSA / Office of Information Technology (OIT)</td></tr>
+        <tr><td><strong>Contracting Office</strong></td><td>ACQ03 Enterprise Information Technology Acquisition Division</td></tr>
+        <tr><td><strong>Requirements Office</strong></td><td>Office of Information Technology – TSA 40</td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541519 – Other Computer Related Services</td></tr>
+        <tr><td><strong>Contract Status</strong></td><td>Recompetition (Follow-on to 70T03024F7667N114)</td></tr>
+        <tr><td><strong>Contract Vehicle</strong></td><td>GSA Schedule (MAS)</td></tr>
+        <tr><td><strong>Contract Type</strong></td><td>Firm Fixed Price</td></tr>
+        <tr><td><strong>Small Business Set-Aside</strong></td><td>Full Small Business (Program TBD)</td></tr>
+        <tr><td><strong>Dollar Range</strong></td><td>$500,000 – $1,000,000</td></tr>
+        <tr><td><strong>Place of Performance</strong></td><td>Springfield, VA</td></tr>
+        <tr><td><strong>Publish Date</strong></td><td>09/23/2025</td></tr>
+        <tr><td><strong>Solicitation Release</strong></td><td>07/22/2026</td></tr>
+        <tr><td><strong>Anticipated Award</strong></td><td>09/03/2026</td></tr>
+        <tr><td><strong>PoP Start / End</strong></td><td>09/28/2026 – 09/27/2028</td></tr>
+        <tr><td><strong>Incumbent</strong></td><td>Better Direct, LLC (Contract 70T03024F7667N114)</td></tr>
+        <tr><td><strong>Requirements POC</strong></td><td>Robert Looney &lt;robert.j.looney@tsa.dhs.gov&gt; · (202) 302-6937</td></tr>
+        <tr><td><strong>SBS Coordinator</strong></td><td>Elizabeth Harrington &lt;TSASmallBiz@tsa.dhs.gov&gt; · (571) 227-1067</td></tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:14px;font-size:15px;"><strong>Requirement description (verbatim):</strong> <em>"The contractor shall provide recurring maintenance and support for Dell-brand servers deployed through the TSA IT infrastructure. The support types required are End User ProSupport Mission Critical level of service as well as Post Standard Support."</em></p>
+
+    <div class="callout" style="margin-top:12px;">
+      <strong>Key interpretation:</strong> Two distinct Dell support tiers are in scope: (1) <strong>ProSupport Mission Critical</strong> — the highest Dell service level, featuring 4-hour on-site response 24x7x365, proactive monitoring via Dell AIOps/Secure Connect Gateway, and dedicated TAM access; and (2) <strong>Post Standard Support</strong> — covering hardware past its standard warranty/OEM support window (post-EoL/EoS assets). The contractor must hold an active GSA MAS contract under NAICS 541519 and be an authorized Dell reseller or partner.
+    </div>
+  </div>
+
+  <!-- ══ 3. RAG CAPABILITY MATCH ══ -->
+  <div class="section">
+    <div class="section-header">3. RAG Capability Match — Top Matches</div>
+
+    <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Composite scores from internal past-performance corpus (Run 244 · 27 task orders evaluated). Higher scores indicate stronger keyword and semantic alignment with the SOW language.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Task Order</th>
+          <th>Contract</th>
+          <th>Clients</th>
+          <th>Score</th>
+          <th>Top Section Match</th>
+          <th>Relevance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>FAA_CLMRS</strong></td>
+          <td>—</td>
+          <td>FAA</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar"><div class="score-bar-fill" style="width:100%"></div></div>
+              <span class="score-num">0.686</span>
+            </div>
+          </td>
+          <td>C.2.13 In Service Management — Tier 2/3 maintenance support hierarchy</td>
+          <td><span class="pill pill-green">STRONG</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>V3132012</strong></td>
+          <td>6913G620F400059</td>
+          <td>DOT · FAA · FMCSA · Volpe</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar"><div class="score-bar-fill" style="width:93%"></div></div>
+              <span class="score-num">0.637</span>
+            </div>
+          </td>
+          <td>C.4 Required Tasks &amp; Deliverables — monthly status, financial tracking</td>
+          <td><span class="pill pill-green">STRONG</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>V3132063</strong></td>
+          <td>6913G621F400004</td>
+          <td>DOT · FAA · Volpe</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar"><div class="score-bar-fill" style="width:88%"></div></div>
+              <span class="score-num">0.606</span>
+            </div>
+          </td>
+          <td>C.4.1.3 Communications &amp; Training — IT support operations context</td>
+          <td><span class="pill pill-green">STRONG</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>V3132127</strong></td>
+          <td>6913G621F400039</td>
+          <td>DOT · FMCSA · Volpe</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar"><div class="score-bar-fill" style="width:85%"></div></div>
+              <span class="score-num">0.583</span>
+            </div>
+          </td>
+          <td>C.2 Purpose — customer service &amp; safety program IT support</td>
+          <td><span class="pill pill-amber">MODERATE</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>V3272005</strong></td>
+          <td>6913G620F400032</td>
+          <td>DOT · FAA · FHWA · FTA · NHTSA · Volpe</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar"><div class="score-bar-fill" style="width:79%"></div></div>
+              <span class="score-num">0.543</span>
+            </div>
+          </td>
+          <td>C.3 Scope — system operational performance &amp; IT infrastructure support</td>
+          <td><span class="pill pill-amber">MODERATE</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>V3132051</strong></td>
+          <td>6913G620F400115</td>
+          <td>DOT · FAA · FMCSA · Volpe</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar"><div class="score-bar-fill" style="width:78%"></div></div>
+              <span class="score-num">0.539</span>
+            </div>
+          </td>
+          <td>C.4 Required Tasks &amp; Deliverables — IT service delivery</td>
+          <td><span class="pill pill-amber">MODERATE</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>V3112005</strong></td>
+          <td>6913G620F400053</td>
+          <td>DOT · FAA · FMCSA · Volpe</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar"><div class="score-bar-fill" style="width:68%"></div></div>
+              <span class="score-num">0.463</span>
+            </div>
+          </td>
+          <td>C.1 Background — IT operations &amp; network infrastructure support</td>
+          <td><span class="pill pill-amber">MODERATE</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green" style="margin-top:14px;">
+      <strong>RAG narrative:</strong> The top match (FAA_CLMRS, score 0.686) aligns strongly on Tier 2/3 in-service IT maintenance language — incident escalation hierarchies, system security configuration support, and recurring managed service delivery. Task orders V3132012 and V3132063 further demonstrate multi-agency IT service delivery with status reporting and SLA-driven workflows — directly analogous to a Dell ProSupport managed maintenance contract. The corpus does <em>not</em> contain a direct Dell OEM hardware maintenance task order, so a capability narrative bridge will be needed (emphasizing server operations experience vs. direct Dell reseller credentials).
+    </div>
+  </div>
+
+  <!-- ══ 4. INCUMBENT & FPDS ANALYSIS ══ -->
+  <div class="section">
+    <div class="section-header">4. Incumbent &amp; FPDS / USAspending Analysis</div>
+
+    <p style="font-size:15px;margin-bottom:12px;"><strong>Incumbent: Better Direct, LLC</strong> — Tempe, AZ · UEI J6EEK881G8H7 · CAGE 4JN18</p>
+
+    <table>
+      <thead>
+        <tr><th>Attribute</th><th>Details</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Certifications</strong></td><td>HUBZone (2011) · SDVOSB · VOSB · Self-Certified SDB</td></tr>
+        <tr><td><strong>GSA Schedule</strong></td><td>GS35F0503X (MAS) · PoP 7/15/2011 – 7/14/2026 · ~$24.7M total obligated · <strong>Expiring 7/2026</strong></td></tr>
+        <tr><td><strong>Also on</strong></td><td>47QTCA21A000P (GSA MAS — primary vehicle for recompete)</td></tr>
+        <tr><td><strong>Primary NAICS</strong></td><td>541519 · Also: 334111, 423430, 541512</td></tr>
+        <tr><td><strong>Vendor ecosystem</strong></td><td>IBM, Lenovo, Cisco, VMware, Microsoft, Eaton, WhatsUpGold (Dell not listed on public profile — notable gap)</td></tr>
+        <tr><td><strong>TSA contract</strong></td><td>70T03024F7667N114 — current Dell server maintenance &amp; support award (base period ending ~09/27/2026)</td></tr>
+        <tr><td><strong>Entity type</strong></td><td>LLC · For-Profit · AZ incorporation</td></tr>
+        <tr><td><strong>Employees</strong></td><td>&lt;500</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber" style="margin-top:14px;">
+      <strong>Incumbent risk flag:</strong> Better Direct's primary GSA Schedule (GS35F0503X) expires <strong>July 14, 2026</strong> — eight weeks before the anticipated solicitation release date (07/22/2026). If they haven't extended or transitioned to a newer vehicle, this creates a procurement compliance question. However, they also hold 47QTCA21A000P which may be their active vehicle. Monitor SAM.gov for their schedule status.
+    </div>
+
+    <p style="font-size:15px;margin-top:14px;margin-bottom:8px;"><strong>Related TSA OIT contract landscape (FPDS/USAspending):</strong></p>
+
+    <table>
+      <thead>
+        <tr><th>Contract #</th><th>Awardee</th><th>Description</th><th>Value</th><th>Date</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>70T03024F7667N114</td><td><strong>Better Direct, LLC</strong></td><td>Dell Server Maintenance &amp; Support (incumbent)</td><td>~$500K–$1M</td><td>FY2024</td></tr>
+        <tr><td>70T03024A7667N002</td><td>Sterling Computers</td><td>IT Hardware &amp; Peripherals BPA</td><td>$25.1M</td><td>09/2024</td></tr>
+        <tr><td>47QTCA18D006V</td><td>Quasars Incorporated</td><td>ISSO 2.0 BPA — Information Assurance</td><td>$17.4M</td><td>09/2024</td></tr>
+        <tr><td>70T02024F7500N001</td><td>ManTech ASI</td><td>IT O&amp;M Support — TSD Mission Operation Systems</td><td>$38.3M</td><td>FY2024</td></tr>
+        <tr><td>70LGLY25FSSB00174</td><td>[SB awardee]</td><td>Dell Server Hardware &amp; Software Maintenance — FLETC locations (DHS)</td><td>~$2M</td><td>09/2025</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:12px;">
+      <strong>Search note:</strong> Queries "TSA Dell server," "TSA server maintenance," and "TSA OIT Dell support" in USAspending and FPDS confirm Better Direct as the sole identified TSA Dell server incumbent. The FLETC DHS contract (70LGLY25FSSB00174) for Dell server maintenance demonstrates that comparable awards are SB set-aside and clustered in the $500K–$2M range — consistent with this opportunity's sizing. <a href="https://www.usaspending.gov/search/" target="_blank">USAspending.gov</a> · <a href="https://apfs-cloud.dhs.gov/record/71677/public-print/" target="_blank">APFS Record F2025071677</a>
+    </div>
+  </div>
+
+  <!-- ══ 5. COMPETITIVE LANDSCAPE ══ -->
+  <div class="section">
+    <div class="section-header">5. Competitive Landscape</div>
+
+    <table>
+      <thead>
+        <tr><th>Competitor Type</th><th>Key Players</th><th>Advantage</th><th>Threat Level</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Incumbent</strong></td>
+          <td>Better Direct, LLC (SDVOSB/HUBZone · Tempe, AZ)</td>
+          <td>Existing TSA relationship, known server inventory, transition risk argument; $24.7M GSA lifetime; multi-cert advantages</td>
+          <td><span class="pill pill-red">HIGH</span></td>
+        </tr>
+        <tr>
+          <td><strong>Dell Authorized Resellers (SB)</strong></td>
+          <td>Carahsoft (large), smaller authorized resellers on GSA MAS 47QTCA21A000R/GS-35F-0119Y</td>
+          <td>Direct Dell OEM partnership, authorized ProSupport resale, volume pricing; Carahsoft is #1 Dell federal distributor but large business</td>
+          <td><span class="pill pill-amber">MEDIUM</span></td>
+        </tr>
+        <tr>
+          <td><strong>DHS/TSA IT SB Incumbents</strong></td>
+          <td>Quasars Inc., SharpEdg LLC, Agility Technologies, INDEV</td>
+          <td>Active TSA OIT relationships; may cross-sell hardware maintenance with existing software/services vehicles</td>
+          <td><span class="pill pill-amber">MEDIUM</span></td>
+        </tr>
+        <tr>
+          <td><strong>SB IT Value-Added Resellers</strong></td>
+          <td>Sterling Computers, C&amp;C International, smaller Dell SB partners on GSA</td>
+          <td>Hardware resale past performance; GSA MAS vehicles aligned to NAICS 541519</td>
+          <td><span class="pill pill-amber">MEDIUM</span></td>
+        </tr>
+        <tr>
+          <td><strong>Third-Party Maintainers</strong></td>
+          <td>XSi, Synergy Associates (post-warranty, 3rd-party Dell support)</td>
+          <td>60–80% lower cost than OEM for post-EoL assets; could undercut on Post Standard Support line</td>
+          <td><span class="pill pill-blue">LOW-MED</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-amber" style="margin-top:14px;">
+      <strong>Key competitive dynamic:</strong> This is a GSA Schedule order, meaning the government will typically issue an RFQ to multiple GSA Schedule holders. Price will be decisive given the commodity nature of Dell ProSupport resale. The differentiator is: (a) proof of Dell authorization at the correct service level (Mission Critical / ProSupport), (b) federal IT maintenance past performance, and (c) a small business set-aside certification aligned to the program TBD (likely SDVOSB or HUBZone given incumbent profile). <strong>Changeis should assess whether it holds or can quickly obtain Dell authorized partner/reseller status</strong> — this may be the binary gate.
+    </div>
+  </div>
+
+  <!-- ══ 6. CAPABILITY MATRIX ══ -->
+  <div class="section">
+    <div class="section-header">6. Capability Matrix</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Requirement</th>
+          <th>Changeis Capability</th>
+          <th>Evidence / Source</th>
+          <th>Gap?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Recurring IT hardware maintenance &amp; support</strong></td>
+          <td>Strong — Tier 2/3 IT maintenance service delivery across FAA, DOT, Volpe task orders</td>
+          <td>FAA_CLMRS (score 0.686), V3132012, V3132063 — in-service management, system security, recurring support</td>
+          <td><span class="pill pill-green">No Gap</span></td>
+        </tr>
+        <tr>
+          <td><strong>Dell ProSupport Mission Critical delivery</strong></td>
+          <td>Gap — requires Dell authorized partner status to resell ProSupport; not evident in current past performance</td>
+          <td>Dell ProSupport must be resold by Dell-authorized channel partner; authorization level determines eligible service tiers</td>
+          <td><span class="pill pill-red">Gap — Critical</span></td>
+        </tr>
+        <tr>
+          <td><strong>Post Standard Support (post-EoL/EoS assets)</strong></td>
+          <td>Addressable — can team with authorized TPM provider (XSi, Synergy) or directly with Carahsoft as subcontractor for OEM coverage</td>
+          <td>GSA MAS structure allows teaming; Dell post-warranty coverage can be provided via authorized reseller sub</td>
+          <td><span class="pill pill-amber">Gap — Teaming</span></td>
+        </tr>
+        <tr>
+          <td><strong>GSA Schedule (NAICS 541519)</strong></td>
+          <td>Needs confirmation — Changeis must hold or be able to add NAICS 541519 to an active GSA MAS contract for direct order eligibility</td>
+          <td>GSA Schedule is the required vehicle; 541519 ITVAR footnote may apply for hardware resale component</td>
+          <td><span class="pill pill-amber">Verify Required</span></td>
+        </tr>
+        <tr>
+          <td><strong>Small Business Set-Aside eligibility</strong></td>
+          <td>Confirmed SB; specific program TBD — if SDVOSB or HUBZone set-aside, Changeis would need appropriate certification</td>
+          <td>Incumbent is SDVOSB/HUBZone; "Small Business Program: TBD" leaves opening for multiple SB categories</td>
+          <td><span class="pill pill-amber">Monitor</span></td>
+        </tr>
+        <tr>
+          <td><strong>On-site support in Springfield, VA</strong></td>
+          <td>Strong — Changeis based in Northern Virginia DMV area; rapid on-site response is achievable</td>
+          <td>Place of performance: Springfield, VA — within Changeis service footprint</td>
+          <td><span class="pill pill-green">No Gap</span></td>
+        </tr>
+        <tr>
+          <td><strong>DHS / TSA past performance</strong></td>
+          <td>Moderate gap — past performance is heavy on DOT/FAA/Volpe; limited direct TSA OIT history</td>
+          <td>RAG corpus shows no TSA-specific task orders; government-wide transport sector (FAA, FMCSA) is credible proxy</td>
+          <td><span class="pill pill-amber">Addressable</span></td>
+        </tr>
+        <tr>
+          <td><strong>IT infrastructure security (ATO, FISMA)</strong></td>
+          <td>Moderate — SSNCM, system security configuration work evident in FAA_CLMRS; FISMA/FedRAMP awareness</td>
+          <td>FAA_CLMRS C.2.11.4 System Security and Network Configuration Manual section — directly relevant</td>
+          <td><span class="pill pill-green">No Gap</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══ 7. GO / NO-GO ══ -->
+  <div class="section">
+    <div class="section-header">7. Go / No-Go Recommendation</div>
+
+    <div class="verdict-box go">
+      <div class="verdict-label">Recommendation</div>
+      <div class="verdict-decision">CONDITIONAL GO</div>
+      <p style="font-size:15px;color:var(--text-muted);">Pursue this opportunity <strong>if</strong> Changeis can resolve the Dell authorization gap (either through teaming or direct partnership) and confirm GSA MAS vehicle eligibility within 60 days. The RAG score (0.686), full SB set-aside, and local Springfield, VA PoP create a favorable environment. Without Dell channel authorization, this becomes a No-Go.</p>
+
+      <div class="verdict-grid">
+        <div class="verdict-col pros">
+          <h5>Strengths / Pursue Factors</h5>
+          <ul>
+            <li>Full small business set-aside — large integrators excluded</li>
+            <li>Springfield, VA PoP matches Changeis geography</li>
+            <li>Strong RAG alignment (0.686) on IT maintenance past performance</li>
+            <li>27-month PoP, FFP — predictable revenue</li>
+            <li>SOW is narrow and well-defined — low technical risk</li>
+            <li>$500K–$1M range is right-sized for Changeis capacity</li>
+            <li>Solicitation not until 07/2026 — 15 months to position</li>
+            <li>Incumbent GSA Schedule expiring July 2026 (disruption window)</li>
+          </ul>
+        </div>
+        <div class="verdict-col cons">
+          <h5>Risks / Watch Points</h5>
+          <ul>
+            <li>Dell OEM authorization required — current gap</li>
+            <li>Incumbent (Better Direct) holds multi-cert advantage (SDVOSB + HUBZone)</li>
+            <li>Commodity service — price competition will be intense</li>
+            <li>No TSA direct past performance in corpus</li>
+            <li>SB program type TBD — may favor SDVOSB/HUBZone specific set-aside</li>
+            <li>GSA MAS vehicle must cover 541519 ITVAR</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px;">
+      <p style="font-size:15px;margin-bottom:10px;"><strong>Recommended action plan:</strong></p>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Action</th><th>Owner</th><th>By</th><th>Priority</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Verify Changeis GSA MAS contract includes NAICS 541519 and ITVAR SIN</td>
+            <td>Contracts</td>
+            <td>30 days</td>
+            <td><span class="pill pill-red">Critical</span></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Assess Dell authorized reseller / ProSupport partner pathway (direct enrollment or teaming sub)</td>
+            <td>BD</td>
+            <td>45 days</td>
+            <td><span class="pill pill-red">Critical</span></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Contact Elizabeth Harrington (TSASmallBiz@tsa.dhs.gov) for SB program type guidance and Sources Sought watch</td>
+            <td>BD</td>
+            <td>60 days</td>
+            <td><span class="pill pill-amber">High</span></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Identify teaming partners: Dell-authorized SBs (SDVOSB/HUBZone preferred) for ProSupport resale component</td>
+            <td>BD</td>
+            <td>90 days</td>
+            <td><span class="pill pill-amber">High</span></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Monitor SAM.gov for solicitation posting (expected 07/22/2026); set alert on APFS F2025071677</td>
+            <td>Pipeline</td>
+            <td>Ongoing</td>
+            <td><span class="pill pill-blue">Ongoing</span></td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>Build capability narrative bridging FAA/DOT IT maintenance experience to Dell server operations context</td>
+            <td>Proposals</td>
+            <td>Prior to RFQ</td>
+            <td><span class="pill pill-blue">Standard</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Deep Dive: TSA Dell Server F2025071677",
+  "task_date": "2026-04-20",
+  "deliverable_file": "deep-dive-tsa-dell-541519-1677-2026-04-20.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-dell-541519-1677-2026-04-20.html",
+  "created_date": "2026-04-20",
+  "revised_date": null,
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "OPPORTUNITY DEEP DIVE — APFS F2025071677. TSA/OIT — Dell Server Maintenance and Support. NAICS: 541519 (Other Computer Related Services), Dollar Range: $500K to $1M, RAG Score: 0.6858 (STRONG). Analysis: 1. Executive Summary 2. Opportunity Details 3. RAG Capability Match (top 5-10) 4. USAspending/FPDS — search 'TSA Dell server' 'TSA server maintenance' 'TSA OIT Dell support' incumbents 5. Competitive Landscape 6. Capability Matrix 7. Go/No-Go.",
+  "approach": "Read APFS JSON (F2025071677) and RAG run 244 JSON for top matches. Researched incumbent Better Direct LLC via HigherGov, USAspending, and web search. Queried USAspending API and FederalCompass for TSA OIT contract landscape. Identified competitive players via Carahsoft, HigherGov, and GovCon Wire. Dell ProSupport service description reviewed for scope definition. Synthesized 7-section deep dive per deliverable spec.",
+  "key_findings": [
+    "Incumbent Better Direct, LLC holds SDVOSB + HUBZone certifications — strong multi-cert position; primary GSA Schedule (GS35F0503X) expires July 2026, creating a potential disruption window",
+    "RAG top match FAA_CLMRS (0.686) aligns on Tier 2/3 in-service IT maintenance language — credible past performance bridge but no direct Dell OEM hardware maintenance in corpus",
+    "Dell ProSupport Mission Critical is the premium service tier requiring authorized Dell channel partner status — this is the critical capability gap Changeis must resolve",
+    "Full small business set-aside with FFP contract type; Springfield VA PoP matches Changeis geography; 27-month PoP, $500K–$1M range is right-sized",
+    "Solicitation not until 07/22/2026 — 15-month positioning runway available"
+  ],
+  "dead_ends": [
+    "USAspending API direct query returned HTTP error — used web-based FPDS/USAspending UI instead",
+    "Better Direct LLC USAspending recipient ID (J6EEK881G8H7 format) returned invalid — could not pull transaction-level data directly; relied on HigherGov and APFS record",
+    "Dell server-specific federal small business FPDS search did not return named competitors beyond FLETC DHS analog"
+  ],
+  "assumptions": [
+    "The solicitation will be released as an RFQ on GSA eBuy to schedule holders",
+    "Better Direct will bid as incumbent — expiring GSA Schedule may require modification or new vehicle",
+    "Changeis does not currently hold Dell authorized reseller/ProSupport partner status (not evidenced in research)",
+    "NAICS 541519 size standard is $30M (ITVAR exception at 150 employees)"
+  ],
+  "open_questions": [
+    "Does Changeis currently hold an active GSA MAS contract with NAICS 541519 / SIN for IT services?",
+    "What is the specific small business program (SDVOSB, HUBZone, 8(a), WOB) TSA will designate — 'TBD' as of APFS record?",
+    "Has Better Direct enrolled in a replacement GSA vehicle (47QTCA21A000P) for post-July 2026 continuity?",
+    "What is the approximate quantity/type of Dell servers in TSA's Springfield VA environment requiring ProSupport Mission Critical vs. Post Standard Support coverage?"
+  ],
+  "data_sources": [
+    {"name": "APFS Record F2025071677", "url": "https://apfs-cloud.dhs.gov/record/71677/public-print/"},
+    {"name": "RAG Run 244 — rag_run244_F2025071677.json", "url": "local"},
+    {"name": "Better Direct LLC — HigherGov", "url": "https://www.highergov.com/awardee/better-direct-llc-10004166/"},
+    {"name": "TSA OIT Awarded Contracts — FederalCompass", "url": "https://www.federalcompass.com/federal-government-awarded-contracts/by-gov/TSA-Office-of-Information-Technology"},
+    {"name": "Dell ProSupport for Infrastructure Service Description", "url": "https://i.dell.com/sites/csdocuments/Legal_Docs/en/us/dell-prosupport-for-infrastructure-sd-en.pdf"},
+    {"name": "TSA $150M IT Services Contracts (NEXUS/TEAS) — GovCon Wire", "url": "https://www.govconwire.com/articles/tsa-150m-it-services-contract-awards-plan"},
+    {"name": "Carahsoft Dell Federal Contracts", "url": "https://www.carahsoft.com/dell/contracts"},
+    {"name": "ManTech TSA O&M Interim Award — Orange Slices AI", "url": "https://orangeslices.ai/contract-award-tsa-technology-solutions-division-tsd-mission-operation-systems-mos-support-extension/"}
+  ],
+  "next_steps": [
+    "Verify Changeis GSA MAS contract covers NAICS 541519 ITVAR SIN — gate check",
+    "Assess Dell authorized reseller pathway or identify SDVOSB/HUBZone Dell-authorized teaming partner",
+    "Email TSASmallBiz@tsa.dhs.gov to inquire about planned SB program type and any upcoming Industry Day",
+    "Monitor APFS F2025071677 and SAM.gov for solicitation posting (expected 07/22/2026)",
+    "Build capability narrative bridging FAA_CLMRS and Volpe IT maintenance task orders to Dell server maintenance context"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 8,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.60",
+    "notes": "APFS JSON read (~71KB), RAG JSON read (~32K tokens), 8 web searches/fetches for incumbent and competitive research, HTML output generation"
+  }
+}</div>
+  </div>
+
+  <!-- Hidden JSON block -->
+  <script type="application/json" id="vm2-context-data">{
+  "task_name": "Deep Dive: TSA Dell Server F2025071677",
+  "task_date": "2026-04-20",
+  "deliverable_file": "deep-dive-tsa-dell-541519-1677-2026-04-20.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-dell-541519-1677-2026-04-20.html",
+  "created_date": "2026-04-20",
+  "revised_date": null,
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "OPPORTUNITY DEEP DIVE — APFS F2025071677. TSA/OIT — Dell Server Maintenance and Support. NAICS: 541519, Dollar Range: $500K to $1M, RAG Score: 0.6858 (STRONG).",
+  "approach": "Read APFS and RAG JSON files, researched incumbent Better Direct LLC, TSA OIT contract landscape, Dell ProSupport channel requirements, and competitive small business landscape.",
+  "key_findings": [
+    "Incumbent Better Direct LLC: SDVOSB + HUBZone, GSA Schedule expiring July 2026",
+    "FAA_CLMRS top RAG match (0.686) on Tier 2/3 IT maintenance — credible bridge",
+    "Dell ProSupport Mission Critical requires authorized channel partner status — critical gap",
+    "Full SB set-aside FFP, $500K–$1M, Springfield VA, 27-month PoP",
+    "15-month positioning runway (solicitation 07/22/2026)"
+  ],
+  "dead_ends": [
+    "USAspending API direct query failed",
+    "Better Direct USAspending recipient ID returned invalid",
+    "No named Dell server SB competitors beyond FLETC analog found"
+  ],
+  "assumptions": [
+    "Solicitation released as RFQ on GSA eBuy",
+    "Changeis does not currently hold Dell authorized reseller status",
+    "NAICS 541519 size standard $30M / 150 employee ITVAR exception"
+  ],
+  "open_questions": [
+    "Does Changeis hold GSA MAS with NAICS 541519?",
+    "What SB program type will TSA designate?",
+    "Better Direct GSA vehicle continuity post-July 2026?",
+    "Approximate Dell server fleet size at Springfield VA?"
+  ],
+  "data_sources": [
+    "https://apfs-cloud.dhs.gov/record/71677/public-print/",
+    "https://www.highergov.com/awardee/better-direct-llc-10004166/",
+    "https://www.federalcompass.com/federal-government-awarded-contracts/by-gov/TSA-Office-of-Information-Technology",
+    "https://i.dell.com/sites/csdocuments/Legal_Docs/en/us/dell-prosupport-for-infrastructure-sd-en.pdf",
+    "https://www.govconwire.com/articles/tsa-150m-it-services-contract-awards-plan"
+  ],
+  "next_steps": [
+    "Verify GSA MAS 541519 ITVAR SIN status",
+    "Assess Dell authorized reseller pathway / teaming partner",
+    "Contact TSASmallBiz@tsa.dhs.gov for SB program type",
+    "Monitor SAM.gov for solicitation (07/22/2026)",
+    "Build capability narrative bridging FAA/Volpe to Dell server maintenance"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 8,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.60",
+    "notes": "APFS JSON read (~71KB), RAG JSON read (~32K tokens), 8 web searches/fetches, HTML output generation"
+  }
+}</script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · Deep Dive: TSA Dell Server Maintenance — F2025071677 · April 20, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-dell-541519-1677-2026-04-20.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the TSA Dell Server Deep Dive (F2025071677).
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Does Changeis hold GSA MAS with NAICS 541519 ITVAR SIN?
+- What SB program type will TSA designate (SDVOSB, HUBZone, etc.)?
+- Has Better Direct enrolled in a replacement GSA vehicle post-July 2026?
+- Approximate Dell server fleet size at Springfield VA?
+
+Suggested next steps:
+- Verify Changeis GSA MAS 541519 ITVAR SIN status
+- Assess Dell authorized reseller pathway or identify teaming partner
+- Contact TSASmallBiz@tsa.dhs.gov for SB program type guidance
+- Monitor SAM.gov for solicitation posting (expected 07/22/2026)
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    });
+  }
+
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: Deep Dive TSA Dell Server F2025071677');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP\n\nPrevious deliverable: ${DELIVERABLE_URL}\n\nContinue this work. Read the Session Context at the bottom of the deliverable for full context.\n\nAdditional instructions:\n[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  const todoistTitle = encodeURIComponent('Follow up: TSA Dell Server Deep Dive F2025071677');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
