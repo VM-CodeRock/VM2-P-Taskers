@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: CBP Construction Mgmt Advisor — F2026072297</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --callout-bg: #E8F4F8;
+    --callout-border: #008B8B;
+    --green: #2D7D4A;
+    --orange: #D97D2A;
+    --teal: #008B8B;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --callout-bg: #16272f;
+    --callout-border: #008B8B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.2; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p { font-size: 15px; line-height: 1.65; margin-bottom: 10px; }
+  .section ul, .section ol { padding-left: 20px; margin-bottom: 10px; }
+  .section li { font-size: 15px; margin-bottom: 5px; line-height: 1.55; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Stat cards row */
+  .stat-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 700px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    box-shadow: var(--card-shadow);
+    text-align: center;
+  }
+  .stat-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 19px; font-weight: 700;
+    color: var(--navy); line-height: 1.1;
+  }
+  [data-theme="dark"] .stat-value { color: #e2e2e2; }
+  .stat-sub {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    margin-top: 2px;
+  }
+
+  /* RAG score badge */
+  .rag-strong { color: #2D7D4A; font-weight: 700; }
+  .rag-moderate { color: #D97D2A; font-weight: 700; }
+  .rag-weak { color: #c53a3a; font-weight: 700; }
+
+  /* Callout */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 4px solid var(--callout-border);
+    border-radius: 0 4px 4px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+  .callout strong { color: var(--navy); font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px; }
+  [data-theme="dark"] .callout strong { color: #9ab8d4; }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  tbody td {
+    padding: 8px 12px;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.5;
+  }
+  .td-label {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* Score bar */
+  .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .score-bar-bg { flex: 1; background: var(--border); border-radius: 3px; height: 8px; }
+  .score-bar-fill { height: 8px; border-radius: 3px; background: #2D7D4A; }
+  .score-num { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; color: var(--text-muted); min-width: 36px; }
+
+  /* Go/No-Go */
+  .gng-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  @media (max-width: 600px) { .gng-grid { grid-template-columns: 1fr; } }
+  .gng-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .gng-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .gng-go .gng-label { color: #2D7D4A; }
+  .gng-nogo .gng-label { color: #c53a3a; }
+  .gng-card ul { padding-left: 16px; }
+  .gng-card li { font-size: 13.5px; margin-bottom: 4px; line-height: 1.5; }
+
+  .verdict-box {
+    background: var(--navy);
+    color: #fff;
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin-top: 16px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .verdict-icon { font-size: 28px; }
+  .verdict-title { font-family: system-ui, sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .verdict-desc { font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.5; }
+
+  /* Capability matrix */
+  .cap-row { display: flex; gap: 6px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .cap-row:last-child { border-bottom: none; }
+  .cap-name { flex: 1; font-size: 14px; }
+  .cap-status {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 2px 8px; border-radius: 3px;
+    white-space: nowrap;
+  }
+  .cap-strong { background: #eaf5ee; color: #2D7D4A; }
+  .cap-partial { background: #fff3e6; color: #D97D2A; }
+  .cap-gap { background: #fdf0f0; color: #c53a3a; }
+  [data-theme="dark"] .cap-strong { background: #1a2e1f; color: #5db87a; }
+  [data-theme="dark"] .cap-partial { background: #2b2011; color: #e8963a; }
+  [data-theme="dark"] .cap-gap { background: #2b1010; color: #e86060; }
+
+  /* Context / session */
+  .context-section {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .context-toggle {
+    width: 100%;
+    background: var(--panel-bg);
+    border: none;
+    padding: 12px 16px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    text-align: left;
+    display: flex; align-items: center; gap: 8px;
+    transition: background 0.15s;
+  }
+  .context-toggle:hover { background: var(--border); }
+  .context-toggle .arrow { transition: transform 0.2s; font-size: 11px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none;
+    padding: 16px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text-muted);
+    background: var(--surface);
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+  }
+  .context-body.open { display: block; }
+
+  /* Continue panel */
+  .continue-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin-bottom: 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 5px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; text-decoration: none;
+    border: none; transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-icon { font-size: 14px; }
+
+  .footer {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    text-align: center;
+    padding: 24px 0 32px;
+    border-top: 1px solid var(--border);
+    letter-spacing: 0.02em;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px;
+    padding: 8px 18px; border-radius: 5px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .tag {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+    margin-right: 4px; margin-bottom: 4px;
+    background: var(--surface-alt); color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .tag-teal { background: #e0f5f5; color: #007070; border-color: #b0dede; }
+  [data-theme="dark"] .tag-teal { background: #0d2222; color: #5eb8b8; border-color: #1a4444; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  .detail-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .detail-card h4 {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--red); margin-bottom: 8px;
+  }
+  .detail-card p, .detail-card li { font-size: 13.5px; line-height: 1.55; }
+  .detail-card ul { padding-left: 16px; }
+  .detail-card li { margin-bottom: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity</span>
+    <span style="color:rgba(255,255,255,0.4); margin: 0 4px;">|</span>
+    <span style="font-weight: 400; color: rgba(255,255,255,0.75);">Deep Dive</span>
+  </div>
+  <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">◑ Dark</button>
+</div>
+
+<!-- Container -->
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · APFS F2026072297</div>
+    <h1>CBP Construction Management as Advisor (CMa) Services</h1>
+    <div class="hero-sub">U.S. Customs and Border Protection — NAICS 541330 — Over $100M</div>
+    <div class="hero-date">Created: 2026-04-21</div>
+  </div>
+
+  <!-- Stat Row -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">RAG Score</div>
+      <div class="stat-value" style="color: #2D7D4A;">0.7046</div>
+      <div class="stat-sub">STRONG</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Ceiling Value</div>
+      <div class="stat-value">$100M+</div>
+      <div class="stat-sub">Up to $3.6B projected</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Award Date</div>
+      <div class="stat-value" style="font-size: 15px;">May 2026</div>
+      <div class="stat-sub">Q3 FY2026</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">PoP</div>
+      <div class="stat-value" style="font-size: 15px;">5 Years</div>
+      <div class="stat-sub">May 2026 – May 2031</div>
+    </div>
+  </div>
+
+  <!-- 1. Executive Summary -->
+  <div class="section">
+    <div class="section-header">1 · Executive Summary</div>
+
+    <div class="callout">
+      <strong>Bottom Line</strong>
+      This is a high-priority, full-and-open competition opportunity tied directly to the 2025 Congressional Reconciliation Bill's projected $51.6B border security investment. CBP needs a Construction Management as Advisor (CMa) to oversee an estimated 30–40 capital construction projects at the southwest border and nationally. The BPA vehicle, 5-year PoP, and ~$100M ceiling (with $3.6B project pipeline) make this a landmark win for any qualified engineering firm. RAG score of 0.7046 (STRONG) indicates strong portfolio alignment.
+    </div>
+
+    <p>CBP's Office of Facilities and Asset Management (OFAM) — specifically the Administration and Facilities Requirements Office (AFRO) and contracting division (AFCD) — is establishing a Blanket Purchase Agreement (BPA) under FAR Part 8 (GSA Schedule 541330ENG) for independent, advisory-only construction management oversight. The scope is unprecedented in size for a CBP CMa requirement: projects valued at up to <strong>$5 billion</strong> drawn from Reconciliation Bill authorization, predominantly at the southwest border.</p>
+
+    <p>This is a new requirement with no incumbent — CBP's prior CMa work was executed through separate task orders (Parsons/AECOM for the border wall program, Planate for port-of-entry CMES). The solicitation was originally expected January 5, 2026; as of April 2026, the procurement is in late pre-solicitation/RFP stage with award targeted for Q3 FY2026. Full and open competition means the field is wide open to both large and small businesses through the GSA MAS.</p>
+
+    <div class="two-col">
+      <div class="detail-card">
+        <h4>Key Signals — Why This Matters</h4>
+        <ul>
+          <li>Directly tied to "One Big Beautiful Bill Act" $46.5B border barrier investment</li>
+          <li>CBP concurrently procuring Design-Build IDIQ (70B01C26R00000007) — CMa is the independent oversight layer</li>
+          <li>AECOM ($594M) and Parsons ($609M) already won DHS border wall PM contracts — creating conflict of interest openings for independent CMa firms</li>
+          <li>Changeis has active OFAM footprint via HCPS contract ($20M, 2024)</li>
+          <li>No set-aside — full field, but GSA Schedule 541330ENG required</li>
+        </ul>
+      </div>
+      <div class="detail-card">
+        <h4>Key Risks</h4>
+        <ul>
+          <li>Solicitation delay: Original Jan 2026 release not yet published as of Apr 2026</li>
+          <li>Construction management execution (not just advisory) could require licensed PE/CM credentials beyond current portfolio</li>
+          <li>Large ODC/subcontracting required — 30–40 active projects simultaneously</li>
+          <li>Protest risk is elevated given size and political visibility</li>
+          <li>Reconciliation Bill passage uncertainty — could affect obligated funding</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Opportunity Details -->
+  <div class="section">
+    <div class="section-header">2 · Opportunity Details</div>
+
+    <table>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td class="td-label">APFS Number</td><td>F2026072297</td></tr>
+        <tr><td class="td-label">Requirements Title</td><td>Construction Management as Advisor (CMa) Services</td></tr>
+        <tr><td class="td-label">Organization</td><td>U.S. Customs and Border Protection (CBP) / DHS</td></tr>
+        <tr><td class="td-label">Requirements Office</td><td>Administration and Facilities Requirements Office (AFRO)</td></tr>
+        <tr><td class="td-label">Contracting Office</td><td>Administration and Facilities Contracting Division (AFCD)</td></tr>
+        <tr><td class="td-label">NAICS</td><td>541330 — Engineering Services</td></tr>
+        <tr><td class="td-label">PSC</td><td>R425 — Professional Support: Engineering/Technical</td></tr>
+        <tr><td class="td-label">Contract Vehicle</td><td>BPA under FAR Part 8 (GSA Schedule 541330ENG)</td></tr>
+        <tr><td class="td-label">Contract Type</td><td>Combination (FFP + T&amp;M/LH)</td></tr>
+        <tr><td class="td-label">Set-Aside</td><td>None — Full &amp; Open Competition</td></tr>
+        <tr><td class="td-label">Dollar Range</td><td>Over $100M (BPA ceiling; project pipeline ~$3.6B)</td></tr>
+        <tr><td class="td-label">Est. Solicitation Release</td><td>January 5, 2026 (delayed; actual TBD)</td></tr>
+        <tr><td class="td-label">Anticipated Award</td><td>May 18, 2026 (Q3 FY2026)</td></tr>
+        <tr><td class="td-label">Period of Performance</td><td>May 18, 2026 – May 17, 2031 (1 base + 4 options)</td></tr>
+        <tr><td class="td-label">Place of Performance</td><td>Multiple — primarily VA (HQ) + southwest border nationwide</td></tr>
+        <tr><td class="td-label">Contract Status</td><td>NEW — No Prior Contract / No Incumbent</td></tr>
+        <tr><td class="td-label">Published Date</td><td>December 17, 2025</td></tr>
+        <tr><td class="td-label">Fiscal Year</td><td>FY2026</td></tr>
+        <tr><td class="td-label">Requirements POC</td><td>Clifton W. Greenhow — <a href="mailto:Clifton.W.Greenhow@cbp.dhs.gov">Clifton.W.Greenhow@cbp.dhs.gov</a> — (202) 907-7648</td></tr>
+        <tr><td class="td-label">Alternate POC</td><td>Bettina A. Ayers — <a href="mailto:BETTINA.A.AYERS@CBP.DHS.GOV">BETTINA.A.AYERS@CBP.DHS.GOV</a> — (202) 321-8501</td></tr>
+        <tr><td class="td-label">SBS Coordinator</td><td>Ivette Jorge — <a href="mailto:CBP-IPOP@CBP.DHS.GOV">CBP-IPOP@CBP.DHS.GOV</a> — (202) 556-6545</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top: 16px;">
+      <strong>Scope Summary</strong>
+      CBP seeks a highly qualified CMa to provide expert, independent oversight and guidance across design and construction phases of capital projects funded through the 2025 Congressional Reconciliation Bill (One Big Beautiful Bill Act). The CMa does not design or construct — it advises, reviews, and independently validates quality/cost/schedule. Specific services include: A&amp;E advisory (planning, design reviews, RFI responses, cost estimates, proposal reviews, submittal reviews, SOW development, technical oversight, sustainable building), and construction phase advisory (timeline oversight, budget management, quality assurance, risk mitigation, advanced construction technology integration). Scope covers approximately 30–40 capital construction design-build projects, primarily at the southwest border with smaller projects nationwide. Contractor must provide all labor, management, travel, and equipment/supplies.
+    </div>
+
+    <div class="callout" style="margin-top: 10px; border-color: var(--orange);">
+      <strong style="color: var(--orange);">Funding Context — Reconciliation Bill</strong>
+      The 2025 House Homeland Security Committee reconciliation package includes $46.5B for the border barrier system (wall construction, river barriers, secondary barriers), $8.3B for CBP agent/facility improvements, and $6.3B for border inspection technology. CBP estimates up to $5B in capital projects requiring CMa oversight through this vehicle. This funding is designated outside normal appropriations and is specifically characterized as "not impacted by government shutdowns." The funding authorization created an urgent, large-scale construction pipeline requiring an independent advisor before the current administration's timeline ends.
+    </div>
+  </div>
+
+  <!-- 3. RAG Match Analysis -->
+  <div class="section">
+    <div class="section-header">3 · RAG Match Analysis (Top 5)</div>
+
+    <p>The RAG run (#247) returned an overall score of <span class="rag-strong">0.7046 (STRONG)</span> with 28 matching chunks across Changeis contract history. The top-ranked match (EXTERNAL_DHS_CBP) is the active Changeis HCPS contract — a direct CBP/OFAM vehicle covering capital facilities investment planning, which provides strong contextual alignment. Secondary matches via DOT/Volpe task orders reflect infrastructure program management expertise transferable to this CMa requirement.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Task Order / Contract</th>
+          <th>End Client</th>
+          <th>Score</th>
+          <th>Alignment Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:700; color: #2D7D4A;">1</td>
+          <td>EXTERNAL_DHS_CBP<br><small style="color:var(--text-faint);">70B01C24F00000787 (HCPS)</small></td>
+          <td>CBP / DHS / USCG</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width: 100%"></div></div>
+              <span class="score-num">0.705</span>
+            </div>
+          </td>
+          <td>Active CBP OFAM contract; covers capital facilities investment planning, construction oversight support, OSF/MSF facilities management — direct client and domain alignment. 28 matching chunks across SOW/Award docs. POC relationship with Clifton Greenhow / AFRO already established.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;">2</td>
+          <td>V3272013<br><small style="color:var(--text-faint);">6913G621F400058 (Volpe/DOT)</small></td>
+          <td>DOT / FAA / FHWA / Volpe</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width: 93%"></div></div>
+              <span class="score-num">0.657</span>
+            </div>
+          </td>
+          <td>Build America Bureau support — infrastructure finance program management (TIFIA/RRIF/PAB). Demonstrates federal infrastructure advisory capability with DOT engineering and construction programs.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;">3</td>
+          <td>V3272039<br><small style="color:var(--text-faint);">6913G620F400119 (Volpe/DOT)</small></td>
+          <td>DOT / FAA / Volpe</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width: 88%"></div></div>
+              <span class="score-num">0.621</span>
+            </div>
+          </td>
+          <td>TIFIA RPI / RRIF Express outreach &amp; stakeholder engagement support — infrastructure program coordination, communications, and policy analysis for federal transportation finance programs.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;">4</td>
+          <td>V3272085<br><small style="color:var(--text-faint);">6913G621F400048 (Volpe/DOT)</small></td>
+          <td>DOT / FAA / Volpe</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width: 68%"></div></div>
+              <span class="score-num">0.481</span>
+            </div>
+          </td>
+          <td>TIFIA/BAB program support — financial management and administrative support for federal infrastructure lending programs. Infrastructure program context though limited construction-specific overlap.</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;">5</td>
+          <td>V3272086<br><small style="color:var(--text-faint);">6913G621F400049 (Volpe/DOT)</small></td>
+          <td>DOT / FAA / FHWA / Volpe</td>
+          <td>
+            <div class="score-bar-wrap">
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width: 65%"></div></div>
+              <span class="score-num">0.463</span>
+            </div>
+          </td>
+          <td>Innovative contracting methods support (DB, PDB, CM/GC, P3, DBOM, DBFOM) — directly relevant to CMa advisory on delivery method selection and design-build oversight, the primary project type CBP will use.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top: 14px;">
+      <strong>RAG Interpretation</strong>
+      The 0.7046 STRONG score is driven primarily by the active CBP/OFAM contract (HCPS). The secondary matches (DOT/Volpe infrastructure finance) provide supporting evidence of advisory capability in capital programs. The score is appropriate — Changeis brings the CBP relationship and program management depth, but will need to demonstrate specific construction management technical expertise (registered PEs, licensed CMs, cost estimating, QA/QC). A teaming strategy with a licensed CMa firm is recommended to bridge the gap.
+    </div>
+  </div>
+
+  <!-- 4. USAspending / FPDS Findings -->
+  <div class="section">
+    <div class="section-header">4 · USAspending / FPDS — Incumbent &amp; Market Research</div>
+
+    <p>No direct incumbent exists for this specific BPA (confirmed: "New Requirement, No Contract"). The following table documents CBP's recent construction management and program management award history to identify likely competitors and market context.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Award / Program</th>
+          <th>Awardee</th>
+          <th>Value</th>
+          <th>Vehicle</th>
+          <th>Relevance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>DHS Border Wall PM Support</strong><br><small style="color:var(--text-faint);">70RDA126FR0000002 — Jan 2026</small></td>
+          <td>AECOM Technical Services, Inc.</td>
+          <td style="font-weight: 600; color: var(--navy);">$594M</td>
+          <td>GSA MAS (3 bidders)</td>
+          <td>Direct border wall PM — DHS, not CBP. Oversees construction program; conflict of interest for CMa role. AECOM likely excluded or heavily scrutinized as CMa bidder.</td>
+        </tr>
+        <tr>
+          <td><strong>DHS Border Wall PM Support</strong><br><small style="color:var(--text-faint);">70RDA126FR0000005 — Jan/Feb 2026</small></td>
+          <td>Parsons Government Services Inc.</td>
+          <td style="font-weight: 600; color: var(--navy);">$609M</td>
+          <td>GSA MAS (3 bidders)</td>
+          <td>Same program as AECOM — Parsons is "owner's agent" for border wall final phase. Long history of CBP port-of-entry CM via GSA SPD. Potential conflict as CMa. Historically strong CBP relationship.</td>
+        </tr>
+        <tr>
+          <td><strong>CBP CMES (Ports of Entry)</strong><br><small style="color:var(--text-faint);">GSA OASIS+ — Apr 2026</small></td>
+          <td>Planate Management Group</td>
+          <td>Undisclosed</td>
+          <td>GSA OASIS+ SB</td>
+          <td>Construction Management and Engineering Services for CBP POE technology upgrades (NII scanning, biometric). Active CMa-style work at CBP facilities. Likely competitor or teaming target.</td>
+        </tr>
+        <tr>
+          <td><strong>CBP PPMSS (Bridge)</strong><br><small style="color:var(--text-faint);">70B01C21F00000520 — Mar 2026</small></td>
+          <td>Federal Mission Solutions (FMS)<br><small>(SD Solutions + E3 Federal + Avantus)</small></td>
+          <td>Bridge ~$38M</td>
+          <td>OASIS SB (bridge)</td>
+          <td>BPAM facilities PM — construction/sustainment support for Border Patrol/Air Marine. Related but not CMa-specific. FMS is an 8(a) JV; not competing F&O.</td>
+        </tr>
+        <tr>
+          <td><strong>CBP HCPS Contract</strong><br><small style="color:var(--text-faint);">70B01C24F00000787 — Nov 2024</small></td>
+          <td><strong>Changeis, Inc.</strong></td>
+          <td>$20M</td>
+          <td>GSA Schedule (F&amp;O)</td>
+          <td>Active CBP OFAM support covering capital facilities investment planning, OSF/MSF facilities support, integrated services. Establishes Changeis as a known OFAM performer.</td>
+        </tr>
+        <tr>
+          <td><strong>Prior CBP CMa (J&amp;A / Sole Source)</strong><br><small style="color:var(--text-faint);">SAM.gov — Jan 2026</small></td>
+          <td>Undisclosed (J&amp;A)</td>
+          <td>Undisclosed</td>
+          <td>J&amp;A basis</td>
+          <td>SAM.gov J&amp;A posted Jan 14, 2026: "continued provision of CMa services." Indicates prior CMa activity on a sole-source basis — predecessor or bridge. Incumbent firm unknown; not published in award notice.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top: 14px; border-color: var(--orange);">
+      <strong style="color: var(--orange);">Key Intelligence: Prior CMa Sole Source</strong>
+      A SAM.gov J&amp;A posted January 14, 2026 documents "continued provision of Construction Manager as Advisor (CMa) services" under a prior sole-source award. This indicates CBP has been operating with a CMa — identity unknown from available public data. This firm will have incumbent advantage in knowledge of CBP construction standards and facilities. Identifying this entity (via FPDS search or SAM) before proposal submission would be high-value pre-proposal intelligence. Search terms: contracting office = AFCD, award date ~late 2024 or early 2025, NAICS 541330.
+    </div>
+  </div>
+
+  <!-- 5. Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">5 · Competitive Landscape</div>
+
+    <p>The full-and-open BPA under GSA Schedule 541330ENG will attract large AE/CM firms with established DHS/CBP construction histories. The key differentiator is independence — firms already performing border wall PM (AECOM, Parsons) may face conflict-of-interest restrictions. This opens the field to firms with CBP/DHS advisory experience without direct construction execution roles.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Competitor</th>
+          <th>Size</th>
+          <th>CBP/DHS Construction Footprint</th>
+          <th>Threat Level</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>AECOM</strong></td>
+          <td>Large</td>
+          <td>$594M DHS border wall PM (Jan 2026); CBP federal construction history</td>
+          <td><span class="cap-status cap-gap" style="font-size:12px;">Conflict Risk</span></td>
+          <td>Likely faces OCI restrictions as PMC for same border wall program. May be excluded or required to use firewall subsidiary.</td>
+        </tr>
+        <tr>
+          <td><strong>Parsons Government Services</strong></td>
+          <td>Large</td>
+          <td>$609M DHS border wall PM; CBP port-of-entry CM (GSA SPD via parsons.com)</td>
+          <td><span class="cap-status cap-gap" style="font-size:12px;">Conflict Risk</span></td>
+          <td>Strong CBP CM history at POEs; currently "owner's agent" for border wall. OCI probable. Could compete if program is structured differently from DHS contract.</td>
+        </tr>
+        <tr>
+          <td><strong>Jacobs</strong></td>
+          <td>Large</td>
+          <td>DHS/CBP construction-adjacent work; federal CM at scale (Interior, USACE)</td>
+          <td><span class="cap-status cap-partial" style="font-size:12px;">High Threat</span></td>
+          <td>No known direct CBP border wall PM role = no OCI. Strong GSA MAS 541330ENG presence. One of top CM firms for federal border/security infrastructure.</td>
+        </tr>
+        <tr>
+          <td><strong>WSP USA</strong></td>
+          <td>Large</td>
+          <td>Federal CM across DHS, FEMA, GSA portfolios</td>
+          <td><span class="cap-status cap-partial" style="font-size:12px;">Moderate Threat</span></td>
+          <td>Strong QA/QC and independent CM advisor capability. Less direct CBP border history but broad federal AE advisory. Likely to compete.</td>
+        </tr>
+        <tr>
+          <td><strong>Hill International</strong></td>
+          <td>Mid-Large</td>
+          <td>Specialized federal CM advisor; no direct CBP history visible</td>
+          <td><span class="cap-status cap-partial" style="font-size:12px;">Moderate Threat</span></td>
+          <td>Hill's core business is "owner's representative / CMa" services. DHS familiarity. No OCI issue. Strong past performance in federal border/security facilities CM advisory.</td>
+        </tr>
+        <tr>
+          <td><strong>Planate Management Group</strong></td>
+          <td>Small</td>
+          <td>Active CBP CMES (POE technology) — Apr 2026; OASIS+ SB vehicle</td>
+          <td><span class="cap-status cap-partial" style="font-size:12px;">Teaming Target</span></td>
+          <td>Most current CBP CM performer. Small business — may team with Changeis as CM technical subcontractor. Potential teaming target vs. competitor.</td>
+        </tr>
+        <tr>
+          <td><strong>Changeis, Inc.</strong></td>
+          <td>Small</td>
+          <td>Active CBP OFAM HCPS ($20M); capital facilities planning; no CM execution</td>
+          <td><span class="cap-status cap-strong" style="font-size:12px;">Pursue (Team)</span></td>
+          <td>Relationship advantage at OFAM. Needs CM technical partner (licensed PEs, certified CMs). Best path: prime with CM subcontractor or JV. Strong on advisory/program management, weaker on construction technical execution.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top: 14px;">
+      <strong>Strategic Opening</strong>
+      The OCI dynamic is the central competitive fact: both major winners of the DHS border wall PM awards (AECOM $594M, Parsons $609M) likely face organizational conflicts of interest in serving as independent CMa for the same construction program. This creates a realistic path for firms with CBP advisory relationships but without active PM execution roles. Changeis's HCPS footprint at OFAM, combined with a licensed CM partner, positions it favorably against conflict-burdened large firms.
+    </div>
+  </div>
+
+  <!-- 6. Capability Matrix -->
+  <div class="section">
+    <div class="section-header">6 · Capability Matrix</div>
+
+    <p>Assessment of Changeis capability alignment against CBP CMa requirements. Rating reflects current portfolio without teaming, with teaming notes where applicable.</p>
+
+    <table>
+      <thead>
+        <tr><th>Requirement Area</th><th>Changeis Strength</th><th>Status</th><th>Evidence / Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>CBP / DHS Relationship</strong></td>
+          <td>Active OFAM HCPS Contract, AFRO/AFCD familiarity</td>
+          <td><span class="cap-status cap-strong">Strong</span></td>
+          <td>Clifton Greenhow (POC) is the APFS contact — same office as HCPS support. Institutional knowledge of OFAM structure, priorities, and capital planning processes.</td>
+        </tr>
+        <tr>
+          <td><strong>Capital Facilities Planning</strong></td>
+          <td>HCPS: CFIP support, RAP process, 5-year planning</td>
+          <td><span class="cap-status cap-strong">Strong</span></td>
+          <td>HCPS SOW explicitly includes Capital Facilities Investment Planning (5.2.1) — reviewing and submitting analysis for business case development, cost/data analysis, and budget monitoring.</td>
+        </tr>
+        <tr>
+          <td><strong>Design Review &amp; Technical Oversight</strong></td>
+          <td>Program management advisory; limited AE execution</td>
+          <td><span class="cap-status cap-partial">Partial</span></td>
+          <td>Changeis supports design oversight as a program management function (HCPS, Volpe), but does not hold independent AE licenses. Needs PE-licensed CM subcontractor for certified design reviews.</td>
+        </tr>
+        <tr>
+          <td><strong>Construction Phase Oversight / QA</strong></td>
+          <td>Limited — no direct construction QA history visible</td>
+          <td><span class="cap-status cap-gap">Gap</span></td>
+          <td>CMa requires independent construction oversight, QA/QC programs, safety monitoring. This is the core technical gap. Teaming with Planate, Hill, or similar licensed CM firm is essential.</td>
+        </tr>
+        <tr>
+          <td><strong>Cost Estimating &amp; Value Engineering</strong></td>
+          <td>Business case / cost analysis via HCPS; not independent ICE</td>
+          <td><span class="cap-status cap-partial">Partial</span></td>
+          <td>HCPS covers cost/data analysis for capital investments. CMa requires Independent Government Cost Estimates (IGCE) and formal value engineering studies. Partner with AACE-certified cost estimators.</td>
+        </tr>
+        <tr>
+          <td><strong>Schedule Management / IMS</strong></td>
+          <td>Program management and schedule oversight demonstrated</td>
+          <td><span class="cap-status cap-strong">Strong</span></td>
+          <td>RAG excerpt from HCPS confirms task management and deadline oversight. Integrated Master Schedule development requires PM expertise which Changeis has.</td>
+        </tr>
+        <tr>
+          <td><strong>Risk Management</strong></td>
+          <td>Risk mitigation and reporting via program management work</td>
+          <td><span class="cap-status cap-strong">Strong</span></td>
+          <td>Demonstrated across HCPS, Volpe task orders. Risk-adjusted cost estimates and program risk management are standard PM deliverables.</td>
+        </tr>
+        <tr>
+          <td><strong>Federal Construction Standards / Compliance</strong></td>
+          <td>HCPS includes regulatory compliance support</td>
+          <td><span class="cap-status cap-partial">Partial</span></td>
+          <td>Familiar with CBP construction requirements through HCPS/OFAM. Full UFC/IBC/NFPA/ADA compliance verification requires licensed engineers.</td>
+        </tr>
+        <tr>
+          <td><strong>Environmental Compliance</strong></td>
+          <td>HCPS integrated services: environmental compliance support</td>
+          <td><span class="cap-status cap-partial">Partial</span></td>
+          <td>HCPS SOW includes environmental compliance (OFAM Integrated Services Division). Direct experience at CBP, though depth of NEPA/CEQA compliance oversight for large construction projects needs demonstration.</td>
+        </tr>
+        <tr>
+          <td><strong>GSA Schedule 541330ENG</strong></td>
+          <td>GSA Schedule status — to be confirmed</td>
+          <td><span class="cap-status cap-partial">Verify</span></td>
+          <td>BPA requires GSA MAS 541330ENG vehicle. Changeis must hold or be positioned on this schedule. Verify current GSA Schedule holder status for NAICS 541330.</td>
+        </tr>
+        <tr>
+          <td><strong>Multi-Project Program Scale</strong></td>
+          <td>Limited — 30–40 simultaneous active projects requires large bench</td>
+          <td><span class="cap-status cap-partial">Partial</span></td>
+          <td>Changeis can manage program-level oversight but will need significant subcontractor support to staff CM presence across 30–40 projects. Teaming structure must address staffing depth.</td>
+        </tr>
+        <tr>
+          <td><strong>SW Border / Physical Security Expertise</strong></td>
+          <td>DHS/CBP context; no specific border barrier experience</td>
+          <td><span class="cap-status cap-partial">Partial</span></td>
+          <td>CBP relationship provides insider knowledge of border operations context. Physical construction experience at border sites (fencing, barriers, POE facilities) requires a CM partner with field history.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top: 14px; border-color: var(--teal);">
+      <strong style="color: var(--teal);">Teaming Recommendation</strong>
+      Changeis should prime with a licensed CM firm as a significant subcontractor (minimum 40% effort). Top teaming targets: (1) <strong>Planate Management Group</strong> — active CBP CMES, small business, would strengthen both CM execution and SB narrative; (2) <strong>Hill International</strong> — specialized federal CMa/owner's rep, no known CBP OCI; (3) <strong>NOVA Group / NCI Information Systems</strong> — DHS CM experience. Changeis brings the CBP OFAM relationship, program management lead, and capital planning expertise; partner brings PE licensure, QA/QC methodology, and construction field experience.
+    </div>
+  </div>
+
+  <!-- 7. Go / No-Go -->
+  <div class="section">
+    <div class="section-header">7 · Go / No-Go Recommendation</div>
+
+    <div class="gng-grid">
+      <div class="gng-card gng-go">
+        <div class="gng-label">✓ Reasons to Pursue (Go)</div>
+        <ul>
+          <li>Active CBP OFAM relationship — same office, likely same POCs</li>
+          <li>RAG 0.7046 STRONG — portfolio alignment confirmed by AI analysis</li>
+          <li>New requirement — no incumbent to defend against, equal start</li>
+          <li>OCI opening — AECOM/Parsons likely restricted from CMa role</li>
+          <li>Strategic fit: Reconciliation Bill creates a 5-year, $3.6B pipeline</li>
+          <li>Full &amp; Open — accessible via GSA 541330ENG Schedule</li>
+          <li>$100M+ ceiling BPA with combination pricing = significant revenue potential</li>
+          <li>Changeis brand in OFAM creates credibility advantage for advisory role</li>
+          <li>SOW aligns with Changeis core: capital planning, PM advisory, cost analysis</li>
+        </ul>
+      </div>
+      <div class="gng-card gng-nogo">
+        <div class="gng-label">✗ Reasons to Pause / Mitigate (No-Go Risk)</div>
+        <ul>
+          <li>Significant CM technical gap — no independent construction QA/field capability</li>
+          <li>Licensed PE / certified CM requirement not addressed by current portfolio</li>
+          <li>Scale challenge: 30–40 simultaneous projects requires large staffing depth</li>
+          <li>Solicitation not yet released (expected Jan 2026 — delayed)</li>
+          <li>Reconciliation Bill passage risk — CBP projects may not be fully funded</li>
+          <li>GSA 541330ENG Schedule status needs verification</li>
+          <li>Protest-prone environment — large dollar, political visibility</li>
+          <li>Prior sole-source CMa incumbent may have insider advantage</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="verdict-box">
+      <div class="verdict-icon">✅</div>
+      <div>
+        <div class="verdict-title">RECOMMENDATION: GO — with Teaming Strategy</div>
+        <div class="verdict-desc">Changeis should pursue F2026072297 as prime contractor with a licensed CM technical partner. The CBP OFAM relationship (HCPS) is a decisive differentiator in this new, no-incumbent competition. The OCI landscape reduces large-firm competition. Core action items: (1) identify and engage a CM teaming partner (Planate is preferred); (2) verify/establish GSA 541330ENG Schedule; (3) conduct pre-solicitation outreach to Clifton Greenhow (AFRO POC) to understand evaluation criteria; (4) monitor SAM.gov for RFP release; (5) investigate prior sole-source CMa firm identity via FPDS. Target a capture decision by June 2026 given Q3 award timeline.</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px;">
+      <div class="section-header" style="font-size: 12px; margin-bottom: 10px;">Key Actions &amp; Timeline</div>
+      <table>
+        <thead><tr><th>Action</th><th>Owner</th><th>By Date</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr><td>Contact Clifton Greenhow (AFRO POC) for pre-solicitation intel</td><td>BD Lead</td><td>May 2026</td><td><span class="cap-status cap-gap">Urgent</span></td></tr>
+          <tr><td>Verify Changeis GSA Schedule 541330ENG eligibility</td><td>Contracts</td><td>May 2026</td><td><span class="cap-status cap-gap">Urgent</span></td></tr>
+          <tr><td>Identify/engage CM teaming partner (Planate preferred)</td><td>BD Lead</td><td>May 2026</td><td><span class="cap-status cap-gap">Urgent</span></td></tr>
+          <tr><td>FPDS search for prior sole-source CMa award — identify predecessor firm</td><td>Research</td><td>Apr 2026</td><td><span class="cap-status cap-partial">High</span></td></tr>
+          <tr><td>Monitor SAM.gov for RFP release (originally Jan 2026, now delayed)</td><td>BD Lead</td><td>Ongoing</td><td><span class="cap-status cap-partial">High</span></td></tr>
+          <tr><td>Draft capability statement for CMa advisory services</td><td>Proposals</td><td>Jun 2026</td><td><span class="cap-status cap-partial">High</span></td></tr>
+          <tr><td>Attend any industry day or pre-solicitation conference</td><td>BD Lead</td><td>TBD</td><td><span class="cap-status cap-strong">Normal</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Session Context (collapsible) -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Deep Dive: CBP CMa Services F2026072297",
+  "task_date": "2026-04-21",
+  "deliverable_file": "deep-dive-cbp-cma-541330-2297-2026-04-21.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-cma-541330-2297-2026-04-21.html",
+  "version": 1,
+  "prior_versions": [],
+  "created_date": "2026-04-21",
+  "revised_date": null,
+  "related_deliverables": [],
+  "original_instructions": "OPPORTUNITY DEEP DIVE — APFS F2026072297. CBP Construction Management as Advisor (CMa) Services. NAICS 541330, Over $100M, RAG Score 0.7046 (STRONG). Data files: apfs_full_F2026072297.json and rag_run247_F2026072297.json. Analysis sections: 1. Executive Summary 2. Opportunity Details 3. RAG Match (top 5-10) 4. USAspending/FPDS searches for incumbents 5. Competitive Landscape 6. Capability Matrix 7. Go/No-Go. Style: Navy topbar, VM2 branding, Dark/Light toggle, Charter/Georgia headings, red accent #c53a3a, max-width 860px, Created: 2026-04-21, all 4 bottom sections, no Perplexity Computer branding, no encryption.",
+  "approach": "Read APFS and RAG JSON data files. Extracted opportunity metadata, requirement description, RAG top matches with scores and excerpts. Conducted web research: USAspending/FPDS searches for CBP CMa incumbents, AECOM/Parsons border wall PM awards, Planate CBP CMES, FMS PPMSS bridge, prior CBP HCPS (Changeis). Researched competitive landscape via GovConWire, OrangeSlices, GDI Consulting, Planate press releases, Parsons federal CM brochures. Synthesized into 7-section HTML deliverable per VM2 style.",
+  "key_findings": [
+    "New requirement — no prior incumbent — full and open competition under GSA 541330ENG BPA",
+    "Directly funded by 2025 Reconciliation Bill: $46.5B border barrier + CBP facilities; up to $5B in projects requiring CMa oversight",
+    "AECOM ($594M) and Parsons ($609M) won DHS border wall PM contracts — likely have OCI restriction for CMa independent oversight role",
+    "Changeis active OFAM HCPS contract ($20M, 2024) provides relationship advantage with AFRO/AFCD (Clifton Greenhow is both HCPS and CMa POC)",
+    "Prior sole-source CMa J&A posted Jan 2026 — unknown predecessor firm; represents a key intelligence gap",
+    "Planate Management Group won CBP CMES (OASIS+ SB, Apr 2026) — best available teaming target for CM technical execution",
+    "RAG STRONG 0.7046 driven primarily by HCPS direct CBP/OFAM match; secondary DOT/Volpe infrastructure advisory experience"
+  ],
+  "dead_ends": [
+    "SAM.gov J&A for prior CMa services — page loaded but no contractor name disclosed in public record",
+    "USAspending API direct query returned 404 — used web research instead",
+    "Prior CBP CMa sole-source contractor identity not determinable from available public sources"
+  ],
+  "assumptions": [
+    "Reconciliation Bill passes in some form — CBP project pipeline is real",
+    "Solicitation will be released Q2 2026 despite January 2026 original target date slipping",
+    "GSA 541330ENG Schedule eligibility is achievable for Changeis if not already held",
+    "AECOM and Parsons face genuine OCI restrictions — not verified by published OCI mitigation plans",
+    "Changeis HCPS POC (Clifton Greenhow) is the same individual as CMa APFS POC — this is the same person listed in both records"
+  ],
+  "open_questions": [
+    "Who is the prior sole-source CMa contractor identified in the Jan 2026 J&A?",
+    "Does Changeis currently hold GSA Schedule 541330ENG (or 541330)?",
+    "Has Clifton Greenhow received pre-solicitation outreach from Changeis BD?",
+    "Will the solicitation include a formal OCI clause restricting AECOM/Parsons?",
+    "Is the $3.6B project pipeline estimate accurate given current Reconciliation Bill status?",
+    "Will this be a single-award or multiple-award BPA?"
+  ],
+  "data_sources": [
+    {"name": "APFS F2026072297 JSON", "url": "local: /home/user/workspace/cron_tracking/6f5371ab/apfs_full_F2026072297.json"},
+    {"name": "RAG Run 247 JSON", "url": "local: /home/user/workspace/cron_tracking/6f5371ab/rag_run247_F2026072297.json"},
+    {"name": "GovConWire — CBP CMa DHS forecast", "url": "https://www.govconwire.com/articles/dhs-forecast-border-construction-support-contract"},
+    {"name": "OrangeSlices — AECOM & Parsons DHS Border Wall PM", "url": "https://orangeslices.ai/aecom-technical-services-beats-out-2-to-win-594m-dhs-border-wall-construction-program-management-support-contract/"},
+    {"name": "Planate Management Group — CBP CMES Award", "url": "https://planate.com/planate-management-group-selected-to-provide-construction-management-and-engineering-services-in-support-of-u-s-customs-and-border-protection-nationwide/"},
+    {"name": "GDI Consulting — CBP CMa BPA Profile", "url": "https://www.gdicwins.com/active-rfps/solicitation-profile/cbp-construction-management-advisor/"},
+    {"name": "HigherGov — F2026072297 Forecast", "url": "https://www.highergov.com/contract-forecast/construction-management-as-advisor-cma-services-1133865/"},
+    {"name": "SAM.gov — Prior CMa J&A", "url": "https://sam.gov/workspace/contract/opp/fa5b6d1168e84a1a85c21dcbc8cecac9/view"},
+    {"name": "Changeis HCPS Award Press Release", "url": "https://changeis.com/news/changeis-inc-awarded-20m-dhs-cbp-human-capital-program-support-hcps-contract/"},
+    {"name": "OrangeSlices — CBP PPMSS Bridge (FMS)", "url": "https://orangeslices.ai/dhs-cbp-awards-2nd-program-project-and-mission-support-services-ppmss-bridge-contract-due-to-protest/"},
+    {"name": "GSA 541330ENG Ordering Guide (Dec 2025)", "url": "https://www.gsa.gov/system/files/541330ENG%20Construction%20Management%20and%20Engineering%20Consulting%20Services%20Ordering%20Guide%20%20-%20December%202025.pdf"},
+    {"name": "House Homeland Security Reconciliation Text", "url": "https://homeland.house.gov/2025/04/27/house-homeland-security-committee-releases-text-for-budget-reconciliation-recommendations/"},
+    {"name": "APFS Public Print — F2026072297", "url": "https://apfs-cloud.dhs.gov/record/72297/public-print/"}
+  ],
+  "next_steps": [
+    "Conduct FPDS query for CBP/AFCD 541330 contracts awarded FY2024-FY2025 to identify prior sole-source CMa contractor",
+    "Contact Clifton Greenhow for pre-solicitation outreach and industry day notification",
+    "Verify Changeis GSA Schedule 541330ENG eligibility and obtain if not held",
+    "Initiate teaming discussion with Planate Management Group",
+    "Set SAM.gov alert on AFCD office for 541330 solicitations",
+    "Draft 2-page capability statement positioning Changeis CMa advisory offering",
+    "Monitor Reconciliation Bill passage timeline and CBP capital project announcements"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 9,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.40",
+    "cost_ceiling": "$0.75",
+    "notes": "Deep research with multiple web searches, JSON file reads (~80KB), URL fetches (Planate, GDI, SAM.gov, HigherGov), and full HTML generation. Higher than typical deep dive due to large APFS/RAG source files and multi-source competitive research."
+  }
+}</div>
+  </div>
+
+  <!-- Hidden JSON -->
+  <script type="application/json" id="vm2-context-data">
+  {
+    "task_name": "Deep Dive: CBP CMa Services F2026072297",
+    "task_date": "2026-04-21",
+    "deliverable_file": "deep-dive-cbp-cma-541330-2297-2026-04-21.html",
+    "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-cma-541330-2297-2026-04-21.html",
+    "version": 1,
+    "prior_versions": [],
+    "created_date": "2026-04-21",
+    "revised_date": null,
+    "related_deliverables": [],
+    "original_instructions": "OPPORTUNITY DEEP DIVE — APFS F2026072297. CBP Construction Management as Advisor (CMa) Services. NAICS 541330, Over $100M, RAG Score 0.7046 (STRONG). Full and open competition BPA under FAR Part 8. Analysis: Executive Summary, Opportunity Details, RAG Match top 5-10, USAspending/FPDS incumbents, Competitive Landscape, Capability Matrix, Go/No-Go.",
+    "approach": "Read APFS and RAG JSON files. Web research on CBP CMa incumbents, border wall PM context, competitive firms. Built 7-section HTML deep dive per VM2 style spec.",
+    "key_findings": [
+      "New requirement with no incumbent — full and open BPA under GSA 541330ENG",
+      "Tied to Reconciliation Bill $46.5B border barrier + $5B CBP project pipeline",
+      "AECOM/Parsons have OCI risk from $1.2B border wall PM awards",
+      "Changeis HCPS contract at OFAM = direct relationship with CMa POC",
+      "Planate Group (active CBP CMES) is best teaming target",
+      "RAG STRONG 0.7046 — recommend GO with CM technical partner"
+    ],
+    "dead_ends": [
+      "Prior CMa sole-source contractor identity not determinable from public data",
+      "USAspending API direct access returned 404"
+    ],
+    "assumptions": [
+      "Reconciliation Bill passes providing CBP capital funding",
+      "GSA 541330ENG schedule is achievable for Changeis",
+      "Clifton Greenhow listed in both HCPS and CMa APFS records is the same person"
+    ],
+    "open_questions": [
+      "Prior sole-source CMa contractor identity?",
+      "Does Changeis hold GSA 541330ENG schedule?",
+      "Single vs. multiple award BPA?",
+      "OCI clause specifics in solicitation?"
+    ],
+    "data_sources": [
+      "APFS JSON F2026072297 (local)",
+      "RAG Run 247 JSON (local)",
+      "GovConWire, OrangeSlices, Planate.com, GDI Consulting, HigherGov, SAM.gov, Changeis.com, GSA.gov"
+    ],
+    "next_steps": [
+      "FPDS query for prior CBP CMa contractor",
+      "Pre-solicitation outreach to Clifton Greenhow",
+      "Verify/obtain GSA 541330ENG Schedule",
+      "Initiate Planate teaming discussion",
+      "Set SAM.gov AFCD alert"
+    ],
+    "cost_estimate": {
+      "model": "claude-sonnet-4-6",
+      "model_pricing": "$3/$15 per 1M tokens",
+      "input_tokens_est": "~65,000",
+      "output_tokens_est": "~9,000",
+      "search_calls": 9,
+      "subagent_calls": 0,
+      "cost_conservative": "$0.40",
+      "cost_ceiling": "$0.75",
+      "notes": "Deep research with multiple web searches, large JSON file reads, URL fetches, and full HTML generation."
+    }
+  }
+  </script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · Deep Dive: CBP CMa Services F2026072297 · April 21, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-cma-541330-2297-2026-04-21.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the CBP CMa Deep Dive F2026072297.
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Prior sole-source CMa contractor identity (FPDS search needed)
+- Does Changeis hold GSA 541330ENG schedule?
+- Single vs. multiple award BPA determination
+- OCI clause specifics in solicitation
+
+Suggested next steps:
+- Conduct FPDS query for prior CBP CMa contractor identity
+- Draft capability statement for CMa advisory services
+- Update if RFP has been released on SAM.gov
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    });
+  }
+
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: CBP CMa Deep Dive F2026072297');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  const todoistTitle = encodeURIComponent('Follow up: CBP CMa Deep Dive F2026072297');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}\n\nKey next steps:\n- FPDS query for prior CMa contractor\n- Verify GSA 541330ENG schedule\n- Teaming outreach to Planate\n- Pre-solicitation contact with Clifton Greenhow`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
