@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: CBP Harness CI/CD &amp; CCM Software License Renewal — F2025072013</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --go-green: #1e6e37;
+    --go-green-bg: #eaf7ee;
+    --warn-amber: #8a5a00;
+    --warn-amber-bg: #fff8e7;
+    --risk-red: #8b1a1a;
+    --risk-red-bg: #fdf0f0;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --go-green-bg: #1a2e1f;
+    --warn-amber-bg: #2a2010;
+    --risk-red-bg: #2a1010;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px 48px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 32px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 10px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Scorecards */
+  .scorecards {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 700px) { .scorecards { grid-template-columns: repeat(2, 1fr); } }
+  .scorecard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 12px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .scorecard-label {
+    font-family: system-ui, sans-serif; font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text-muted); margin-bottom: 6px;
+  }
+  .scorecard-value {
+    font-family: system-ui, sans-serif; font-size: 22px; font-weight: 800;
+    color: var(--navy); line-height: 1.1; margin-bottom: 4px;
+  }
+  [data-theme="dark"] .scorecard-value { color: #e2e2e2; }
+  .scorecard-value.amber { color: #c28a00; }
+  [data-theme="dark"] .scorecard-value.amber { color: #f0c060; }
+  .scorecard-value.red-val { color: var(--red); }
+  .scorecard-sub {
+    font-family: system-ui, sans-serif; font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section p { margin-bottom: 8px; }
+  .section ul, .section ol { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section a { color: var(--link); }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    margin: 10px 0;
+    font-family: system-ui, sans-serif;
+    font-size: 13.5px;
+    box-shadow: var(--card-shadow);
+    border-radius: 6px; overflow: hidden;
+  }
+  thead tr {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+  }
+  thead th {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* RAG match card */
+  .rag-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) { .rag-grid { grid-template-columns: 1fr; } }
+  .rag-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    position: relative;
+  }
+  .rag-card-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  .rag-to {
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700;
+    color: var(--navy); text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  [data-theme="dark"] .rag-to { color: #ccd6f0; }
+  .rag-score {
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700;
+    background: var(--badge-bg); color: #fff;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .rag-score.high { background: #1e6e37; }
+  .rag-score.med { background: #8a5a00; }
+  .rag-score.low { background: #666; }
+  .rag-client {
+    font-family: system-ui, sans-serif; font-size: 12px;
+    color: var(--text-muted); margin-bottom: 6px;
+  }
+  .rag-excerpt {
+    font-size: 13px; line-height: 1.5;
+    color: var(--text); font-style: italic;
+    border-left: 3px solid var(--border);
+    padding-left: 10px;
+  }
+  .rag-chips {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
+  }
+  .rag-chip {
+    font-family: system-ui, sans-serif; font-size: 10.5px; font-weight: 600;
+    background: var(--surface-alt); color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 1px 7px; border-radius: 3px; text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Callout boxes */
+  .callout {
+    border-left: 4px solid;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 14.5px;
+  }
+  .callout-go {
+    background: var(--go-green-bg);
+    border-color: #1e6e37;
+    color: var(--go-green);
+  }
+  .callout-warn {
+    background: var(--warn-amber-bg);
+    border-color: #c28a00;
+    color: var(--warn-amber);
+  }
+  .callout-risk {
+    background: var(--risk-red-bg);
+    border-color: var(--red);
+    color: var(--risk-red);
+  }
+  [data-theme="dark"] .callout-go { color: #5dd68a; }
+  [data-theme="dark"] .callout-warn { color: #f0c060; }
+  [data-theme="dark"] .callout-risk { color: #f07070; }
+
+  /* Go/No-Go verdict */
+  .verdict-box {
+    border: 2px solid var(--red);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-top: 12px;
+    background: var(--risk-red-bg);
+  }
+  .verdict-box.go {
+    border-color: #1e6e37;
+    background: var(--go-green-bg);
+  }
+  .verdict-header {
+    font-family: system-ui, sans-serif; font-size: 18px; font-weight: 800;
+    color: var(--red); margin-bottom: 8px; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .verdict-box.go .verdict-header { color: #1e6e37; }
+  [data-theme="dark"] .verdict-header { color: #f07070; }
+  [data-theme="dark"] .verdict-box.go .verdict-header { color: #5dd68a; }
+  .verdict-body { font-size: 15px; line-height: 1.6; }
+
+  /* Capability matrix */
+  .dot-strong { color: #1e6e37; font-size: 16px; }
+  .dot-mod { color: #c28a00; font-size: 16px; }
+  .dot-weak { color: var(--red); font-size: 16px; }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    text-align: center; padding: 20px 0 0;
+    margin-top: 20px; border-top: 1px solid var(--border);
+  }
+
+  .muted { color: var(--text-muted); }
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+  .info-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .info-block-title {
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--red); margin-bottom: 8px;
+  }
+  .info-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; margin-bottom: 5px; gap: 8px;
+  }
+  .info-key { color: var(--text-muted); flex-shrink: 0; }
+  .info-val { font-weight: 600; text-align: right; }
+
+  .tag {
+    display: inline-block;
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .tag-navy { background: var(--navy); color: #fff; }
+  .tag-green { background: #1e6e37; color: #fff; }
+  .tag-amber { background: #c28a00; color: #fff; }
+  .tag-red { background: var(--red); color: #fff; }
+  .tag-gray { background: #888; color: #fff; }
+
+  /* Pattern alert banner */
+  .pattern-banner {
+    background: #2a0a0a;
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    color: #f0a0a0;
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  [data-theme="light"] .pattern-banner {
+    background: #fff0f0;
+    color: #8b1a1a;
+  }
+  .pattern-banner-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .pattern-banner strong { color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Intelligence</span>
+  </div>
+  <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · APFS F2025072013</div>
+    <h1>CBP — Harness CI/CD &amp; CCM Software License Renewal</h1>
+    <div class="hero-sub">CBP/OIT · NASA SEWP V · FFP · 100% Small Business · $10M–$20M</div>
+    <div class="hero-date" style="color:var(--text-muted); font-size:13px; margin-top:6px;">Created: 2026-04-21</div>
+  </div>
+
+  <!-- Pattern Alert Banner -->
+  <div class="pattern-banner">
+    <div class="pattern-banner-icon">⚠</div>
+    <div>
+      <strong>Pattern Alert — Third SEWP V False Positive Today.</strong>
+      This is the third brand-name SEWP V software/license renewal flagged as STRONG by the RAG engine on 2026-04-21 (after F2025071369 GovDelivery and F2025071993 CITP). A systematic calibration issue is confirmed. See Section 3 and Section 7 for the filter recommendation.
+    </div>
+  </div>
+
+  <!-- Scorecard row -->
+  <div class="scorecards">
+    <div class="scorecard">
+      <div class="scorecard-label">RAG Score</div>
+      <div class="scorecard-value amber">0.659</div>
+      <div class="scorecard-sub">STRONG — false positive</div>
+    </div>
+    <div class="scorecard">
+      <div class="scorecard-label">Est. Value</div>
+      <div class="scorecard-value">$10–20M</div>
+      <div class="scorecard-sub">License renewal FFP</div>
+    </div>
+    <div class="scorecard">
+      <div class="scorecard-label">Solicitation</div>
+      <div class="scorecard-value amber">May 10, 2026</div>
+      <div class="scorecard-sub">~19 days out</div>
+    </div>
+    <div class="scorecard">
+      <div class="scorecard-label">Go / No-Go</div>
+      <div class="scorecard-value red-val">NO-GO</div>
+      <div class="scorecard-sub">Wrong vehicle &amp; model</div>
+    </div>
+  </div>
+
+  <!-- 1. Executive Summary -->
+  <div class="section">
+    <div class="section-header">1 · Executive Summary</div>
+    <p>U.S. Customs and Border Protection (CBP/OIT) is renewing its <strong>Harness.io software licenses</strong> — a brand-name commercial platform providing continuous integration/continuous deployment (CI/CD) pipeline orchestration and cloud cost management (CCM) analytics on a Kubernetes infrastructure. The renewal follows existing contract <strong>70B04C23F00000606</strong>, awarded June 2023 to incumbent <a href="https://www.highergov.com/contract/NNG15SC91B-70B04C23F00000606/" target="_blank">Swish Data Corp</a> (Springfield, VA) — a Service-Disabled Veteran-Owned, HUBZone-certified IT VAR and NASA SEWP V prime contract holder — worth up to $8.5M over three years.</p>
+
+    <p>This is <em>not</em> a professional services contract. It is a <strong>commercial software license renewal pass-through</strong>: CBP purchases Harness.io subscriptions through a NASA SEWP V small business reseller at a price-competitive GWAC rate. The acquisition strategy is explicitly <strong>100% Small Business set-aside on NASA SEWP V</strong>. Solicitation releases May 10, 2026; award expected June 20, 2026; new period of performance June 23, 2026 through June 22, 2029 (three years).</p>
+
+    <div class="callout callout-risk">
+      <strong>Immediate No-Go:</strong> Changeis is a professional services firm — not a NASA SEWP V prime contract holder, not a Harness.io authorized reseller, and not a software license VAR. Three hard eligibility disqualifiers, each independently fatal to any bid attempt. The RAG score of 0.659 STRONG is a corpus false positive, not a genuine capability match. <strong>Archive and move on.</strong>
+    </div>
+  </div>
+
+  <!-- 2. Opportunity Details -->
+  <div class="section">
+    <div class="section-header">2 · Opportunity Details</div>
+
+    <div class="two-col">
+      <div class="info-block">
+        <div class="info-block-title">Acquisition Basics</div>
+        <div class="info-row"><span class="info-key">APFS #</span><span class="info-val">F2025072013</span></div>
+        <div class="info-row"><span class="info-key">Agency</span><span class="info-val">DHS / CBP</span></div>
+        <div class="info-row"><span class="info-key">Office</span><span class="info-val">CBP/OIT (ITRO / ITCD)</span></div>
+        <div class="info-row"><span class="info-key">NAICS</span><span class="info-val">541519 (Other Comp. Related Svcs)</span></div>
+        <div class="info-row"><span class="info-key">Contract Type</span><span class="info-val">Firm Fixed Price</span></div>
+        <div class="info-row"><span class="info-key">Vehicle</span><span class="info-val">NASA SEWP V</span></div>
+        <div class="info-row"><span class="info-key">Set-Aside</span><span class="info-val">100% Small Business</span></div>
+        <div class="info-row"><span class="info-key">Competition</span><span class="info-val">Follow-on (REC status)</span></div>
+      </div>
+      <div class="info-block">
+        <div class="info-block-title">Timeline &amp; Value</div>
+        <div class="info-row"><span class="info-key">Published (APFS)</span><span class="info-val">Mar 26, 2026</span></div>
+        <div class="info-row"><span class="info-key">Solicit. Release</span><span class="info-val">May 10, 2026</span></div>
+        <div class="info-row"><span class="info-key">POP Start</span><span class="info-val">Jun 23, 2026</span></div>
+        <div class="info-row"><span class="info-key">POP End</span><span class="info-val">Jun 22, 2029 (3 yrs)</span></div>
+        <div class="info-row"><span class="info-key">Est. Award</span><span class="info-val">Jun 20, 2026</span></div>
+        <div class="info-row"><span class="info-key">Dollar Range</span><span class="info-val">$10M – $20M</span></div>
+        <div class="info-row"><span class="info-key">Award Quarter</span><span class="info-val">Q3 FY2026</span></div>
+        <div class="info-row"><span class="info-key">Status</span><span class="info-val"><span class="tag tag-amber">REC — Follow-On</span></span></div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top:12px;">
+      <div class="info-block">
+        <div class="info-block-title">Requirements Contact</div>
+        <div class="info-row"><span class="info-key">POC</span><span class="info-val">Crystal Bumbrey</span></div>
+        <div class="info-row"><span class="info-key">Phone</span><span class="info-val">(571) 468-5250</span></div>
+        <div class="info-row"><span class="info-key">Email</span><span class="info-val" style="font-size:11px;">lindsay.m.mccarthy@cbp.dhs.gov</span></div>
+        <div class="info-row"><span class="info-key">Alt POC</span><span class="info-val">Amanda Almony</span></div>
+        <div class="info-row"><span class="info-key">Alt Phone</span><span class="info-val">(572) 334-3744</span></div>
+        <div class="info-row"><span class="info-key">Alt Email</span><span class="info-val" style="font-size:11px;">amanda.almony@cbp.dhs.gov</span></div>
+      </div>
+      <div class="info-block">
+        <div class="info-block-title">SBS Coordinator &amp; Incumbent</div>
+        <div class="info-row"><span class="info-key">SBS</span><span class="info-val">David Harrod</span></div>
+        <div class="info-row"><span class="info-key">SBS Phone</span><span class="info-val">(202) 553-6456</span></div>
+        <div class="info-row"><span class="info-key">SBS Email</span><span class="info-val" style="font-size:11px;">David.K.Harrod@cbp.dhs.gov</span></div>
+        <div class="info-row"><span class="info-key">Incumbent</span><span class="info-val">Swish Data Corp</span></div>
+        <div class="info-row"><span class="info-key">Contract #</span><span class="info-val">70B04C23F00000606</span></div>
+        <div class="info-row"><span class="info-key">Location</span><span class="info-val">Springfield, VA</span></div>
+      </div>
+    </div>
+
+    <p style="margin-top:16px;"><strong>Scope Summary:</strong> CBP's Office of Information and Technology (OIT) requires renewal of its enterprise <strong>Harness.io</strong> software licenses covering two product modules: (1) <strong>CI/CD Pipelines</strong> — a developer platform automating build, test, and deployment workflows across CBP's multi-cloud Kubernetes environment, enabling portability across AWS, Azure, GCP, and on-premises nodes; and (2) <strong>CCM (Cloud Cost Management)</strong> — a data analytics module providing spend visibility, anomaly detection, and rightsizing recommendations across cloud service providers. CBP explicitly states this capability is "critical for CBP to have flexibility to move workloads to any Cloud Service Provider or run on multiple cloud providers."</p>
+
+    <p><strong>Product Context — Harness.io:</strong> Harness is a commercial DevSecOps platform headquartered in San Francisco, offering modular software delivery, feature flags, CI/CD, and cloud cost management. It is widely used in federal civilian and defense DevSecOps programs, typically deployed on Kubernetes and integrated with service meshes. <a href="https://www.harness.io/company/public-sector" target="_blank">Harness has an active federal public sector practice</a> and distributes through authorized federal resellers. The product is not GSA Schedule-listed as a standalone item in most vehicles — procurement typically runs through SEWP V, GSA IT Schedule 70, or agency-specific BPAs via authorized VARs.</p>
+
+    <p><strong>Prior Contract Context:</strong> <a href="https://www.highergov.com/contract/NNG15SC91B-70B04C23F00000606/" target="_blank">Contract 70B04C23F00000606</a> was awarded June 2023 to Swish Data Corp through NASA SEWP V (NNG15SC91B), valued at up to $8,512,675 over 3 years, set aside as Small Business Total, with 5 bids received. The new renewal (F2025072013) is structured as a follow-on (REC status) on the same SEWP V vehicle, suggesting CBP is moving toward a streamlined competition or sole-source justification among SEWP V SB holders.</p>
+
+    <div class="callout callout-warn">
+      <strong>Key Structural Point:</strong> This is a <em>brand-name</em> Harness.io license renewal. CBP is not selecting a service integrator — it is purchasing commercial software subscriptions through an authorized SEWP V reseller who holds a Harness.io partner/reseller relationship. Technical evaluation is minimal; price and vehicle/set-aside eligibility dominate. Changeis has no place in this transaction.
+    </div>
+  </div>
+
+  <!-- 3. RAG Analysis -->
+  <div class="section">
+    <div class="section-header">3 · RAG Analysis — 0.659 STRONG (False Positive #3 of 3 Today)</div>
+
+    <p>The Changeis RAG engine returned a top composite score of <strong>0.622</strong> (V3362060, DOT/Volpe) against this opportunity. The task-level score of <strong>0.659 STRONG</strong> reflects the overall query match — but all top matches are DOT/Volpe/FMCSA task orders involving transportation IT delivery and program support work, not DevSecOps platform procurement or software licensing.</p>
+
+    <p><strong>Why the score elevated:</strong> The Harness.io requirement mentions Kubernetes, cloud provider portability, CI/CD, and data analytics — terms that semantically overlap with Changeis's Volpe portfolio (software delivery support, data tools, systems modernization). The RAG corpus identifies surface-level thematic proximity — not genuine procurement capability alignment. Changeis has never delivered Harness.io licenses, operated as an authorized reseller, or held a SEWP V contract.</p>
+
+    <div class="rag-grid">
+
+      <!-- Match 1 -->
+      <div class="rag-card">
+        <div class="rag-card-top">
+          <div class="rag-to">V3362060</div>
+          <div class="rag-score high">0.6222</div>
+        </div>
+        <div class="rag-client">DOT / Volpe · Contract 6913G623F40070N</div>
+        <div class="rag-excerpt">"Labor for Cooperative and Automated Vehicle (CAV) Standards Support… Materials CLIN. Period Of Performance: 09/26/2023–09/07/2024"</div>
+        <div class="rag-chips">
+          <span class="rag-chip">AWARD</span><span class="rag-chip">SOW</span><span class="rag-chip">OTHER</span>
+        </div>
+        <p style="font-size:12.5px; margin-top:8px; color:var(--text-muted);">DOT automated vehicle standards support task order — matched on IT/modernization keywords, not Harness/SEWP/CI-CD software procurement.</p>
+      </div>
+
+      <!-- Match 2 -->
+      <div class="rag-card">
+        <div class="rag-card-top">
+          <div class="rag-to">V3132314</div>
+          <div class="rag-score med">0.5601</div>
+        </div>
+        <div class="rag-client">DOT / FMCSA / Volpe · Contract 6913G623F40003N</div>
+        <div class="rag-excerpt">"Streamlining the electronic Commercial Vehicle Safety Plans and the MCSAP Business Process Improvements via the eCVSP Tool…"</div>
+        <div class="rag-chips">
+          <span class="rag-chip">AWARD</span><span class="rag-chip">SOW</span><span class="rag-chip">OTHER</span>
+        </div>
+        <p style="font-size:12.5px; margin-top:8px; color:var(--text-muted);">FMCSA state safety program support — software enhancement and business process work, not cloud cost management or DevOps platform procurement.</p>
+      </div>
+
+      <!-- Match 3 -->
+      <div class="rag-card">
+        <div class="rag-card-top">
+          <div class="rag-to">V3132172</div>
+          <div class="rag-score med">0.5271</div>
+        </div>
+        <div class="rag-client">DOT / FMCSA / Volpe · Contract 6913G621F400061</div>
+        <div class="rag-excerpt">"FMCSA Innovative Technology Deployment (ITD) program — deploy electronic screening technologies… data sharing within states and federal systems"</div>
+        <div class="rag-chips">
+          <span class="rag-chip">OTHER</span><span class="rag-chip">SOW</span>
+        </div>
+        <p style="font-size:12.5px; margin-top:8px; color:var(--text-muted);">ITD program IT deployment support — "technology deployment" and "data" keywords create false affinity with Harness CCM/CI-CD query.</p>
+      </div>
+
+      <!-- False Positive Summary Card -->
+      <div class="rag-card" style="border-color: var(--red);">
+        <div class="rag-card-top">
+          <div class="rag-to" style="color:var(--red);">Pattern Diagnosis</div>
+          <div class="rag-score" style="background:#8b1a1a;">SYSTEMATIC</div>
+        </div>
+        <div class="rag-client">Three false positives on 2026-04-21</div>
+        <div class="rag-excerpt">"SEWP V + NAICS 541519 + brand-name SW/HW" → confirmed systematic RAG false positive pattern</div>
+        <div class="rag-chips">
+          <span class="rag-chip">F2025071369</span><span class="rag-chip">F2025071993</span><span class="rag-chip">F2025072013</span>
+        </div>
+        <p style="font-size:12.5px; margin-top:8px; color:var(--text-muted);">All three scored STRONG (0.659–0.663) on SEWP V brand-name license renewals — not genuine Changeis capabilities. Filter required. See Section 7.</p>
+      </div>
+
+    </div>
+
+    <div class="callout callout-risk" style="margin-top:16px;">
+      <strong>RAG False Positive Confirmation:</strong> The 0.659 STRONG score surfaces due to <em>semantic proximity between Changeis's IT services portfolio (Volpe/DOT) and CBP's DevSecOps platform keywords</em> — Kubernetes, cloud providers, CI/CD, data analytics. All top-scoring Changeis corpus matches are DOT/FMCSA services task orders, none of which involved Harness.io licensing or SEWP V resale. This is the <strong>third STRONG false positive in one day</strong> following the same vehicle+keyword pattern. The RAG corpus has not been calibrated to distinguish "reseller license procurement" from "professional IT services" — a systematic gap requiring a filter fix.
+    </div>
+  </div>
+
+  <!-- 4. Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">4 · Competitive Landscape — Swish Data Corp &amp; SEWP V SB Harness Resellers</div>
+
+    <p><strong>Incumbent — Swish Data Corp:</strong> <a href="https://swishdata.com/contract/sewp-v/" target="_blank">Swish Data Corp</a> (McLean/Springfield, VA) is the definitive incumbent. They hold NASA SEWP V Group B (SDVOSB, NNG15SC91B) and are a Service-Disabled Veteran-Owned, HUBZone-certified small business specializing in IT solutions — cybersecurity, performance engineering, IT modernization. The <a href="https://www.highergov.com/contract/NNG15SC91B-70B04C23F00000606/" target="_blank">prior Harness award (70B04C23F00000606)</a> was made through their SEWP V SDVOSB contract in June 2023, valued at $8.5M over 3 years, received 5 bids. Swish is both a SEWP V prime holder and an established Harness.io partner — they have CBP relationship continuity, platform knowledge, and the correct vehicle/set-aside certifications.</p>
+
+    <p><strong>HigherGov Note:</strong> <a href="https://www.highergov.com/contract/NNG15SC91B-70B04C23F00000606/" target="_blank">HigherGov's analysis</a> flags that based on the size of recent awards, Swish Data Corp may be approaching the SB set-aside threshold of $34M for NAICS 541519. If Swish has exceeded the threshold in the intervening period, the set-aside eligibility could shift — but this is a risk factor for the competitive field, not a Changeis opportunity.</p>
+
+    <p><strong>Other SEWP V SB Harness Resellers:</strong> Per the <a href="https://www.deltek.com/en/blog/the-established-authorized-reseller-program-under-sewp" target="_blank">SEWP Established Authorized Reseller Program (EARP)</a>, agencies can require that quotes come only from OEM-authorized resellers — and for mission-critical software, CBP would likely require this. SEWP V has 100+ SB contract holders, a subset of which may carry Harness.io authorization through direct partner status or a distributor like <a href="https://www.carahsoft.com/" target="_blank">Carahsoft Technology</a>. Potential competitors include other SDVOSB/SB SEWP V holders with DevSecOps software portfolios — but without Harness authorization, quoting is constrained. Known SB SEWP holders in the DevSecOps space that could compete include Four Inc., Four Points Technology, ATP Gov, and similar VARs, depending on their Harness partner status.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Firm</th>
+          <th>SEWP V Status</th>
+          <th>Harness Relationship</th>
+          <th>Set-Aside Match</th>
+          <th>Competitive Threat</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Swish Data Corp</strong><br><span style="font-size:11px; color:var(--text-muted);">Springfield, VA — SDVOSB/HUBZone</span></td>
+          <td>Group B SDVOSB (NNG15SC91B)</td>
+          <td>Confirmed — held prior contract 70B04C23F00000606</td>
+          <td><span class="tag tag-green">SB/SDVOSB ✓</span></td>
+          <td><span class="tag tag-red">HIGH — Incumbent</span></td>
+        </tr>
+        <tr>
+          <td><strong>Other SDVOSB/SB SEWP V VARs</strong><br><span style="font-size:11px; color:var(--text-muted);">e.g., Four Points, Four Inc., GovSmart</span></td>
+          <td>Various Group B/C SB contracts</td>
+          <td>Potentially authorized through distribution channel</td>
+          <td><span class="tag tag-amber">SB — depends on cert</span></td>
+          <td><span class="tag tag-amber">LOW-MED — if Harness-authorized</span></td>
+        </tr>
+        <tr>
+          <td><strong>Carahsoft Technology</strong><br><span style="font-size:11px; color:var(--text-muted);">Reston, VA — major federal SW distributor</span></td>
+          <td>Group A Large (not SB set-aside eligible)</td>
+          <td>Primary distributor for many SaaS/DevOps tools</td>
+          <td><span class="tag tag-gray">NOT SB ✗</span></td>
+          <td><span class="tag tag-gray">INELIGIBLE — SB set-aside</span></td>
+        </tr>
+        <tr>
+          <td><strong>Changeis</strong></td>
+          <td><span class="tag tag-red">NOT A HOLDER</span></td>
+          <td>None — no reseller agreement, no Harness partnership</td>
+          <td>N/A</td>
+          <td><span class="tag tag-gray">NO BID PATH</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-warn" style="margin-top:14px;">
+      <strong>Market Reality:</strong> Swish Data Corp holds every structural advantage: SEWP V SDVOSB prime, prior CBP Harness contract, established Harness reseller relationship, and agency institutional knowledge. The 5-bid history on the 2023 award shows the market is thin — the pool of SEWP V SB holders with active Harness authorization is likely fewer than 10 nationally.
+    </div>
+  </div>
+
+  <!-- 5. Capability Matrix -->
+  <div class="section">
+    <div class="section-header">5 · Capability Matrix — Changeis Has No Path</div>
+
+    <p>This section maps the actual requirements of a SEWP V brand-name software license renewal against Changeis's capabilities. The assessment is short: three independent hard barriers exist, none of which are addressable before the May 10, 2026 solicitation release.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Requirement</th>
+          <th>Changeis Status</th>
+          <th>Gap Assessment</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>NASA SEWP V Prime Contract</strong><br><span style="font-size:12px; color:var(--text-muted);">Mandatory vehicle eligibility — must hold a SEWP V contract number to submit quotes</span></td>
+          <td><span class="dot-weak">●○○</span> <strong>None</strong></td>
+          <td>Changeis does not hold a SEWP V contract (Group A, B, C, or D). Cannot submit quotes through the SEWP system — a hard eligibility requirement. SEWP V is closed to new awards (SEWP VI transition underway). No remedy possible before this solicitation.</td>
+        </tr>
+        <tr>
+          <td><strong>100% Small Business Set-Aside Eligibility</strong><br><span style="font-size:12px; color:var(--text-muted);">SB certification required; specific sub-cert (SDVOSB) may be preferred given incumbent history</span></td>
+          <td><span class="dot-mod">●●○</span> <strong>Partial</strong></td>
+          <td>Changeis qualifies as a small business by revenue. However, SB status alone is moot without a SEWP V prime contract — the two requirements are conjunctive. Additionally, the prior award was under an SDVOSB set-aside; if this renewal also targets SDVOSB, Changeis would need that certification as well.</td>
+        </tr>
+        <tr>
+          <td><strong>Harness.io Authorized Reseller Status</strong><br><span style="font-size:12px; color:var(--text-muted);">SEWP EARP requires OEM-authorized reseller for mission-critical software</span></td>
+          <td><span class="dot-weak">●○○</span> <strong>None</strong></td>
+          <td>Changeis has no Harness partner agreement, no reseller authorization, and no VAR infrastructure. Obtaining Harness partner status requires a formal application, revenue commitments, and technical certifications — a multi-month process incompatible with the solicitation timeline. This is a business model pivot, not a training exercise.</td>
+        </tr>
+        <tr>
+          <td><strong>Software License Resale / VAR Business Model</strong><br><span style="font-size:12px; color:var(--text-muted);">Core work is procurement pass-through, not professional services delivery</span></td>
+          <td><span class="dot-weak">●○○</span> <strong>Not applicable</strong></td>
+          <td>Changeis is a professional services firm (NAICS 541611, 541519). SaaS subscription resale requires distributor agreements, quote generation, license key fulfillment, and ongoing renewal management — a fundamentally different operating model. There is no meaningful Changeis labor component in this work beyond pass-through margin.</td>
+        </tr>
+        <tr>
+          <td><strong>Kubernetes / DevSecOps Platform Knowledge</strong><br><span style="font-size:12px; color:var(--text-muted);">Technical familiarity — relevant for services contracts, not evaluated in license renewals</span></td>
+          <td><span class="dot-mod">●●○</span> <strong>Moderate</strong></td>
+          <td>Changeis's IT modernization and software delivery support portfolio demonstrates DevSecOps familiarity. However, this knowledge is irrelevant to a SEWP V license renewal where evaluation factors are price, vehicle eligibility, and reseller authorization — not technical capability. This capability would matter on an <em>integration services</em> contract, not a license buy.</td>
+        </tr>
+        <tr>
+          <td><strong>CBP / DHS Agency Relationship</strong><br><span style="font-size:12px; color:var(--text-muted);">Prior CBP contract history, DHS familiarity</span></td>
+          <td><span class="dot-weak">●○○</span> <strong>Limited</strong></td>
+          <td>No known current CBP prime contracts in Changeis portfolio. Agency relationship is irrelevant in a non-competitive SEWP follow-on — CBP buys from whoever holds the right vehicle, set-aside, and Harness authorization. Relationship equity cannot substitute for procurement eligibility.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-risk" style="margin-top:12px;">
+      <strong>Capability Summary:</strong> The first three rows represent hard eligibility gates, each independently disqualifying. No SEWP V contract. No Harness reseller status. These are not "gaps to close" — they are structural mismatches between what this opportunity requires (a software VAR) and what Changeis is (a professional services firm). No teaming arrangement addresses this because there is no services work to perform.
+    </div>
+  </div>
+
+  <!-- 6. Go/No-Go -->
+  <div class="section">
+    <div class="section-header">6 · Go / No-Go Recommendation</div>
+
+    <div class="two-col">
+      <div class="info-block" style="border-color:#1e6e37;">
+        <div class="info-block-title" style="color:#1e6e37;">Theoretically Positive Factors</div>
+        <ul style="font-size:13.5px; padding-left:16px;">
+          <li>CBP/OIT is a significant DHS tech buyer — future services contracts exist</li>
+          <li>$10–20M contract range is aspirationally relevant to Changeis growth targets</li>
+          <li>Harness/Kubernetes/DevSecOps experience could support a future CBP IT services pursuit</li>
+          <li>CBP cloud strategy (multi-CSP portability) aligns with IT modernization space Changeis serves</li>
+        </ul>
+      </div>
+      <div class="info-block" style="border-color:var(--red);">
+        <div class="info-block-title" style="color:var(--red);">Hard Disqualifiers</div>
+        <ul style="font-size:13.5px; padding-left:16px;">
+          <li><strong>No SEWP V prime contract</strong> — mandatory, cannot submit quote</li>
+          <li><strong>No Harness.io authorized reseller status</strong> — EARP requirement</li>
+          <li><strong>Software resale ≠ Changeis business model</strong> — no labor component</li>
+          <li><strong>Incumbent Swish Data Corp holds every structural advantage</strong></li>
+          <li><strong>Follow-on / REC status</strong> — not a full competitive recompete</li>
+          <li><strong>SEWP V closes to new awards</strong> — SEWP VI transition underway</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="verdict-box" style="margin-top:16px;">
+      <div class="verdict-header">✕ NO-GO — Archive</div>
+      <div class="verdict-body">
+        <strong>Recommendation: NO-GO.</strong> This is a brand-name Harness.io software license renewal procured via NASA SEWP V 100% Small Business set-aside. Changeis lacks the SEWP V prime contract, Harness authorized reseller status, and VAR business model required to compete. Incumbent Swish Data Corp has an overwhelming structural advantage. There is no professional services component on which Changeis could add value through teaming.
+
+        <p style="margin-top:10px;"><strong>What Changeis should do instead:</strong></p>
+        <ol style="margin:10px 0 0 18px; line-height:1.8;">
+          <li><strong>Archive F2025072013</strong> as NO-GO with rationale: "Brand-name Harness.io license renewal via NASA SEWP V SB — wrong vehicle, wrong business model, no bid path."</li>
+          <li><strong>Flag the RAG score as false positive #3 of 3 today</strong> — document this pattern alongside F2025071369 (GovDelivery) and F2025071993 (CITP) for corpus calibration.</li>
+          <li><strong>Do not contact Crystal Bumbrey or Amanda Almony</strong> — this is a routine license renewal managed by CO/COR staff; no strategic outreach value.</li>
+          <li><strong>Monitor CBP/OIT for services contracts</strong> — CBP's multi-cloud Kubernetes/DevSecOps environment will generate IT integration, program support, and platform engineering contracts on OASIS+ or DHS EAGLE III where Changeis is competitive.</li>
+          <li><strong>Note Swish Data Corp</strong> as a potential CBP teaming partner for future programs where a SEWP VAR + Changeis services blend creates a competitive offering.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Key Risks & Next Steps -->
+  <div class="section">
+    <div class="section-header">7 · Key Risks, Filter Recommendation &amp; Next Steps</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Severity</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>RAG false positive — 0.659 STRONG</strong><br><span style="font-size:12px; color:var(--text-muted);">Third SEWP V brand-name license false positive today</span></td>
+          <td><span class="tag tag-red">HIGH</span></td>
+          <td>Archive F2025072013 as RAG false positive. Flag the three 2026-04-21 false positives (F2025071369, F2025071993, F2025072013) for corpus calibration review. Consider negative-weight adjustment for SEWP V + license/renewal keyword combinations.</td>
+        </tr>
+        <tr>
+          <td><strong>Recommended Filter: SEWP V + SW license auto-exclude</strong><br><span style="font-size:12px; color:var(--text-muted);">Systematic pattern now confirmed — 3 occurrences in one day</span></td>
+          <td><span class="tag tag-red">HIGH — Filter Update</span></td>
+          <td><strong>Add automated pre-filter to APFS monitor:</strong> IF (Vehicle == "NASA SEWP V") AND (requirement_text contains "license renewal" OR "software license" OR "subscription renewal" OR brand names like Harness / Granicus / Adobe / Oracle / Salesforce / ServiceNow) THEN → AUTO NO-GO before RAG scoring runs. This prevents STRONG false positives from reaching the daily brief as apparent high-priority opportunities.</td>
+        </tr>
+        <tr>
+          <td><strong>Brand-name inventory for filter calibration</strong><br><span style="font-size:12px; color:var(--text-muted);">Expanding the exclusion list</span></td>
+          <td><span class="tag tag-amber">MEDIUM</span></td>
+          <td>Add the following brand names to the filter keyword list based on today's false positives: Harness.io / Harness CI/CD; Granicus / GovDelivery; CITP (Carahsoft-distributed tools). Review recent APFS history for additional SEWP V brand-name renewals missed before this filter was built.</td>
+        </tr>
+        <tr>
+          <td><strong>Swish Data Corp SB threshold risk</strong><br><span style="font-size:12px; color:var(--text-muted);">Approaching $34M SB threshold per HigherGov</span></td>
+          <td><span class="tag tag-amber">LOW — informational</span></td>
+          <td>Not actionable for Changeis. If Swish exceeds the threshold, the set-aside competition could open to other SB SEWP holders — but Changeis still lacks SEWP V eligibility. Monitor for market intelligence on CBP DevSecOps vendor relationships only.</td>
+        </tr>
+        <tr>
+          <td><strong>Missed CBP future pipeline</strong><br><span style="font-size:12px; color:var(--text-muted);">CBP/OIT has larger services buys in the APFS pipeline</span></td>
+          <td><span class="tag tag-green">OPPORTUNITY</span></td>
+          <td>CBP's multi-cloud Kubernetes strategy (explicit in this requirement) signals active DevSecOps modernization. Search APFS for CBP/OIT IT services requirements (OASIS+, DHS EAGLE III, SEWP non-product). CBP is a large DHS customer worth pipeline investment — not through license buys, but through platform engineering and digital services contracts.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-risk" style="margin-top:16px;">
+      <strong>RAG Corpus Calibration — Action Required:</strong> On 2026-04-21 alone, three separate APFS opportunities scored STRONG (≥0.659) despite being brand-name SEWP V software/license renewals with zero Changeis bid path. The three false positives are:
+      <ul style="margin-top:8px; padding-left:20px; line-height:1.9;">
+        <li><strong>F2025071369</strong> — USCIS GovDelivery (Granicus) SaaS subscription, HUBZone SB, $2–5M, score 0.663</li>
+        <li><strong>F2025071993</strong> — CITP software, SEWP V SB, score ~0.66 (per task context)</li>
+        <li><strong>F2025072013</strong> — CBP Harness.io CI/CD + CCM license renewal, 100% SB, $10–20M, score 0.659</li>
+      </ul>
+      <p style="margin-top:8px;">The shared pattern: <strong>NASA SEWP V vehicle + NAICS 541519 + brand-name SW/HW requirement</strong>. The APFS pre-filter should intercept all three opportunity types before they reach the RAG engine. Implementing this filter will reduce false positives in the daily brief and prevent analyst time being spent on structurally ineligible buys.</p>
+    </div>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Deep Dive: CBP Harness CI/CD &amp; CCM Software License Renewal — F2025072013",
+  "task_date": "2026-04-21",
+  "deliverable_file": "deep-dive-cbp-harness-cicd-f2025072013-2026-04-21.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-harness-cicd-f2025072013-2026-04-21.html",
+  "version": 1,
+  "prior_versions": [],
+  "created_date": "2026-04-21",
+  "revised_date": null,
+  "related_deliverables": [
+    "deep-dive-uscis-govdelivery-f2025071369-2026-04-21.html",
+    "deep-dive-citp-f2025071993-2026-04-21.html"
+  ],
+
+  "original_instructions": "Generate a VM2 deep-dive HTML deliverable for APFS opportunity F2025072013 (CBP Harness CI/CD &amp; CCM Software License Renewal). INPUT DATA: /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025072013.json. REFERENCE TEMPLATE: deep-dive-uscis-govdelivery-f2025071369-2026-04-21.html (same NO-GO SEWP V brand-name buy pattern). DELIVERABLE SPEC: /home/user/workspace/deliverable-specs.md. HIGHLIGHTS: CBP/OIT, $10-20M, NAICS 541519, NASA SEWP V, 100% SB set-aside, FFP, Sol 05/10/2026, Award 06/20/2026. Incumbent: Swish Data Corp on contract 70B04C23F00000606. POC: Crystal Bumbrey (lindsay.m.mccarthy@cbp.dhs.gov). RAG 0.659 STRONG. Scope: Harness.io software license renewal (CI/CD pipelines + CCM cloud cost mgmt) on Kubernetes. VERDICT: NO-GO — brand-name Harness.io license renewal on SEWP V SB, follow-on to Swish Data Corp. RAG 0.659 STRONG is a false positive (same pattern as GovDelivery F2025071369 and CITP F2025071993). Sections: 1) Executive Summary, 2) Opportunity Details, 3) RAG Analysis — 0.659 false positive #3, 4) Competitive Landscape — Swish Data Corp + SEWP V SB Harness resellers, 5) Capability Matrix — no path, 6) Go/No-Go — NO-GO archive, 7) Key Risks &amp; Next Steps — recommend filter update for SEWP V + brand-name SW. DO NOT push to GitHub or update portal.html.",
+
+  "approach": "1. Read F2025072013.json (partial via bash head, full structure confirmed) — extracted APFS record: CBP/OIT, NASA SEWP V, 100% SB, FFP, $10-20M, Swish Data Corp incumbent on 70B04C23F00000606, Crystal Bumbrey POC, RAG MODERATE 0.622 top match (task-level 0.659 STRONG). Top RAG matches are DOT/Volpe task orders (V3362060 CAV standards, V3132314 FMCSA safety, V3132172 ITD program). 2. Read reference template deep-dive-uscis-govdelivery-f2025071369-2026-04-21.html for full HTML/CSS/JS structure — reused exactly. 3. Read deliverable-specs.md — confirmed mandatory bottom sections (Session Context 8 subsections, hidden JSON with cost_estimate, Continue This Work panel 3 buttons, footer, Created date). 4. Searched web for: (a) Swish Data Corp SEWP V Harness contract — confirmed HigherGov record for 70B04C23F00000606 ($8.5M, 5 bids, June 2023, SEWP V SDVOSB); (b) SEWP V SB Harness authorized resellers — confirmed EARP program, Swish SEWP V page (NNG15SC91B, SDVOSB/HUBZone); (c) Harness.io federal procurement context. 5. Built full 7-section NO-GO deep dive per VM2 HTML spec with pattern alert banner highlighting all 3 false positives and APFS filter recommendation.",
+
+  "key_findings": [
+    "F2025072013 is a brand-name Harness.io CI/CD + CCM software license renewal for CBP/OIT, procured via NASA SEWP V 100% Small Business set-aside — a commercial software pass-through, not a professional services contract",
+    "Incumbent Swish Data Corp (SDVOSB/HUBZone, Springfield VA) holds SEWP V contract NNG15SC91B and prior Harness CBP contract 70B04C23F00000606 ($8.5M, June 2023, 5 bids received) — strongest possible incumbent position",
+    "RAG score 0.659 STRONG is a false positive: top corpus matches are DOT/Volpe task orders (CAV standards, FMCSA safety, ITD program) that matched on DevSecOps/cloud/data keywords — not Harness resale capability",
+    "This is the THIRD SEWP V brand-name software false positive in the 2026-04-21 daily brief (after F2025071369 GovDelivery and F2025071993 CITP) — confirming a systematic RAG calibration gap",
+    "Three independent hard barriers disqualify Changeis: no SEWP V prime contract, no Harness.io authorized reseller status, wrong business model (services vs. VAR/resale)",
+    "APFS pre-filter recommended: auto-exclude when Vehicle == NASA SEWP V AND requirement_text contains license/subscription/renewal keywords or brand names (Harness, Granicus, Adobe, Oracle, ServiceNow, etc.)"
+  ],
+
+  "dead_ends": [
+    "FPDS search for additional CBP Harness spending beyond HigherGov data — not needed given clear no-go determination",
+    "USASpending deep analysis of CBP/OIT NAICS 541519 pipeline — would be useful for services pipeline research but not material to this no-go decision",
+    "SAM.gov solicitation not yet posted (release May 10, 2026) — no RFQ/PWS to review; irrelevant given eligibility disqualifiers",
+    "Harness.io SEWP V partner list direct lookup — SEWP website did not return reseller-specific listing for Harness; confirmed via Swish's prior contract award instead"
+  ],
+
+  "assumptions": [
+    "RAG task-level score of 0.659 STRONG is the composite score reported in the daily brief; top individual match in JSON is 0.622 (V3362060) — consistent with MODERATE classification at corpus level but STRONG at task level due to additional weighted signals",
+    "100% Small Business set-aside means any SB-certified SEWP V prime holder can bid (not restricted to SDVOSB/HUBZone as in 2023 award) — but Swish holds both SDVOSB and HUBZone certs, giving them maximum flexibility",
+    "Swish Data Corp holds active SEWP V contract NNG15SC91B — HigherGov and Swish's own website confirm this as of March 2026",
+    "This is a non-competitive or limited-competition follow-on (REC status, described as 'Follow-on to Existing Contract') — likely a streamlined SEWP competition, not a full public solicitation",
+    "No Changeis team members hold Harness.io certifications or reseller agreements based on available portfolio data"
+  ],
+
+  "open_questions": [
+    "Is the May 10 solicitation a limited competition among current SEWP V SB Harness resellers or an open SEWP quote request to all 100+ SB holders?",
+    "Has Swish Data Corp exceeded the $34M SB revenue threshold for NAICS 541519 (per HigherGov flag)? If so, does CBP need to re-scope the set-aside?",
+    "What CBP/OIT APFS entries exist for future IT services contracts (OASIS+, DHS EAGLE III) where Changeis could legitimately compete?",
+    "What is the SEWP VI timeline and will current SEWP V holders automatically roll over, or does Swish need to re-compete for SEWP VI contract?"
+  ],
+
+  "data_sources": [
+    {"name": "APFS F2025072013 JSON (local)", "url": "/home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025072013.json"},
+    {"name": "HigherGov — Contract 70B04C23F00000606 (Swish Data / CBP Harness)", "url": "https://www.highergov.com/contract/NNG15SC91B-70B04C23F00000606/"},
+    {"name": "Swish Data Corp — SEWP V Contract Page (NNG15SC91B)", "url": "https://swishdata.com/contract/sewp-v/"},
+    {"name": "Swish Data Corp — SEWP V Option Extension Press Release", "url": "https://swishdata.com/resource/extending-sewp-v-contract/"},
+    {"name": "NASA SEWP Contract Holder Info for Swish Data Corporation", "url": "https://www.sewp.nasa.gov/sewp5public/contractholders"},
+    {"name": "Deltek — SEWP Established Authorized Reseller Program (EARP)", "url": "https://www.deltek.com/en/blog/the-established-authorized-reseller-program-under-sewp"},
+    {"name": "NASA SEWP FAQs (authorized reseller guidance)", "url": "https://www.sewp.nasa.gov/documents/SEWP_FAQs.pdf"},
+    {"name": "Four Points Technology — SEWP V Contract Holder (SB comparable)", "url": "https://www.4points.com/downloads/Four-Points-SEWP-V-Ordering-Guide-2025--10.1.2025.pdf"},
+    {"name": "Harness.io — Federal / Public Sector", "url": "https://www.harness.io/company/public-sector"}
+  ],
+
+  "next_steps": [
+    "Archive F2025072013 as NO-GO in opportunity tracker with rationale: 'Brand-name Harness.io license renewal via NASA SEWP V SB — wrong vehicle, wrong business model, no bid path'",
+    "Implement APFS monitor pre-filter: auto-exclude NASA SEWP V opportunities with license/subscription/renewal keywords and known brand names (Harness, Granicus, Adobe, Oracle, ServiceNow) BEFORE RAG scoring",
+    "Tag the three 2026-04-21 false positives (F2025071369 GovDelivery, F2025071993 CITP, F2025072013 Harness) for RAG corpus calibration and negative weighting",
+    "Add CBP/OIT to the BD pipeline watch list for future IT services requirements on OASIS+ or DHS EAGLE III",
+    "No POC outreach (Crystal Bumbrey / Amanda Almony) — routine license renewal, no strategic BD value"
+  ],
+
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 3,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.32",
+    "cost_ceiling": "$0.55",
+    "notes": "F2025072013 APFS JSON (large, read via bash), reference template HTML (full read, ~55KB), deliverable-specs.md, 3 web searches (Swish Data SEWP V, SEWP EARP reseller, Harness federal), full HTML deliverable generation. Slightly elevated due to large template reference read."
+  }
+}</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · CBP Harness CI/CD Deep Dive · 2026-04-21 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Hidden JSON -->
+<script type="application/json" id="vm2-context-data">{
+  "task_name": "Deep Dive: CBP Harness CI/CD & CCM Software License Renewal — F2025072013",
+  "task_date": "2026-04-21",
+  "deliverable_file": "deep-dive-cbp-harness-cicd-f2025072013-2026-04-21.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-harness-cicd-f2025072013-2026-04-21.html",
+  "version": 1,
+  "prior_versions": [],
+  "created_date": "2026-04-21",
+  "revised_date": null,
+  "related_deliverables": [
+    "deep-dive-uscis-govdelivery-f2025071369-2026-04-21.html",
+    "deep-dive-citp-f2025071993-2026-04-21.html"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 3,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.32",
+    "cost_ceiling": "$0.55",
+    "notes": "F2025072013 APFS JSON, reference template HTML (~55KB), deliverable-specs.md, 3 web searches (Swish Data SEWP V, SEWP EARP, Harness federal), full HTML generation. Standard deep dive cost range."
+  }
+}</script>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up prompt
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-harness-cicd-f2025072013-2026-04-21.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the CBP Harness CI/CD Deep Dive (F2025072013).
+
+Previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Is the May 10 solicitation a limited SEWP competition or open quote request?
+- Has Swish Data Corp exceeded the $34M SB threshold for NAICS 541519?
+- What CBP/OIT APFS entries exist for future IT services contracts on OASIS+ or DHS EAGLE III?
+- What is the SEWP VI timeline and will Swish automatically roll over?
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: CBP Harness CI/CD Deep Dive — F2025072013');
+  const emailBody = encodeURIComponent('VM2 FOLLOW-UP\n\nPrevious deliverable: ' + DELIVERABLE_URL + '\n\nContinue this work. Read the Session Context at the bottom of the deliverable for full context.\n\nAdditional instructions:\n[TYPE YOUR FOLLOW-UP REQUEST HERE]');
+  document.getElementById('emailBtn').href = 'mailto:vm2.viru@gmail.com?subject=' + emailSubject + '&body=' + emailBody;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: CBP Harness CI/CD Deep Dive F2025072013');
+  const todoistBody = encodeURIComponent('Ref: ' + DELIVERABLE_URL);
+  document.getElementById('todoistBtn').href = 'https://todoist.com/app/task?content=' + todoistTitle + '&description=' + todoistBody + '&labels=vm2';
+</script>
+
+</body>
+</html>

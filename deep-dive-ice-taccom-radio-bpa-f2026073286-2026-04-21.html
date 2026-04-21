@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: ICE TACCOM Enterprise Radio BPA — F2026073286</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --go-green: #1e6e37;
+    --go-green-bg: #eaf7ee;
+    --warn-amber: #8a5a00;
+    --warn-amber-bg: #fff8e7;
+    --risk-red: #8b1a1a;
+    --risk-red-bg: #fdf0f0;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #c8cdd6;
+    --btn-secondary-border: #333740;
+    --link: #7fa8d4;
+    --go-green: #4caf70;
+    --go-green-bg: #0d2618;
+    --warn-amber: #f0b429;
+    --warn-amber-bg: #1c1500;
+    --risk-red: #e57373;
+    --risk-red-bg: #1f0808;
+    --surface-alt: #22252e;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14.5px;
+    line-height: 1.65;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* Topbar */
+  .topbar {
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    padding: 0 20px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  .topbar-brand {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    opacity: 0.92;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.2); }
+
+  /* Container */
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 36px 24px 80px;
+  }
+
+  /* Header */
+  .doc-header { margin-bottom: 28px; }
+  .doc-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 8px;
+  }
+  .doc-title {
+    font-family: 'Charter', 'Georgia', 'Times New Roman', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+  .doc-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .doc-meta span { margin-right: 16px; }
+
+  /* Verdict Badge */
+  .verdict-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 24px;
+  }
+  .verdict-nogo {
+    background: var(--risk-red-bg);
+    color: var(--risk-red);
+    border: 1.5px solid #e57373;
+  }
+  .verdict-go {
+    background: var(--go-green-bg);
+    color: var(--go-green);
+    border: 1.5px solid #4caf70;
+  }
+  .verdict-monitor {
+    background: var(--warn-amber-bg);
+    color: var(--warn-amber);
+    border: 1.5px solid #f0b429;
+  }
+
+  /* Section */
+  .section { margin-bottom: 36px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--red);
+  }
+  .section-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--red);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    min-width: 24px;
+  }
+  .section-title {
+    font-family: 'Charter', 'Georgia', 'Times New Roman', serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 8px;
+  }
+
+  /* KV grid */
+  .kv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 24px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 560px) { .kv-grid { grid-template-columns: 1fr; } }
+  .kv-item {}
+  .kv-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-faint);
+    margin-bottom: 2px;
+  }
+  .kv-value {
+    font-size: 13.5px;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .kv-value.highlight { color: var(--red); font-weight: 700; }
+  .kv-value.urgent { color: #c57a00; font-weight: 700; }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-bottom: 14px;
+    background: var(--surface);
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  thead tr { background: var(--table-header-bg); color: var(--table-header-text); }
+  thead th {
+    padding: 10px 13px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  tbody tr:hover { background: var(--surface-alt); }
+  tbody td {
+    padding: 9px 13px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* Tag / Badge */
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .tag-red { background: var(--risk-red-bg); color: var(--risk-red); }
+  .tag-green { background: var(--go-green-bg); color: var(--go-green); }
+  .tag-amber { background: var(--warn-amber-bg); color: var(--warn-amber); }
+  .tag-navy { background: #e8edf5; color: #1B2A4A; }
+  .tag-gray { background: var(--surface-alt); color: var(--text-muted); }
+
+  /* Callout */
+  .callout {
+    border-left: 4px solid var(--red);
+    background: var(--surface-alt);
+    padding: 13px 16px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 14px;
+    font-size: 13.5px;
+  }
+  .callout.amber { border-left-color: #f0b429; }
+  .callout.green { border-left-color: #2D7D4A; }
+  .callout.navy { border-left-color: var(--navy); }
+  .callout strong { display: block; margin-bottom: 4px; }
+
+  /* List */
+  ul.check-list, ul.x-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px;
+  }
+  ul.check-list li, ul.x-list li {
+    padding: 4px 0 4px 24px;
+    position: relative;
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  ul.check-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--go-green);
+    font-weight: 700;
+  }
+  ul.x-list li::before {
+    content: '✗';
+    position: absolute;
+    left: 0;
+    color: var(--risk-red);
+    font-weight: 700;
+  }
+  ul.bullet-list {
+    padding-left: 18px;
+    margin: 0 0 14px;
+  }
+  ul.bullet-list li {
+    margin-bottom: 5px;
+    font-size: 13.5px;
+    color: var(--text);
+  }
+
+  p { margin-bottom: 12px; color: var(--text); font-size: 14px; }
+  strong { font-weight: 700; }
+  a { color: var(--link); text-decoration: underline; }
+
+  /* RAG score bar */
+  .rag-bar-wrap { margin: 12px 0; }
+  .rag-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .rag-bar-track {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .rag-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: #c57a00;
+  }
+
+  /* RAG match row */
+  .rag-match-list { list-style: none; padding: 0; margin: 0 0 14px; }
+  .rag-match-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .rag-match-item:last-child { border-bottom: none; }
+  .rag-score-pill {
+    min-width: 50px;
+    text-align: center;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .score-strong { background: #e6f2ea; color: #1a6b32; }
+  .score-moderate { background: #fff3cd; color: #7a5400; }
+  .score-relevant { background: #e8edf5; color: #1B2A4A; }
+  .score-low { background: var(--surface-alt); color: var(--text-muted); }
+
+  /* Session context */
+  details.session-context {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 16px;
+  }
+  details.session-context summary {
+    padding: 14px 18px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  details.session-context summary::-webkit-details-marker { display: none; }
+  details.session-context summary::before {
+    content: '▶';
+    font-size: 10px;
+    transition: transform 0.2s;
+  }
+  details[open].session-context summary::before { transform: rotate(90deg); }
+  .session-body {
+    padding: 0 18px 18px;
+    border-top: 1px solid var(--border);
+  }
+  .session-subsection { margin-top: 14px; }
+  .session-subsection h4 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--red);
+    margin-bottom: 6px;
+  }
+  .session-subsection p,
+  .session-subsection li { font-size: 13px; }
+  .session-subsection ul { padding-left: 16px; margin-bottom: 0; }
+  .session-subsection ul li { margin-bottom: 3px; }
+
+  /* Continue panel */
+  .continue-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .continue-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn {
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-danger { background: var(--red); color: #fff; }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 40px;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+  /* Capability matrix */
+  .cap-row-yes td:last-child { color: var(--go-green); font-weight: 700; }
+  .cap-row-no td:last-child { color: var(--risk-red); font-weight: 700; }
+  .cap-row-partial td:last-child { color: var(--warn-amber); font-weight: 700; }
+
+  /* Slug box */
+  .slug-box {
+    background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 5px;
+    padding: 7px 12px;
+    font-family: monospace;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    word-break: break-all;
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <span class="topbar-brand">VM2 · Perplexity Computer</span>
+  <div class="topbar-right">
+    <span style="font-size:12px;opacity:0.65;">Deep Dive · F2026073286</span>
+    <button class="theme-toggle" onclick="toggleTheme()">◑ Toggle</button>
+  </div>
+</div>
+
+<!-- Container -->
+<div class="container">
+
+  <!-- Header -->
+  <div class="doc-header">
+    <div class="doc-eyebrow">Deep Dive Analysis · APFS F2026073286 · ICE/M&A/CIO</div>
+    <h1 class="doc-title">ICE TACCOM Enterprise Radio BPA</h1>
+    <div class="doc-meta">
+      <span>NAICS 541519</span>
+      <span>NASA SEWP V · SB · FFP</span>
+      <span>Over $100M · 5-Year BPA</span>
+      <span style="color:var(--text-faint);font-size:12px;">Created: 2026-04-21</span>
+    </div>
+    <div class="verdict-banner verdict-nogo">
+      ✗ &nbsp;NO-GO — Hardware procurement, no Changeis path as prime or sub
+    </div>
+  </div>
+
+  <!-- ─── SECTION 1: EXECUTIVE SUMMARY ─── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">Executive Summary</span>
+    </div>
+
+    <div class="kv-grid">
+      <div class="kv-item">
+        <div class="kv-label">Opportunity Title</div>
+        <div class="kv-value">TACCOM Enterprise Radio BPA</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">APFS Number</div>
+        <div class="kv-value">F2026073286</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">Issuing Component</div>
+        <div class="kv-value">ICE / M&amp;A / CIO</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">Contract Vehicle</div>
+        <div class="kv-value">NASA SEWP V (SB Set-Aside)</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">Estimated Value</div>
+        <div class="kv-value highlight">Over $100,000,000</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">Contract Type</div>
+        <div class="kv-value">Firm Fixed Price · BPA</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">NAICS</div>
+        <div class="kv-value">541519 — Other Computer Related Services <span class="tag tag-amber">Misclassified</span></div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">Competition Status</div>
+        <div class="kv-value">New Requirement, No Contract</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">Solicitation Release</div>
+        <div class="kv-value urgent">03/23/2026 — ~30 days ago (PASSED)</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">Anticipated Award</div>
+        <div class="kv-value urgent">04/30/2026 — 9 days away</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">Period of Performance</div>
+        <div class="kv-value">04/30/2026 – 04/29/2031 (5 years)</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">Place of Performance</div>
+        <div class="kv-value">Washington, DC (multi-site CONUS)</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">POC</div>
+        <div class="kv-value">Michelle Taylor · <a href="mailto:Michelle.L.Taylor@ice.dhs.gov">Michelle.L.Taylor@ice.dhs.gov</a> · (410) 474-0763</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">Alternate POC</div>
+        <div class="kv-value">Vladimir Jockovic · (202) 732-2521</div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">SBS Coordinator</div>
+        <div class="kv-value">Samuel Thompson · <a href="mailto:Samuel.L.Thompson@ice.dhs.gov">Samuel.L.Thompson@ice.dhs.gov</a></div>
+      </div>
+      <div class="kv-item">
+        <div class="kv-label">RAG Score</div>
+        <div class="kv-value"><span class="tag tag-amber">0.659 STRONG — False Positive</span></div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Verdict: NO-GO — Archive Immediately</strong>
+      This is a pure hardware procurement BPA for Motorola/L3Harris/Tait P25 tactical radios, consolettes, and accessories for ICE law enforcement field personnel. It is not a technology services, consulting, or IT management contract. Changeis has no SEWP V small business prime vehicle, no FCC/P25-compliant TACCOM distribution or integration experience, and no path as either prime or subcontractor. The solicitation release date has already passed (~30 days ago); award is projected in 9 days. No action required beyond archiving this record.
+    </div>
+  </div>
+
+  <!-- ─── SECTION 2: OPPORTUNITY DETAILS ─── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">Opportunity Details — What This Actually Is</span>
+    </div>
+
+    <p>ICE's Tactical Communications (TACCOM) program underpins the agency's field operations across HSI (Homeland Security Investigations) and ERO (Enforcement and Removal Operations) divisions. Every ICE special agent, deportation officer, and field supervisor carries or uses a radio tied to the TACCOM network — a mission-critical system that must be interoperable with CBP, USCG, and state/local public safety networks.</p>
+
+    <div class="card">
+      <div class="card-title">Key Technical Terminology</div>
+      <table>
+        <thead><tr><th>Term</th><th>Definition</th><th>Relevance</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>TACCOM</strong></td>
+            <td>Tactical Communications — ICE's dedicated P25-standard encrypted radio network for law enforcement field operations</td>
+            <td>The program this BPA supports</td>
+          </tr>
+          <tr>
+            <td><strong>P25 (APCO-25)</strong></td>
+            <td>APCO Project 25 — North American standard for interoperable digital two-way radio communications used by public safety and federal law enforcement agencies</td>
+            <td>All radios must be P25 Phase I/II compliant; DHS P25 CAP certified</td>
+          </tr>
+          <tr>
+            <td><strong>Consolette</strong></td>
+            <td>A desktop or rack-mounted base-station radio unit that connects a dispatcher or supervisor to the radio network without carrying a handheld device — essentially a desk-based radio transceiver</td>
+            <td>Core item in scope alongside handheld portables and vehicular mobiles</td>
+          </tr>
+          <tr>
+            <td><strong>APX NEXT / APX Series</strong></td>
+            <td>Motorola Solutions' flagship law enforcement P25 radio line — the APX NEXT All-Band Radio is the current-generation model used extensively by DHS components</td>
+            <td>Prior related forecast (F2025069804) explicitly named APX NEXT; this BPA likely covers the same product family</td>
+          </tr>
+          <tr>
+            <td><strong>EOL Replacement Clause</strong></td>
+            <td>The BPA includes explicit language allowing newer radio models to replace end-of-life products during the 5-year ordering period as technology evolves</td>
+            <td>Ensures flexibility for Motorola/L3Harris product refreshes over the contract period</td>
+          </tr>
+          <tr>
+            <td><strong>BPA Structure</strong></td>
+            <td>A Blanket Purchase Agreement (BPA) against NASA SEWP V allows ICE to place recurring orders over 5 years without re-competing each purchase, streamlining equipment procurement</td>
+            <td>Explains the SEWP V vehicle choice — a hardware procurement GWAC</td>
+          </tr>
+          <tr>
+            <td><strong>Interoperability</strong></td>
+            <td>ICE TACCOM must communicate with CBP, USCG, FBI, and state/local partner agencies — P25 compliance is mandatory for this cross-agency radio communication</td>
+            <td>Restricts procurement to P25-certified hardware from a small set of OEMs</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Full Scope Description (APFS)</div>
+      <p style="font-size:13.5px;font-style:italic;color:var(--text-muted);">"This acquisition is for the purchase of radios, consolette's and other radio accessories to support its mission. The Blanket Purchase Agreement (BPA) will facilitate the recurring procurement of these critical communication tools, ensuring law enforcement personnel have reliable access to secure tactical wireless communication. Given the rapid advancement of IT and radio technology, certain products may become obsolete or reach their End of Life (EOL) over the contract period. To maintain operational effectiveness, newer models will replace EOL products, and emerging technologies that meet ICE's technical and operational requirements may be integrated into the BPA."</p>
+      <p style="font-size:12.5px;color:var(--text-faint);margin-bottom:0;">Source: <a href="https://apfs-cloud.dhs.gov/record/73286/public-print/" target="_blank">APFS Record F2026073286</a></p>
+    </div>
+
+    <div class="callout navy">
+      <strong>Relationship to Prior Forecast F2025069804</strong>
+      A closely related prior forecast (F2025069804, published April 2025) covered a "TACCOM Radio BPA" via the <strong>TacCom II IDIQ</strong> vehicle explicitly for "Motorola APX Next All-Band smart radios and accessories" with simultaneous deliveries to ICE CONUS office locations. The current F2026073286 uses <strong>NASA SEWP V</strong> instead of TacCom II — likely reflecting a strategic vehicle shift — but scope is substantively identical. This is a hardware resupply program, not a new capability build.
+    </div>
+
+    <div class="callout amber">
+      <strong>Timeline Alert — Solicitation Already Closed</strong>
+      The estimated solicitation release date of <strong>03/23/2026 has already passed</strong> (approximately 30 days ago as of 2026-04-21). ICE/M&amp;A/CIO may have already released and closed the solicitation on SAM.gov. The <strong>anticipated award date of 04/30/2026 is 9 calendar days away</strong>. Even if a solicitation amendment is pending, Changeis has no standing to respond. This opportunity is effectively closed for new entrants.
+    </div>
+  </div>
+
+  <!-- ─── SECTION 3: RAG ANALYSIS ─── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">RAG Analysis — False Positive Diagnosis</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">RAG Engine Output</div>
+      <div class="rag-bar-wrap">
+        <div class="rag-bar-label">
+          <span>RAG Score: 0.659 <span class="tag tag-amber">STRONG</span></span>
+          <span style="font-size:11px;">Threshold: STRONG ≥ 0.65</span>
+        </div>
+        <div class="rag-bar-track">
+          <div class="rag-bar-fill" style="width: 65.9%;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-faint);margin-top:3px;">
+          <span>0.00</span><span>LOW&lt;0.45</span><span>RELEVANT 0.45</span><span>MOD 0.50</span><span>STRONG 0.65</span><span>1.00</span>
+        </div>
+      </div>
+      <p style="font-size:13px;margin-bottom:4px;">The RAG engine returned <strong>17 corpus matches</strong>, all from DOT/Volpe/FAA communications support task orders — highest composite score 0.577. No true matches exist in Changeis past performance for tactical radio hardware procurement. The 0.659 score is driven by keyword overlap on "communications," "wireless," "tactical," and "ICE/law enforcement" — not substantive capability alignment.</p>
+    </div>
+
+    <div class="callout">
+      <strong>False Positive — 4th Today (Systemic Pattern)</strong>
+      This is the <strong>fourth STRONG-tier false positive generated today</strong> due to the NAICS 541519 / communications keyword overlap problem. The RAG engine is correctly identifying semantic similarity between Changeis's communications consulting work and DHS TACCOM language — but the underlying work is physically incompatible. Changeis delivers IT advisory, program management, and digital transformation services; this BPA delivers physical radio hardware.
+    </div>
+
+    <div class="card">
+      <div class="card-title">NAICS Taxonomy Misclassification (DHS Issue)</div>
+      <table>
+        <thead><tr><th>NAICS Code</th><th>Title</th><th>Correct Use</th><th>Applied Here</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>541519</strong></td>
+            <td>Other Computer Related Services</td>
+            <td>IT services, helpdesk, tech consulting</td>
+            <td class="tag tag-red">✗ MISAPPLIED — hardware only</td>
+          </tr>
+          <tr>
+            <td><strong>334220</strong></td>
+            <td>Radio/TV Broadcasting &amp; Wireless Equipment Manufacturing</td>
+            <td>OEM radio manufacturers (Motorola, L3Harris, Tait)</td>
+            <td><span class="tag tag-green">✓ Correct for radio mfg</span></td>
+          </tr>
+          <tr>
+            <td><strong>423690</strong></td>
+            <td>Other Electronic Parts &amp; Equipment Merchant Wholesalers</td>
+            <td>Wholesale distributors of two-way radios and accessories</td>
+            <td><span class="tag tag-green">✓ Correct for VAR/distributor</span></td>
+          </tr>
+          <tr>
+            <td><strong>517410</strong></td>
+            <td>Satellite Telecommunications</td>
+            <td>Satellite-based radio communications services</td>
+            <td>Applicable to SATCOM components only</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:13px;margin-bottom:0;"><strong>DHS Taxonomy Issue:</strong> DHS/ICE is classifying hardware radio procurement under NAICS 541519 — a services code — to route through IT procurement vehicles like NASA SEWP V and TacCom II. This is a known DHS acquisition practice that inflates false positive rates for IT services firms in the RAG engine. This pattern should be flagged as a systemic filter update (see Section 7 — Key Risks &amp; Next Steps).</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Top RAG Corpus Matches (Returned 17 — All Mismatched)</div>
+      <ul class="rag-match-list">
+        <li class="rag-match-item">
+          <span class="rag-score-pill score-moderate">0.577</span>
+          <div>
+            <strong>V330A2223</strong> — DOT/Volpe Communications Support (FAA, FHWA) · NAICS R405 · Task Order under 6913G619D300021 · <em>Keyword match on "communications support," not radio hardware</em>
+          </div>
+        </li>
+        <li class="rag-match-item">
+          <span class="rag-score-pill score-moderate">0.534</span>
+          <div>
+            <strong>V3132009</strong> — FMCSA PRISM Program Communication Support (DOT/Volpe) · <em>IT program communications advisory, not TACCOM radios</em>
+          </div>
+        </li>
+        <li class="rag-match-item">
+          <span class="rag-score-pill score-relevant">0.482</span>
+          <div>
+            <strong>V3272021</strong> — Support for Communications and Operations Research &amp; Analysis (DOT/FAA/FHWA/Volpe) · <em>Research and analysis, not hardware procurement</em>
+          </div>
+        </li>
+        <li class="rag-match-item">
+          <span class="rag-score-pill score-relevant">0.467</span>
+          <div>
+            <strong>V3332035</strong> — Communications and Operations Research &amp; Analysis (DOT/FAA/FRA/Volpe) · <em>Same false-positive pattern</em>
+          </div>
+        </li>
+        <li class="rag-match-item">
+          <span class="rag-score-pill score-low">0.430</span>
+          <div>
+            <strong>V3222016</strong> — DOT/FAA/Volpe Communications Task Order · <em>Further semantic drift from actual scope</em>
+          </div>
+        </li>
+        <li class="rag-match-item" style="border-bottom:none;">
+          <span class="rag-score-pill score-low" style="background:#f0efec;color:#999;">—</span>
+          <div><em>12 additional matches all below 0.430, all DOT/Volpe communications advisory work. No DHS, ICE, radio hardware, P25, or physical equipment matches in corpus.</em></div>
+        </li>
+      </ul>
+      <p style="font-size:12.5px;color:var(--text-faint);margin-bottom:0;">All 17 matches are DOT/Volpe/FAA communications services task orders — none involve tactical radio hardware, DHS law enforcement, P25, SEWP V, or equipment distribution. Composite score is inflated by multi-document aggregation, not genuine capability alignment.</p>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 4: COMPETITIVE LANDSCAPE ─── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">Competitive Landscape</span>
+    </div>
+
+    <p>This BPA will be awarded to a <strong>NASA SEWP V small business prime</strong> holding active authorized reseller/dealer agreements with one or more of the three dominant P25 tactical radio OEMs. Competition is effectively limited to firms with SEWP V Group C (SB) contracts and radio hardware distribution credentials. The incumbent is listed as <strong>"New Requirement, No Contract"</strong> — there is no incumbent to displace.</p>
+
+    <div class="callout amber">
+      <strong>Vehicle Context: NASA SEWP V vs. TacCom II</strong>
+      The prior related forecast (F2025069804) used the DHS <strong>TacCom II IDIQ</strong> vehicle. The current award uses <strong>NASA SEWP V</strong> — a broader IT hardware GWAC. This vehicle shift likely reflects ICE seeking faster procurement timelines and broader competition under SEWP V's streamlined ordering procedures, rather than the specialized TacCom II vehicle. Both vehicles support hardware procurement; the competitive pool overlaps significantly.
+    </div>
+
+    <div class="card">
+      <div class="card-title">Primary OEMs — Eligible Manufacturers</div>
+      <table>
+        <thead><tr><th>OEM</th><th>Key Product Lines</th><th>DHS/ICE Relevance</th><th>SB Reseller Path</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Motorola Solutions</strong></td>
+            <td>APX NEXT All-Band, APX 900, APX 6000, ASTRO 25 infrastructure</td>
+            <td>Dominant market share with DHS; prior ICE forecast explicitly named APX NEXT; DHS awarded $70CMSW25P00000062 to Motorola directly; FedRAMP High authorized</td>
+            <td>Authorized resellers hold SEWP V SB contracts with Motorola partner agreements</td>
+          </tr>
+          <tr>
+            <td><strong>L3Harris Technologies</strong></td>
+            <td>XG-100P, BeOn, Unity XG, XL-95P tactical radios</td>
+            <td>Significant DoD/federal presence; awarded Navy radio contracts; DHS/CBP interoperability requirements may specify L3Harris models for certain field positions</td>
+            <td>Federal authorized resellers; some hold SEWP V Group C contracts</td>
+          </tr>
+          <tr>
+            <td><strong>Tait Communications</strong></td>
+            <td>TP9300, TP9400 P25 portable radios; TM9000 series mobiles</td>
+            <td>P25 CAP approved; used in some DHS component networks; less dominant than Motorola but DHS-certified</td>
+            <td>Smaller authorized dealer network; some SEWP V SB holders</td>
+          </tr>
+          <tr>
+            <td><strong>Kenwood / JVCKENWOOD</strong></td>
+            <td>NX-5000 Series P25, NX-3200/3300</td>
+            <td>DHS P25 CAP listed; secondary market in federal law enforcement</td>
+            <td>Authorized federal dealers via GSA/SEWP</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Likely Competitive SEWP V SB Primes (Radio Resellers)</div>
+      <table>
+        <thead><tr><th>Firm</th><th>Profile</th><th>Relevance</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Commdex</strong></td>
+            <td>Federal radio communications VAR; one of nine companies awarded both Technical Categories under DHS TacCom II IDIQ; strong DHS/ICE relationships; Motorola authorized dealer</td>
+            <td><strong>High</strong> — TacCom II prime, DHS-specific, Motorola dealer. Likely to bid via SEWP V.</td>
+          </tr>
+          <tr>
+            <td><strong>Cynergy Professional Systems, LLC</strong></td>
+            <td>Small business; awarded DHS TacCom II prime contract (July 2019); specializes in communication systems and federal IT solutions; Laguna Hills, CA</td>
+            <td><strong>High</strong> — Existing TacCom II prime with DHS relationships; likely holds SEWP V SB contract</td>
+          </tr>
+          <tr>
+            <td><strong>Edge Technology Distributors, Inc.</strong></td>
+            <td>SEWP V and TacCom II holder; awarded $55.4M in DHS/CBP obligations under TacCom II IDIQ (70B04C19D00000017); IT hardware and communications equipment distributor</td>
+            <td><strong>High</strong> — Active TacCom II prime with CBP/DHS track record; hardware distribution core competency</td>
+          </tr>
+          <tr>
+            <td><strong>Communications International Group</strong></td>
+            <td>Federal two-way radio reseller; Motorola Solutions Channel Partner; government-focused radio VAR with law enforcement focus</td>
+            <td><strong>Medium</strong> — Motorola authorized; check SEWP V SB roster for contract number</td>
+          </tr>
+          <tr>
+            <td><strong>Strategic Communications, LLC</strong></td>
+            <td>WOSB/EDWOSB/SDB; holds SEWP V Group C SB contracts (NNG15SC90B, NNG15SC50B); IT products and services; Motorola/radio hardware reseller capability</td>
+            <td><strong>Medium</strong> — SEWP V SB prime; verify radio/P25 dealer authorization</td>
+          </tr>
+          <tr>
+            <td><strong>ATP Gov</strong></td>
+            <td>SEWP V Group C SB prime (NNG15SC58B); IT hardware reseller with broad product catalog including communications equipment and accessories</td>
+            <td><strong>Low-Medium</strong> — SEWP V SB prime; scope alignment depends on Motorola/radio authorization status</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px;color:var(--text-faint);margin-bottom:0;">Sources: <a href="https://commdex.com/dhs-taccom/" target="_blank">Commdex DHS TacCom</a> · <a href="https://cynergy.pro/cynergy-professional-systems-awarded-3-billion-department-of-homeland-security-tactical-communications-equipment-and-services-contract/" target="_blank">Cynergy TacCom II Award</a> · <a href="https://www.federalcompass.com/award-contract-detail/70B04C19D00000017" target="_blank">Federal Compass 70B04C19D00000017</a> · <a href="https://www.sewp.nasa.gov/sewp5public/contractholders" target="_blank">NASA SEWP V SB Contract Holders</a></p>
+    </div>
+
+    <div class="callout navy">
+      <strong>Note on DHS TACCOM II vs. SEWP V</strong>
+      ICE has historically used the DHS <strong>TacCom II IDIQ</strong> ($3B ceiling, 9 primes including Commdex, Cynergy, Edge Technology) for radio equipment procurement. The switch to NASA SEWP V for this BPA is notable — SEWP V has a broader and more IT-oriented vendor base but less specialization in P25 tactical radios. The winning vendor will almost certainly be a firm that holds both a SEWP V SB contract and an authorized Motorola Solutions dealer agreement. <a href="https://www.govconwire.com/articles/ice-tactical-comms-recompete-dhs-forecast-caci" target="_blank">CACI International</a> holds the separate ICE TACCOM engineering/maintenance/O&amp;M services contract (incumbent, $100M+, set to expire March 2026) — that is a different award from this hardware BPA.
+    </div>
+  </div>
+
+  <!-- ─── SECTION 5: CAPABILITY MATRIX ─── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <span class="section-title">Capability Matrix — Changeis vs. Requirements</span>
+    </div>
+
+    <div class="callout">
+      <strong>Bottom Line Up Front</strong>
+      Changeis is a management consulting and IT advisory firm. This BPA requires a company to sell physical Motorola/L3Harris/Tait radio hardware at government-contract prices. These are categorically different business models. There is no capability gap to close — the requirement is outside Changeis's core business entirely.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Requirement</th>
+          <th>What It Means</th>
+          <th>Changeis Capability</th>
+          <th>Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="cap-row-no">
+          <td>NASA SEWP V SB Prime Contract</td>
+          <td>Must hold an active SEWP V Group C (SB) contract to be eligible to receive BPA</td>
+          <td>Not a SEWP V prime contractor</td>
+          <td>✗ HARD BLOCK</td>
+        </tr>
+        <tr class="cap-row-no">
+          <td>Motorola / L3Harris Authorized Dealer</td>
+          <td>Must have OEM-authorized reseller/dealer agreement to sell P25 radios at government pricing</td>
+          <td>No OEM radio dealer agreements</td>
+          <td>✗ HARD BLOCK</td>
+        </tr>
+        <tr class="cap-row-no">
+          <td>P25-Certified Radio Inventory / Supply Chain</td>
+          <td>Must procure, stage, and deliver DHS CAP-compliant P25 radios and consolettes to CONUS ICE sites</td>
+          <td>No radio hardware supply chain</td>
+          <td>✗ HARD BLOCK</td>
+        </tr>
+        <tr class="cap-row-no">
+          <td>FCC / Tactical Radio Technical Expertise</td>
+          <td>Must understand spectrum management, P25 programming, consolette configuration, and radio encryption</td>
+          <td>No FCC licensing or P25 technical staff</td>
+          <td>✗ HARD BLOCK</td>
+        </tr>
+        <tr class="cap-row-no">
+          <td>Blanket Purchase Agreement Hardware Fulfillment</td>
+          <td>Must fulfill recurring call orders for radio equipment over 5 years, tracking EOL/replacement cycles</td>
+          <td>No hardware fulfillment operations</td>
+          <td>✗ HARD BLOCK</td>
+        </tr>
+        <tr class="cap-row-no">
+          <td>DHS TACCOM / Law Enforcement Radio Experience</td>
+          <td>Understanding of ICE/CBP/USCG radio network interoperability and field operational requirements</td>
+          <td>No TACCOM-specific past performance</td>
+          <td>✗ NO PAST PERF</td>
+        </tr>
+        <tr class="cap-row-no">
+          <td>Path as Subcontractor</td>
+          <td>Could a services firm sub to a radio VAR for program management or advisory work?</td>
+          <td>A $100M+ hardware BPA with no services scope has no meaningful advisory subcontract opportunity</td>
+          <td>✗ NO SUB PATH</td>
+        </tr>
+        <tr class="cap-row-partial">
+          <td>DHS / ICE Customer Relationship</td>
+          <td>Understanding of ICE organizational structure, M&amp;A/CIO office, mission requirements</td>
+          <td>General DHS familiarity; no ICE TACCOM program relationship</td>
+          <td>~ Irrelevant here</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ─── SECTION 6: GO / NO-GO ─── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <span class="section-title">Go / No-Go Assessment</span>
+    </div>
+
+    <div class="verdict-banner verdict-nogo" style="font-size:18px;padding:16px 24px;">
+      ✗ &nbsp;NO-GO — Archive
+    </div>
+
+    <div class="card">
+      <div class="card-title">Assessment Summary</div>
+      <table>
+        <thead><tr><th>Dimension</th><th>Score</th><th>Rationale</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Capability Fit</td>
+            <td><span class="tag tag-red">0 / 10</span></td>
+            <td>Hardware procurement BPA; Changeis delivers services, not physical radios</td>
+          </tr>
+          <tr>
+            <td>Vehicle Eligibility</td>
+            <td><span class="tag tag-red">0 / 10</span></td>
+            <td>No SEWP V SB prime contract; ineligible to receive BPA</td>
+          </tr>
+          <tr>
+            <td>Technical Qualification</td>
+            <td><span class="tag tag-red">0 / 10</span></td>
+            <td>No P25 certification, no OEM dealer agreements, no FCC/radio expertise</td>
+          </tr>
+          <tr>
+            <td>Past Performance</td>
+            <td><span class="tag tag-red">0 / 10</span></td>
+            <td>No tactical radio procurement past performance</td>
+          </tr>
+          <tr>
+            <td>Timeline Viability</td>
+            <td><span class="tag tag-red">0 / 10</span></td>
+            <td>Solicitation already closed (~30 days ago); award in 9 days</td>
+          </tr>
+          <tr>
+            <td>Subcontract Opportunity</td>
+            <td><span class="tag tag-red">0 / 10</span></td>
+            <td>No services scope in a pure hardware BPA; no meaningful sub role exists</td>
+          </tr>
+          <tr>
+            <td><strong>OVERALL</strong></td>
+            <td><span class="tag tag-red" style="font-size:13px;padding:4px 10px;">NO-GO</span></td>
+            <td><strong>Multiple hard blockers; archive without action</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>This is one of the clearest NO-GO verdicts in the pipeline. Unlike "pursue with partner" or "monitor" scenarios, there is no teaming arrangement, no advisory sub-scope, and no future positioning play. The SEWP V vehicle gate alone is a hard eligibility barrier regardless of all other factors. Archive this record and do not expend further business development resources.</p>
+  </div>
+
+  <!-- ─── SECTION 7: KEY RISKS & NEXT STEPS ─── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <span class="section-title">Key Risks &amp; Next Steps</span>
+    </div>
+
+    <div class="callout amber">
+      <strong>Systemic RAG Filter Issue — Action Required</strong>
+      This is the fourth STRONG-tier false positive today driven by the NAICS 541519 / "communications" keyword overlap. The RAG engine cannot distinguish between "tactical radio hardware procurement classified under NAICS 541519" and "IT communications services consulting." A NAICS-aware filter or hardware-exclusion logic should be added to the daily monitor scoring pipeline. Coordinate with the Harness deep dive team to flag this pattern.
+    </div>
+
+    <table>
+      <thead><tr><th>Risk / Action Item</th><th>Priority</th><th>Owner</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>RAG Filter: NAICS 541519 Hardware BPA False Positives</strong></td>
+          <td><span class="tag tag-red">HIGH</span></td>
+          <td>VM2 / Pipeline</td>
+          <td>Add hardware-exclusion rule: when APFS description contains "purchase of radios," "consolette," "accessories," or similar physical-product language AND vehicle is SEWP V or TacCom II, suppress or downgrade RAG score regardless of NAICS. Coordinate with Harness deep dive systemic flag.</td>
+        </tr>
+        <tr>
+          <td><strong>DHS NAICS Taxonomy Issue</strong></td>
+          <td><span class="tag tag-amber">MEDIUM</span></td>
+          <td>BD / Pipeline</td>
+          <td>Document the DHS practice of classifying hardware radio procurement under NAICS 541519 for routing to IT vehicles (SEWP V, TacCom II). Build a lookup table of known hardware-under-IT-NAICS patterns for the monitor pipeline to apply scope-based overrides.</td>
+        </tr>
+        <tr>
+          <td><strong>Archive F2026073286</strong></td>
+          <td><span class="tag tag-navy">IMMEDIATE</span></td>
+          <td>BD Tracker</td>
+          <td>Mark as NO-GO / archived in opportunity tracker. No further action required. Award date 04/30/2026 — monitor SAM.gov purely for intelligence (which SEWP V SB prime wins).</td>
+        </tr>
+        <tr>
+          <td><strong>Monitor Award for Competitive Intel</strong></td>
+          <td><span class="tag tag-gray">LOW</span></td>
+          <td>BD / Intel</td>
+          <td>Note which SEWP V SB prime wins this BPA (Commdex, Cynergy, Edge Technology, or other). This intelligence helps map the SEWP V SB competitive landscape for any future hardware-adjacent procurements where Changeis might seek teaming partnerships.</td>
+        </tr>
+        <tr>
+          <td><strong>CACI TACCOM O&M Recompete (Separate Opportunity)</strong></td>
+          <td><span class="tag tag-amber">MEDIUM</span></td>
+          <td>BD Pipeline</td>
+          <td>CACI's incumbent ICE TACCOM engineering/maintenance/O&M services contract ($100M+) was set to expire March 2026 and is being recompeted under TacCom II. <em>That</em> services contract (NAICS 541519, operations and maintenance, engineering, training) IS more aligned with Changeis capabilities as a sub. Track APFS/SAM.gov for F2025069XXX series recompete solicitation. Source: <a href="https://www.govconwire.com/articles/ice-tactical-comms-recompete-dhs-forecast-caci" target="_blank">GovCon Wire, Nov 2025</a>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr>
+
+  <!-- ─── SESSION CONTEXT ─── -->
+  <details class="session-context">
+    <summary>Session Context &amp; Methodology</summary>
+    <div class="session-body">
+
+      <div class="session-subsection">
+        <h4>1. Original Instructions</h4>
+        <p>Generate a VM2 deep-dive HTML deliverable for APFS opportunity F2026073286 (ICE TACCOM Enterprise Radio BPA). Input data: /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2026073286.json. Reference template: deep-dive-uscis-govdelivery-f2025071369-2026-04-21.html (NO-GO hardware reseller pattern). Deliverable spec: /home/user/workspace/deliverable-specs.md. Output file: /home/user/workspace/VM2-P-Taskers/deep-dive-ice-taccom-radio-bpa-f2026073286-2026-04-21.html. Highlights: ICE/M&A/CIO, Over $100M, NAICS 541519, NASA SEWP V, SB, FFP, BPA, Sol 03/23/2026 (PASSED), Award 04/30/2026 (9 days away), PoP 04/30/2026–04/29/2031 (5 years), POC: Michelle Taylor, RAG 0.659 STRONG. Scope: radios, consolettes, accessories for ICE tactical wireless communications — hardware procurement BPA. Verdict: NO-GO. Styling: Navy #1B2A4A topbar, dark/light toggle, Charter/Georgia headings, system-ui body, red #c53a3a accents, max-width 860px, NO StaticCrypt. Mandatory bottom sections: collapsible Session Context (all 8 subsections), hidden JSON vm2-context-data with cost_estimate, Continue This Work panel (3 buttons), footer. Do NOT push to GitHub or update portal.html.</p>
+      </div>
+
+      <div class="session-subsection">
+        <h4>2. Approach</h4>
+        <ul>
+          <li>Read input JSON (F2026073286.json) to extract all APFS record fields, requirement text, and RAG top-10 data</li>
+          <li>Read deliverable spec (deliverable-specs.md) and reference template (USCIS GovDelivery NO-GO deep dive) to understand required structure</li>
+          <li>Ran RAG engine (POST /match, top_n: 50) against TACCOM radio BPA query — received 17 results, all DOT/Volpe communications advisory work, confirming false positive</li>
+          <li>Ran three parallel web searches: (1) SEWP V SB Motorola radio resellers, (2) DHS TacCom II contract holders, (3) ICE TACCOM competitive landscape — yielded Commdex, Cynergy, Edge Technology, and related context</li>
+          <li>Fetched APFS public record for F2026073286 to verify live data against JSON</li>
+          <li>Cross-referenced prior APFS forecast F2025069804 (TacCom II radio BPA, Motorola APX NEXT) to establish scope continuity</li>
+          <li>Built full HTML deliverable following reference template CSS/JS structure with all 7 content sections and 4 mandatory bottom sections</li>
+        </ul>
+      </div>
+
+      <div class="session-subsection">
+        <h4>3. Key Findings</h4>
+        <ul>
+          <li>F2026073286 is a pure hardware procurement BPA for P25 tactical radios (Motorola APX NEXT family), consolettes, and accessories — physically incompatible with Changeis advisory services model</li>
+          <li>Solicitation release (03/23/2026) has already passed; anticipated award date is 04/30/2026 — 9 calendar days away; opportunity is effectively closed for new entrants</li>
+          <li>RAG score 0.659 STRONG is a false positive driven by "communications + ICE + law enforcement + tactical" keyword overlap with Changeis DOT/Volpe comms advisory work</li>
+          <li>NAICS 541519 is systemically misapplied by DHS to hardware radio procurement to route through IT vehicles (SEWP V, TacCom II) — this is a known DHS acquisition practice creating filter pollution</li>
+          <li>Likely competitive set: SEWP V SB primes with Motorola authorized dealer agreements — Commdex, Cynergy Professional Systems, Edge Technology Distributors are the strongest candidates based on prior TacCom II prime history</li>
+          <li>CACI holds the separate ICE TACCOM O&M/engineering services contract (different from this hardware BPA); that recompete may be more relevant to Changeis as a future sub opportunity</li>
+        </ul>
+      </div>
+
+      <div class="session-subsection">
+        <h4>4. Dead Ends</h4>
+        <ul>
+          <li>RAG top_n:50 returned only 17 results, all DOT/Volpe — no Changeis corpus matches for DHS/ICE radio hardware; this confirms the false positive but provides no useful capability evidence</li>
+          <li>SAM.gov solicitation posting not directly fetched (solicitation window already closed; solicitation number not included in APFS record); no attachments or PWS available for review</li>
+          <li>Direct SEWP V contract holder list at sewp.nasa.gov/sewp5public/contractholders did not yield specific radio/Motorola dealer designations in available snippet; full roster requires account access</li>
+          <li>Communications International, Mobilcomm, RCC Consultants searches did not return strong federal SEWP V SB prime evidence — these may be smaller regional players or operate via subcontracting</li>
+        </ul>
+      </div>
+
+      <div class="session-subsection">
+        <h4>5. Assumptions</h4>
+        <ul>
+          <li>Award date of 04/30/2026 is the anticipated date per APFS — actual award may slip to Q3 FY2026 as noted in the record (no guarantee of exact date)</li>
+          <li>This BPA will be awarded to a SEWP V SB Group C prime; eligibility is gated by SEWP V contract holding — firms without SEWP V contracts cannot receive the BPA regardless of other qualifications</li>
+          <li>The prior forecast F2025069804 (TacCom II, Motorola APX NEXT) and the current F2026073286 (SEWP V) represent the same underlying requirement pursued via different acquisition vehicles — scope is substantively identical</li>
+          <li>Changeis does not currently hold a NASA SEWP V prime contract in any group</li>
+          <li>All 17 RAG matches are Changeis past performance records — the engine found no capability match for tactical radio hardware, consistent with NO-GO verdict</li>
+        </ul>
+      </div>
+
+      <div class="session-subsection">
+        <h4>6. Open Questions</h4>
+        <ul>
+          <li>Has the solicitation actually been posted and closed on SAM.gov? The APFS release date (03/23/2026) has passed but no SAM.gov solicitation number was confirmed</li>
+          <li>Will the award slip beyond 04/30/2026 given the solicitation appeared only on APFS (no SAM.gov confirmation found)? Q3 FY2026 extends through June 30, 2026</li>
+          <li>Is this a single-award BPA or multi-award? APFS does not specify; SEWP V typically allows multi-award BPAs for large procurements</li>
+          <li>What is the specific Motorola APX model specification? F2025069804 named APX NEXT explicitly — does F2026073286 continue with APX NEXT or expand to multi-OEM?</li>
+          <li>Is the CACI TACCOM O&M recompete (separate services contract) now on SAM.gov? This is the related opportunity worth monitoring for Changeis sub positioning</li>
+        </ul>
+      </div>
+
+      <div class="session-subsection">
+        <h4>7. Data Sources</h4>
+        <ul>
+          <li>APFS Record F2026073286: <a href="https://apfs-cloud.dhs.gov/record/73286/public-print/" target="_blank">https://apfs-cloud.dhs.gov/record/73286/public-print/</a></li>
+          <li>Input JSON: /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2026073286.json</li>
+          <li>Prior related forecast F2025069804 (TacCom II, Motorola APX NEXT): <a href="https://apfs-cloud.dhs.gov/record/69804/public-print/" target="_blank">https://apfs-cloud.dhs.gov/record/69804/public-print/</a></li>
+          <li>Commdex DHS TacCom II: <a href="https://commdex.com/dhs-taccom/" target="_blank">https://commdex.com/dhs-taccom/</a></li>
+          <li>Cynergy Professional Systems TacCom II Award: <a href="https://cynergy.pro/cynergy-professional-systems-awarded-3-billion-department-of-homeland-security-tactical-communications-equipment-and-services-contract/" target="_blank">https://cynergy.pro/...</a></li>
+          <li>Federal Compass Edge Technology 70B04C19D00000017: <a href="https://www.federalcompass.com/award-contract-detail/70B04C19D00000017" target="_blank">https://www.federalcompass.com/award-contract-detail/70B04C19D00000017</a></li>
+          <li>CACI ICE TACCOM Recompete: <a href="https://www.govconwire.com/articles/ice-tactical-comms-recompete-dhs-forecast-caci" target="_blank">https://www.govconwire.com/articles/ice-tactical-comms-recompete-dhs-forecast-caci</a></li>
+          <li>NASA SEWP V General Info: <a href="https://www.sewp.nasa.gov/geninfo.shtml" target="_blank">https://www.sewp.nasa.gov/geninfo.shtml</a></li>
+          <li>DHS P25 CAP (Icom): <a href="https://www.icomamerica.com/lineup/land_mobile/p25/DHS-CAP/" target="_blank">https://www.icomamerica.com/lineup/land_mobile/p25/DHS-CAP/</a></li>
+          <li>RAG Engine: POST https://changeis-bd-rag-production.up.railway.app/match — 17 results returned, all DOT/Volpe</li>
+          <li>Reference Template: /home/user/workspace/VM2-P-Taskers/deep-dive-uscis-govdelivery-f2025071369-2026-04-21.html</li>
+        </ul>
+      </div>
+
+      <div class="session-subsection">
+        <h4>8. Next Steps</h4>
+        <ul>
+          <li>Archive F2026073286 in BD tracker — NO-GO, no action required</li>
+          <li>Escalate NAICS 541519 hardware-BPA false positive pattern to pipeline team for filter rule update (coordinate with Harness deep dive)</li>
+          <li>Monitor SAM.gov award announcement (~04/30/2026) to identify winning SEWP V SB prime for competitive intelligence</li>
+          <li>Track CACI TACCOM O&M recompete (services contract, TacCom II vehicle) — that opportunity has genuine Changeis sub potential</li>
+          <li>Build NAICS 541519 hardware-exclusion keyword list: "purchase of radios," "consolette," "radio accessories," "APX NEXT," "P25," "Land Mobile Radio," "TacCom" when paired with non-services vehicles</li>
+        </ul>
+      </div>
+
+    </div>
+  </details>
+
+  <!-- ─── HIDDEN JSON ─── -->
+  <script type="application/json" id="vm2-context-data">
+  {
+    "task_name": "Deep Dive ICE TACCOM Radio BPA F2026073286",
+    "task_date": "2026-04-21",
+    "created_date": "2026-04-21",
+    "revised_date": null,
+    "deliverable_file": "deep-dive-ice-taccom-radio-bpa-f2026073286-2026-04-21.html",
+    "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-ice-taccom-radio-bpa-f2026073286-2026-04-21.html",
+    "version": 1,
+    "prior_versions": [],
+    "related_deliverables": [
+      "deep-dive-uscis-govdelivery-f2025071369-2026-04-21.html"
+    ],
+    "original_instructions": "Generate a VM2 deep-dive HTML deliverable for APFS opportunity F2026073286 (ICE TACCOM Enterprise Radio BPA). Input: /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2026073286.json. Verdict: NO-GO — hardware procurement BPA for Motorola/L3Harris/Tait radios, consolettes, accessories. No SEWP V SB prime, no radio distributor/VAR, no FCC/P25-compliant TACCOM experience. Do NOT push to GitHub or update portal.html.",
+    "approach": "Read APFS JSON, run RAG engine (top_n:50, 17 results all DOT/Volpe false positives), web search for SEWP V SB radio resellers and TacCom II primes (Commdex, Cynergy, Edge Technology), fetch APFS public record to verify, cross-reference prior forecast F2025069804, build full HTML following reference template structure.",
+    "key_findings": [
+      "Pure hardware BPA for P25 tactical radios/consolettes/accessories — incompatible with Changeis consulting model",
+      "Solicitation release (03/23/2026) already passed; award in 9 days (04/30/2026)",
+      "RAG 0.659 STRONG is a false positive — all 17 corpus matches are DOT/Volpe comms advisory work",
+      "NAICS 541519 misapplied to hardware procurement — systemic DHS taxonomy issue",
+      "Competitive set: SEWP V SB primes with Motorola dealer agreements (Commdex, Cynergy, Edge Technology)",
+      "CACI incumbent TACCOM O&M services contract (separate, worth monitoring for sub opportunity)"
+    ],
+    "dead_ends": [
+      "RAG top_n:50 returned only 17 results, none relevant to radio hardware",
+      "SAM.gov solicitation posting not confirmed (solicitation window already closed)",
+      "SEWP V full SB roster with radio/Motorola designations not fully accessible without account",
+      "Communications International/Mobilcomm/RCC Consultants not confirmed as SEWP V SB primes"
+    ],
+    "assumptions": [
+      "Changeis does not hold a NASA SEWP V prime contract",
+      "Award date 04/30/2026 is anticipated; may slip to end of Q3 FY2026",
+      "F2026073286 and F2025069804 represent the same underlying requirement via different vehicles",
+      "All RAG matches are Changeis past performance records — no radio hardware capability in corpus"
+    ],
+    "open_questions": [
+      "Has solicitation been posted/closed on SAM.gov?",
+      "Single-award or multi-award BPA structure?",
+      "Specific OEM(s) and model specifications in solicitation",
+      "Status of CACI TACCOM O&M services recompete on SAM.gov"
+    ],
+    "data_sources": [
+      {"label": "APFS Record F2026073286", "url": "https://apfs-cloud.dhs.gov/record/73286/public-print/"},
+      {"label": "Prior Forecast F2025069804 (TacCom II / Motorola APX NEXT)", "url": "https://apfs-cloud.dhs.gov/record/69804/public-print/"},
+      {"label": "Commdex DHS TacCom II", "url": "https://commdex.com/dhs-taccom/"},
+      {"label": "Cynergy TacCom II Award", "url": "https://cynergy.pro/cynergy-professional-systems-awarded-3-billion-department-of-homeland-security-tactical-communications-equipment-and-services-contract/"},
+      {"label": "Federal Compass Edge Technology", "url": "https://www.federalcompass.com/award-contract-detail/70B04C19D00000017"},
+      {"label": "CACI ICE TACCOM Recompete (GovCon Wire)", "url": "https://www.govconwire.com/articles/ice-tactical-comms-recompete-dhs-forecast-caci"},
+      {"label": "NASA SEWP V General Info", "url": "https://www.sewp.nasa.gov/geninfo.shtml"},
+      {"label": "RAG Engine", "url": "https://changeis-bd-rag-production.up.railway.app/match"}
+    ],
+    "next_steps": [
+      "Archive F2026073286 as NO-GO in BD tracker",
+      "Escalate NAICS 541519 hardware-BPA false positive to pipeline team for filter update",
+      "Monitor SAM.gov ~04/30/2026 for award announcement (competitive intel)",
+      "Track CACI TACCOM O&M services recompete for sub opportunity"
+    ],
+    "cost_estimate": {
+      "model": "claude-sonnet-4-5",
+      "model_pricing": "$3/$15 per 1M tokens",
+      "input_tokens_est": "~55,000",
+      "output_tokens_est": "~9,500",
+      "search_calls": 6,
+      "subagent_calls": 0,
+      "cost_conservative": "$0.28",
+      "cost_ceiling": "$0.55",
+      "notes": "RAG engine call (17 results), 2x parallel web searches (3 queries each), APFS JSON read, reference template read, deliverable spec read, HTML generation. Medium complexity — well-defined NO-GO with clear hardware/services distinction."
+    }
+  }
+  </script>
+
+  <!-- ─── CONTINUE THIS WORK PANEL ─── -->
+  <div class="continue-panel">
+    <div class="continue-title">Continue This Work</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="copyFollowUpPrompt()">📋 Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up%3A%20ICE%20TACCOM%20Radio%20BPA%20Deep%20Dive%20F2026073286&body=Deep%20Dive%20completed%20for%20F2026073286%20(ICE%20TACCOM%20Enterprise%20Radio%20BPA).%0A%0AVerdict%3A%20NO-GO%20%E2%80%94%20hardware%20procurement%20BPA%2C%20no%20Changeis%20path.%0A%0ARailway%20URL%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fdeep-dive-ice-taccom-radio-bpa-f2026073286-2026-04-21.html%0A%0AKey%20action%3A%20Archive%20in%20BD%20tracker.%20Flag%20NAICS%20541519%20hardware%20false%20positive%20pattern%20for%20pipeline%20filter%20update.%20Monitor%20award%20announcement%20~04%2F30%2F2026%20for%20competitive%20intel.">✉ Email to VM2</a>
+      <button class="btn btn-secondary" onclick="createTodoistFollowUp()">✓ Create Todoist Follow-Up</button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    Changeis Confidential · ICE TACCOM Radio BPA Deep Dive · 2026-04-21 · VM2 Deliverable
+  </footer>
+
+</div><!-- /container -->
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+
+  function copyFollowUpPrompt() {
+    const prompt = `Continue deep dive for ICE TACCOM Enterprise Radio BPA (F2026073286).
+
+Deliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-ice-taccom-radio-bpa-f2026073286-2026-04-21.html
+
+Status: NO-GO — hardware procurement BPA for Motorola/L3Harris/Tait P25 tactical radios, consolettes, and accessories via NASA SEWP V SB vehicle. Changeis has no SEWP V prime, no radio dealer agreements, no P25/TACCOM experience. Solicitation already closed (~03/23/2026); award anticipated 04/30/2026 (9 days away).
+
+Pending actions:
+1. Archive F2026073286 in BD tracker
+2. Flag NAICS 541519 hardware-BPA false positive for RAG pipeline filter update (coordinate with Harness deep dive)
+3. Monitor SAM.gov ~04/30/2026 for award announcement (competitive intel)
+4. Track CACI TACCOM O&M services recompete — potential sub opportunity for Changeis`;
+    navigator.clipboard.writeText(prompt).then(() => alert('Follow-up prompt copied to clipboard.')).catch(() => alert('Copy failed — please copy manually.'));
+  }
+
+  function createTodoistFollowUp() {
+    const task = {
+      content: 'ICE TACCOM Radio BPA Deep Dive — F2026073286 Follow-Up',
+      description: `Deep Dive completed. Verdict: NO-GO — hardware BPA, no Changeis path.\n\nActions:\n1. Archive in BD tracker\n2. Flag NAICS 541519 hardware false positive for RAG filter update\n3. Monitor SAM.gov ~04/30/2026 for award announcement\n4. Track CACI TACCOM O&M recompete\n\nDeliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-ice-taccom-radio-bpa-f2026073286-2026-04-21.html`,
+      labels: ['vm2-opp']
+    };
+
+    fetch('/api/todoist/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(task)
+    }).then(r => {
+      if (r.ok) {
+        alert('Todoist follow-up task created.');
+      } else {
+        const fallback = `https://todoist.com/add?content=${encodeURIComponent(task.content)}&description=${encodeURIComponent(task.description)}`;
+        window.open(fallback, '_blank');
+      }
+    }).catch(() => {
+      const fallback = `https://todoist.com/add?content=${encodeURIComponent(task.content)}&description=${encodeURIComponent(task.description)}`;
+      window.open(fallback, '_blank');
+    });
+  }
+</script>
+</body>
+</html>
