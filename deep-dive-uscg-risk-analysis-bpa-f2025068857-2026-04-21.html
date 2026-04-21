@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: USCG Risk Analysis Support BPA — F2025068857</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --go-green: #1e6e37;
+    --go-green-bg: #eaf7ee;
+    --warn-amber: #8a5a00;
+    --warn-amber-bg: #fff8e7;
+    --risk-red: #8b1a1a;
+    --risk-red-bg: #fdf0f0;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --go-green-bg: #1a2e1f;
+    --warn-amber-bg: #2a2010;
+    --risk-red-bg: #2a1010;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px 48px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 32px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 30px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 16px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 10px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section p { margin-bottom: 8px; }
+  .section ul, .section ol { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Scorecards row */
+  .scorecards {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 700px) { .scorecards { grid-template-columns: repeat(2, 1fr); } }
+  .scorecard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 12px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .scorecard-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); margin-bottom: 6px;
+  }
+  .scorecard-value {
+    font-size: 22px; font-weight: 700;
+    color: var(--navy); line-height: 1.1;
+  }
+  [data-theme="dark"] .scorecard-value { color: #e2e2e2; }
+  .scorecard-sub {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint); margin-top: 3px;
+  }
+  .scorecard-value.green { color: #1e6e37; }
+  .scorecard-value.amber { color: #8a5a00; }
+  .scorecard-value.red-val { color: var(--red); }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* RAG match card */
+  .rag-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) { .rag-grid { grid-template-columns: 1fr; } }
+  .rag-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    position: relative;
+  }
+  .rag-card-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  .rag-to {
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700;
+    color: var(--navy); text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  [data-theme="dark"] .rag-to { color: #ccd6f0; }
+  .rag-score {
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700;
+    background: var(--badge-bg); color: #fff;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .rag-score.high { background: #1e6e37; }
+  .rag-score.med { background: #8a5a00; }
+  .rag-score.low { background: #666; }
+  .rag-client {
+    font-family: system-ui, sans-serif; font-size: 12px;
+    color: var(--text-muted); margin-bottom: 6px;
+  }
+  .rag-excerpt {
+    font-size: 13px; line-height: 1.5;
+    color: var(--text); font-style: italic;
+    border-left: 3px solid var(--border);
+    padding-left: 10px;
+  }
+  .rag-chips {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
+  }
+  .rag-chip {
+    font-family: system-ui, sans-serif; font-size: 10.5px; font-weight: 600;
+    background: var(--surface-alt); color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 1px 7px; border-radius: 3px; text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Callout boxes */
+  .callout {
+    border-left: 4px solid;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 14.5px;
+  }
+  .callout-go {
+    background: var(--go-green-bg);
+    border-color: #1e6e37;
+    color: var(--go-green);
+  }
+  .callout-warn {
+    background: var(--warn-amber-bg);
+    border-color: #c28a00;
+    color: var(--warn-amber);
+  }
+  .callout-risk {
+    background: var(--risk-red-bg);
+    border-color: var(--red);
+    color: var(--risk-red);
+  }
+  [data-theme="dark"] .callout-go { color: #5dd68a; }
+  [data-theme="dark"] .callout-warn { color: #f0c060; }
+  [data-theme="dark"] .callout-risk { color: #f07070; }
+
+  /* Go/No-Go verdict */
+  .verdict-box {
+    border: 2px solid #1e6e37;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-top: 12px;
+    background: var(--go-green-bg);
+  }
+  .verdict-header {
+    font-family: system-ui, sans-serif; font-size: 18px; font-weight: 800;
+    color: #1e6e37; margin-bottom: 8px; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  [data-theme="dark"] .verdict-header { color: #5dd68a; }
+  .verdict-body { font-size: 15px; line-height: 1.6; }
+
+  /* Capability matrix */
+  .cap-row-title {
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .dot-strong { color: #1e6e37; font-size: 16px; }
+  .dot-mod { color: #c28a00; font-size: 16px; }
+  .dot-weak { color: var(--red); font-size: 16px; }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    text-align: center; padding: 20px 0 0;
+    margin-top: 20px; border-top: 1px solid var(--border);
+  }
+
+  .muted { color: var(--text-muted); }
+  .two-col {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+  .info-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .info-block-title {
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--red); margin-bottom: 8px;
+  }
+  .info-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; margin-bottom: 5px; gap: 8px;
+  }
+  .info-key { color: var(--text-muted); flex-shrink: 0; }
+  .info-val { font-weight: 600; text-align: right; }
+
+  .tag {
+    display: inline-block;
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .tag-navy { background: var(--navy); color: #fff; }
+  .tag-green { background: #1e6e37; color: #fff; }
+  .tag-amber { background: #c28a00; color: #fff; }
+  .tag-red { background: var(--red); color: #fff; }
+  .tag-gray { background: #888; color: #fff; }
+
+  /* Timeline */
+  .timeline {
+    position: relative; padding-left: 20px; margin-top: 10px;
+  }
+  .timeline::before {
+    content: ''; position: absolute; left: 6px; top: 4px; bottom: 4px;
+    width: 2px; background: var(--border);
+  }
+  .tl-item { position: relative; margin-bottom: 12px; }
+  .tl-dot {
+    position: absolute; left: -17px; top: 4px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--border); border: 2px solid var(--bg);
+  }
+  .tl-dot.past { background: var(--text-muted); }
+  .tl-dot.urgent { background: var(--red); }
+  .tl-dot.upcoming { background: #1e6e37; }
+  .tl-label {
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .tl-desc { font-size: 14px; color: var(--text); margin-top: 1px; }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · APFS F2025068857</div>
+    <h1>USCG Risk Analysis Support BPA — DCO-81 &amp; CG-PSA-2</h1>
+    <div class="hero-sub">USCG/CG-HCA · Deputy Commandant for Operations · BPA FAR Part 8/13 · FFP · MSRAM &amp; RBMSRO · $20M–$50M</div>
+    <div class="hero-date" style="color:var(--text-muted); font-size:13px; margin-top:6px;">Created: 2026-04-21</div>
+  </div>
+
+  <!-- Scorecard row -->
+  <div class="scorecards">
+    <div class="scorecard">
+      <div class="scorecard-label">RAG Score</div>
+      <div class="scorecard-value green">0.6829</div>
+      <div class="scorecard-sub">STRONG match</div>
+    </div>
+    <div class="scorecard">
+      <div class="scorecard-label">Est. Value</div>
+      <div class="scorecard-value">$20–50M</div>
+      <div class="scorecard-sub">5-yr FFP BPA</div>
+    </div>
+    <div class="scorecard">
+      <div class="scorecard-label">Sol. Status</div>
+      <div class="scorecard-value red-val">PAST DUE</div>
+      <div class="scorecard-sub">Est. 03/09/2026 — check SAM</div>
+    </div>
+    <div class="scorecard">
+      <div class="scorecard-label">Award Date</div>
+      <div class="scorecard-value">Jun 1, 2026</div>
+      <div class="scorecard-sub">~40 days — urgent</div>
+    </div>
+  </div>
+
+  <!-- 1. Executive Summary -->
+  <div class="section">
+    <div class="section-header">1 · Executive Summary</div>
+    <p>The U.S. Coast Guard (USCG/CG-HCA) is recompeting a <strong>Blanket Purchase Agreement (BPA)</strong> for quantitative maritime risk analysis support to the Deputy Commandant of Operations (DCO). This $20–50M, 5-year FFP vehicle consolidates all strategic operational risk analysis work — primarily the <strong>Maritime Security Risk Analysis Model (MSRAM)</strong> and the <strong>Risk Based Maritime Security Response Operations (RBMSRO)</strong> optimization tool — under a single contracting framework. The incumbent is <strong>ABSG Consulting Inc. (ABS Group)</strong>, which has held this work since MSRAM's inception in 2005 under contract HSCG23-16-A MMP083. NAICS 541611, no small business set-aside specified.</p>
+    <p>Changeis's RAG engine returns a <strong>0.6829 composite score (STRONG)</strong>, driven by federal performance management, data analysis, program evaluation, and maritime-adjacent support work via the DOT/Volpe portfolio. The core tension: Changeis is strong on the <em>strategic planning and program management</em> dimension but needs teaming partners for <em>MSRAM quantitative modeling</em> — a niche, two-decade-old specialized capability ABS Group has built from the ground up. The solicitation estimated release was <strong>March 9, 2026 — now 6+ weeks overdue</strong>; verify SAM.gov immediately.</p>
+    <div class="callout callout-go">
+      <strong>GO recommendation: Pursue as Prime with teaming OR as Sub to an MSRAM-credible small business.</strong> Changeis's performance management, strategic planning, program oversight, and federal consulting capabilities align strongly with the DCO-81 and enterprise risk communication dimensions of this BPA. Primary gap is MSRAM-specific quantitative risk modeling (a niche not found in the RAG corpus). Teaming with a maritime risk specialist (e.g., Hoplite Industries, CENTRA Technology, or a Volpe/DHS S&amp;T alumni firm) resolves the gap. The <em>absence</em> of a small business set-aside means large primes compete directly — Changeis's best path may be a subcontract with a large MSRAM-credible firm if the BPA is structured as single-award to ABS Group's successor.
+    </div>
+  </div>
+
+  <!-- 2. Opportunity Details -->
+  <div class="section">
+    <div class="section-header">2 · Opportunity Details</div>
+    <div class="two-col">
+      <div class="info-block">
+        <div class="info-block-title">Acquisition Basics</div>
+        <div class="info-row"><span class="info-key">APFS #</span><span class="info-val">F2025068857</span></div>
+        <div class="info-row"><span class="info-key">Agency</span><span class="info-val">USCG / CG-HCA</span></div>
+        <div class="info-row"><span class="info-key">Contracting Office</span><span class="info-val">CG-HCA-COCO-3</span></div>
+        <div class="info-row"><span class="info-key">NAICS</span><span class="info-val">541611 — Admin Mgmt Consulting</span></div>
+        <div class="info-row"><span class="info-key">Contract Type</span><span class="info-val">Firm Fixed Price</span></div>
+        <div class="info-row"><span class="info-key">Vehicle</span><span class="info-val">BPA (FAR Part 8 or 13)</span></div>
+        <div class="info-row"><span class="info-key">Set-Aside</span><span class="info-val">None specified</span></div>
+        <div class="info-row"><span class="info-key">Competition</span><span class="info-val">Follow-on / Recompete (REC)</span></div>
+      </div>
+      <div class="info-block">
+        <div class="info-block-title">Timeline &amp; Value</div>
+        <div class="info-row"><span class="info-key">APFS Published</span><span class="info-val">Feb 10, 2026</span></div>
+        <div class="info-row"><span class="info-key">Prev. Published</span><span class="info-val">Sep 2, 2025</span></div>
+        <div class="info-row"><span class="info-key">Sol. Release (Est.)</span><span class="info-val"><span class="tag tag-red">Mar 9, 2026 — VERIFY</span></span></div>
+        <div class="info-row"><span class="info-key">Award Date</span><span class="info-val">Jun 1, 2026</span></div>
+        <div class="info-row"><span class="info-key">POP Start</span><span class="info-val">Jun 12, 2026</span></div>
+        <div class="info-row"><span class="info-key">POP End</span><span class="info-val">Jun 11, 2031 (5 yrs)</span></div>
+        <div class="info-row"><span class="info-key">Dollar Range</span><span class="info-val">$20M – $50M</span></div>
+        <div class="info-row"><span class="info-key">Award Quarter</span><span class="info-val">Q3 FY2026</span></div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top:12px;">
+      <div class="info-block">
+        <div class="info-block-title">Requirements Contact (POC)</div>
+        <div class="info-row"><span class="info-key">Name</span><span class="info-val">Mark Willis</span></div>
+        <div class="info-row"><span class="info-key">Phone</span><span class="info-val">(202) 372-1164</span></div>
+        <div class="info-row"><span class="info-key">Email</span><span class="info-val"><a href="mailto:mark.a.willis2@uscg.mil">mark.a.willis2@uscg.mil</a></span></div>
+        <div class="info-row"><span class="info-key">Office</span><span class="info-val">Base NCR (Requirements)</span></div>
+      </div>
+      <div class="info-block">
+        <div class="info-block-title">SBS Coordinator</div>
+        <div class="info-row"><span class="info-key">Name</span><span class="info-val">Mark Solomon</span></div>
+        <div class="info-row"><span class="info-key">Phone</span><span class="info-val">(571) 610-6114</span></div>
+        <div class="info-row"><span class="info-key">Email</span><span class="info-val"><a href="mailto:mark.k.solomon2@uscg.mil">mark.k.solomon2@uscg.mil</a></span></div>
+        <div class="info-row"><span class="info-key">Place of Perf.</span><span class="info-val">Washington, DC</span></div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <p style="margin-top:18px;"><strong>Acquisition Timeline</strong></p>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot past"></div>
+        <div class="tl-label">Sep 2, 2025</div>
+        <div class="tl-desc">APFS first published (previously: Jun 23, 2025)</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot past"></div>
+        <div class="tl-label">Feb 10, 2026</div>
+        <div class="tl-desc">APFS updated / last published — dollar range and dates confirmed</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot urgent"></div>
+        <div class="tl-label">Mar 9, 2026 — 6+ WEEKS PAST</div>
+        <div class="tl-desc">Estimated solicitation release — check SAM.gov now; may be delayed or posted under a different notice</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot upcoming"></div>
+        <div class="tl-label">Jun 1, 2026 (~40 days)</div>
+        <div class="tl-desc">Anticipated award date — very short runway if solicitation just posted</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot upcoming"></div>
+        <div class="tl-label">Jun 12, 2026 – Jun 11, 2031</div>
+        <div class="tl-desc">Period of performance (5 years, base + options likely)</div>
+      </div>
+    </div>
+
+    <!-- Scope narrative -->
+    <p style="margin-top:18px;"><strong>Scope: What This BPA Funds</strong></p>
+    <p>This BPA consolidates all strategic operational risk analysis work under the DCO into a single contracting vehicle. The two primary programs are:</p>
+    <ul style="margin-top:6px;">
+      <li><strong>MSRAM (Maritime Security Risk Analysis Model):</strong> A post-9/11 Microsoft Access-based risk model quantifying terrorist attack risk against Maritime Critical Infrastructure and Key Resources (MCIKR) — port infrastructure, waterways, vessels, petroleum facilities, LNG terminals, nuclear materials, and other CIKR. Risk = Threat × Consequence × Vulnerability. Data collected at sector/field level, aggregated nationally at classified level. Feeds DHS Port Security Grant Program (PSGP) allocations, USCG resource deployment decisions, and strategic planning at all levels. ABS Group (formerly ABS Consulting) has supported MSRAM since its 2005 development and has built 20 years of institutional knowledge in the model's architecture.</li>
+      <li><strong>RBMSRO (Risk Based Maritime Security Response Operations):</strong> Optimization tool supporting Port, Waterways and Coastal Security (PWCS) missions — analyzes USCG law enforcement asset deployment, plans and reports Maritime Security Response Operations activities, and operationalizes MCIKR patrol through the Key Port Areas (KPA) patrol concept.</li>
+      <li><strong>Enterprise Risk Management (ERM) Support:</strong> Additional operational risk assessments and ERM efforts across DCO leveraging the same BPA vehicle.</li>
+      <li><strong>Risk Communication Enhancement:</strong> Using existing USCG and federal IT infrastructure to communicate risk data to internal and external stakeholders at local, state, and federal levels for resource allocation, policy, and budget decisions.</li>
+    </ul>
+
+    <p style="margin-top:12px;"><strong>Organizational Context — Two Key Customer Offices:</strong></p>
+    <div class="two-col" style="margin-top:8px;">
+      <div class="info-block">
+        <div class="info-block-title">DCO-81 — Office of Performance Management &amp; Assessment</div>
+        <p style="font-size:13.5px; line-height:1.5;">Primary BPA customer under the Deputy Commandant for Operations. DCO-81 owns enterprise risk management and strategic performance assessment across USCG operational programs. The BPA's strategic planning and program management scope (risk communication, enterprise risk integration, resource allocation modeling) maps directly here. Changeis's performance management and strategic planning capabilities are highly relevant to DCO-81 requirements.</p>
+      </div>
+      <div class="info-block">
+        <div class="info-block-title">CG-PSA-2 — Domestic Port Security Evaluation Division</div>
+        <p style="font-size:13.5px; line-height:1.5;">Program manager for MSRAM and Port Security Resiliency Assessments (PSRAs) domestically. Under CG-5P (Assistant Commandant for Prevention Policy). Coordinates with DHS and other federal agencies on port security policy. This is the technically deepest dimension of the BPA — MSRAM database management, quantitative risk scoring, and maritime domain expertise. ABS Group's 20-year relationship with CG-PSA-2 is the primary incumbency risk.</p>
+      </div>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top:14px;">
+      <strong>Incumbent Contract Note:</strong> The APFS record shows ABSG Consulting on contract HSCG23-16-A MMP083 (CG-HCA) and also a separate contract reference 70Z02320AMMP00300 (FEMA REPP). ABS Group's Government Contracts page lists: <em>"USCG Contractor Management and Administrative Support Services to Conduct Risk Analysis in Support of the US Coast Guard — Contract 70Z02320AMMP00300."</em> This confirms a decades-long, multi-contract USCG relationship. The recompete is NOT opening to greenfield competition — it is displacing a deeply entrenched incumbent.
+    </div>
+  </div>
+
+  <!-- 3. RAG Analysis -->
+  <div class="section">
+    <div class="section-header">3 · RAG Match Analysis — Top 5 Past Performance</div>
+    <p>The Changeis RAG corpus returned a <strong>0.6829 composite score (STRONG)</strong> with 33 total matches scored. Top matches cluster in DOT/Volpe program management, data science and analysis, and FMCSA safety statistics work. The dominant theme is federal data analysis, program evaluation, and performance metrics support — structurally analogous to the DCO-81 performance management and risk communication dimensions. Critically, the RAG corpus does <em>not</em> surface dedicated maritime domain security, CIKR risk modeling, or MSRAM-specific work — confirming the teaming imperative for that scope dimension.</p>
+
+    <div class="rag-grid">
+
+      <!-- Match 1 -->
+      <div class="rag-card">
+        <div class="rag-card-top">
+          <div class="rag-to">V3322080 — MDA Workshop Survey</div>
+          <div class="rag-score high">0.6829</div>
+        </div>
+        <div class="rag-client">DOT / Maritime Administration (MARAD) / Volpe · Task Order 6913G621F400057</div>
+        <div class="rag-excerpt">"The contractor shall aid in setting up Invitational Travel for faculty members of the US Merchant Marine Academy (US Dept. of Transportation, Maritime Administration) to travel to the Volpe Center… Data Science and Analysis ✓, Conference Planning ✓, Education &amp; Training ✓."</div>
+        <div class="rag-chips">
+          <span class="rag-chip">AWARD</span><span class="rag-chip">SOW</span><span class="rag-chip">TORFP</span><span class="rag-chip">OTHER</span>
+        </div>
+        <p style="font-size:12.5px; margin-top:8px; color:var(--text-muted);"><strong>Top match — and notably maritime-adjacent.</strong> The MDA/Merchant Marine Academy connection is the closest Changeis corpus item to USCG's maritime domain. After-action reporting, workshop survey analysis, and data science in a federal maritime transportation context. Directly citable in a USCG proposal narrative.</p>
+      </div>
+
+      <!-- Match 2 -->
+      <div class="rag-card">
+        <div class="rag-card-top">
+          <div class="rag-to">V3132047 — FMCSA Motor Carrier Safety Applied Analysis</div>
+          <div class="rag-score high">0.6131</div>
+        </div>
+        <div class="rag-client">DOT / FMCSA / Volpe · Contract 6913G620F400113</div>
+        <div class="rag-excerpt">"The contractor will provide support in four areas: planning and management, data dissemination, data quality improvement, and program effectiveness and analytical studies… Crash Data Analysis, registration statistics, and safety program effectiveness studies."</div>
+        <div class="rag-chips">
+          <span class="rag-chip">AWARD</span><span class="rag-chip">SOW</span><span class="rag-chip">TORFP</span><span class="rag-chip">OTHER</span>
+        </div>
+        <p style="font-size:12.5px; margin-top:8px; color:var(--text-muted);">Strong analog to DCO-81 performance metrics work: data analysis, program effectiveness studies, data quality improvement, and multi-agency stakeholder dissemination — all structural parallels to USCG risk data management and reporting requirements.</p>
+      </div>
+
+      <!-- Match 3 -->
+      <div class="rag-card">
+        <div class="rag-card-top">
+          <div class="rag-to">V3132249 — FMCSA Integrated Safety Statistics</div>
+          <div class="rag-score med">0.5753</div>
+        </div>
+        <div class="rag-client">DOT / FMCSA / Volpe · Contract 6913G622F40055N</div>
+        <div class="rag-excerpt">"Holistic and integrated support for FMCSA statistics and analysis programs… data science and analysis, program evaluation, system operational performance, communications and outreach, and financial and administrative support."</div>
+        <div class="rag-chips">
+          <span class="rag-chip">AWARD</span><span class="rag-chip">SOW</span><span class="rag-chip">OTHER</span>
+        </div>
+        <p style="font-size:12.5px; margin-top:8px; color:var(--text-muted);">Integrated statistical program support with full-spectrum program evaluation, data quality, and communications. Maps to the risk communication and data dissemination elements of the USCG BPA — informing stakeholders at multiple levels with risk data outputs.</p>
+      </div>
+
+      <!-- Match 4 -->
+      <div class="rag-card">
+        <div class="rag-card-top">
+          <div class="rag-to">V3132355 — FMCSA Integrated Safety Statistics</div>
+          <div class="rag-score med">0.5435</div>
+        </div>
+        <div class="rag-client">DOT / FMCSA / Volpe · Contract 6913G623F40050N</div>
+        <div class="rag-excerpt">"Program evaluation, system operational performance, communications and outreach, financial and administrative support… Data Dissemination, Data Quality Improvement, Program Effectiveness, analytical studies and briefings."</div>
+        <div class="rag-chips">
+          <span class="rag-chip">AWARD</span><span class="rag-chip">SOW</span><span class="rag-chip">OTHER</span>
+        </div>
+        <p style="font-size:12.5px; margin-top:8px; color:var(--text-muted);">Follow-on safety statistics task order — demonstrates Changeis's sustained performance on complex federal analytics programs. Continued engagement under the same framework validates reliability and program continuity, a key proposal differentiator.</p>
+      </div>
+
+      <!-- Match 5 -->
+      <div class="rag-card">
+        <div class="rag-card-top">
+          <div class="rag-to">V3202050 — V320-V340 Admin Support</div>
+          <div class="rag-score med">0.5121</div>
+        </div>
+        <div class="rag-client">DOT / FAA / Volpe · Contract 6913G621F400030</div>
+        <div class="rag-excerpt">"Financial and Administrative Program Support ✓ — scope includes planning, logistics, financial tracking, and administrative coordination for multi-division Volpe programs."</div>
+        <div class="rag-chips">
+          <span class="rag-chip">AWARD</span><span class="rag-chip">SOW</span><span class="rag-chip">TORFP</span><span class="rag-chip">OTHER</span>
+        </div>
+        <p style="font-size:12.5px; margin-top:8px; color:var(--text-muted);">Program administrative support for multi-division government program — maps to the program management and administrative coordination elements of the USCG BPA. Documents Changeis's execution of structured federal program support across organizational boundaries.</p>
+      </div>
+
+    </div>
+
+    <div class="callout callout-warn" style="margin-top:16px;">
+      <strong>RAG Gap Note:</strong> All top matches are DOT/Volpe portfolio — no DHS, no USCG, no CIKR/maritime security content in the corpus. The RAG score reflects structural similarity (federal program analytics, performance management, data science) not domain expertise. MSRAM's quantitative risk modeling (Threat × Consequence × Vulnerability computation, Microsoft Access database management, classified threat data integration) does not appear in any Changeis past performance. This gap is real and must be addressed through teaming — it is not bridgeable by narrative alone.
+    </div>
+  </div>
+
+  <!-- 4. Incumbent & Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">4 · Incumbent &amp; Competitive Landscape</div>
+
+    <p><strong>Confirmed Incumbent: ABSG Consulting Inc. (ABS Group)</strong> — ABSG Consulting (the consulting arm of ABS Group, originally American Bureau of Shipping) has held USCG risk analysis support since MSRAM's development in 2005. The current BPA is HSCG23-16-A MMP083 under CG-HCA. ABS Group's website confirms: <em>"USCG Contractor Management and Administrative Support Services to Conduct Risk Analysis in Support of the US Coast Guard — Contract 70Z02320AMMP00300."</em> Snow Eagle Group's portfolio (a MSRAM-aware small firm) explicitly states: <em>"ABS Group has worked with the USCG providing support on developing and enhancing the Maritime Security Risk Analysis Model (MSRAM) tool/methodology since its inception in 2005."</em> This is a <a href="https://www.snoweaglegroup.com/portfolio/maritime-security-risk-analysis-model-msram/" target="_blank">20-year continuous incumbency</a> — an exceptionally deep entrenchment.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Contract / Award</th>
+          <th>Awardee</th>
+          <th>Value</th>
+          <th>Period</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>HSCG23-16-A MMP083</td>
+          <td><strong>ABSG Consulting Inc.</strong></td>
+          <td>~$20–50M (est.)</td>
+          <td>2016 – 2026 (est.)</td>
+          <td>Current MSRAM/RBMSRO BPA — confirmed APFS incumbent; expires ~mid-2026</td>
+        </tr>
+        <tr>
+          <td><a href="https://govtribe.com/award/federal-contract-award/bpa-call-hscg2316apsw001-hscg2317fapc014" target="_blank">HSCG2316APSW001-HSCG2317FAPC014</a></td>
+          <td>ABSG Consulting Inc.</td>
+          <td>4-year BPA order</td>
+          <td>FY2017</td>
+          <td>Predecessor BPA call under CG-HCA; confirms multi-cycle incumbency pattern</td>
+        </tr>
+        <tr>
+          <td>70Z02320AMMP00300</td>
+          <td>ABS Group (ABSG)</td>
+          <td>N/A disclosed</td>
+          <td>2020+</td>
+          <td>FEMA REPP + USCG risk analysis support — dual-agency DHS footprint</td>
+        </tr>
+        <tr>
+          <td>SAM.gov MSRAM DB Support</td>
+          <td>TBD small firm(s)</td>
+          <td>Not disclosed</td>
+          <td>Ongoing</td>
+          <td>Separate SAM.gov notice for MSRAM database technical support — possible subcontract vehicle</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:14px;"><strong>Likely Competitors for This BPA Recompete:</strong></p>
+
+    <table style="margin-top:10px;">
+      <thead>
+        <tr>
+          <th>Firm</th>
+          <th>Threat Level</th>
+          <th>USCG/Maritime Footprint</th>
+          <th>Key Strengths</th>
+          <th>Gap vs. Changeis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ABSG Consulting / ABS Group</strong><br><span style="font-size:12px;color:var(--text-muted);">Arlington, VA — Large Business</span></td>
+          <td><span class="tag tag-red">EXTREME</span></td>
+          <td>MSRAM developer since 2005; 20-yr continuous incumbent; CG-HCA preferred vendor; FEMA REPP dual-agency</td>
+          <td>Irreplaceable institutional knowledge of MSRAM architecture; classified data access; CG-PSA-2 relationships; proprietary model documentation</td>
+          <td>Large business size disadvantage if set-aside introduced; no innovation incentive as incumbent</td>
+        </tr>
+        <tr>
+          <td><strong>Booz Allen Hamilton</strong><br><span style="font-size:12px;color:var(--text-muted);">McLean, VA — Large Business</span></td>
+          <td><span class="tag tag-amber">HIGH</span></td>
+          <td>Deep DHS/USCG analytics portfolio; homeland security risk modeling expertise; CIKR assessment experience</td>
+          <td>Enterprise risk management at scale; DHS S&amp;T relationships; quantitative modeling capabilities; cleared workforce</td>
+          <td>No confirmed MSRAM-specific work; premium pricing; size may disadvantage if small business component required</td>
+        </tr>
+        <tr>
+          <td><strong>CENTRA Technology</strong><br><span style="font-size:12px;color:var(--text-muted);">Arlington, VA — Small Business</span></td>
+          <td><span class="tag tag-amber">HIGH</span></td>
+          <td>DHS/intelligence community risk analysis; port security assessment experience; CIKR expertise</td>
+          <td>Small business status; intelligence/risk analysis specialization; potential MSRAM adjacency from DHS work</td>
+          <td>Smaller capacity for $20–50M vehicle without teaming; less brand name recognition</td>
+        </tr>
+        <tr>
+          <td><strong>LMI (Logistics Management Institute)</strong><br><span style="font-size:12px;color:var(--text-muted);">Tysons, VA — Non-profit / SB-equiv.</span></td>
+          <td><span class="tag tag-amber">MODERATE</span></td>
+          <td>DHS/USCG program management consulting; analytics and performance management; federal advisory heritage</td>
+          <td>Performance management expertise aligns with DCO-81 scope; neutral advisory brand; strong federal analytics</td>
+          <td>Not a confirmed MSRAM vendor; less maritime security specialization</td>
+        </tr>
+        <tr>
+          <td><strong>Hoplite Industries / Snow Eagle Group</strong><br><span style="font-size:12px;color:var(--text-muted);">Small maritime risk specialists</span></td>
+          <td><span class="tag tag-navy">WATCH</span></td>
+          <td>Snow Eagle Group portfolio explicitly references ABS/MSRAM methodology; maritime security risk analysis niche</td>
+          <td>Deep MSRAM subject matter expertise; potential teaming partner for Changeis; small business competitive advantage</td>
+          <td>Limited scale; likely need a prime partner; useful as <em>teaming target</em> for Changeis</td>
+        </tr>
+        <tr>
+          <td><strong>Changeis Inc.</strong><br><span style="font-size:12px;color:var(--text-muted);">WOSB / EDWOSB</span></td>
+          <td><span class="tag tag-green">VIABLE WITH TEAMING</span></td>
+          <td>No direct USCG/maritime security past performance; strong DOT/Volpe program analytics portfolio</td>
+          <td>Performance management, strategic planning, data analysis, program evaluation; WOSB status; nimble teaming structure</td>
+          <td>No MSRAM expertise; no USCG incumbent relationship; needs a maritime risk SME teaming partner to be credible</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-risk" style="margin-top:14px;">
+      <strong>Incumbency Risk Assessment — HIGH:</strong> ABS Group's 20-year continuous MSRAM incumbency represents one of the most entrenched contractor relationships in federal maritime security. Unlike BPAs where multiple awardees coexist (diluting incumbency advantage), this appears to be a <em>single-awardee</em> BPA structure based on the APFS record showing one incumbent. If USCG recompetes as single-award, displacing ABS Group is an extremely high bar requiring a credible MSRAM successor team. If recompeted as multi-award, Changeis has a viable slot for the DCO-81 strategic advisory and program management call orders.
+    </div>
+  </div>
+
+  <!-- 5. Capability Matrix -->
+  <div class="section">
+    <div class="section-header">5 · Capability Matrix — Changeis vs. BPA Requirements</div>
+    <p>The BPA scope divides into two functional tiers: (1) strategic program management and risk communication — where Changeis is strong — and (2) quantitative MSRAM/RBMSRO modeling — where Changeis has a meaningful gap requiring teaming.</p>
+
+    <table style="margin-top:12px;">
+      <thead>
+        <tr>
+          <th>Requirement Area</th>
+          <th>Relevance to BPA</th>
+          <th>Changeis Strength</th>
+          <th>RAG Evidence</th>
+          <th>Gap / Teaming Need</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Strategic Planning &amp; Program Management</strong></td>
+          <td>DCO-81 core; enterprise risk integration</td>
+          <td><span class="dot-strong">●</span> STRONG</td>
+          <td>V3132047, V3132249, V3132355 — FMCSA program management, data-driven decision support</td>
+          <td>None — direct capability match</td>
+        </tr>
+        <tr>
+          <td><strong>Performance Metrics &amp; Program Evaluation</strong></td>
+          <td>DCO-81 performance assessment mandate</td>
+          <td><span class="dot-strong">●</span> STRONG</td>
+          <td>Multiple Volpe TOs — program evaluation, metrics tracking, analytical briefings</td>
+          <td>None — this is Changeis's core competency</td>
+        </tr>
+        <tr>
+          <td><strong>Data Science &amp; Analysis</strong></td>
+          <td>MSRAM data management, risk reporting</td>
+          <td><span class="dot-mod">●</span> MODERATE</td>
+          <td>V3132140 — Data Science &amp; Analysis ✓; V3132249 — integrated analytics</td>
+          <td>Need maritime domain data context; general analytics strong, MSRAM-specific schema weak</td>
+        </tr>
+        <tr>
+          <td><strong>Risk Communication &amp; Stakeholder Engagement</strong></td>
+          <td>Risk data dissemination to local/state/federal decision-makers</td>
+          <td><span class="dot-strong">●</span> STRONG</td>
+          <td>V3322080 — MDA Workshop survey, stakeholder engagement, communications strategy</td>
+          <td>None — strong federal stakeholder communication past performance</td>
+        </tr>
+        <tr>
+          <td><strong>Federal Advisory &amp; Business Process Optimization</strong></td>
+          <td>ERM framework optimization, process improvement</td>
+          <td><span class="dot-strong">●</span> STRONG</td>
+          <td>Volpe BPR and process optimization portfolio across multiple TOs</td>
+          <td>None — Changeis's consulting DNA</td>
+        </tr>
+        <tr>
+          <td><strong>MSRAM Quantitative Risk Modeling</strong></td>
+          <td>CG-PSA-2 core — CIKR risk scoring, Threat × Consequence × Vulnerability</td>
+          <td><span class="dot-weak">●</span> WEAK</td>
+          <td>No RAG corpus matches for MSRAM, CIKR, maritime security risk quantification</td>
+          <td><strong>CRITICAL GAP</strong> — must team with MSRAM-credible firm (ABS alumni, Snow Eagle, CENTRA, Hoplite)</td>
+        </tr>
+        <tr>
+          <td><strong>RBMSRO Optimization Tool Support</strong></td>
+          <td>PWCS operations analysis, KPA patrol optimization</td>
+          <td><span class="dot-weak">●</span> WEAK</td>
+          <td>No PWCS, RBMSRO, or law enforcement asset optimization in corpus</td>
+          <td><strong>CRITICAL GAP</strong> — operational maritime security niche requires specialist teaming partner</td>
+        </tr>
+        <tr>
+          <td><strong>Classified / Sensitive Data Handling (SSI/Secret)</strong></td>
+          <td>MSRAM HQ version operates at classified level; threat data from CG Intelligence</td>
+          <td><span class="dot-mod">●</span> MODERATE</td>
+          <td>Federal program experience implies clearance capability, but not confirmed in corpus</td>
+          <td>Confirm Changeis cleared personnel; MSRAM classified work requires Secret-level cleared team</td>
+        </tr>
+        <tr>
+          <td><strong>GSA MAS SIN 541611 Coverage</strong></td>
+          <td>BPA may be FAR Part 8 (GSA Schedule-based)</td>
+          <td><span class="dot-mod">●</span> MOD/UNKNOWN</td>
+          <td>Volpe SCOAR vehicle demonstrated; GSA MAS SIN 541611 status not confirmed in corpus</td>
+          <td><strong>VERIFY IMMEDIATELY</strong> — FAR Part 8 BPA requires GSA MAS SIN 541611 coverage</td>
+        </tr>
+        <tr>
+          <td><strong>Maritime Domain Knowledge (USCG/MTS)</strong></td>
+          <td>Proposal credibility; COR relationships; USCG culture</td>
+          <td><span class="dot-mod">●</span> MODERATE</td>
+          <td>V3322080 Maritime Administration (MARAD) workshop — closest maritime adjacency</td>
+          <td>MARAD connection is useful; direct USCG experience absent — hire or team for maritime SME</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:14px; font-size:14.5px;"><span class="dot-strong">●</span> STRONG = Direct past performance · <span class="dot-mod">●</span> MODERATE = Adjacent capability · <span class="dot-weak">●</span> WEAK = Gap requiring teaming/hiring</p>
+
+    <div class="callout callout-warn" style="margin-top:12px;">
+      <strong>Teaming Partner Criteria:</strong> The ideal teaming partner for Changeis must bring (1) confirmed MSRAM/RBMSRO technical expertise, (2) prior CG-PSA-2 or CG-HCA contract experience, (3) small business status if set-aside is introduced, and (4) cleared personnel for classified MSRAM data access. Candidates: <strong>Snow Eagle Group</strong> (MSRAM portfolio explicitly cited), <strong>CENTRA Technology</strong> (DHS/maritime risk), former ABS Group MSRAM employees now at boutique firms, or a Volpe-connected maritime SME.
+    </div>
+  </div>
+
+  <!-- 6. Go/No-Go -->
+  <div class="section">
+    <div class="section-header">6 · Go / No-Go Assessment</div>
+
+    <div class="verdict-box">
+      <div class="verdict-header">GO — With Conditions</div>
+      <div class="verdict-body">
+        <p><strong>Recommended Path: GO as Prime with Maritime Risk Teaming Partner</strong> (or GO as Sub if ABS Group or a large MSRAM-credible prime offers a teaming arrangement).</p>
+        <p style="margin-top:8px;">Changeis should pursue this opportunity with a structured teaming strategy built around its demonstrated strengths in federal performance management and strategic consulting, combined with a MSRAM-credible subcontractor. The $20–50M ceiling over 5 years ($4–10M/year) is a meaningful contract for Changeis's portfolio and provides a USCG/DHS anchor client.</p>
+        <p style="margin-top:8px;"><strong>Path A (Preferred if multi-award BPA):</strong> Changeis as Prime, teaming with Snow Eagle Group or CENTRA Technology as MSRAM/maritime risk SME subcontractor. Position Changeis as the program management and strategic advisory lead; teaming partner leads quantitative risk modeling. Viable if USCG structures this as a multi-award BPA with call order competition.</p>
+        <p style="margin-top:8px;"><strong>Path B (If single-award BPA):</strong> Reach out to a MSRAM-credible large business (Booz Allen, ICF) or specialized small business recompeting ABS Group's slot and offer Changeis as a subcontractor for the DCO-81 performance management and risk communication workstreams. This is lower risk / lower reward but keeps Changeis in the USCG ecosystem.</p>
+        <p style="margin-top:8px;"><strong>Path C (No-Go condition):</strong> If the BPA is structured as single-award FFP directly to an ABS Group successor with no competition, and no teaming opportunity exists, assess resource cost vs. proposal win probability and consider MONITOR status for the next recompete cycle.</p>
+      </div>
+    </div>
+
+    <table style="margin-top:16px;">
+      <thead>
+        <tr><th>Factor</th><th>Assessment</th><th>Impact on Decision</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>RAG Score</strong></td>
+          <td>0.6829 — STRONG (top 15% of scored opportunities)</td>
+          <td><span class="tag tag-green">GO</span></td>
+        </tr>
+        <tr>
+          <td><strong>Contract Value</strong></td>
+          <td>$20–50M / 5 years — meaningful but not oversized for Changeis</td>
+          <td><span class="tag tag-green">GO</span></td>
+        </tr>
+        <tr>
+          <td><strong>Core Capability Alignment</strong></td>
+          <td>Strong on DCO-81 strategic planning / performance mgmt; weak on MSRAM modeling</td>
+          <td><span class="tag tag-amber">GO WITH TEAMING</span></td>
+        </tr>
+        <tr>
+          <td><strong>Incumbency Risk</strong></td>
+          <td>ABS Group — 20-year continuous incumbent, MSRAM developer</td>
+          <td><span class="tag tag-red">HIGH RISK</span></td>
+        </tr>
+        <tr>
+          <td><strong>Timeline Urgency</strong></td>
+          <td>Sol. 6+ weeks overdue; award ~Jun 1 — extremely compressed if solicitation just posted</td>
+          <td><span class="tag tag-red">URGENT</span></td>
+        </tr>
+        <tr>
+          <td><strong>Set-Aside Status</strong></td>
+          <td>None specified — large primes can compete directly against Changeis</td>
+          <td><span class="tag tag-amber">NEUTRAL / RISK</span></td>
+        </tr>
+        <tr>
+          <td><strong>BPA Structure (TBD)</strong></td>
+          <td>Single-award vs. multi-award unknown — critical to path determination</td>
+          <td><span class="tag tag-amber">MUST VERIFY</span></td>
+        </tr>
+        <tr>
+          <td><strong>NAICS Size Standard</strong></td>
+          <td>541611 — $19.5M annual receipts; Changeis qualifies as small business</td>
+          <td><span class="tag tag-green">ADVANTAGE</span></td>
+        </tr>
+        <tr>
+          <td><strong>POC Access</strong></td>
+          <td>Mark Willis contact available — reach out now for RFI/solicitation status</td>
+          <td><span class="tag tag-green">ACT NOW</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 7. Key Risks & Next Steps -->
+  <div class="section">
+    <div class="section-header">7 · Key Risks &amp; Next Steps</div>
+
+    <p><strong>IMMEDIATE ACTIONS (within 48 hours):</strong></p>
+    <ul style="margin-top:6px;">
+      <li><strong>URGENT — Check SAM.gov:</strong> The estimated solicitation release of March 9, 2026 is 6+ weeks past. Search SAM.gov for "USCG risk analysis DCO-81 MSRAM BPA" and solicitation number derivations from HSCG23-16-A. The opportunity may be posted under a different notice number or may have been delayed. Award date of June 1, 2026 leaves extremely little time if solicitation just dropped.</li>
+      <li><strong>Contact Mark Willis directly:</strong> Email <a href="mailto:mark.a.willis2@uscg.mil">mark.a.willis2@uscg.mil</a> or call (202) 372-1164. Request: (1) current solicitation release status, (2) whether the BPA will be single-award or multi-award, (3) whether a small business set-aside is being considered, and (4) whether pre-solicitation briefings are scheduled. This call is low-risk and high-information-value.</li>
+      <li><strong>Confirm GSA MAS SIN 541611:</strong> If the BPA is FAR Part 8, Changeis must be on GSA Schedule with SIN 541611 to be eligible. Verify current GSA MAS status and SIN coverage immediately. If not covered under 541611, initiate a modification request — this takes weeks.</li>
+      <li><strong>Identify Teaming Partners — MSRAM Tier:</strong> Contact Snow Eagle Group (explicit MSRAM portfolio), CENTRA Technology, or ABS Group alumni now. The proposal requires a credible MSRAM subject matter expert — this relationship cannot be built in 30 days from a standing start. If Snow Eagle Group is a small business, they may also be interested in teaming with Changeis as prime.</li>
+    </ul>
+
+    <p style="margin-top:14px;"><strong>NEAR-TERM ACTIONS (within 2 weeks):</strong></p>
+    <ul style="margin-top:6px;">
+      <li><strong>Confirm BPA structure:</strong> Single vs. multi-award determines the entire go-to-market strategy. Multi-award = pursue prime slot. Single-award = negotiate sub position. This is the most critical strategic decision point.</li>
+      <li><strong>FPDS/USAspending research:</strong> Pull ABS Group's USCG contract history from <a href="https://www.usaspending.gov" target="_blank">USAspending.gov</a> to understand the full value and scope of the HSCG23-16-A MMP083 BPA, including all call order activity, to size the incumbency more precisely.</li>
+      <li><strong>Develop Win Theme:</strong> Changeis should position around <em>"next-generation strategic risk advisory"</em> — not trying to out-model ABS Group on MSRAM, but proposing to modernize DCO-81's risk communication, enterprise risk management framework, and performance assessment processes alongside a MSRAM technical partner.</li>
+      <li><strong>Clear Personnel Check:</strong> MSRAM HQ-level data is classified Secret. Confirm Changeis has Secret-cleared personnel available or can bring cleared staff through a teaming arrangement.</li>
+      <li><strong>Draft Capability Statement:</strong> Build a USCG-specific capability statement connecting the MDA Workshop (V3322080, maritime-adjacent), FMCSA safety analytics (performance management analog), and Changeis strategic planning work to the DCO-81 and CG-PSA-2 requirements narrative.</li>
+    </ul>
+
+    <div class="callout callout-risk" style="margin-top:14px;">
+      <strong>Key Risk Summary:</strong> (1) <em>Incumbency:</em> ABS Group's 20-year entrenchment is the largest single risk — proposal must address transition credibility directly. (2) <em>Timeline:</em> If solicitation just posted (after 6-week delay), response window may be 2–4 weeks, leaving almost no time for teaming negotiations and proposal development. (3) <em>BPA Structure Unknown:</em> Single-award vs. multi-award fundamentally changes the path — must be confirmed before investing proposal resources. (4) <em>Clearance:</em> Classified MSRAM work requires cleared personnel — confirm now. (5) <em>No DHS footprint:</em> Changeis has no prior DHS/USCG past performance, which is a proposal weakness in a recompete context.
+    </div>
+  </div>
+
+  <!-- Context Section -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span>
+      Session Context &amp; Methodology (click to expand)
+    </button>
+    <div class="context-body" id="ctxBody">ORIGINAL INSTRUCTIONS:
+Generate a VM2 deep-dive HTML deliverable for APFS opportunity F2025068857 (USCG Risk Analysis Support - DCO-81 and CG-PSA-2 BPA). Input data: /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025068857.json. USCG/CG-HCA, $20-50M, NAICS 541611, BPA FAR Part 8/13, FFP. Sol 03/09/2026 (6+ weeks past). Award 06/01/2026. POC: Mark Willis. RAG 0.683 STRONG. Scope: MSRAM + RBMSRO + DCO-81 + CG-PSA-2. Status: REC (recompete).
+
+APPROACH:
+1. Read F2025068857.json to extract all APFS and RAG data — full 5-match RAG analysis
+2. Read reference template (deep-dive-dhs-ocfo-iso-bpa-f2025069077) for exact CSS/JS structure
+3. Read deliverable-specs.md for mandatory sections
+4. Research via search_web: USCG MSRAM contractor history, CG-PSA-2, ABSG Consulting background, SAM.gov solicitation status, competitive landscape
+5. Built full 7-section HTML deliverable from scratch following GO pattern
+
+KEY FINDINGS:
+- ABSG Consulting (ABS Group) is a 20-year continuous MSRAM incumbent since 2005 development — one of the most entrenched contractor relationships in federal maritime security
+- MSRAM = Threat × Consequence × Vulnerability model; Microsoft Access-based; operates at classified level for HQ aggregation; feeds DHS PSGP grant allocations
+- RBMSRO = PWCS law enforcement asset optimization tool for Key Port Areas patrol
+- Snow Eagle Group portfolio explicitly cites "ABS Group has worked with USCG on MSRAM since its inception in 2005" — confirming ABS Group = confirmed incumbent
+- DCO-81 (performance management) vs. CG-PSA-2 (MSRAM/RBMSRO technical) represent two different scope tiers — Changeis strong on DCO-81, weak on CG-PSA-2 modeling
+- Solicitation estimated for 03/09/2026 is 6+ weeks overdue as of 04/21/2026 — must check SAM.gov immediately
+- No small business set-aside specified — large primes compete directly
+- NAICS 541611 size standard: $19.5M annual receipts — Changeis qualifies as small
+
+DEAD ENDS:
+- SAM.gov solicitation search did not find a live RFP under this APFS number — solicitation may be delayed or posted under a different identifier
+- No FPDS data pulled for exact BPA call order values on HSCG23-16-A MMP083 — estimate based on APFS dollar range
+- BPA structure (single vs. multi-award) not confirmed from APFS record — must be verified with POC
+
+ASSUMPTIONS:
+- Solicitation has not yet been publicly posted as of 04/21/2026 despite estimated 03/09/2026 release (delayed)
+- BPA structure is likely single-award based on single incumbent record in APFS
+- MSRAM classified work requires at minimum Secret clearance for HQ-level data access
+- GSA MAS SIN 541611 eligibility for Changeis is unconfirmed but assumed plausible given Volpe SCOAR history
+- ABS Group will be the primary competitor and likely heavy favorite for the recompete
+
+OPEN QUESTIONS:
+- Has the solicitation been posted to SAM.gov? Under what notice number?
+- Is this BPA single-award or multi-award?
+- Will any small business set-aside be applied?
+- Does Changeis hold GSA MAS SIN 541611?
+- Does Changeis have Secret-cleared personnel available?
+- Is Snow Eagle Group an appropriate teaming partner? What is their business size?
+- What is ABS Group's revenue — do they still qualify as a specific size for this competition?
+
+DATA SOURCES:
+- F2025068857.json: APFS record + RAG scores (input file)
+- https://apfs-cloud.dhs.gov/record/68857/public-print/ — APFS public print
+- https://www.snoweaglegroup.com/portfolio/maritime-security-risk-analysis-model-msram/ — Snow Eagle/ABS Group MSRAM history
+- https://en.wikipedia.org/wiki/Maritime_Security_Risk_Analysis_Model — MSRAM methodology overview
+- https://www.dco.uscg.mil/Our-Organization/...CG-PSA-2/ — Official CG-PSA-2 page
+- https://www.abs-group.com/Markets-We-Serve/Government/Government-Contracts/ — ABS Group USCG contracts
+- https://govtribe.com/award/federal-contract-award/bpa-call-hscg2316apsw001-hscg2317fapc014 — GovTribe BPA call history
+
+NEXT STEPS:
+1. URGENT: Check SAM.gov for live solicitation under USCG / HSCG23 / DCO-81
+2. Call/email Mark Willis (mark.a.willis2@uscg.mil, 202-372-1164) for BPA structure and status
+3. Verify Changeis GSA MAS SIN 541611 coverage
+4. Contact Snow Eagle Group or CENTRA Technology for teaming discussion
+5. Pull ABS Group / HSCG23-16-A FPDS call order data from USAspending.gov
+6. Confirm cleared personnel availability for MSRAM classified work
+7. Build USCG-specific capability statement anchored on MDA Workshop + FMCSA analytics
+    </div>
+  </div>
+
+  <!-- Hidden JSON context -->
+  <script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Deep Dive: USCG Risk Analysis BPA F2025068857",
+  "task_date": "2026-04-21",
+  "deliverable_file": "deep-dive-uscg-risk-analysis-bpa-f2025068857-2026-04-21.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-uscg-risk-analysis-bpa-f2025068857-2026-04-21.html",
+  "version": 1,
+  "prior_versions": [],
+  "created_date": "2026-04-21",
+  "revised_date": null,
+  "related_deliverables": [
+    "deep-dive-dhs-ocfo-iso-bpa-f2025069077-2026-04-21.html"
+  ],
+  "original_instructions": "Generate VM2 deep-dive for APFS F2025068857 — USCG Risk Analysis Support DCO-81 and CG-PSA-2 BPA. $20-50M, NAICS 541611, BPA FAR Part 8/13, FFP. Sol 03/09/2026. Award 06/01/2026. POC Mark Willis. RAG 0.683 STRONG. Incumbent ABSG Consulting. Scope: MSRAM + RBMSRO optimization tool.",
+  "approach": "Read input JSON, reference template, deliverable spec. Research via web: USCG MSRAM history, ABS Group incumbency, CG-PSA-2 organizational context, competitive landscape, SAM.gov solicitation status. Built 7-section GO-pattern HTML with full RAG analysis, capability matrix, competitive table, and teaming strategy.",
+  "key_findings": [
+    "ABS Group (ABSG Consulting) is confirmed 20-year continuous MSRAM incumbent since 2005 — most entrenched federal maritime risk contractor relationship identified",
+    "MSRAM is a classified Microsoft Access model using Threat x Consequence x Vulnerability formula; feeds PSGP grant allocations and strategic USCG resource planning",
+    "Solicitation estimated for 03/09/2026 is 6+ weeks overdue as of 04/21/2026 — must verify SAM.gov immediately given Jun 1 award date",
+    "Changeis RAG top match (0.6829) is MDA/Merchant Marine Academy work — closest maritime-adjacent past performance; useful for proposal narrative",
+    "No small business set-aside specified; NAICS 541611 size standard $19.5M; single vs. multi-award BPA structure unconfirmed",
+    "Primary teaming target: Snow Eagle Group (MSRAM expertise explicitly cited in portfolio); CENTRA Technology; ABS alumni firms"
+  ],
+  "dead_ends": [
+    "SAM.gov live solicitation search returned no active RFP under this APFS number as of 04/21/2026",
+    "FPDS exact BPA call order values for HSCG23-16-A MMP083 not retrieved",
+    "BPA single vs. multi-award structure not confirmed from APFS record"
+  ],
+  "assumptions": [
+    "Solicitation delayed beyond 03/09/2026 estimated release",
+    "BPA likely single-award based on single incumbent in APFS record",
+    "MSRAM HQ version requires Secret clearance for classified threat data access",
+    "Changeis GSA MAS SIN 541611 status unconfirmed but plausible given Volpe SCOAR vehicle history"
+  ],
+  "open_questions": [
+    "Is the solicitation live on SAM.gov? Under what notice/solicitation number?",
+    "Single-award or multi-award BPA structure?",
+    "Will any small business set-aside be applied at solicitation stage?",
+    "Does Changeis hold GSA MAS SIN 541611?",
+    "Does Changeis have Secret-cleared personnel for MSRAM classified work?",
+    "Is Snow Eagle Group an appropriate teaming target? Business size?",
+    "What is ABS Group's revenue — do they still qualify under any size standard?"
+  ],
+  "data_sources": [
+    {"name": "APFS Record F2025068857 (JSON)", "url": "https://apfs-cloud.dhs.gov/record/68857/public-print/"},
+    {"name": "Snow Eagle Group MSRAM Portfolio", "url": "https://www.snoweaglegroup.com/portfolio/maritime-security-risk-analysis-model-msram/"},
+    {"name": "Wikipedia: Maritime Security Risk Analysis Model", "url": "https://en.wikipedia.org/wiki/Maritime_Security_Risk_Analysis_Model"},
+    {"name": "USCG CG-PSA-2 Official Page", "url": "https://www.dco.uscg.mil/Our-Organization/Assistant-Commandant-for-Prevention-Policy-CG-5P/Inspections-Compliance-CG-5PC-/Domestic-International-Port-Security-Assessments-CG-PSA/Domestic-Port-Security-Assessments-CG-PSA-2/"},
+    {"name": "ABS Group Government Contracts", "url": "https://www.abs-group.com/Markets-We-Serve/Government/Government-Contracts/"},
+    {"name": "GovTribe BPA Call HSCG2316APSW001", "url": "https://govtribe.com/award/federal-contract-award/bpa-call-hscg2316apsw001-hscg2317fapc014"}
+  ],
+  "next_steps": [
+    "URGENT: Check SAM.gov for live solicitation — USCG / HSCG23 / DCO-81 / MSRAM BPA",
+    "Contact Mark Willis at mark.a.willis2@uscg.mil / (202) 372-1164 for BPA structure and solicitation status",
+    "Verify Changeis GSA MAS SIN 541611 coverage for FAR Part 8 BPA eligibility",
+    "Contact Snow Eagle Group / CENTRA Technology for teaming discussion",
+    "Pull ABS Group FPDS call order history from USAspending.gov for HSCG23-16-A MMP083",
+    "Confirm Secret-cleared personnel availability for MSRAM classified work",
+    "Build USCG-specific capability statement anchored on MDA Workshop (V3322080) + FMCSA analytics"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-5",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,500",
+    "search_calls": 3,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "3 search_web calls (MSRAM/ABSG, competitive landscape, SAM/CENTRA), extensive file reads (JSON + reference template + spec), large HTML output generation. Mid-complexity deep dive."
+  }
+}
+  </script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Follow-up actions for USCG Risk Analysis BPA F2025068857</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary"
+         href="mailto:vm2.viru@gmail.com?subject=Follow-Up%3A%20USCG%20Risk%20Analysis%20BPA%20F2025068857%20Deep%20Dive&body=Follow-up%20on%20USCG%20Risk%20Analysis%20BPA%20deep%20dive%20(F2025068857).%0A%0ADeliverable%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fdeep-dive-uscg-risk-analysis-bpa-f2025068857-2026-04-21.html%0A%0AKey%20actions%3A%0A1.%20Check%20SAM.gov%20for%20live%20solicitation%0A2.%20Call%20Mark%20Willis%20(202)%20372-1164%0A3.%20Verify%20GSA%20MAS%20SIN%20541611%0A4.%20Contact%20Snow%20Eagle%20Group%20re%3A%20teaming">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <button class="btn btn-secondary" onclick="createTodoist()">
+        <span class="btn-icon">✅</span> Create Todoist Follow-Up
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · USCG Risk Analysis BPA Deep Dive · 2026-04-21 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('themeBtn');
+  if (html.getAttribute('data-theme') === 'light') {
+    html.setAttribute('data-theme', 'dark');
+    btn.textContent = '◑ Light';
+  } else {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = '◑ Dark';
+  }
+}
+
+function toggleContext() {
+  const body = document.getElementById('ctxBody');
+  const toggle = document.getElementById('ctxToggle');
+  body.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function copyFollowUp() {
+  const url = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-uscg-risk-analysis-bpa-f2025068857-2026-04-21.html';
+  const prompt = `Continue the deep dive on USCG Risk Analysis BPA F2025068857.\n\nPrior deliverable: ${url}\n\nKey open actions:\n1. Check SAM.gov for live solicitation (est. release 03/09/2026 — 6+ weeks overdue)\n2. Confirm BPA structure: single-award vs. multi-award\n3. Verify Changeis GSA MAS SIN 541611 eligibility (FAR Part 8 BPA)\n4. Research Snow Eagle Group as MSRAM teaming partner\n5. Pull ABS Group FPDS call order history from USAspending.gov for HSCG23-16-A MMP083\n6. Confirm Secret clearance availability for MSRAM classified work\n7. Contact Mark Willis: mark.a.willis2@uscg.mil / (202) 372-1164`;
+  navigator.clipboard.writeText(prompt).then(() => showToast('Follow-up prompt copied!')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = prompt;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Follow-up prompt copied!');
+  });
+}
+
+function createTodoist() {
+  const taskData = {
+    content: 'Follow-Up: USCG Risk Analysis BPA F2025068857 — SAM.gov + Teaming',
+    description: 'Check SAM.gov for live solicitation (est. 03/09/2026 — overdue). Call Mark Willis (202) 372-1164. Verify GSA MAS SIN 541611. Contact Snow Eagle Group re: teaming. Pull FPDS data for HSCG23-16-A MMP083.\n\nDeliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-uscg-risk-analysis-bpa-f2025068857-2026-04-21.html',
+    due_string: 'today',
+    priority: 2,
+    labels: ['vm2-opp']
+  };
+
+  fetch('/api/todoist/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(taskData)
+  })
+  .then(r => {
+    if (r.ok) {
+      showToast('Todoist task created!');
+    } else {
+      throw new Error('API error ' + r.status);
+    }
+  })
+  .catch(() => {
+    const fallback = 'https://todoist.com/add?content=' + encodeURIComponent(taskData.content) + '&description=' + encodeURIComponent(taskData.description);
+    window.open(fallback, '_blank');
+    showToast('Opened Todoist quick-add');
+  });
+}
+</script>
+
+</body>
+</html>
