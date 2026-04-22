@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: TSA WebEOC Unified Command Platform Migration — F2025070231</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --verdict-go: #2D7D4A;
+    --verdict-moderate: #D97D2A;
+    --verdict-nogo: #c53a3a;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.2; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Verdict banner */
+  .verdict-banner {
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border: 2px solid;
+    display: flex; align-items: flex-start; gap: 16px;
+  }
+  .verdict-banner.moderate {
+    background: #FFF8F0;
+    border-color: var(--verdict-moderate);
+  }
+  [data-theme="dark"] .verdict-banner.moderate {
+    background: #2a1e0e;
+    border-color: var(--verdict-moderate);
+  }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 22px; font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--verdict-moderate);
+    flex-shrink: 0;
+  }
+  .verdict-text { flex: 1; }
+  .verdict-text p { font-size: 15px; line-height: 1.55; }
+  .verdict-rag {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    margin-top: 6px;
+  }
+
+  /* Cards row */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-top: 10px;
+  }
+  @media (max-width: 700px) {
+    .cards-row { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .card-num {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .card h4 {
+    font-size: 15px; font-weight: 700; margin-bottom: 6px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .card h4 { color: #e2e2e2; }
+  .card ul { padding-left: 16px; margin: 0; }
+  .card li { font-size: 13.5px; margin-bottom: 3px; line-height: 1.45; }
+  .card .tag {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+    margin-top: 8px;
+  }
+  .tag-green { background: #e8f5ee; color: #2D7D4A; }
+  .tag-orange { background: #FFF0E0; color: #D97D2A; }
+  .tag-red { background: #FDEAEA; color: #c53a3a; }
+  [data-theme="dark"] .tag-green { background: #0e2018; color: #4caf70; }
+  [data-theme="dark"] .tag-orange { background: #261500; color: #e8973a; }
+  [data-theme="dark"] .tag-red { background: #220a0a; color: #e05555; }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Callout */
+  .callout {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--red);
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout p { font-size: 14px; color: var(--text-muted); }
+  .callout strong { color: var(--text); }
+
+  /* Warn callout */
+  .callout-warn {
+    background: #FFF8F0;
+    border-left: 3px solid var(--verdict-moderate);
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 4px 4px 0;
+  }
+  [data-theme="dark"] .callout-warn { background: #2a1e0e; }
+  .callout-warn p { font-size: 14px; color: var(--text-muted); }
+
+  /* RAG match card */
+  .rag-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    box-shadow: var(--card-shadow);
+  }
+  .rag-card-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 6px;
+  }
+  .rag-score {
+    font-family: system-ui, sans-serif;
+    font-size: 18px; font-weight: 800;
+    color: var(--text-muted); flex-shrink: 0;
+  }
+  .rag-score.high { color: var(--verdict-go); }
+  .rag-score.mid { color: var(--verdict-moderate); }
+  .rag-card-title {
+    font-size: 14px; font-weight: 700; color: var(--navy);
+  }
+  [data-theme="dark"] .rag-card-title { color: #e2e2e2; }
+  .rag-card-sub {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+  }
+  .rag-excerpt {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+    border-top: 1px solid var(--border);
+    padding-top: 6px;
+  }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .muted { color: var(--text-muted); font-size: 13px; }
+  .note { font-size: 13px; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive</div>
+    <h1>TSA WebEOC Unified Command Platform Migration</h1>
+    <div class="hero-sub">APFS F2025070231 · NASA SEWP V · $2M–$5M · Q4 FY2026</div>
+    <div class="hero-date" style="color:var(--text-faint);font-size:13px;margin-top:6px;">Created: 2026-04-21</div>
+  </div>
+
+  <!-- 1. Executive Summary -->
+  <div class="section">
+    <div class="section-header">Executive Summary</div>
+
+    <div class="verdict-banner moderate">
+      <div class="verdict-label">MODERATE</div>
+      <div class="verdict-text">
+        <p><strong>Verdict: MODERATE — Indirect play via integration/migration services, but direct competition is tightly constrained by Juvare/ESi sole-source dynamics and NASA SEWP V vehicle scope.</strong> The core SaaS license and hosting must come directly from Juvare/ESi Acquisition (the only FedRAMP High-authorized WebEOC UCP vendor). However, Changeis could legitimately bid as a <em>migration integrator</em> — handling data migration, workflow configuration, interconnection rebuilding, security documentation, testing, and transition management — if TSA structures the procurement to allow a prime/sub arrangement or a separate integration task. The $2M–$5M range and 2-year PoP (Sep 2026–Sep 2028) are consistent with integration services scope. RAG match of 0.618 is moderate; Changeis holds strong DOT/FMCSA IT modernization experience but no prior TSA or DHS EOC work surfaced in the corpus.</p>
+        <div class="verdict-rag">RAG Score: 0.618 (MODERATE) · Top match: DOT/FMCSA SCOAR — IT modernization, not emergency ops</div>
+      </div>
+    </div>
+
+    <div class="callout-warn">
+      <p><strong>Key risk:</strong> NASA SEWP V is an ICT products and product-based services vehicle — it is <em>not</em> a pure services contract. The Juvare UCP SaaS subscription is the product anchor. Whether Changeis can compete as a prime depends on whether they hold a SEWP V Group B/C contract. If not, a teaming arrangement with a SEWP V holder who can subcontract the Juvare license is the path. Additionally, award is anticipated Q4 FY2026 with estimated solicitation release 02/27/2026 — that solicitation may already be in market.</p>
+    </div>
+  </div>
+
+  <!-- 2. Opportunity Overview -->
+  <div class="section">
+    <div class="section-header">Opportunity Overview</div>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Detail</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>APFS Number</strong></td><td>F2025070231</td></tr>
+        <tr><td><strong>Title</strong></td><td>Web-based Emergency Operations Center (WebEOC) Unified Command Platform migration from existing on-premises WebEOC solution</td></tr>
+        <tr><td><strong>Organization</strong></td><td>Transportation Security Administration (TSA) — DHS</td></tr>
+        <tr><td><strong>Requirements Office</strong></td><td>Law Enforcement / Federal Air Marshal Service — TSA 18 (TSOC)</td></tr>
+        <tr><td><strong>Contracting Office</strong></td><td>ACQ02 Credentialing, Screening &amp; Intelligence Acquisition Division (CSIAD)</td></tr>
+        <tr><td><strong>Contract Vehicle</strong></td><td>NASA SEWP V</td></tr>
+        <tr><td><strong>Contract Type</strong></td><td>Firm Fixed Price</td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541519 — Other Computer Related Services</td></tr>
+        <tr><td><strong>Dollar Range</strong></td><td>$2M to $5M</td></tr>
+        <tr><td><strong>Small Business Program</strong></td><td>TBD (no set-aside confirmed)</td></tr>
+        <tr><td><strong>Competition</strong></td><td>New Requirement, No Prior Contract</td></tr>
+        <tr><td><strong>Est. Solicitation Release</strong></td><td>02/27/2026</td></tr>
+        <tr><td><strong>Anticipated Award</strong></td><td>08/31/2026 (Q4 FY2026)</td></tr>
+        <tr><td><strong>Period of Performance</strong></td><td>09/30/2026 – 09/29/2028 (2 years)</td></tr>
+        <tr><td><strong>Place of Performance</strong></td><td>Herndon, VA</td></tr>
+        <tr><td><strong>POC</strong></td><td>TSOC Procurement — <a href="mailto:TSOC.Procurement@tsa.dhs.gov">TSOC.Procurement@tsa.dhs.gov</a> · (571) 354-2571</td></tr>
+        <tr><td><strong>Published</strong></td><td>09/24/2025</td></tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:14px;">The TSA Transportation Security Operations Center (TSOC) operates WebEOC as a Mission Essential System (MES) and High Value Asset (HVA), classified FIPS 199 High — the most stringent federal impact category. The system performs incident management, coordination, and situational awareness across all transportation modes. TSA requires migration of the existing on-premises deployment to a <strong>WebEOC FedRAMP High SaaS cloud</strong> solution compliant with NIST SP 800-53 Rev 5, while preserving all existing features, data, workflows, reports, interconnections, and the mobile application. The new platform must support FIPS 140-2 encryption and maintain the system's ATO status throughout migration.</p>
+  </div>
+
+  <!-- 3. Vehicle Analysis -->
+  <div class="section">
+    <div class="section-header">Vehicle Analysis — NASA SEWP V</div>
+
+    <p>NASA SEWP V is one of the federal government's largest governmentwide acquisition contracts (GWACs) for ICT products and product-based services, with a <strong>$60 billion ceiling</strong> on the upcoming SEWP VI iteration. It is currently extended to September 30, 2026 while SEWP VI evaluation completes (per <a href="https://www.nextgov.com/emerging-tech/2026/03/nasa-seeks-extension-sewp-v-sept-30/412062/" target="_blank">Nextgov/FCW, March 2026</a>).</p>
+
+    <div class="cards-row" style="grid-template-columns: 1fr 1fr; margin-top:14px;">
+      <div class="card">
+        <div class="card-num">In Scope</div>
+        <h4>What SEWP V Allows</h4>
+        <ul>
+          <li>Commercial ICT products (hardware, software, SaaS subscriptions)</li>
+          <li>Product-based services (installation, migration, configuration, maintenance tied to a product)</li>
+          <li>FedRAMP cloud SaaS licenses + hosting</li>
+          <li>Engineering services tied to an ICT product</li>
+          <li>Help desk and O&amp;M tied to a product</li>
+        </ul>
+        <div class="tag tag-green">Juvare UCP SaaS license qualifies</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Out of Scope</div>
+        <h4>What SEWP V Does NOT Allow</h4>
+        <ul>
+          <li>General IT support services (no product anchor)</li>
+          <li>Custom software development from scratch</li>
+          <li>General business analysis or process consulting</li>
+          <li>Pure labor-hour staff augmentation</li>
+        </ul>
+        <div class="tag tag-orange">Migration services must be product-anchored</div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:16px;">
+      <p><strong>Vehicle implication for Changeis:</strong> Changeis must hold a NASA SEWP V contract (Group B or C) to prime this effort, or partner with a SEWP V contract holder as a teaming prime. The Juvare UCP SaaS is the product anchor — all migration, configuration, data migration, and O&amp;M services can ride on SEWP V as "product-based services." Confirm Changeis SEWP V status before investing further BD resources.</p>
+    </div>
+  </div>
+
+  <!-- 4. WebEOC / Juvare Incumbent Landscape -->
+  <div class="section">
+    <div class="section-header">WebEOC / Juvare Incumbent Landscape</div>
+
+    <p><strong>Incumbent Product Vendor: Juvare LLC (formerly ESi Acquisition, Inc.) / WebEOC</strong></p>
+    <p style="margin-top:8px;">WebEOC is a Commercial Off-the-Shelf (COTS) web-based emergency management system originally developed by ESi Acquisition, which was acquired by Juvare. It is the dominant incident command and EOC management platform in U.S. federal, state, and local government. TSA has used WebEOC since at least 2008 per a <a href="https://epic.org/wp-content/uploads/foia/tsa/EPIC-15-09-22-TSA-FOIA-20200214-Production-pt1.pdf" target="_blank">2008 TSA Privacy Impact Assessment</a> filed with EPIC.org.</p>
+
+    <table style="margin-top:14px;">
+      <thead>
+        <tr><th>Dimension</th><th>Detail</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Product</strong></td><td>Juvare Unified Command Platform™ (UCP) powered by WebEOC — includes WebEOC Nexus, Juvare DesignStudio Pro, Juvare Exchange</td></tr>
+        <tr><td><strong>Cloud Platform</strong></td><td>Juvare Federal Cloud (JFC), hosted on AWS GovCloud with FedRAMP High authorization (achieved April 2024)</td></tr>
+        <tr><td><strong>Compliance</strong></td><td>FedRAMP High, NIST SP 800-53 Rev 5, FIPS 140-2, Zero Trust architecture, FIPS 199 High systems</td></tr>
+        <tr><td><strong>Sole Source Status</strong></td><td>Juvare/ESi is the <strong>only authorized provider</strong> of WebEOC licenses and UCP development. A <a href="https://sam.gov/workspace/contract/opp/c06d6c93472e339bf447111219e39d87/view" target="_blank">2019 SAM.gov sole source notice</a> confirms no third party can provide the software or maintenance. CBP issued a sole source to Juvare/ESi in 2024 under the same rationale.</td></tr>
+        <tr><td><strong>Prior TSA Contracts</strong></td><td>TSA has operated WebEOC on-premises through TSOC. A 2023 APFS forecast (F2023060643) for WebEOC SMC capabilities ($500K–$1M) and a 2023 HigherGov forecast for WebEOC Enhancement &amp; Support ($500K–$1M, follow-on) document active maintenance spend. The current migration is a new requirement, not a recompete of an existing contract.</td></tr>
+        <tr><td><strong>Incumbent Integrator</strong></td><td><a href="https://www.usaspending.gov/award/CONT_IDV_70T03024A7667N001_7013" target="_blank">Dev Technology Group</a> holds the TSA FAST 2.5 BPA ($170M, 5-year, awarded April 2024) for agile software development services for TSA Law Enforcement/FAMS. They are the most likely existing systems integrator touching WebEOC workflows.</td></tr>
+        <tr><td><strong>CBP Parallel Precedent</strong></td><td>DHS CBP executed a nearly identical <a href="https://orangeslices.ai/dhs-cbp-signs-5-year-contract-for-a-cloud-based-electronic-medical-record/" target="_blank">on-premises to FedRAMP High UCP cloud migration</a> in 2024. That contract went sole source to Juvare/ESi, confirming the pattern: <em>licenses + migration services bundled to Juvare or a Juvare-authorized partner</em>.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout-warn" style="margin-top:14px;">
+      <p><strong>Sole source risk:</strong> Based on the CBP precedent and Juvare's proprietary UCP platform, TSA may award this as a sole source to Juvare/ESi or a Juvare-authorized integrator. The APFS listing as "New Requirement, No Contract" with a competitive designation is encouraging, but the product dependency creates a de facto constraint. Watch for a J&A (Justification &amp; Approval) or pre-solicitation notice on SAM.gov that would confirm or deny competitive intent.</p>
+    </div>
+  </div>
+
+  <!-- 5. Changeis Capability Match (RAG) -->
+  <div class="section">
+    <div class="section-header">Changeis Capability Match — RAG Engine Results</div>
+
+    <p>The RAG engine returned a top score of <strong>0.618 (MODERATE)</strong>. All top matches are DOT/FMCSA task orders under the SCOAR/DACH vehicle — IT modernization, web application development, and system sustainment work. No TSA or DHS EOC work appears in the Changeis past performance corpus. This is the primary capability gap.</p>
+
+    <div style="margin-top:16px;">
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div class="rag-score mid">0.634</div>
+          <div>
+            <div class="rag-card-title">V3132168 — DACH II DME (DOT/FMCSA/Volpe)</div>
+            <div class="rag-card-sub">Contract 6913G622F400001 · MTPR documents · IT modernization, system enhancements, testing</div>
+          </div>
+        </div>
+        <div class="rag-excerpt">System modernization and enhancement work across multiple FMCSA IT applications — DME, ELD, Drug &amp; Alcohol Clearinghouse, Training Provider Registry. Demonstrates Changeis' web-based IT systems sustainment capability at DOT.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div class="rag-score mid">0.624</div>
+          <div>
+            <div class="rag-card-title">V3132051 — SCOAR (FMCSA/Volpe)</div>
+            <div class="rag-card-sub">Contract 6913G620F400115 · Agile web development, testing, DME modernization</div>
+          </div>
+        </div>
+        <div class="rag-excerpt">Multi-system agile development and maintenance across FMCSA safety programs — ACE/AIM, SMS, ELD, Clearinghouse. Similar scope to WebEOC migration in terms of multi-module federal system modernization.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div class="rag-score mid">0.621</div>
+          <div>
+            <div class="rag-card-title">V3132127 — SCOAR BPR (DOT/FMCSA/Volpe)</div>
+            <div class="rag-card-sub">Contract 6913G621F400039 · SOW + Award + MTPR · BPR, process flows, system migration support</div>
+          </div>
+        </div>
+        <div class="rag-excerpt">Business process reengineering, Visio process flow development, SharePoint document repository work, and ongoing system transformation — the closest analog to WebEOC migration scoping and documentation work.</div>
+      </div>
+
+      <div class="rag-card">
+        <div class="rag-card-header">
+          <div class="rag-score">0.526</div>
+          <div>
+            <div class="rag-card-title">FMCSA_URS — FMCSA User Registration System (DOT/FMCSA)</div>
+            <div class="rag-card-sub">Single-source SOW · Login.gov, MyAccess, SailPoint integration · authentication modernization</div>
+          </div>
+        </div>
+        <div class="rag-excerpt">Secure authentication and authorization modernization using Login.gov and SailPoint — relevant to WebEOC migration's SSO and FIPS 140-2 identity management requirements.</div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:14px;">
+      <p><strong>Capability narrative:</strong> Changeis can credibly claim multi-module federal IT system modernization, agile web application development, testing, and BPR documentation — all transferable to the WebEOC migration. The gap is <em>emergency operations center domain expertise</em> and <em>Juvare UCP platform experience</em>. A teaming partner with EOC/COOP migration background (e.g., a former FEMA or DHS integrator) would significantly strengthen a Changeis offer.</p>
+    </div>
+  </div>
+
+  <!-- 6. Competitive Positioning -->
+  <div class="section">
+    <div class="section-header">Competitive Positioning</div>
+
+    <p>This is a specialized, niche market. Likely competitors include firms with SEWP V access and either Juvare partnership or prior DHS/EOC migration experience:</p>
+
+    <div class="cards-row" style="grid-template-columns: repeat(3,1fr); margin-top:12px;">
+      <div class="card">
+        <div class="card-num">High Threat</div>
+        <h4>ESi Acquisition / Juvare</h4>
+        <ul>
+          <li>Sole-source path via proprietary UCP platform</li>
+          <li>FedRAMP High ATO already in place</li>
+          <li>CBP executed nearly identical sole source in 2024</li>
+        </ul>
+        <div class="tag tag-red">Could sole-source entire requirement</div>
+      </div>
+      <div class="card">
+        <div class="card-num">High Threat</div>
+        <h4>Dev Technology Group</h4>
+        <ul>
+          <li>Holds active TSA FAST 2.5 BPA ($170M, through 2027)</li>
+          <li>Existing TSA TSOC relationship and WebEOC familiarity</li>
+          <li>Already performing agile dev for Law Enforcement/FAMS office</li>
+        </ul>
+        <div class="tag tag-red">Incumbent integrator advantage</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Moderate Threat</div>
+        <h4>Large Integrators (DHS-focused)</h4>
+        <ul>
+          <li>Accenture Federal Services (active TSA contracts), ManTech, Leidos</li>
+          <li>SEWP V access + DHS past performance</li>
+          <li>May team with Juvare for product license</li>
+        </ul>
+        <div class="tag tag-orange">Likely to bid if competitive</div>
+      </div>
+    </div>
+
+    <table style="margin-top:16px;">
+      <thead>
+        <tr><th>Factor</th><th>Changeis</th><th>Dev Technology</th><th>Juvare/ESi</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>SEWP V Contract</td><td>Unknown — confirm</td><td>Yes (via FAST 2.5 BPA)</td><td>Yes (SEWP V Group B)</td></tr>
+        <tr><td>TSA/TSOC Past Performance</td><td>None in corpus</td><td>Strong (FAST 2.5)</td><td>Existing on-prem WebEOC</td></tr>
+        <tr><td>FedRAMP High Experience</td><td>Limited</td><td>Moderate</td><td>Full (JFC is FedRAMP High)</td></tr>
+        <tr><td>Juvare UCP Technical Access</td><td>None</td><td>Likely via integration</td><td>Proprietary owner</td></tr>
+        <tr><td>DHS/EOC Domain</td><td>None documented</td><td>Strong</td><td>Product vendor</td></tr>
+        <tr><td>Migration/Modernization PP</td><td>Strong (DOT/FMCSA)</td><td>Strong</td><td>Strong (CBP precedent)</td></tr>
+        <tr><td>Small Business</td><td>Yes</td><td>No (large)</td><td>No (large)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 7. Go/No-Go Recommendation -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Recommendation</div>
+
+    <div class="verdict-banner moderate">
+      <div class="verdict-label">MODERATE GO</div>
+      <div class="verdict-text">
+        <p><strong>Pursue with conditions.</strong> Do not invest significant capture resources until two gating factors are resolved: (1) confirm Changeis holds a NASA SEWP V contract, and (2) monitor SAM.gov for solicitation release — if a J&amp;A is posted citing sole-source authority, stand down. If competitive, pursue as a <em>migration integration subcontractor or teaming prime</em> rather than a standalone prime, given the Juvare product dependency. The $2M–$5M FFP scope and 2-year PoP are workable for a focused migration/transition services offer.</p>
+      </div>
+    </div>
+
+    <table style="margin-top:16px;">
+      <thead>
+        <tr><th>Factor</th><th>Assessment</th><th>Weight</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Vehicle fit (SEWP V)</td><td>Conditional — requires Changeis SEWP V contract or SEWP V prime partner</td><td>High</td></tr>
+        <tr><td>Competitive structure</td><td>High risk of sole source to Juvare/ESi — CBP 2024 precedent is directly analogous</td><td>High</td></tr>
+        <tr><td>Technical fit</td><td>Migration/modernization experience transferable; EOC domain gap requires teaming</td><td>Medium</td></tr>
+        <tr><td>RAG score (0.618)</td><td>MODERATE — DOT/FMCSA IT modernization PP relevant but not DHS-specific</td><td>Medium</td></tr>
+        <tr><td>Dollar range ($2M–$5M)</td><td>Appropriate size for Changeis — neither too small nor unreachable</td><td>Medium</td></tr>
+        <tr><td>Small business opportunity</td><td>Set-aside TBD — if small business set-aside confirmed, Changeis advantage increases sharply</td><td>High (if confirmed)</td></tr>
+        <tr><td>Timeline risk</td><td>Solicitation estimated 02/27/2026 — may already be in market; confirm status immediately</td><td>High</td></tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:16px;">
+      <p><strong>Recommended immediate actions:</strong></p>
+      <ul style="margin-top:8px; padding-left:20px;">
+        <li style="margin-bottom:6px;"><strong>Action 1:</strong> Verify Changeis NASA SEWP V contract status — check NASA SEWP V contractor list at <a href="https://www.sewp.nasa.gov" target="_blank">sewp.nasa.gov</a>.</li>
+        <li style="margin-bottom:6px;"><strong>Action 2:</strong> Search SAM.gov for the solicitation or J&amp;A under TSOC.Procurement@tsa.dhs.gov or CSIAD — solicitation was estimated for 02/27/2026 and may be overdue or already awarded.</li>
+        <li style="margin-bottom:6px;"><strong>Action 3:</strong> Contact TSOC POC — (571) 354-2571 / TSOC.Procurement@tsa.dhs.gov — to request a capability briefing and confirm solicitation timeline.</li>
+        <li style="margin-bottom:6px;"><strong>Action 4:</strong> Identify a teaming partner with (a) SEWP V Group B/C contract and (b) Juvare UCP integration experience or DHS EOC migration past performance.</li>
+        <li style="margin-bottom:6px;"><strong>Action 5:</strong> Monitor <a href="https://sam.gov" target="_blank">SAM.gov</a> for solicitation number — search "WebEOC TSA" or TSOC procurement notices.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Deep Dive TSA WebEOC F2025070231",
+  "task_date": "2026-04-21",
+  "created_date": "2026-04-21",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-tsa-webeoc-f2025070231-2026-04-21.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-webeoc-f2025070231-2026-04-21.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjRR4qjjpqX8r → APFS F2025070231 TSA WebEOC Unified Command Platform migration. Read JSON bundle at /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025070231.json. Research WebEOC/Juvare incumbent, TSA EOC background, USASpending prior contracts, SAM.gov. Run RAG engine. Build HTML deep dive with sections: Executive Summary (MODERATE GO verdict), Opportunity Overview, Vehicle Analysis, WebEOC/Juvare Incumbent Landscape, Changeis Capability Match, Competitive Positioning, Go/No-Go Recommendation.",
+  "approach": "1. Read APFS JSON data bundle for full opportunity metadata. 2. Web research: Juvare/WebEOC FedRAMP High, TSA TSOC history, USASpending TSA WebEOC contracts, CBP precedent, SEWP V scope rules. 3. RAG engine query returned top 10 matches (all DOT/FMCSA SCOAR task orders, 0.618 top score). 4. Synthesized competitive landscape, vehicle constraints, sole-source risk, and Changeis positioning.",
+  "key_findings": [
+    "Juvare/ESi is the sole-source WebEOC UCP provider — FedRAMP High authorized on AWS GovCloud since April 2024. CBP executed an identical sole-source migration in 2024, creating a strong precedent for TSA doing the same.",
+    "Dev Technology Group holds the $170M TSA FAST 2.5 BPA (active through April 2027) and is the incumbent agile dev integrator for TSA TSOC/FAMS — highest competitive threat as an integrator.",
+    "NASA SEWP V is an ICT products vehicle — migration services are in scope only as 'product-based services' tied to the Juvare UCP product anchor. General services are out of scope.",
+    "Changeis RAG top score 0.618 (MODERATE) — all top matches are DOT/FMCSA IT modernization task orders. No TSA, DHS, or EOC domain past performance surfaced.",
+    "Solicitation estimated 02/27/2026 — may already be in market. Immediate SAM.gov check required. Gating decision: confirm Changeis SEWP V contract status before investment."
+  ],
+  "dead_ends": [
+    "USASpending direct award data for this specific procurement not yet available (award anticipated Q4 FY2026).",
+    "SEWP V contractor list not checked in this session — Changeis SEWP V status unknown.",
+    "Juvare pricing not publicly available — FedRAMP marketplace entry does not include cost data."
+  ],
+  "assumptions": [
+    "APFS data as of 09/24/2025 — solicitation status may have changed since then.",
+    "Changeis SEWP V status unknown — assumed they may need a teaming prime.",
+    "CBP 2024 sole-source precedent taken as indicative (not determinative) of TSA acquisition strategy."
+  ],
+  "open_questions": [
+    "Does Changeis hold a NASA SEWP V Group B or C contract?",
+    "Has the solicitation been released (est. 02/27/2026)?",
+    "Has TSA posted a J&A indicating sole-source intent?",
+    "Is there a small business set-aside — TBD per APFS?",
+    "Who are Juvare-authorized integration partners for FedRAMP High UCP deployments?"
+  ],
+  "data_sources": [
+    "APFS F2025070231 JSON: /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025070231.json",
+    "Juvare FedRAMP High blog: https://www.juvare.com/thought-leadership/blogs/elevating-cybersecurity-with-juvare-federal-clouds-fedramp-high-accreditation/",
+    "TSA WebEOC Privacy Impact Assessment (EPIC FOIA): https://epic.org/wp-content/uploads/foia/tsa/EPIC-15-09-22-TSA-FOIA-20200214-Production-pt1.pdf",
+    "USASpending Dev Technology Group TSA FAST 2.5: https://www.usaspending.gov/award/CONT_IDV_70T03024A7667N001_7013",
+    "CBP Juvare sole source notice: https://orangeslices.ai/dhs-cbp-signs-5-year-contract-for-a-cloud-based-electronic-medical-record/",
+    "SAM.gov WebEOC sole source (NTSB, 2019): https://sam.gov/workspace/contract/opp/c06d6c93472e339bf447111219e39d87/view",
+    "HigherGov TSA WebEOC Enhancement forecast: https://www.highergov.com/contract-forecast/webeoc-web-based-emergency-operations-center-enh-1063456/",
+    "NASA SEWP V GWAC Guide: https://www.sewp.nasa.gov/documents/SEWP_GWACGuide2021.pdf",
+    "SEWP V extension news: https://www.nextgov.com/emerging-tech/2026/03/nasa-seeks-extension-sewp-v-sept-30/412062/",
+    "Dev Technology FAST 2.5 award: https://www.hstoday.us/federal-pages/dhs/dev-tech-group-awarded-170m-dhs-tsa-fast-2-5-contract/",
+    "Changeis RAG Engine: https://changeis-bd-rag-production.up.railway.app/match"
+  ],
+  "next_steps": [
+    "Verify Changeis NASA SEWP V contract at sewp.nasa.gov",
+    "Check SAM.gov for solicitation or J&A under TSOC.Procurement@tsa.dhs.gov",
+    "Contact TSOC POC: (571) 354-2571 for solicitation timeline",
+    "Identify Juvare-authorized SEWP V prime partner for teaming",
+    "Monitor for small business set-aside confirmation — if SB, Changeis competitive position improves significantly"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "6 web searches, 4 URL fetches, 1 RAG engine call, 2 JSON file reads, 1 HTML reference read. Output is a full-length deep dive HTML document."
+  }
+}</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · Deep Dive: TSA WebEOC Unified Command Platform Migration · April 21, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Hidden JSON block -->
+<script type="application/json" id="vm2-context-data">{
+  "task_name": "Deep Dive TSA WebEOC F2025070231",
+  "task_date": "2026-04-21",
+  "created_date": "2026-04-21",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-tsa-webeoc-f2025070231-2026-04-21.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-webeoc-f2025070231-2026-04-21.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute VM2 Opportunity Deep Dive for APFS F2025070231 TSA WebEOC Unified Command Platform migration.",
+  "approach": "Read APFS JSON, web research on Juvare/WebEOC incumbent, USASpending prior contracts, SAM.gov notices, RAG engine query, synthesized into full deep dive HTML.",
+  "key_findings": ["Juvare/ESi sole-source risk — CBP 2024 precedent", "Dev Technology Group incumbent integrator advantage", "SEWP V product-based services scope requires Juvare UCP anchor", "RAG 0.618 MODERATE — DOT/FMCSA IT modernization PP only", "Solicitation may already be in market — immediate SAM check needed"],
+  "dead_ends": ["SEWP V status for Changeis not confirmed", "Juvare pricing not public", "Solicitation number not yet assigned/found"],
+  "assumptions": ["APFS data current as of 09/24/2025", "Changeis may need SEWP V teaming prime", "CBP precedent indicative of TSA strategy"],
+  "open_questions": ["Does Changeis hold NASA SEWP V contract?", "Has solicitation been released?", "Has J&A for sole source been posted?", "Small business set-aside TBD?"],
+  "data_sources": ["APFS F2025070231 JSON", "Juvare.com FedRAMP blog", "EPIC FOIA TSA WebEOC PIA", "USASpending Dev Technology FAST 2.5", "SAM.gov sole source notice", "CBP Juvare contract notice", "NASA SEWP V GWAC Guide", "Changeis RAG Engine"],
+  "next_steps": ["Verify Changeis SEWP V contract status", "Check SAM.gov for solicitation or J&A", "Contact TSOC POC", "Identify Juvare-authorized SEWP V teaming partner", "Monitor for SB set-aside confirmation"],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "6 web searches, 4 URL fetches, 1 RAG engine call, file reads, full HTML output."
+  }
+}</script>
+
+<script>
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  // Context toggle
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  // Follow-up prompt
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-webeoc-f2025070231-2026-04-21.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the TSA WebEOC Deep Dive (APFS F2025070231).
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Does Changeis hold a NASA SEWP V contract?
+- Has the solicitation been released (est. 02/27/2026)?
+- Has TSA posted a J&A for sole-source intent?
+- Small business set-aside TBD — confirmed?
+
+Suggested next steps:
+- Verify Changeis SEWP V contract status at sewp.nasa.gov
+- Check SAM.gov for solicitation or J&A under TSOC.Procurement@tsa.dhs.gov
+- Identify Juvare-authorized SEWP V teaming partner
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    });
+  }
+
+  // Email button
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: TSA WebEOC Deep Dive F2025070231');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP\n\nPrevious deliverable: ${DELIVERABLE_URL}\n\nContinue this work. Read the Session Context at the bottom of the deliverable for full context.\n\nAdditional instructions:\n[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  // Todoist button
+  const todoistTitle = encodeURIComponent('Follow up: TSA WebEOC Deep Dive F2025070231');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
