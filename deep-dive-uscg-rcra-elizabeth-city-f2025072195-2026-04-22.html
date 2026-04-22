@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: USCG RCRA Groundwater Monitoring — F2025072195</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --nogo-bg: #FFF0F0;
+    --nogo-border: #c53a3a;
+    --note-bg: #F0F4FF;
+    --note-border: #2D5AA0;
+  }
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --nogo-bg: #2a1515;
+    --nogo-border: #c53a3a;
+    --note-bg: #151a2a;
+    --note-border: #3a6abf;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+  .meta-line {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-muted);
+    margin-top: 10px;
+  }
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section p + p { margin-top: 10px; }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Verdict box */
+  .verdict-box {
+    background: var(--nogo-bg);
+    border: 2px solid var(--nogo-border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--red); margin-bottom: 8px;
+  }
+  .verdict-decision {
+    font-family: system-ui, sans-serif;
+    font-size: 42px; font-weight: 900;
+    color: var(--red); letter-spacing: -0.01em;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+  .verdict-rationale {
+    font-size: 16px; color: var(--text-muted);
+    font-style: italic; max-width: 600px; margin: 0 auto;
+  }
+
+  /* Info table */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  td.label {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-muted); width: 200px;
+  }
+
+  /* Mismatch grid */
+  .mismatch-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;
+  }
+  @media (max-width: 600px) { .mismatch-grid { grid-template-columns: 1fr; } }
+  .mismatch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .mismatch-card-header {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .mismatch-card-header.required { color: #c53a3a; }
+  .mismatch-card-header.changeis { color: #2D7D4A; }
+  .mismatch-card ul { padding-left: 16px; }
+  .mismatch-card li { font-size: 13.5px; margin-bottom: 4px; line-height: 1.45; }
+
+  /* RAG score bar */
+  .rag-row {
+    display: flex; align-items: center; gap: 12px; margin-top: 8px;
+  }
+  .rag-bar-bg {
+    flex: 1; height: 12px; background: var(--surface-alt);
+    border-radius: 6px; overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .rag-bar-fill {
+    height: 100%; background: #e07b2a;
+    border-radius: 6px;
+    width: 61.9%;
+  }
+  .rag-score-label {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: #e07b2a; white-space: nowrap;
+  }
+  .rag-note {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Note box */
+  .note-box {
+    background: var(--note-bg);
+    border-left: 4px solid var(--note-border);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin-top: 12px;
+  }
+  .note-box p { font-size: 14px; }
+  .note-box strong { color: var(--note-border); }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .page-footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+</div>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · Opportunity Analysis</div>
+    <h1>USCG RCRA Groundwater Monitoring<br>Elizabeth City — F2025072195</h1>
+    <div class="hero-sub">USCG/CG-SHORE · Architecture and Engineering Services II · FFP</div>
+    <div class="hero-date">APFS F2025072195 · Published 09/23/2025 · Est. Release 04/01/2026</div>
+    <div class="meta-line">Created: 2026-04-22</div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict-box">
+    <div class="verdict-label">BD Recommendation</div>
+    <div class="verdict-decision">NO-GO</div>
+    <div class="verdict-rationale">Core scope is RCRA environmental field sampling, laboratory analysis, and hazardous waste compliance — outside Changeis IT/management consulting capability. Requires specialized environmental firms with RCRA Part B credentials and USCG ENV MATOC access.</div>
+  </div>
+
+  <!-- OPPORTUNITY SUMMARY -->
+  <div class="section">
+    <div class="section-header">Opportunity Summary</div>
+    <table>
+      <tbody>
+        <tr><td class="label">APFS Number</td><td>F2025072195</td></tr>
+        <tr><td class="label">Title</td><td>RCRA Groundwater Monitoring for 2026 and 2027 at USCG Base Elizabeth City, Elizabeth City, NC</td></tr>
+        <tr><td class="label">Organization</td><td>USCG/CG-SHORE (Office of Environmental Management, CG-SHORE-V)</td></tr>
+        <tr><td class="label">NAICS</td><td>541330 — Engineering Services (per APFS); prior year version coded 541620 — Environmental Consulting Services</td></tr>
+        <tr><td class="label">Contract Vehicle</td><td>Architecture and Engineering Services II (A&amp;E Services II)</td></tr>
+        <tr><td class="label">Dollar Range</td><td>$500K–$1M (FFP)</td></tr>
+        <tr><td class="label">Est. Award Quarter</td><td>Q3 FY 2026</td></tr>
+        <tr><td class="label">PoP</td><td>June 1, 2026 – July 1, 2027 (approx. 13 months)</td></tr>
+        <tr><td class="label">Place of Performance</td><td>USCG Base Elizabeth City, Elizabeth City, NC</td></tr>
+        <tr><td class="label">Competition Type</td><td>New Requirement, No Incumbent</td></tr>
+        <tr><td class="label">Small Business</td><td>TBD</td></tr>
+        <tr><td class="label">RAG Score (BD Model)</td><td>0.619 (threshold match — misleadingly elevated; see RAG note)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- REQUIREMENT DETAIL -->
+  <div class="section">
+    <div class="section-header">Requirement Detail</div>
+    <p>The requirement covers RCRA (Resource Conservation and Recovery Act) permit-required groundwater and environmental monitoring activities across USCG Base Elizabeth City. Specific scope items include:</p>
+    <ul style="margin-top:10px;">
+      <li><strong>Groundwater sampling and analyses</strong> at 10 active Solid Waste Management Units (SWMUs) across the base property</li>
+      <li><strong>Well condition assessment</strong> — identifying damaged monitoring wells for future repair or replacement</li>
+      <li><strong>Data summary reports</strong> meeting RCRA monitoring requirements (annual compliance reporting)</li>
+      <li><strong>Calcium peroxide injection program</strong> implementing enhanced in situ bioremediation (ISB) to address residual dissolved-phase petroleum hydrocarbon contamination at SWMU 58 — JP-4 Pipeline Release site</li>
+      <li><strong>Goal:</strong> Bring groundwater contamination at SWMU 58 below RCRA reporting thresholds</li>
+    </ul>
+    <p style="margin-top:12px;">This is a recurring annual program. A prior-year version of this same requirement (F2025070427, 2025 RCRA Compliance Groundwater Monitoring Elizabeth City) was forecasted in June 2025 for Q4 FY2025 award at $250K–$500K, coded NAICS <strong>541620 — Environmental Consulting Services</strong> and explicitly restricted to holders of the <a href="https://www.highergov.com/contract-forecast/2025-rcra-compliance-groundwater-monitoring-elizab-1123702/" target="_blank">USCG ENV MATOC</a>. The current APFS (F2025072195) represents the 2026–2027 cycle, now appearing under the A&amp;E Services II vehicle with a NAICS shift to 541330.</p>
+  </div>
+
+  <!-- CAPABILITY MISMATCH ANALYSIS -->
+  <div class="section">
+    <div class="section-header">Capability Mismatch Analysis</div>
+    <p>This opportunity is a comprehensive mismatch with Changeis's core competencies. The table below contrasts what the requirement demands versus what Changeis delivers.</p>
+    <div class="mismatch-grid">
+      <div class="mismatch-card">
+        <div class="mismatch-card-header required">What This Requirement Needs</div>
+        <ul>
+          <li>RCRA Part B permit compliance expertise and regulatory knowledge</li>
+          <li>Certified environmental field sampling technicians</li>
+          <li>Groundwater monitoring well sampling protocols (EPA SW-846 methods)</li>
+          <li>Analytical laboratory chain-of-custody for hazardous constituents</li>
+          <li>In situ bioremediation / calcium peroxide injection engineering</li>
+          <li>SWMU data package preparation for state/EPA regulators</li>
+          <li>Environmental site assessment credentials (PG, PE environmental)</li>
+          <li>Access to USCG ENV MATOC or A&amp;E Services II with env. specialization</li>
+        </ul>
+      </div>
+      <div class="mismatch-card">
+        <div class="mismatch-card-header changeis">What Changeis Delivers</div>
+        <ul>
+          <li>IT program management and digital transformation</li>
+          <li>Software development / DevSecOps</li>
+          <li>Data analytics and business intelligence</li>
+          <li>Management consulting and organizational change</li>
+          <li>Federal acquisition and procurement support</li>
+          <li>DOT/Volpe transportation program support</li>
+          <li>Agile delivery and product management</li>
+          <li>CMMI/DCSA compliance for IT systems</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note-box" style="margin-top:16px;">
+      <p><strong>No Teaming Path:</strong> Environmental groundwater monitoring is not a peripheral task within an otherwise IT-heavy requirement — it is the entire scope. No teaming arrangement would bring Changeis into a meaningful prime or significant subcontractor role. Firms that perform this work (e.g., WSP USA Environment &amp; Infrastructure, Arcadis, AECOM, TRC Environmental) are full-service environmental engineering firms with field staff, laboratory partnerships, and regulatory relationships that Changeis does not possess. The <a href="https://www.dcms.uscg.mil/Our-Organization/Assistant-Commandant-for-Engineering-Logistics-CG-4-/Program-Offices/Environmental-Management/" target="_blank">USCG CG-SHORE-V office</a> specifically manages environmental compliance and remediation — not IT services.</p>
+    </div>
+  </div>
+
+  <!-- RAG SCORE ANALYSIS -->
+  <div class="section">
+    <div class="section-header">RAG Score Analysis</div>
+    <p>The BD model returned a RAG score of <strong>0.619</strong> — above the typical attention threshold — but this is a false positive driven by vocabulary overlap rather than true capability alignment.</p>
+    <div class="rag-row" style="margin-top:12px; margin-bottom:8px;">
+      <div class="rag-bar-bg"><div class="rag-bar-fill"></div></div>
+      <span class="rag-score-label">0.619</span>
+    </div>
+    <div class="rag-note">Threshold ≈ 0.50 | Scores above 0.60 typically warrant review | This score is a false positive</div>
+
+    <p style="margin-top:14px;">The RAG engine was queried directly with the terms: <em>"RCRA groundwater monitoring environmental compliance sampling laboratory analysis hazardous waste."</em> Results confirm no environmental past performance in Changeis's corpus:</p>
+    <table style="margin-top:10px;">
+      <thead>
+        <tr><th>Rank</th><th>Task Order</th><th>Score</th><th>Client(s)</th><th>Environmental Keywords Found?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>V3132168</td><td>0.5754</td><td>DOT, FMCSA, Volpe</td><td>None</td></tr>
+        <tr><td>2</td><td>V3132014</td><td>0.5734</td><td>DOT, FAA, FMCSA, Volpe</td><td>None</td></tr>
+        <tr><td>3</td><td>V3132047</td><td>0.5696</td><td>DOT, FAA, FMCSA, Volpe</td><td>None</td></tr>
+        <tr><td>4</td><td>V3222013</td><td>0.5549</td><td>DOT, FAA, FHWA, Volpe</td><td>"environmental" (policy/planning context only — FHWA env. streamlining, not field work)</td></tr>
+        <tr><td>5</td><td>V3132127</td><td>0.4947</td><td>DOT, FMCSA, Volpe</td><td>None</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:10px;">All 15 returned matches are DOT/Volpe transportation IT and management consulting work. The lone "environmental" keyword hit (V3222013) refers to FHWA environmental review policy analysis — not field sampling, laboratory analysis, or hazardous waste management. <strong>Zero past performance exists in RCRA compliance, groundwater monitoring, or any form of environmental engineering or remediation.</strong></p>
+    <p style="margin-top:10px;">The 0.619 APFS score likely reflects keyword co-occurrence between "monitoring," "compliance," "analysis," and "report" — terms that appear frequently in Changeis IT/program management work — rather than substantive capability alignment.</p>
+  </div>
+
+  <!-- MARKET CONTEXT -->
+  <div class="section">
+    <div class="section-header">Market Context</div>
+    <p>USCG Base Elizabeth City has a documented history of RCRA-regulated environmental monitoring. The base appears in the <a href="https://www.uscg.mil/Portals/0/documents/budget/2025/USCG%20FY%202025%20Congressional%20Justification.pdf" target="_blank">USCG FY2025 Congressional Justification</a> under Environmental Compliance &amp; Restoration (EC&amp;R) funding, with multiple active site projects including long-term groundwater monitoring at the Electroplating Shop Release. This indicates a sustained, multi-year environmental services footprint at the base.</p>
+    <p style="margin-top:10px;">The prior-year version of this requirement (F2025070427, for 2025 monitoring) explicitly stated: <em>"This requirement is available to holders on the USCG ENV MATOC only"</em> — a specialized environmental MATOC that Changeis does not hold. The current APFS uses the A&amp;E Services II vehicle (consistent with environmental A&amp;E), which also requires environmental engineering specialization for this work type.</p>
+    <p style="margin-top:10px;">Typical winning firms for USCG environmental monitoring at this scale include large environmental A&amp;E firms (WSP, AECOM, Arcadis, TRC Environmental, Tetra Tech) and mid-tier environmental specialists, all with state-certified field staff and laboratory partnerships — not IT consulting firms.</p>
+  </div>
+
+  <!-- RAG MODEL NOTE -->
+  <div class="section">
+    <div class="section-header">RAG Model Note — Recommended Improvement</div>
+    <div class="note-box">
+      <p><strong>Recommendation for APFS Monitor Configuration:</strong> Add an environmental-work exclusion filter to reduce false positives of this type. The APFS monitor should recognize and automatically flag or deprioritize opportunities containing the following keyword clusters:</p>
+    </div>
+    <ul style="margin-top:12px; font-size:15px;">
+      <li><strong>Regulatory frameworks:</strong> RCRA, CERCLA, NEPA, Clean Water Act, Clean Air Act, TSCA</li>
+      <li><strong>Field activities:</strong> groundwater monitoring, soil sampling, well installation, environmental sampling, site investigation, remedial investigation</li>
+      <li><strong>Remediation methods:</strong> in situ bioremediation, pump and treat, soil vapor extraction, permeable reactive barrier, calcium peroxide injection</li>
+      <li><strong>Waste management:</strong> hazardous waste, SWMU (Solid Waste Management Unit), corrective action, landfill closure, waste characterization</li>
+      <li><strong>Credentialing indicators:</strong> RCRA Part B permit, EPA-certified laboratory, chain of custody, SW-846 methods, Licensed Site Professional (LSP), Professional Geologist (PG)</li>
+      <li><strong>Vehicle indicators:</strong> ENV MATOC, environmental MATOC, A&amp;E environmental specialization</li>
+    </ul>
+    <p style="margin-top:12px; font-size:15px;">Applying these filters as negative signals in the RAG relevance calculation — or routing matched opportunities to an auto-NO-GO path — would prevent further analyst time being spent on inherently misaligned environmental engineering solicitations. This class of false positive (IT/compliance vocab overlap with environmental compliance vocab) is structurally predictable and should be suppressed at the pipeline level.</p>
+  </div>
+
+  <!-- DECISION SUMMARY -->
+  <div class="section">
+    <div class="section-header">Decision Summary</div>
+    <table>
+      <thead>
+        <tr><th>Factor</th><th>Assessment</th><th>Impact on Decision</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Core Scope Alignment</td><td>Environmental field sampling / RCRA compliance — zero overlap with Changeis IT/MC capabilities</td><td style="color:var(--red);font-weight:700;">No-Go Driver</td></tr>
+        <tr><td>NAICS Code</td><td>541330 (Engineering Services) / prior year 541620 (Environmental Consulting) — both outside Changeis primary NAICS</td><td style="color:var(--red);font-weight:700;">No-Go Driver</td></tr>
+        <tr><td>Contract Vehicle</td><td>A&amp;E Services II / USCG ENV MATOC — Changeis not a holder; no access path</td><td style="color:var(--red);font-weight:700;">No-Go Driver</td></tr>
+        <tr><td>Past Performance</td><td>RAG confirms zero RCRA/groundwater/environmental engineering past performance in corpus</td><td style="color:var(--red);font-weight:700;">No-Go Driver</td></tr>
+        <tr><td>Teaming Opportunity</td><td>No meaningful Changeis role as prime or sub in a purely environmental field work contract</td><td style="color:var(--red);font-weight:700;">No-Go Driver</td></tr>
+        <tr><td>RAG Score (0.619)</td><td>Elevated due to vocabulary overlap (monitoring/compliance/analysis), not capability match — confirmed false positive</td><td style="color:#e07b2a;font-weight:700;">False Signal</td></tr>
+        <tr><td>Dollar Range</td><td>$500K–$1M FFP — within range, but moot given capability mismatch</td><td style="color:var(--text-muted);">Not Applicable</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- BOTTOM LINE -->
+  <div class="section">
+    <div class="section-header">Bottom Line</div>
+    <p><strong>NO-GO.</strong> F2025072195 is a recurring RCRA environmental monitoring contract requiring field sampling, laboratory analysis, hazardous waste compliance expertise, and environmental A&amp;E credentials that Changeis does not possess. The RAG score of 0.619 is a confirmed false positive caused by surface-level vocabulary overlap between general "monitoring/compliance/analysis/reporting" language and Changeis's IT program management corpus. No past performance, no vehicle access, no credentialing path, and no teaming construct would make this opportunity winnable or strategically appropriate for Changeis. Recommend the APFS monitor adopt environmental keyword suppression filters to prevent similar false positives in future pipeline sweeps.</p>
+  </div>
+
+  <!-- SESSION CONTEXT -->
+  <div class="context-section">
+    <button class="context-toggle" onclick="toggleContext(this)">
+      <span class="arrow">▶</span> Session Context &amp; Methodology
+    </button>
+    <div class="context-body">ORIGINAL INSTRUCTIONS:
+Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjRqRXhmHfJvr → APFS F2025072195 USCG/CG-SHORE RCRA Groundwater Monitoring Elizabeth City.
+RAG Score: 0.619. Expected Verdict: NO-GO — environmental engineering / regulatory compliance outside Changeis core IT/MC capability.
+Tasks: (1) Read opportunity JSON, (2) Research USCG Elizabeth City environmental contracts and RCRA contractors, (3) Run RAG engine query, (4) Build HTML deliverable with NO-GO verdict and capability mismatch analysis, (5) Add RAG Model Note recommending keyword filters.
+
+APPROACH:
+1. Read full opportunity JSON from /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025072195.json
+2. Read deliverable-specs.md for output format requirements
+3. Ran RAG engine POST request to https://changeis-bd-rag-production.up.railway.app/match with RCRA/environmental query terms, top_n=50
+4. Searched web for USCG Elizabeth City RCRA contracts (HigherGov, USCG budget docs, EPA RCRA data)
+5. Analyzed all evidence to produce NO-GO verdict with structured capability mismatch analysis
+6. Built self-contained HTML deliverable following vm2-system-guide-2026-03-27.html reference structure
+
+KEY FINDINGS:
+- Requirement is RCRA Part B permit-required groundwater monitoring at 10 SWMUs, plus in situ bioremediation (calcium peroxide injection) at SWMU 58 — JP-4 pipeline release site. Purely environmental field/lab work.
+- Prior year version (F2025070427) explicitly restricted to USCG ENV MATOC holders; NAICS 541620 Environmental Consulting. Current year uses A&E Services II, NAICS 541330.
+- RAG query returned 15 matches, ALL DOT/Volpe transportation IT/management work. Zero environmental field sampling or hazardous waste PP in corpus. Best match 0.5754 (FMCSA IT support). "Environmental" keyword found only in V3222013 = FHWA environmental policy streamlining (not field work).
+- USCG FY2025 Congressional Justification confirms Elizabeth City base has multiple active EC&R sites including long-term groundwater monitoring at Electroplating Shop Release.
+- Typical market participants: WSP USA, AECOM, Arcadis, TRC Environmental, Tetra Tech — all large environmental A&E firms with certified field staff, not IT consultants.
+- RAG score 0.619 confirmed as false positive: vocabulary overlap between "monitoring/compliance/analysis/report" in IT PM work and environmental compliance language.
+
+DEAD ENDS:
+- HigherGov page for F2025070427 did not list specific past awardees due to paywall restrictions on bidder data.
+- SAM.gov direct lookup not performed (sufficient data from APFS JSON and secondary sources).
+- No Changeis environmental teaming partners identifiable — not applicable given full scope mismatch.
+
+ASSUMPTIONS:
+- Changeis does not hold USCG ENV MATOC or A&E Services II vehicle with environmental specialization.
+- Changeis has no licensed environmental professionals (PG, PE-environmental) on staff.
+- The 2026-2027 requirement is substantively identical in scope to the 2025 version (F2025070427) — recurring annual compliance program.
+- Date of analysis: 2026-04-22.
+
+OPEN QUESTIONS:
+- Final small business set-aside designation (currently TBD) — irrelevant given capability mismatch.
+- Whether NAICS shift from 541620 to 541330 creates any different vehicle access — assessed as immaterial; core scope remains environmental field work.
+- Specific incumbent (if any) from prior RCRA monitoring cycles at Elizabeth City — not researched given clear NO-GO.
+
+DATA SOURCES:
+- /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025072195.json (primary opportunity data)
+- https://www.highergov.com/contract-forecast/2025-rcra-compliance-groundwater-monitoring-elizab-1123702/ (prior year F2025070427)
+- https://www.dcms.uscg.mil/Our-Organization/Assistant-Commandant-for-Engineering-Logistics-CG-4-/Program-Offices/Environmental-Management/ (USCG CG-SHORE-V)
+- https://www.uscg.mil/Portals/0/documents/budget/2025/USCG%20FY%202025%20Congressional%20Justification.pdf (Elizabeth City EC&R projects)
+- RAG Engine: https://changeis-bd-rag-production.up.railway.app/match (query: RCRA groundwater monitoring environmental compliance sampling laboratory analysis hazardous waste; 15 matches returned, max score 0.5754)
+
+NEXT STEPS:
+- No BD action required — file as NO-GO.
+- Recommend APFS monitor team implement environmental keyword suppression filters (RCRA, CERCLA, groundwater monitoring, SWMU, hazardous waste, bioremediation, in situ, ENV MATOC) to reduce false positives.
+- Consider adding NAICS exclusion list: 541620, 541380, 562910, 562211 (environmental/waste management codes) to auto-route opportunities away from BD pipeline.
+    </div>
+  </div>
+
+  <!-- HIDDEN JSON CONTEXT -->
+  <script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Deep Dive: USCG RCRA Groundwater Monitoring Elizabeth City — F2025072195",
+  "task_date": "2026-04-22",
+  "created_date": "2026-04-22",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-uscg-rcra-elizabeth-city-f2025072195-2026-04-22.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-uscg-rcra-elizabeth-city-f2025072195-2026-04-22.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjRqRXhmHfJvr → APFS F2025072195 USCG/CG-SHORE RCRA Groundwater Monitoring Elizabeth City. RAG: 0.619. Expected NO-GO: environmental engineering/RCRA compliance outside Changeis IT/MC capability.",
+  "approach": "Read opportunity JSON → run RAG engine query → web research on USCG Elizabeth City environmental contracts and RCRA market → build HTML deliverable with NO-GO verdict, capability mismatch analysis, and RAG model improvement note.",
+  "key_findings": [
+    "Scope is entirely RCRA Part B groundwater monitoring at 10 SWMUs plus in situ bioremediation — no IT component",
+    "Prior year version (F2025070427) restricted to USCG ENV MATOC holders; NAICS 541620 Environmental Consulting",
+    "RAG query returned 15 matches, all DOT/Volpe IT work; zero environmental field/lab past performance in corpus",
+    "RAG score 0.619 is a confirmed false positive from vocabulary overlap (monitoring/compliance/analysis/report)",
+    "Typical contractors: WSP, AECOM, Arcadis, TRC Environmental — full-service environmental A&E firms"
+  ],
+  "dead_ends": [
+    "HigherGov bidder data paywalled — no specific past awardee identified",
+    "SAM.gov direct lookup not performed — sufficient data available from JSON and secondary sources"
+  ],
+  "assumptions": [
+    "Changeis does not hold USCG ENV MATOC or A&E Services II with environmental specialization",
+    "Changeis has no licensed environmental professionals (PG, PE-environmental)",
+    "2026-2027 scope is substantively identical to prior year recurring program"
+  ],
+  "open_questions": [
+    "Final small business set-aside designation (currently TBD) — not material given capability mismatch",
+    "Specific incumbent from prior RCRA monitoring cycles at Elizabeth City — not researched"
+  ],
+  "data_sources": [
+    {"name": "APFS JSON", "path": "/home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025072195.json"},
+    {"name": "HigherGov — F2025070427", "url": "https://www.highergov.com/contract-forecast/2025-rcra-compliance-groundwater-monitoring-elizab-1123702/"},
+    {"name": "USCG CG-SHORE-V Environmental Management", "url": "https://www.dcms.uscg.mil/Our-Organization/Assistant-Commandant-for-Engineering-Logistics-CG-4-/Program-Offices/Environmental-Management/"},
+    {"name": "USCG FY2025 Congressional Justification", "url": "https://www.uscg.mil/Portals/0/documents/budget/2025/USCG%20FY%202025%20Congressional%20Justification.pdf"},
+    {"name": "Changeis RAG Engine", "url": "https://changeis-bd-rag-production.up.railway.app/match"}
+  ],
+  "next_steps": [
+    "File as NO-GO — no BD action required",
+    "Recommend APFS monitor add environmental keyword suppression: RCRA, CERCLA, groundwater monitoring, SWMU, hazardous waste, bioremediation, ENV MATOC",
+    "Consider NAICS exclusion list: 541620, 541380, 562910, 562211 to auto-route environmental/waste opportunities"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-5",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~45,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 3,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.27",
+    "cost_ceiling": "$0.48",
+    "notes": "Moderate cost: RAG API call, 3 web searches, 1 fetch, large JSON read + HTML generation"
+  }
+}
+  </script>
+
+  <!-- CONTINUE PANEL -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up where this analysis left off — copy the context, send an email, or create a follow-up task.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up%3A%20USCG%20RCRA%20Groundwater%20Monitoring%20F2025072195&body=Deep%20Dive%20completed%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fdeep-dive-uscg-rcra-elizabeth-city-f2025072195-2026-04-22.html%0A%0AVerdict%3A%20NO-GO%20%E2%80%94%20environmental%20engineering%2FRCRA%20compliance%20outside%20Changeis%20capability.%0A%0ANext%20steps%3A%20File%20as%20NO-GO.%20Recommend%20APFS%20monitor%20add%20environmental%20keyword%20suppression%20filters.">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <button class="btn btn-secondary" onclick="createTodoistTask()">
+        <span class="btn-icon">✅</span> Create Todoist Follow-Up
+      </button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- FOOTER -->
+<div class="page-footer">
+  Changeis Confidential · USCG RCRA Groundwater Monitoring Deep Dive F2025072195 · April 2026 · VM2 Deliverable
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+function toggleContext(btn) {
+  btn.classList.toggle('open');
+  btn.nextElementSibling.classList.toggle('open');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function copyFollowUp() {
+  const url = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-uscg-rcra-elizabeth-city-f2025072195-2026-04-22.html';
+  const prompt = `Continue VM2 Deep Dive: USCG RCRA Groundwater Monitoring Elizabeth City F2025072195\n\nDeliverable: ${url}\n\nVerdict: NO-GO — RCRA environmental field sampling and hazardous waste compliance, entirely outside Changeis IT/MC capability. RAG score 0.619 confirmed false positive.\n\nRecommended follow-up: Implement APFS monitor keyword suppression filters for RCRA, groundwater monitoring, SWMU, hazardous waste, bioremediation, ENV MATOC to reduce similar false positives.`;
+  navigator.clipboard.writeText(prompt).then(() => showToast('Prompt copied!')).catch(() => showToast('Copy failed'));
+}
+function createTodoistTask() {
+  const url = 'https://todoist.com/add?content=Follow-Up%3A%20USCG%20RCRA%20F2025072195%20NO-GO%20%E2%80%94%20Add%20env%20keyword%20filters%20to%20APFS%20monitor&description=Deep%20Dive%20filed%20as%20NO-GO.%20Add%20RCRA%2Fgroundwater%2Fhazardous%20waste%20keyword%20suppression%20to%20reduce%20false%20positives.';
+  window.open(url, '_blank');
+}
+</script>
+
+</body>
+</html>
