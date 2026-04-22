@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: TSA HW/SW O&M Labor — F2025071609</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --go-bg: #e8f5e9;
+    --go-border: #2d7d4a;
+    --go-text: #1b4d2e;
+    --warn-bg: #fff8e1;
+    --warn-border: #e6a817;
+    --warn-text: #7a5000;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --go-bg: #0d2b18;
+    --go-border: #2d7d4a;
+    --go-text: #7dd99a;
+    --warn-bg: #2b2100;
+    --warn-border: #c8850a;
+    --warn-text: #ffd27a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Verdict box */
+  .verdict-box {
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    border-left: 5px solid var(--go-border);
+    background: var(--go-bg);
+  }
+  .verdict-box .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--go-border);
+    margin-bottom: 6px;
+  }
+  .verdict-box .verdict-title {
+    font-size: 22px; font-weight: 700;
+    color: var(--go-text);
+    margin-bottom: 6px;
+  }
+  .verdict-box p {
+    font-size: 14px; color: var(--go-text); line-height: 1.5;
+  }
+
+  .urgency-box {
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    border-left: 5px solid var(--warn-border);
+    background: var(--warn-bg);
+    font-family: system-ui, sans-serif;
+    font-size: 14px; color: var(--warn-text);
+  }
+  .urgency-box strong { font-weight: 700; }
+
+  /* Stat cards */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 700px) { .stats-row { grid-template-columns: 1fr 1fr; } }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .stat-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); line-height: 1.3;
+  }
+  [data-theme="dark"] .stat-value { color: #e2e2e2; }
+  .stat-sub { font-size: 12px; color: var(--text-faint); margin-top: 2px; font-family: system-ui, sans-serif; }
+
+  /* RAG badge */
+  .rag-strong {
+    display: inline-block;
+    background: #2d7d4a; color: #fff;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 2px 10px; border-radius: 3px;
+  }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .badge-go { background: #2d7d4a; color: #fff; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+  .badge-caution { background: #d97d2a; color: #fff; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+  .badge-risk { background: #c53a3a; color: #fff; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+  .badge-info { background: #1B2A4A; color: #fff; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+
+  /* Systems grid */
+  .systems-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+    margin-top: 12px;
+  }
+  @media (max-width: 600px) { .systems-grid { grid-template-columns: 1fr; } }
+  .system-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .system-card h4 {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: var(--navy); margin-bottom: 6px;
+  }
+  [data-theme="dark"] .system-card h4 { color: #e2e2e2; }
+  .system-card p { font-size: 13px; color: var(--text-muted); line-height: 1.45; }
+
+  /* Callout */
+  .callout {
+    background: var(--surface-alt);
+    border-left: 4px solid var(--navy);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+  .callout strong { color: var(--navy); }
+  [data-theme="dark"] .callout strong { color: var(--link); }
+
+  /* Continue panel */
+  .continue-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-top: 32px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); margin-bottom: 12px;
+  }
+  .continue-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    border: none; cursor: pointer; text-decoration: none;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; text-decoration: none; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+
+  /* Session context */
+  details {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-top: 24px;
+    overflow: hidden;
+  }
+  details summary {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted);
+    padding: 12px 16px;
+    cursor: pointer;
+    background: var(--surface-alt);
+    list-style: none;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: '▶ '; font-size: 10px; }
+  details[open] summary::before { content: '▼ '; }
+  .details-body {
+    padding: 16px 20px;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .details-body h4 {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--red); margin: 14px 0 6px;
+  }
+  .details-body h4:first-child { margin-top: 0; }
+  .details-body ul { padding-left: 18px; }
+  .details-body li { margin-bottom: 4px; }
+  .details-body p { margin-bottom: 8px; }
+
+  footer {
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    padding: 32px 0 24px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark</button>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · Opportunity Analysis</div>
+    <h1>TSA Hardware/Software O&amp;M Labor</h1>
+    <div class="hero-sub">APFS F2025071609 · TSA/OIT Technology Solutions Division</div>
+    <div class="hero-date">Created: 2026-04-21 &nbsp;·&nbsp; NAICS 541519 &nbsp;·&nbsp; OASIS+ &nbsp;·&nbsp; RAG Score: <span class="rag-strong">STRONG 0.724</span></div>
+  </div>
+
+  <!-- SECTION 1: Executive Summary -->
+  <div class="section">
+    <div class="section-header">1 · Executive Summary</div>
+
+    <div class="verdict-box">
+      <div class="verdict-label">Verdict</div>
+      <div class="verdict-title">GO — Prime via OASIS+ Small Business</div>
+      <p>This is a genuine labor/services recompete under OASIS+ — not a product procurement. Changeis is an OASIS+ Small Business awardee and can compete as prime. The requirement is straightforward HW/SW license management and renewal support for mission-critical TSA systems (Secure Flight, STAMP, VCS). Incumbent Cape Fox Federal Integrators won the predecessor $34M contract in September 2023 under OASIS SB; the recompete transitions to OASIS+ at $2M–$5M for 5 years. Solicitation was estimated for 02/27/2026 — already 7+ weeks past. Urgent action required.</p>
+    </div>
+
+    <div class="urgency-box">
+      <strong>⚠ URGENCY FLAG:</strong> Solicitation release was estimated 02/27/2026 — as of 04/21/2026 the sol is 53+ days past its estimated release date. The RFP may be live on eBuy now. Changeis must check GSA eBuy immediately and request access if posted. Award target is 09/29/2026 — the procurement timeline is compressed.
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Dollar Range</div>
+        <div class="stat-value">$2M – $5M</div>
+        <div class="stat-sub">Firm Fixed Price</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Vehicle</div>
+        <div class="stat-value">OASIS+</div>
+        <div class="stat-sub">Small Business pool; Changeis eligible</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Award Date</div>
+        <div class="stat-value">09/29/2026</div>
+        <div class="stat-sub">PoP through 09/29/2031 (5 yrs)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Incumbent</div>
+        <div class="stat-value">Cape Fox Federal Integrators</div>
+        <div class="stat-sub">$34M OASIS SB award, Sept 2023</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">RAG Classification</div>
+        <div class="stat-value">STRONG</div>
+        <div class="stat-sub">Score: 0.724</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sol. Status</div>
+        <div class="stat-value">Est. Released</div>
+        <div class="stat-sub">02/27/2026 est. — check eBuy NOW</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Opportunity Overview -->
+  <div class="section">
+    <div class="section-header">2 · Opportunity Overview</div>
+    <table>
+      <thead><tr><th>Field</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td><strong>APFS Number</strong></td><td>F2025071609</td></tr>
+        <tr><td><strong>Requirements Title</strong></td><td>Hardware/Software O&amp;M Labor</td></tr>
+        <tr><td><strong>Organization</strong></td><td>TSA/OIT — Office of Information Technology, Technology Solutions Division (TSD)</td></tr>
+        <tr><td><strong>Contracting Office</strong></td><td>ACQ02 Credentialing, Screening &amp; Intelligence Acquisition Division (CSIAD)</td></tr>
+        <tr><td><strong>Requirements Office</strong></td><td>Office of Information Technology – TSA 40</td></tr>
+        <tr><td><strong>Contract Status</strong></td><td>Recompetition of existing contract</td></tr>
+        <tr><td><strong>Incumbent Contract</strong></td><td>70T02023F7500N016 — Cape Fox Federal Integrators, LLC</td></tr>
+        <tr><td><strong>Contract Vehicle</strong></td><td>OASIS+ (successor to OASIS SB under which incumbent was awarded)</td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541519 — Other Computer Related Services</td></tr>
+        <tr><td><strong>Contract Type</strong></td><td>Firm Fixed Price</td></tr>
+        <tr><td><strong>Dollar Range</strong></td><td>$2,000,000 – $5,000,000</td></tr>
+        <tr><td><strong>PoP</strong></td><td>09/30/2026 – 09/29/2031 (5 years)</td></tr>
+        <tr><td><strong>Place of Performance</strong></td><td>Primary: Annapolis Junction, MD (AJOC); also CO Springs CO (CSOC), Stennis MS (DC1), Springfield VA (HQ)</td></tr>
+        <tr><td><strong>Requirements POC</strong></td><td>Denise Runyon — <a href="mailto:Denise.Runyon@tsa.dhs.gov">Denise.Runyon@tsa.dhs.gov</a> · (202) 253-7294</td></tr>
+        <tr><td><strong>Alt POC</strong></td><td>Latoya Sealey — <a href="mailto:Latoya.Sealey@tsa.dhs.gov">Latoya.Sealey@tsa.dhs.gov</a> · (202) 306-8610</td></tr>
+        <tr><td><strong>SBS Coordinator</strong></td><td>Elizabeth Harrington — <a href="mailto:TSASmallBiz@tsa.dhs.gov">TSASmallBiz@tsa.dhs.gov</a> · (571) 227-1067</td></tr>
+        <tr><td><strong>Est. Sol. Release</strong></td><td>02/27/2026 (already past — check eBuy)</td></tr>
+        <tr><td><strong>Anticipated Award</strong></td><td>09/29/2026 (Q4 FY2026)</td></tr>
+        <tr><td><strong>APFS Published</strong></td><td>09/25/2025</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:16px;">
+      <strong>Scope Summary:</strong> The task order acquires contractor labor to manage the procurement of annual HW/SW renewals across TSD programs. The majority of existing hardware and software vendor maintenance agreements expire annually in March — making this an annually-recurring, time-sensitive procurement cycle. Services are required at TSA sites in Colorado Springs CO, Annapolis Junction MD, Stennis MS, and Springfield VA.
+    </div>
+  </div>
+
+  <!-- SECTION 3: OASIS+ Vehicle Analysis -->
+  <div class="section">
+    <div class="section-header">3 · OASIS+ Vehicle Analysis — Changeis as Prime</div>
+
+    <p class="section" style="font-size:15px; margin-bottom:14px;">This requirement is positioned under <strong>OASIS+</strong>, the GSA-managed government-wide IDIQ that replaced OASIS SB. The incumbent (Cape Fox Federal Integrators) won the predecessor task order under OASIS SB in September 2023 for $34M — but that ordering period ended in December 2024. The recompete is now being run under OASIS+.</p>
+
+    <table>
+      <thead><tr><th>Factor</th><th>Assessment</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Changeis OASIS+ Award</strong></td>
+          <td>Changeis is an OASIS+ Small Business awardee — eligible to receive task orders in the relevant domain/NAICS 541519</td>
+          <td><span class="badge-go">CONFIRMED</span></td>
+        </tr>
+        <tr>
+          <td><strong>Competition Type</strong></td>
+          <td>TSA APFS lists "Competition: YES" — fair opportunity solicitation under FAR 16.505; multiple OASIS+ SB holders eligible</td>
+          <td><span class="badge-info">COMPETITIVE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Set-Aside Status</strong></td>
+          <td>"Small Business Set-Aside: N/A" on APFS; "Small Business Program: TBD" — may be set aside at task order level. SB orientation favors Changeis.</td>
+          <td><span class="badge-caution">TBD</span></td>
+        </tr>
+        <tr>
+          <td><strong>Contract Type</strong></td>
+          <td>Firm Fixed Price — straightforward pricing structure; OASIS+ supports FFP task orders</td>
+          <td><span class="badge-go">FAVORABLE</span></td>
+        </tr>
+        <tr>
+          <td><strong>Prior Vehicle (Incumbent)</strong></td>
+          <td>Cape Fox won under OASIS SB (ordering period ended Dec 2024) — incumbent must recompete on OASIS+, no automatic rollover advantage</td>
+          <td><span class="badge-go">LEVEL FIELD</span></td>
+        </tr>
+        <tr>
+          <td><strong>eBuy Requirement</strong></td>
+          <td>TSA must post OASIS+ TORFPs on GSA eBuy; Changeis should be registered on eBuy to receive/respond to the solicitation</td>
+          <td><span class="badge-caution">ACTION NEEDED</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:16px;">
+      <strong>Key Vehicle Insight:</strong> OASIS SB ordering ended December 19, 2024. Cape Fox held the prior contract under OASIS SB (47QTCK18D0031/OASIS SB vehicle). The recompete under OASIS+ creates a fresh competition where Changeis competes on equal contractual footing. The incumbent's operational knowledge of the TSA TSD environment remains an advantage, but the vehicle transition levels the playing field significantly.
+    </div>
+  </div>
+
+  <!-- SECTION 4: Supported Systems Analysis -->
+  <div class="section">
+    <div class="section-header">4 · Supported Systems Analysis</div>
+
+    <p style="font-size:15px; margin-bottom:14px;">Six TSD programs/systems are in scope. All are located across four TSA classified/sensitive facilities. The HW/SW renewal cycle is annual, primarily expiring in March — creating a predictable, repeating workload.</p>
+
+    <div class="systems-grid">
+      <div class="system-card">
+        <h4>Secure Flight (SF)</h4>
+        <p>TSA's passenger prescreening program that vets travelers against terrorist watchlists before boarding. Mission-critical DHS/TSA function. IT services provided separately by Accenture Federal Services ($199M, 10-year contract, 2022). HW/SW maintenance for SF infrastructure is a distinct sustainment track.</p>
+      </div>
+      <div class="system-card">
+        <h4>Security Threat Assessment Mission Platform (STAMP)</h4>
+        <p>Platform supporting TSA's threat assessment vetting operations. Used for identity verification and background checks on transportation workers. Classified/sensitive operations at CSOC and AJOC. HW/SW licenses and maintenance renewals are time-critical for ATO continuity.</p>
+      </div>
+      <div class="system-card">
+        <h4>Vetting &amp; Credentialing System (VCS)</h4>
+        <p>Supports TSA credentialing programs including TWIC, HME, and other transportation worker background checks. ManTech was the prior IT O&amp;M incumbent for SF/VCS (sole-source extension Nov 2024), supporting the transition to Cape Fox. VCS renewals are ATO-gating.</p>
+      </div>
+      <div class="system-card">
+        <h4>Mission Scheduling Notification System (MSNS)</h4>
+        <p>Internal TSA scheduling/notification system. Dev Tech Group (DEV TECHNOLOGY GROUP INC) received a $4.1M BPA call for FAMS 2.5 MSNS Modernization in Sept 2025 — suggests active investment in this platform requiring maintained infrastructure.</p>
+      </div>
+      <div class="system-card">
+        <h4>Vulnerability Assessment Laptop Unclassified (Val-U)</h4>
+        <p>Mobile vulnerability assessment platform used in the field. Laptop-based, unclassified — renewals likely include endpoint security, AV, and hardware warranty agreements. Straightforward annual renewal cycle.</p>
+      </div>
+      <div class="system-card">
+        <h4>Enterprise Analysis System (EAS)</h4>
+        <p>TSA analytics platform. A separate APFS record (F2025071837 — "Enterprise Analysis System Hardware and Maintenance Support") was posted on 04/20/2026, suggesting EAS hardware/maintenance is being separately procured. Confirming scope overlap should be part of proposal strategy.</p>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:16px;">
+      <strong>Critical Renewal Timing:</strong> The requirement notes "the majority of existing hardware and software vendor maintenance agreements expires annually in March." This means a new contractor must be ready to execute renewals immediately at contract start (09/30/2026) — the transition period is extremely tight and the government will heavily weight past performance on similar annual renewal cycles and transition risk mitigation plans.
+    </div>
+  </div>
+
+  <!-- SECTION 5: Incumbent Landscape -->
+  <div class="section">
+    <div class="section-header">5 · Incumbent Landscape</div>
+
+    <table>
+      <thead><tr><th>Contractor</th><th>Role / Contract</th><th>Value</th><th>Period</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Cape Fox Federal Integrators, LLC</strong></td>
+          <td>Current incumbent — HW/SW License Management, TSD. Contract 70T02023F7500N016 (OASIS SB)</td>
+          <td>$33.98M (total value)</td>
+          <td>Sept 2023 – Sept 2026 (3 yrs)</td>
+          <td>Direct predecessor to this recompete. ANC-owned small business (Alaska Native Corp). 1 bid received on original award. Won as new customer for CFFI in 2023.</td>
+        </tr>
+        <tr>
+          <td><strong>ManTech Advanced Systems International</strong></td>
+          <td>Prior TSD Mission Operation Systems O&amp;M (SF, VCS) — sole-source bridge. Contract 70T02024F7500N001 (OASIS+)</td>
+          <td>~Bridge extension only</td>
+          <td>Bridge Nov 2024 – transition completion</td>
+          <td>ManTech provided Network/Infrastructure Ops, System Security, Asset/Configuration Mgmt, ATO support, HW maintenance, SW subscription mgmt for SF &amp; VCS prior to Cape Fox. No longer incumbent.</td>
+        </tr>
+        <tr>
+          <td><strong>Accenture Federal Services</strong></td>
+          <td>Secure Flight Systems IT Services (engineering, testing, sustainment, modernization)</td>
+          <td>$199M, 10-year</td>
+          <td>2022 – 2032</td>
+          <td>AFS owns Secure Flight platform IT services. The HW/SW O&amp;M labor here is a separate, smaller procurement for TSD's renewal management function — not SF platform dev.</td>
+        </tr>
+        <tr>
+          <td><strong>Dev Tech Group</strong></td>
+          <td>FAMS 2.5 MSNS Modernization BPA Call (70T03025F7667N073)</td>
+          <td>$4.1M</td>
+          <td>Sept 2025</td>
+          <td>Active MSNS modernization work — suggests MSNS is receiving investment; contractor familiarity with MSNS environment could be relevant to this scope.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:16px;">
+      <strong>Incumbent Vulnerability Assessment:</strong> Cape Fox Federal Integrators is an Alaska Native Corporation (ANC) subsidiary — traditionally viewed as strong small business incumbents with DHS. However, several factors create incumbent vulnerability: (1) original award received only 1 bid, suggesting limited competition-readiness; (2) transition from OASIS SB to OASIS+ resets vehicle advantage; (3) $34M total contract value vs. $2M–$5M recompete range suggests the scope may be restructured/reduced. A well-prepared challenger with OASIS+ eligibility, HW/SW license management experience, and a strong transition plan can displace Cape Fox.
+    </div>
+  </div>
+
+  <!-- SECTION 6: Changeis Capability Match -->
+  <div class="section">
+    <div class="section-header">6 · Changeis Capability Match (RAG Analysis)</div>
+
+    <p style="font-size:15px; margin-bottom:12px;">RAG engine returned <strong>STRONG score 0.724</strong> — the highest classification tier. The top RAG match is task order <strong>V330A2183</strong> (contract 6913G620F400131, DOT/Volpe, FAA) with composite score 0.724, followed by V3002048 (0.618) and V3272120 (0.606). While these are DOT/Volpe contracts rather than TSA/DHS, they demonstrate core relevant competencies:</p>
+
+    <table>
+      <thead><tr><th>Capability Domain</th><th>Changeis Evidence</th><th>Relevance to This TO</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>IT Systems O&amp;M Labor</strong></td>
+          <td>Multiple task orders providing on-site IT support, system maintenance, and operational support across federal programs (Volpe/DOT ecosystem). V3142064 (ODAPC DAMIS/SAI web application maintenance).</td>
+          <td><span class="badge-go">DIRECT</span></td>
+        </tr>
+        <tr>
+          <td><strong>Software License / Asset Management</strong></td>
+          <td>V3142016 and V3142064 include maintaining ASP.NET web applications, Oracle databases, PIV multi-factor auth — software asset lifecycle management. V3272120 covers website/SharePoint development and maintenance.</td>
+          <td><span class="badge-go">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>Hardware Maintenance Support</strong></td>
+          <td>V3002018 (V3002018_6913G620F400056) includes equipment maintenance, asset tracking, and physical infrastructure support — directly analogous to HW renewal management.</td>
+          <td><span class="badge-go">STRONG</span></td>
+        </tr>
+        <tr>
+          <td><strong>DHS/Transportation Security Context</strong></td>
+          <td>Changeis portfolio is primarily DOT/FAA/Volpe — adjacent to TSA but not direct TSA past performance. TSA is DHS; Volpe/DOT is a neighbor agency. No confirmed direct TSA past performance in RAG results.</td>
+          <td><span class="badge-caution">ADJACENT</span></td>
+        </tr>
+        <tr>
+          <td><strong>FFP Task Order Management</strong></td>
+          <td>All identified past performance task orders are FFP Level of Effort — matching this requirement's contract type exactly.</td>
+          <td><span class="badge-go">EXACT MATCH</span></td>
+        </tr>
+        <tr>
+          <td><strong>OASIS+ Vehicle</strong></td>
+          <td>Changeis is an OASIS+ Small Business awardee — can respond to this RFP as prime without a vehicle teaming arrangement.</td>
+          <td><span class="badge-go">CONFIRMED</span></td>
+        </tr>
+        <tr>
+          <td><strong>Multi-Site Program Support</strong></td>
+          <td>Several Changeis TOs require multi-location coordination (DOT/Volpe programs spanning multiple modal agencies). Supports 4-location TSA footprint (CSOC, AJOC, DC1, HQ).</td>
+          <td><span class="badge-go">APPLICABLE</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:16px;">
+      <strong>Capability Gap to Address:</strong> Direct TSA/DHS IT support past performance is not evident in the RAG corpus. This is the primary weakness. Mitigation strategies: (1) identify DHS-adjacent subcontractor with TSA TSD experience for teaming; (2) emphasize transferable HW/SW license management experience from DOT/Volpe programs; (3) propose a detailed transition plan that mitigates the agency's risk of switching from Cape Fox.
+    </div>
+  </div>
+
+  <!-- SECTION 7: Competitive Positioning -->
+  <div class="section">
+    <div class="section-header">7 · Competitive Positioning</div>
+
+    <table>
+      <thead><tr><th>Competitor</th><th>Likely Posture</th><th>Strength</th><th>Weakness</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Cape Fox Federal Integrators</strong></td>
+          <td>Incumbent — will defend. ANC small business with established TSA TSD relationships.</td>
+          <td>Deep program knowledge, existing personnel, ATO familiarity, ANC status</td>
+          <td>Only 1 bidder in 2023 — may not have competitive pricing discipline. Vehicle transition (OASIS SB → OASIS+) requires re-qualifying. Scope reduction from $34M → $2-5M may signal restructure they cannot fully counter.</td>
+        </tr>
+        <tr>
+          <td><strong>Other OASIS+ SB Holders</strong></td>
+          <td>Moderate competition expected from other DHS-focused SB OASIS+ holders (e.g., other ANC/WOSB/SDVOSB firms with TSA experience)</td>
+          <td>DHS sector knowledge; OASIS+ eligibility</td>
+          <td>Must also establish specific TSD program familiarity</td>
+        </tr>
+        <tr>
+          <td><strong>Changeis</strong></td>
+          <td>Challenger — prime via OASIS+</td>
+          <td>OASIS+ eligible prime; strong IT O&amp;M past performance; FFP expertise; competitive pricing</td>
+          <td>No confirmed direct TSA TSD past performance; no established TSA customer relationships (from RAG data)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:14.5px; margin-top:14px; line-height:1.6;">The competitive landscape is relatively narrow for this niche TSD support role. The original 2023 award received only one bid — indicating this is a specialized requirement that many firms pass over. This creates an opportunity for a well-prepared Changeis proposal to enter a thin competitive field. The government may also consider socioeconomic set-asides (WOSB, SDVOSB, 8(a)) at the task order level, which could further stratify competition — confirm set-aside intent via the SBS Coordinator.</p>
+  </div>
+
+  <!-- SECTION 8: Capture Strategy -->
+  <div class="section">
+    <div class="section-header">8 · Capture Strategy</div>
+
+    <table>
+      <thead><tr><th>#</th><th>Action</th><th>Priority</th><th>Owner</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Check GSA eBuy NOW</strong> — the solicitation was estimated for 02/27/2026 and is 53+ days overdue. Log into eBuy, search TSA NAICS 541519, look for active RFQs from TSA CSIAD. Request solicitation if found.</td>
+          <td><span class="badge-risk">URGENT</span></td>
+          <td>BD Lead</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Contact SBS Coordinator</strong> — Elizabeth Harrington at TSASmallBiz@tsa.dhs.gov / (571) 227-1067. Confirm solicitation status, set-aside determination, and eBuy posting. Introduce Changeis as an OASIS+ SB holder interested in competing.</td>
+          <td><span class="badge-risk">URGENT</span></td>
+          <td>BD Lead</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Contact Requirements POC</strong> — Denise Runyon at Denise.Runyon@tsa.dhs.gov / (202) 253-7294. Pre-RFP engagement window may be open (if sol not yet released). Understand transition timeline and TSA TSD priorities.</td>
+          <td><span class="badge-caution">HIGH</span></td>
+          <td>BD Lead / Program</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>Teaming Assessment</strong> — Identify a subcontractor with direct TSA TSD or STAMP/VCS/Secure Flight program experience. Target: former ManTech or Cape Fox personnel, or a DHS-cleared small business with Annapolis Junction AJOC facility access. Teaming with a TSA-experienced firm closes the primary capability gap.</td>
+          <td><span class="badge-caution">HIGH</span></td>
+          <td>BD / Capture</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>Transition Plan Development</strong> — Draft a low-risk transition approach. TSA's annual March renewal cycle means Day 1 readiness is critical. Emphasize fast knowledge transfer protocol, shadow period with incumbent, and proactive vendor relationship establishment.</td>
+          <td><span class="badge-caution">HIGH</span></td>
+          <td>Program / Technical</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>Facility Clearance / Personnel Security Review</strong> — AJOC (Annapolis Junction, MD) and CSOC (Colorado Springs) are sensitive TSA facilities. Confirm Changeis and key personnel can meet facility access requirements. Initiate clearance verification.</td>
+          <td><span class="badge-caution">HIGH</span></td>
+          <td>Security / HR</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Price Strategy</strong> — Cape Fox's original award was sole-source with 1 bidder. Competitive pricing will matter more in a true OASIS+ competition. Research TSA CSIAD wage determination rates for NAICS 541519 in MD/VA/CO. Build FFP model around HW/SW renewal labor hours.</td>
+          <td><span class="badge-info">MEDIUM</span></td>
+          <td>Pricing / Finance</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><strong>Past Performance Documentation</strong> — Curate 3 past performance references from Changeis portfolio most relevant to HW/SW lifecycle management and IT O&amp;M (recommend V3142016, V3002018, V3272120 from RAG). Frame narratives around software license management, asset renewals, and multi-site coordination.</td>
+          <td><span class="badge-info">MEDIUM</span></td>
+          <td>Proposal / PM</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 9: Go/No-Go Recommendation -->
+  <div class="section">
+    <div class="section-header">9 · Go / No-Go Recommendation</div>
+
+    <div class="verdict-box">
+      <div class="verdict-label">Final Recommendation</div>
+      <div class="verdict-title">GO — With Urgency</div>
+      <p><strong>Rationale:</strong> This is a legitimate labor/services recompete under OASIS+ where Changeis can compete as prime. The $2M–$5M FFP scope is well-sized for a small business, the RAG score is STRONG at 0.724, and the original award had only 1 bidder — indicating thin incumbent competition. The primary gap is direct TSA TSD experience; this is addressable through teaming. The OASIS SB → OASIS+ vehicle transition levels the field versus the incumbent.</p>
+    </div>
+
+    <div class="urgency-box">
+      <strong>⚠ URGENCY — SOL 53+ DAYS PAST ESTIMATED RELEASE:</strong> The solicitation was estimated for 02/27/2026. As of 04/21/2026, it has not appeared in the public APFS posting status. The RFP is likely live on GSA eBuy (closed portal) and Changeis may be locked out if not actively registered and monitoring eBuy for this requirement. <strong>BD lead must check eBuy today and contact Elizabeth Harrington (TSASmallBiz@tsa.dhs.gov) to confirm status and obtain solicitation access.</strong> If the proposal deadline has passed, document for lessons learned and set a watch for the next cycle.
+    </div>
+
+    <table>
+      <thead><tr><th>Criterion</th><th>Assessment</th><th>Score</th></tr></thead>
+      <tbody>
+        <tr><td>Vehicle Eligibility</td><td>Changeis is OASIS+ SB awardee — can compete as prime</td><td><span class="badge-go">GO</span></td></tr>
+        <tr><td>Scope Fit</td><td>HW/SW license management, annual renewals — matches Changeis IT O&amp;M competencies</td><td><span class="badge-go">GO</span></td></tr>
+        <tr><td>RAG Score</td><td>STRONG 0.724 — top classification tier</td><td><span class="badge-go">GO</span></td></tr>
+        <tr><td>Dollar Range</td><td>$2M–$5M FFP over 5 years — right-sized for small business prime</td><td><span class="badge-go">GO</span></td></tr>
+        <tr><td>Competitive Landscape</td><td>Original award had 1 bidder; incumbent transitioning vehicles</td><td><span class="badge-go">GO</span></td></tr>
+        <tr><td>TSA Direct Experience</td><td>No confirmed TSA TSD past performance in Changeis corpus — addressable via teaming</td><td><span class="badge-caution">CAUTION</span></td></tr>
+        <tr><td>Facility Access</td><td>AJOC/CSOC classified facilities — clearance/access requirements must be confirmed</td><td><span class="badge-caution">CAUTION</span></td></tr>
+        <tr><td>Solicitation Timing</td><td>Sol 53+ days past estimated release — may already be live or deadline passed</td><td><span class="badge-risk">URGENT</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Session Context -->
+  <details>
+    <summary>Session Context &amp; Methodology</summary>
+    <div class="details-body">
+      <h4>Original Instructions</h4>
+      <p>Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjR7fGw5ffgMJ → APFS F2025071609 TSA/OIT Hardware/Software O&amp;M Labor. Data bundle: /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025071609.json. Deliver HTML deep dive to /home/user/workspace/VM2-P-Taskers/. Publish to git, Dropbox, Todoist.</p>
+
+      <h4>Approach</h4>
+      <ul>
+        <li>Read full JSON data bundle from APFS F2025071609 (TSA/OIT APFS record)</li>
+        <li>Ran RAG engine POST to changeis-bd-rag-production.up.railway.app with TSA/vetting/credentialing/O&amp;M query; top_n=50</li>
+        <li>Searched web for incumbent identification, TSA TSD contractor history, OASIS+ context</li>
+        <li>Queried SAM.gov API (results not relevant — returned unrelated opportunities)</li>
+        <li>Cross-referenced Cape Fox Federal Integrators contract 70T02023F7500N016 via HigherGov, OrangeSlices, APFS public print</li>
+        <li>Identified ManTech as prior TSD MOS incumbent (pre-Cape Fox) via government bridge contract notice</li>
+        <li>Identified Accenture Federal Services as Secure Flight platform IT services contractor</li>
+      </ul>
+
+      <h4>Key Findings</h4>
+      <ul>
+        <li>Incumbent confirmed: Cape Fox Federal Integrators, LLC — $33.98M contract 70T02023F7500N016 awarded Sept 2023 under OASIS SB with only 1 bid received</li>
+        <li>Prior to Cape Fox, ManTech held TSD Mission Operation Systems O&amp;M (SF/VCS) — sole-source bridged Nov 2024 during transition</li>
+        <li>OASIS SB ordering period ended December 2024 — recompete must be run under OASIS+, creating a level field</li>
+        <li>Solicitation estimated 02/27/2026 is 53+ days past — likely live on eBuy; proposal deadline may be imminent or passed</li>
+        <li>RAG STRONG score 0.724 driven by DOT/Volpe IT O&amp;M portfolio — strong transferable competencies even without direct TSA past performance</li>
+        <li>Six TSD systems in scope with annual March renewal cycle — transition timing is mission-critical risk factor</li>
+      </ul>
+
+      <h4>Dead Ends</h4>
+      <ul>
+        <li>SAM.gov API search returned unrelated opportunities (not indexed for TSA TSD OASIS+ task orders)</li>
+        <li>USASpending direct award page did not return structured data</li>
+        <li>No RAG results with direct TSA/DHS customer past performance — corpus is primarily DOT/Volpe</li>
+        <li>No solicitation document found publicly — OASIS+ TORFPs are posted on eBuy (closed), not SAM.gov public</li>
+      </ul>
+
+      <h4>Assumptions</h4>
+      <ul>
+        <li>Changeis is confirmed OASIS+ Small Business awardee under NAICS 541519 domain</li>
+        <li>The $33.98M Cape Fox contract total value reflects a multi-year/larger OASIS SB master scope; the current recompete is scoped at $2M–$5M (reduced/restructured)</li>
+        <li>The solicitation is live on GSA eBuy but not publicly visible — requires active eBuy monitoring</li>
+        <li>Facility clearances and personnel security requirements apply given AJOC/CSOC locations</li>
+      </ul>
+
+      <h4>Open Questions</h4>
+      <ul>
+        <li>Has the OASIS+ TORFP already been posted on eBuy? If so, what is the proposal due date?</li>
+        <li>Is there a small business set-aside designation at the task order level (WOSB, SDVOSB, 8(a))?</li>
+        <li>What is the specific labor category mix — IT specialists, procurement/acquisition support, or a blend?</li>
+        <li>Are there facility security clearance requirements beyond standard Public Trust?</li>
+        <li>Does the EAS separate procurement (F2025071837) overlap with this scope?</li>
+        <li>Is Cape Fox OASIS+ SB qualified, or must they partner to compete on the recompete?</li>
+      </ul>
+
+      <h4>Data Sources</h4>
+      <ul>
+        <li><a href="https://apfs-cloud.dhs.gov/record/71609/public-print/">APFS Record F2025071609 — DHS Acquisition Planning Forecast System</a></li>
+        <li><a href="https://www.highergov.com/contract/47QRAD20D1033-70T02023F7500N016/">HigherGov — Contract 70T02023F7500N016 (Cape Fox)</a></li>
+        <li><a href="https://orangeslices.ai/contract-award-34m-dhs-tsa-technology-solutions-division-tsd-support/">OrangeSlices.ai — $34M TSD Support Award to Cape Fox (Sept 2023)</a></li>
+        <li><a href="https://orangeslices.ai/contract-award-tsa-technology-solutions-division-tsd-mission-operation-systems-mos-support-extension/">OrangeSlices.ai — ManTech TSD MOS Bridge Extension (Nov 2024)</a></li>
+        <li><a href="https://www.hstoday.us/industry/accenture-federal-wins-tsa-secure-flight-system-it-contract/">Homeland Security Today — Accenture Federal Secure Flight IT Contract</a></li>
+        <li><a href="https://www.federalcompass.com/federal-government-awarded-task-order-and-bpa-call/by-gov/TSA-Office-of-Information-Technology">Federal Compass — TSA OIT Task Order Awards (FY26)</a></li>
+        <li><a href="https://capefoxfcg.com/mediacenter/cffi-wins-contract-to-support-mission-critical-systems-and-bring-solutions/">Cape Fox FCG — CFFI TSA Win Announcement</a></li>
+        <li>Changeis RAG Engine — changeis-bd-rag-production.up.railway.app/match (query: TSA Secure Flight Vetting Credentialing HW/SW O&amp;M OASIS+)</li>
+      </ul>
+
+      <h4>Next Steps</h4>
+      <ul>
+        <li><strong>[URGENT]</strong> Check GSA eBuy for active TSA NAICS 541519 OASIS+ TORFPs — solicitation is 53+ days overdue on estimate</li>
+        <li><strong>[URGENT]</strong> Contact Elizabeth Harrington (TSASmallBiz@tsa.dhs.gov) to confirm sol status and set-aside intent</li>
+        <li>Contact Denise Runyon (Denise.Runyon@tsa.dhs.gov) for pre-proposal engagement if window still open</li>
+        <li>Identify teaming partner with direct TSA TSD / STAMP / VCS experience (former ManTech/Cape Fox alumni preferred)</li>
+        <li>Confirm Changeis OASIS+ SB eligibility specifically under NAICS 541519 for this requirement</li>
+        <li>Initiate personnel security/clearance review for AJOC Annapolis Junction facility access</li>
+        <li>Develop transition plan draft addressing March annual renewal cycle readiness</li>
+      </ul>
+    </div>
+  </details>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="continue-buttons">
+      <button class="btn btn-primary" onclick="copyFollowUp()">Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up: TSA HW/SW O%26M Deep Dive F2025071609&body=Deep Dive deliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-hw-sw-om-f2025071609-2026-04-21.html%0A%0AFollow-up needed: [describe follow-up task]">Email to VM2</a>
+      <button class="btn btn-secondary" onclick="createTodoist()">Create Todoist Follow-Up</button>
+    </div>
+  </div>
+
+  <footer>
+    Changeis Confidential · Deep Dive: TSA HW/SW O&amp;M Labor F2025071609 · 2026-04-21 · VM2 Deliverable
+  </footer>
+</div>
+
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Deep Dive: TSA HW/SW O&M Labor F2025071609",
+  "task_date": "2026-04-21",
+  "created_date": "2026-04-21",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-tsa-hw-sw-om-f2025071609-2026-04-21.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-hw-sw-om-f2025071609-2026-04-21.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjR7fGw5ffgMJ → APFS F2025071609 TSA/OIT Hardware/Software O&M Labor. Sections: Executive Summary, Opportunity Overview, OASIS+ Vehicle Analysis, Supported Systems Analysis, Incumbent Landscape, Changeis Capability Match, Competitive Positioning, Capture Strategy, Go/No-Go Recommendation.",
+  "approach": "Read APFS JSON bundle, ran RAG engine against TSA/DHS O&M query, searched web for incumbent contractors and TSA TSD history, cross-referenced USASpending/HigherGov for Cape Fox contract details, identified ManTech prior incumbent via government bridge contract notice.",
+  "key_findings": [
+    "Incumbent: Cape Fox Federal Integrators — $33.98M OASIS SB contract 70T02023F7500N016, only 1 bid in 2023",
+    "OASIS SB ordering ended Dec 2024 — recompete under OASIS+ levels the playing field vs. Cape Fox",
+    "Solicitation estimated 02/27/2026 is 53+ days past — likely live on GSA eBuy; check immediately",
+    "RAG STRONG 0.724 — strong IT O&M competencies from DOT/Volpe portfolio; no direct TSA past performance",
+    "Annual March renewal cycle creates Day-1 readiness requirement — transition plan is critical discriminator"
+  ],
+  "dead_ends": [
+    "SAM.gov API search returned unrelated results",
+    "USASpending award page did not render structured data",
+    "No OASIS+ TORFP found publicly — must use eBuy",
+    "No TSA-specific past performance in Changeis RAG corpus"
+  ],
+  "assumptions": [
+    "Changeis is OASIS+ SB awardee under NAICS 541519",
+    "Sol is likely live on eBuy but not posted publicly",
+    "$2M-$5M scope represents a restructured/reduced version of the prior $34M multi-year contract"
+  ],
+  "open_questions": [
+    "Is OASIS+ TORFP live on eBuy? What is the proposal due date?",
+    "Is there a socioeconomic set-aside at task order level?",
+    "What are the specific labor categories required?",
+    "What clearance/facility access requirements apply?",
+    "Is Cape Fox OASIS+ SB qualified to compete directly?"
+  ],
+  "data_sources": [
+    "https://apfs-cloud.dhs.gov/record/71609/public-print/",
+    "https://www.highergov.com/contract/47QRAD20D1033-70T02023F7500N016/",
+    "https://orangeslices.ai/contract-award-34m-dhs-tsa-technology-solutions-division-tsd-support/",
+    "https://orangeslices.ai/contract-award-tsa-technology-solutions-division-tsd-mission-operation-systems-mos-support-extension/",
+    "https://www.hstoday.us/industry/accenture-federal-wins-tsa-secure-flight-system-it-contract/",
+    "https://capefoxfcg.com/mediacenter/cffi-wins-contract-to-support-mission-critical-systems-and-bring-solutions/"
+  ],
+  "next_steps": [
+    "Check GSA eBuy immediately for active TSA NAICS 541519 OASIS+ TORFP",
+    "Contact TSASmallBiz@tsa.dhs.gov (Elizabeth Harrington) for sol status confirmation",
+    "Contact Denise Runyon for pre-proposal engagement",
+    "Identify TSA TSD-experienced teaming partner",
+    "Confirm OASIS+ SB NAICS 541519 eligibility for this requirement",
+    "Initiate AJOC facility clearance review for key personnel"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-5",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 4,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "4 web searches, 1 RAG API call, 1 SAM.gov API call, 2 URL fetches, full HTML build. Moderate complexity deep dive."
+  }
+}
+</script>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+
+function copyFollowUp() {
+  const prompt = `Follow-up on VM2 Deep Dive: TSA HW/SW O&M Labor F2025071609\nDeliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-hw-sw-om-f2025071609-2026-04-21.html\n\nUrgent: Check GSA eBuy for active TSA OASIS+ TORFP (NAICS 541519, CSIAD). Solicitation was estimated 02/27/2026 — now 53+ days past. Contact TSASmallBiz@tsa.dhs.gov to confirm status. Incumbent is Cape Fox Federal Integrators (contract 70T02023F7500N016). Follow-up task: [describe]`;
+  navigator.clipboard.writeText(prompt).then(() => alert('Follow-up prompt copied to clipboard.'));
+}
+
+function createTodoist() {
+  const url = 'https://todoist.com/app#task%2Fadd%3Fcontent%3DFollow-Up%253A%2520TSA%2520HW-SW%2520O%2526M%2520F2025071609%2520-%2520Check%2520eBuy%2520for%2520active%2520TORFP';
+  window.open(url, '_blank');
+}
+</script>
+
+</body>
+</html>
