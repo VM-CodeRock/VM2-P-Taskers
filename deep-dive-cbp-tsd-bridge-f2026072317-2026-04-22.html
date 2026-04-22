@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: CBP Technology Service Desk (TSD) Bridge — F2026072317</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --callout-bg: #FFF8E1;
+    --callout-border: #F59E0B;
+    --warning-bg: #FEF2F2;
+    --warning-border: #c53a3a;
+    --success-bg: #F0FDF4;
+    --success-border: #22C55E;
+    --info-bg: #EFF6FF;
+    --info-border: #3B82F6;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --callout-bg: #2a2200;
+    --callout-border: #d97706;
+    --warning-bg: #2a0a0a;
+    --warning-border: #c53a3a;
+    --success-bg: #022c10;
+    --success-border: #16a34a;
+    --info-bg: #0c1e3a;
+    --info-border: #3b82f6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 18px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section p { margin-bottom: 10px; }
+  .section ul, .section ol { padding-left: 20px; margin-bottom: 10px; }
+  .section li { margin-bottom: 5px; }
+  .section li strong { color: var(--text); }
+  h3.subsection {
+    font-size: 16px; font-weight: 700; color: var(--navy);
+    margin: 18px 0 8px;
+  }
+  [data-theme="dark"] h3.subsection { color: #c8d4e8; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Verdict box */
+  .verdict-box {
+    border: 2px solid var(--red);
+    background: var(--warning-bg);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--red); margin-bottom: 8px;
+  }
+  .verdict-headline {
+    font-size: 22px; font-weight: 700; color: var(--navy);
+    margin-bottom: 6px;
+  }
+  [data-theme="dark"] .verdict-headline { color: #e2e2e2; }
+  .verdict-sub {
+    font-size: 15px; color: var(--text-muted);
+  }
+
+  /* Callout boxes */
+  .callout {
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    font-size: 14.5px;
+  }
+  .callout-warning {
+    background: var(--warning-bg);
+    border-left: 4px solid var(--red);
+  }
+  .callout-info {
+    background: var(--info-bg);
+    border-left: 4px solid var(--info-border);
+  }
+  .callout-success {
+    background: var(--success-bg);
+    border-left: 4px solid var(--success-border);
+  }
+  .callout-amber {
+    background: var(--callout-bg);
+    border-left: 4px solid var(--callout-border);
+  }
+  .callout strong { display: block; margin-bottom: 4px; font-family: system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin: 10px 0 14px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:nth-child(even) td { background: var(--table-alt); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* Score bar */
+  .score-row { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+  .score-label { font-family: system-ui, sans-serif; font-size: 13px; width: 160px; flex-shrink: 0; }
+  .score-bar-wrap { flex: 1; background: var(--border); border-radius: 4px; height: 8px; }
+  .score-bar { height: 8px; border-radius: 4px; }
+  .score-bar-green { background: #22c55e; }
+  .score-bar-yellow { background: #f59e0b; }
+  .score-bar-red { background: #c53a3a; }
+  .score-val { font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700; width: 40px; text-align: right; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+    margin: 2px 2px;
+  }
+  .tag-red { background: #fee2e2; color: #991b1b; }
+  .tag-green { background: #dcfce7; color: #166534; }
+  .tag-amber { background: #fef3c7; color: #92400e; }
+  .tag-blue { background: #dbeafe; color: #1e40af; }
+  .tag-navy { background: #dde4f0; color: #1B2A4A; }
+  [data-theme="dark"] .tag-red { background: #3f0f0f; color: #fca5a5; }
+  [data-theme="dark"] .tag-green { background: #052e16; color: #86efac; }
+  [data-theme="dark"] .tag-amber { background: #2d1a00; color: #fcd34d; }
+  [data-theme="dark"] .tag-blue { background: #0c1e3a; color: #93c5fd; }
+  [data-theme="dark"] .tag-navy { background: #1a253a; color: #93c5fd; }
+
+  /* Signal cards */
+  .signal-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
+    margin: 12px 0;
+  }
+  @media (max-width: 700px) { .signal-grid { grid-template-columns: 1fr; } }
+  .signal-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px;
+    box-shadow: var(--card-shadow);
+  }
+  .signal-card .sig-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-faint); margin-bottom: 4px;
+  }
+  .signal-card .sig-val {
+    font-size: 18px; font-weight: 700; color: var(--navy);
+  }
+  [data-theme="dark"] .signal-card .sig-val { color: #c8d4e8; }
+  .signal-card .sig-sub {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-muted); margin-top: 2px;
+  }
+
+  /* Context panel */
+  .ctx-toggle-wrap {
+    background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .ctx-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px;
+    cursor: pointer;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    color: var(--text-muted);
+    user-select: none;
+  }
+  .ctx-toggle:hover { color: var(--text); }
+  .ctx-arrow { transition: transform 0.2s; font-size: 11px; }
+  .ctx-toggle.open .ctx-arrow { transform: rotate(180deg); }
+  .ctx-body {
+    display: none;
+    padding: 0 18px 16px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; line-height: 1.6;
+  }
+  .ctx-body.open { display: block; }
+  .ctx-section { margin-bottom: 12px; }
+  .ctx-section h4 {
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red); margin-bottom: 6px;
+  }
+  .ctx-section ul { padding-left: 16px; }
+  .ctx-section li { font-size: 13px; margin-bottom: 3px; }
+  .ctx-section p { font-size: 13px; }
+
+  /* Continue panel */
+  .continue-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    text-align: center;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); margin-bottom: 6px;
+  }
+  .continue-panel .subtitle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    margin-bottom: 16px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .btn:hover { opacity: 0.88; text-decoration: none; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-icon { font-size: 14px; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    padding: 24px 0 32px;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #111; color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px;
+    padding: 8px 20px; border-radius: 6px;
+    opacity: 0; transition: opacity 0.2s;
+    pointer-events: none; z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* RAG badge */
+  .rag-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    padding: 4px 14px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .rag-moderate { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+  [data-theme="dark"] .rag-moderate { background: #2d1a00; color: #fcd34d; border-color: #d97706; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · Opportunity Analysis</div>
+    <h1>CBP Technology Service Desk (TSD) Bridge</h1>
+    <div class="hero-sub">F2026072317 · NITAAC CIO-SP3 SB · SDVOSB</div>
+    <div class="hero-date">Created: 2026-04-22</div>
+  </div>
+
+  <!-- Quick signals -->
+  <div class="signal-grid" style="margin-bottom: 28px;">
+    <div class="signal-card">
+      <div class="sig-label">Dollar Range</div>
+      <div class="sig-val">$20M–$50M</div>
+      <div class="sig-sub">Bridge PoP: Jun 2026–Jun 2027</div>
+    </div>
+    <div class="signal-card">
+      <div class="sig-label">RAG Score</div>
+      <div class="sig-val" style="color: #d97706;">0.61 MODERATE</div>
+      <div class="sig-sub">Vehicle mismatch is critical barrier</div>
+    </div>
+    <div class="signal-card">
+      <div class="sig-label">Award Quarter</div>
+      <div class="sig-val">Q3 FY2026</div>
+      <div class="sig-sub">Anticipated award: Apr 29, 2026</div>
+    </div>
+    <div class="signal-card">
+      <div class="sig-label">Vehicle</div>
+      <div class="sig-val" style="font-size: 14px;">CIO-SP3 SB</div>
+      <div class="sig-sub">Changeis NOT on this vehicle</div>
+    </div>
+    <div class="signal-card">
+      <div class="sig-label">Set-Aside</div>
+      <div class="sig-val" style="font-size: 14px;">SDVOSB</div>
+      <div class="sig-sub">Patriot LLC is incumbent</div>
+    </div>
+    <div class="signal-card">
+      <div class="sig-label">Location</div>
+      <div class="sig-val" style="font-size: 14px;">Ashburn, VA</div>
+      <div class="sig-sub">NAICS 541519</div>
+    </div>
+  </div>
+
+  <!-- 1. Executive Summary / Verdict -->
+  <div class="section">
+    <div class="section-header">1. Executive Summary &amp; Verdict</div>
+
+    <div class="verdict-box">
+      <div class="verdict-label">VM2 Verdict</div>
+      <div class="verdict-headline">NO-GO — Dual Vehicle Barrier (CIO-SP3 SB + SDVOSB)</div>
+      <div class="verdict-sub">Changeis holds no CIO-SP3 SB contract and is not SDVOSB-certified. These are hard gates for this bridge task order. Teaming as a sub is theoretically possible but an extremely compressed timeline (~3 weeks to anticipated award) makes meaningful participation impractical without an established CIO-SP3 SB prime relationship today.</div>
+    </div>
+
+    <p>CBP OIT's Technology Service Desk (TSD) operates as the agency's single 24×7×365 IT support function — handling calls, emails, self-service tickets, and incident tracking across all CBP systems including the Automated Commercial Environment (ACE). This bridge contract, valued at $20M–$50M, covers June 16, 2026 – June 15, 2027 and is a short-term continuation while CBP recompetes the main requirement via a larger, separate procurement (STARS III, $100M+, 8(a) set-aside).</p>
+
+    <p>Changeis has genuine strength in CBP: Varun's deep CBP background and the firm's existing CBP/OIT past performance via the OFAM engagement are real advantages. However, the procurement's hard vehicle requirement (CIO-SP3 SB) and socioeconomic restriction (SDVOSB) are eliminatory. Changeis's contract vehicles — OASIS+, GSA Schedule — do not include CIO-SP3 SB. Changeis is a WOSB/EDWOSB, not SDVOSB. There is no viable path to prime this work.</p>
+
+    <div class="callout callout-amber">
+      <strong>Strategic Note — Eyes on Main Recompete</strong>
+      The adjacent opportunity is the full TSD recompete via <strong>STARS III (8(a))</strong>, announced February 2025, valued at $100M+, expected award Q4 FY2025. Changeis is not 8(a) certified. However, CIO-SP4 cancellation and vehicle landscape shifts may open new paths. Monitor the STARS III award for teaming intelligence, and track whether CBP issues a follow-on after STARS III ordering period ends (July 2026).
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 2. Opportunity Overview -->
+  <div class="section">
+    <div class="section-header">2. Opportunity Overview</div>
+
+    <table>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td><strong>APFS Number</strong></td><td>F2026072317</td></tr>
+        <tr><td><strong>Title</strong></td><td>Technology Service Desk (TSD) Services – Bridge</td></tr>
+        <tr><td><strong>Agency</strong></td><td>DHS / CBP / Office of Information and Technology (OIT)</td></tr>
+        <tr><td><strong>Requirements Office</strong></td><td>Information Technology Requirements Office (ITRO)</td></tr>
+        <tr><td><strong>Contracting Office</strong></td><td>Information Technology (ITCD)</td></tr>
+        <tr><td><strong>Vehicle</strong></td><td>NITAAC CIO-SP3 SB</td></tr>
+        <tr><td><strong>Acquisition Strategy</strong></td><td>SDVOSB set-aside</td></tr>
+        <tr><td><strong>Contract Type</strong></td><td>Firm Fixed Price (FFP)</td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541519 – Other Computer Related Services</td></tr>
+        <tr><td><strong>Dollar Range</strong></td><td>$20M–$50M</td></tr>
+        <tr><td><strong>PoP Start</strong></td><td>June 16, 2026</td></tr>
+        <tr><td><strong>PoP End</strong></td><td>June 15, 2027 (12-month bridge)</td></tr>
+        <tr><td><strong>Anticipated Award</strong></td><td>April 29, 2026</td></tr>
+        <tr><td><strong>Est. Solicitation Release</strong></td><td>March 13, 2026</td></tr>
+        <tr><td><strong>Place of Performance</strong></td><td>Ashburn, VA</td></tr>
+        <tr><td><strong>Requirements Contact</strong></td><td>Katy Marin — KATY.MARIN@CBP.DHS.GOV — (520) 409-9881</td></tr>
+        <tr><td><strong>SBS Coordinator</strong></td><td>David Harrod — David.K.Harrod@cbp.dhs.gov — (202) 553-6456</td></tr>
+        <tr><td><strong>Competitive Type</strong></td><td>Follow-on to Existing Contract</td></tr>
+        <tr><td><strong>Published Date</strong></td><td>February 18, 2026</td></tr>
+        <tr><td><strong>Incumbent</strong></td><td>Patriot LLC — Contract 70B04C20F00001438</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="subsection">Requirement Summary</h3>
+    <p>CBP OIT requires 24×7×365 Technology Service Desk operations as the primary single point of contact for all CBP IT issues. Services include answering inbound calls, emails, and self-service requests; documenting, diagnosing, and tracking incidents across all CBP systems; supporting the ACE (Automated Commercial Environment) Account Service Desk (ASD) for the trade community; and ensuring both internal CBP staff and authorized enforcement agencies have continuous access to mission-critical systems.</p>
+
+    <p>Scope spans <strong>Tier 1 and Tier 2 support</strong>, program management, customer-focused operations, and Advanced Support Operations. The TSD supports CBP users globally, including the Office of Trade (OT). Work is primarily phone, email, chat, and web-based self-service with limited in-person support, performed at the Ashburn, VA facility.</p>
+
+    <div class="callout callout-info">
+      <strong>Why a Bridge?</strong>
+      The incumbent contract (70B04C20F00001438) expires December 15, 2025, but the main recompete — a new 6-year, $100M+ task order via STARS III — is being awarded separately. This bridge covers the gap period (June 2026–June 2027) until the new STARS III contract is fully operational. Bridge structures typically award to the incumbent or a closely aligned team to ensure continuity of operations with no service interruption.
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 3. CIO-SP3 SB Vehicle Analysis -->
+  <div class="section">
+    <div class="section-header">3. CIO-SP3 SB Vehicle Analysis — Critical Barrier</div>
+
+    <div class="callout callout-warning">
+      <strong>Hard Gate — Changeis Does NOT Hold CIO-SP3 SB</strong>
+      To bid as prime on any CIO-SP3 SB task order, a company must hold a CIO-SP3 SB GWAC contract. Changeis's confirmed vehicles are OASIS+ (UR, SB, WOSB) and GSA Schedule 541611. There is no CIO-SP3 SB in Changeis's portfolio. This is eliminatory for prime pursuit.
+    </div>
+
+    <h3 class="subsection">Vehicle Status — CIO-SP3 SB Extended to April 2027</h3>
+    <p>After years of delays and ultimately the cancellation of the CIO-SP4 successor contract in January 2026, NITAAC has extended CIO-SP3 (and CIO-SP3 SB) through <strong>April 29, 2027</strong>. This means the vehicle remains active and agencies — including CBP — continue issuing task orders against it. New solicitations like this bridge are legitimate and orderable.</p>
+
+    <table>
+      <thead><tr><th>Vehicle</th><th>Status</th><th>Ordering Period</th><th>Ceiling</th></tr></thead>
+      <tbody>
+        <tr><td>CIO-SP3 SB</td><td><span class="tag tag-green">Active — Extended</span></td><td>May 11, 2020 – Apr 29, 2027</td><td>$20B GWAC</td></tr>
+        <tr><td>CIO-SP4</td><td><span class="tag tag-red">Cancelled Jan 2026</span></td><td>N/A</td><td>N/A ($50B planned)</td></tr>
+        <tr><td>OASIS+ (Changeis)</td><td><span class="tag tag-blue">Active</span></td><td>Dec 2024–Dec 2034</td><td>GWAC</td></tr>
+        <tr><td>STARS III (recompete)</td><td><span class="tag tag-amber">Separate Procurement</span></td><td>Jul 2021–Jul 2026 (ext. possible)</td><td>$50B, 8(a) only</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="subsection">CIO-SP3 SB Qualification Requirements</h3>
+    <ul>
+      <li>Must hold an active CIO-SP3 SB GWAC contract (HHSN316201200XXX series contract numbers)</li>
+      <li>Must meet small business size standard for NAICS 541519 ($34M annual receipts) at time of award</li>
+      <li>SDVOSB set-aside requires verification through SBA's VetCert program</li>
+      <li>Task orders competed through NITAAC's e-GOS system</li>
+    </ul>
+
+    <h3 class="subsection">Changeis Vehicle Gap Analysis</h3>
+    <table>
+      <thead><tr><th>Vehicle</th><th>Changeis Status</th><th>Covers This Requirement?</th></tr></thead>
+      <tbody>
+        <tr><td>NITAAC CIO-SP3 SB</td><td><span class="tag tag-red">NOT HELD</span></td><td>No — required for this task order</td></tr>
+        <tr><td>OASIS+ SB (47QRCA25DS260)</td><td><span class="tag tag-green">HELD</span></td><td>No — different GWAC</td></tr>
+        <tr><td>OASIS+ WOSB (47QRCA24DW284)</td><td><span class="tag tag-green">HELD</span></td><td>No — different GWAC</td></tr>
+        <tr><td>GSA Schedule GS-10F-054BA</td><td><span class="tag tag-green">HELD</span></td><td>No — not CIO-SP3 SB</td></tr>
+        <tr><td>8(a) STARS III</td><td><span class="tag tag-red">NOT 8(a)</span></td><td>No — Changeis not 8(a) certified</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 4. Bridge Contract Context -->
+  <div class="section">
+    <div class="section-header">4. Bridge Contract Context</div>
+
+    <h3 class="subsection">What is a Bridge Contract?</h3>
+    <p>A bridge contract is a short-term, interim award issued to maintain continuity of services while an agency completes the recompetition of the primary contract. Bridges are common in IT services when the main recompete timeline slips (protest delays, evaluation time). They are typically awarded to the incumbent — or a closely related team — under streamlined procedures to avoid service disruption.</p>
+
+    <h3 class="subsection">This Bridge's Context</h3>
+    <p>The incumbent Patriot LLC contract (70B04C20F00001438) ran September 2020 – December 2025 at a $45.5M ceiling. The main TSD recompete was announced in February 2025 at $100M+ via STARS III (8(a)), with an anticipated award date of Q4 FY2025. That timeline slipped — evidenced by this bridge appearing in the APFS. The bridge bridges from June 2026 through June 2027, giving CBP continuity while the STARS III winner mobilizes.</p>
+
+    <div class="callout callout-amber">
+      <strong>Bridge Procurement Dynamics</strong>
+      Bridge contracts heavily favor incumbents. Patriot LLC ran TSD for 5+ years, knows CBP's systems, has cleared personnel (CBP Tier IV BI), and has proven operations. A bridge procurement on a tight timeline (award April 29, 2026) is effectively a sole-source or incumbent-preferred action. New entrants would need an extraordinarily compelling reason to displace a performing incumbent on a bridge.
+    </div>
+
+    <table>
+      <thead><tr><th>Timeline Event</th><th>Date</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Incumbent contract award</td><td>Sep 29, 2020</td><td>Patriot LLC wins via CIO-SP3 SB, SDVOSB; $45.5M</td></tr>
+        <tr><td>GAO protest resolved</td><td>Jan 19, 2021</td><td>Candor protest denied; Patriot confirmed</td></tr>
+        <tr><td>Main recompete announced</td><td>Feb 25, 2025</td><td>STARS III, 8(a), $100M+, ~6 years</td></tr>
+        <tr><td>Incumbent contract expiry</td><td>Dec 15, 2025</td><td>Per Deltek/Washington Technology data</td></tr>
+        <tr><td>Bridge APFS published</td><td>Feb 18, 2026</td><td>This opportunity; NITAAC CIO-SP3 SB, SDVOSB</td></tr>
+        <tr><td>Solicitation release</td><td>Mar 13, 2026 (est.)</td><td>Via NITAAC e-GOS system</td></tr>
+        <tr><td>Bridge anticipated award</td><td>Apr 29, 2026</td><td>Very compressed timeline</td></tr>
+        <tr><td>Bridge PoP</td><td>Jun 16, 2026 – Jun 15, 2027</td><td>12-month bridge period</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 5. Incumbent Landscape -->
+  <div class="section">
+    <div class="section-header">5. Incumbent Landscape</div>
+
+    <h3 class="subsection">Patriot LLC — Confirmed Incumbent</h3>
+    <p>Patriot LLC (Columbia, MD) is the confirmed incumbent, having held contract <a href="https://www.usaspending.gov/award/CONT_AWD_70B04C20F00001438_7014_HHSN316201200065W_7529" target="_blank">70B04C20F00001438</a> since September 2020. Patriot is a verified SDVOSB (SBA VetCert) and a Maryland MDOT-certified MBE/DBE. UEI: LYMKSJG6DLQ5; CAGE: 357X5; HQ: 9520 Berger Road, Columbia MD 21046.</p>
+
+    <table>
+      <thead><tr><th>Attribute</th><th>Patriot LLC</th></tr></thead>
+      <tbody>
+        <tr><td>Socioeconomic Status</td><td>SDVOSB (verified), MBE/DBE</td></tr>
+        <tr><td>NAICS Primary</td><td>541512 Computer Systems Design Services</td></tr>
+        <tr><td>Vehicle</td><td>CIO-SP3 SB holder (HHSN316201200065W base)</td></tr>
+        <tr><td>Incumbent Contract Value</td><td>$45.5M ceiling / ~$39.8M obligated (~88%)</td></tr>
+        <tr><td>Contract Duration</td><td>5 years, 3 months (Sep 2020 – Dec 2025)</td></tr>
+        <tr><td>Scope Delivered</td><td>Tier 1 internal/external TSD; ACE Account Service Desk (ASD); Advanced Support Operations</td></tr>
+        <tr><td>Clearance Managed</td><td>CBP Tier IV Background Investigation for all personnel</td></tr>
+        <tr><td>Prior Award History</td><td>Initially protested Candor Solutions award; won re-evaluation Sep 2020; GAO protest denied Jan 2021</td></tr>
+        <tr><td>Founded</td><td>2005; largest veteran-owned business in Baltimore metro (2013 BBJ)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>Candor Solutions Context</strong>
+      Candor Solutions LLC was the initial 2020 awardee (before Patriot's protest prevailed). Candor is a DHS-focused SDVOSB. For the bridge recompete, Candor could re-emerge as a competitor given their prior CBP TSD proposal experience and SDVOSB/CIO-SP3 SB standing. Other CIO-SP3 SB SDVOSB holders with DHS IT services experience are also potential competitors.
+    </div>
+
+    <h3 class="subsection">Main Recompete Dynamics (STARS III)</h3>
+    <p>The separate full recompete announced February 2025 moves to <strong>8(a) STARS III</strong> — an entirely different vehicle, entirely different socioeconomic set-aside, and a materially larger ceiling ($100M+). This means Patriot LLC as an SDVOSB may not be able to compete on the main recompete at all (unless it holds 8(a) status, which is not confirmed). The bridge likely serves as a mechanism to keep Patriot or a similar SDVOSB operating while CBP transitions to an 8(a) awardee on STARS III.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 6. Changeis Capability Match -->
+  <div class="section">
+    <div class="section-header">6. Changeis Capability Match</div>
+
+    <h3 class="subsection">Strengths — Genuine but Not Actionable for This Vehicle</h3>
+
+    <div class="callout callout-success">
+      <strong>Core Capability Alignment</strong>
+      IT Service Desk / Help Desk operations are directly within Changeis's IT professional services portfolio. The RAG engine returned a top match of 0.61 (MODERATE) against Changeis past performance — the best matches are DOT/FAA/Volpe technology support and communications work, indicating functional overlap in IT operations, end-user support, and technology delivery. Changeis's CBP/OIT past performance (OFAM engagement via HCaTS) demonstrates CBP-specific program management and cleared workforce management.
+    </div>
+
+    <h3 class="subsection">Capability Score Assessment</h3>
+    <div class="score-row">
+      <div class="score-label">IT Service Desk Ops</div>
+      <div class="score-bar-wrap"><div class="score-bar score-bar-yellow" style="width:65%"></div></div>
+      <div class="score-val">65%</div>
+    </div>
+    <div class="score-row">
+      <div class="score-label">CBP/DHS Past Perf.</div>
+      <div class="score-bar-wrap"><div class="score-bar score-bar-green" style="width:80%"></div></div>
+      <div class="score-val">80%</div>
+    </div>
+    <div class="score-row">
+      <div class="score-label">24×7×365 Operations</div>
+      <div class="score-bar-wrap"><div class="score-bar score-bar-yellow" style="width:50%"></div></div>
+      <div class="score-val">50%</div>
+    </div>
+    <div class="score-row">
+      <div class="score-label">CIO-SP3 SB Vehicle</div>
+      <div class="score-bar-wrap"><div class="score-bar score-bar-red" style="width:0%"></div></div>
+      <div class="score-val" style="color: var(--red);">0%</div>
+    </div>
+    <div class="score-row">
+      <div class="score-label">SDVOSB Status</div>
+      <div class="score-bar-wrap"><div class="score-bar score-bar-red" style="width:0%"></div></div>
+      <div class="score-val" style="color: var(--red);">0%</div>
+    </div>
+    <div class="score-row">
+      <div class="score-label">Varun CBP Network</div>
+      <div class="score-bar-wrap"><div class="score-bar score-bar-green" style="width:85%"></div></div>
+      <div class="score-val">85%</div>
+    </div>
+
+    <h3 class="subsection">CBP Past Performance Assets</h3>
+    <ul>
+      <li><strong>CBP OFAM (HCaTS)</strong>: RAG engine top match (score 0.65) — CBP OIT program management, IT systems access management, security clearance/BI management under DHS protocols. Demonstrates familiarity with CBP Tier IV Background Investigations, CBP IT system access, and OFAM operational environment.</li>
+      <li><strong>Varun Malhotra background</strong>: Deep CBP institutional knowledge — relevant for relationship leverage with ITRO/ITCD contacts (Katy Marin, David Harrod).</li>
+      <li><strong>DHS/USCG experience</strong>: Adjacent law enforcement / border mission exposure.</li>
+    </ul>
+
+    <h3 class="subsection">RAG Engine Key Excerpts</h3>
+    <p>The RAG query against Changeis's portfolio returned the CBP OFAM contract as the highest-relevance match (0.65), with key excerpts confirming CBP Tier IV BI requirements, IT system access management, and CBP-specific program management. The DOT/FAA/Volpe matches (0.58–0.61) show technology delivery support, web and communication systems support — functional adjacencies to service desk operations but not direct service desk delivery. No past performance document in Changeis's corpus reflects direct Tier 1/2 IT help desk call-center operations at scale.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 7. Teaming Options -->
+  <div class="section">
+    <div class="section-header">7. Teaming Options</div>
+
+    <div class="callout callout-warning">
+      <strong>Teaming as Sub — Theoretically Possible, Practically Difficult</strong>
+      Changeis could offer to sub to an SDVOSB CIO-SP3 SB prime. However: (1) the anticipated award date is April 29, 2026 — roughly 3 weeks from this analysis; (2) bridge contracts strongly favor incumbents; (3) Changeis has no existing CIO-SP3 SB prime relationship for TSD work. Unless Varun has a direct relationship with a competing CIO-SP3 SB SDVOSB firm, teaming pursuit on this bridge is not worth the investment.
+    </div>
+
+    <h3 class="subsection">Potential CIO-SP3 SB Prime Targets</h3>
+    <p>Any pursuit of a sub role would require identifying an SDVOSB holding CIO-SP3 SB that is either (a) competing against Patriot for this bridge or (b) Patriot itself (if they want specialized CBP program management support). The following types of firms hold both qualifications:</p>
+
+    <table>
+      <thead><tr><th>Firm Type</th><th>Strategy</th><th>Feasibility</th></tr></thead>
+      <tbody>
+        <tr><td>Patriot LLC (incumbent)</td><td>Offer CBP program management / Varun CBP expertise as sub labor</td><td><span class="tag tag-amber">Low</span> — 3-week timeline; Patriot fully staffed</td></tr>
+        <tr><td>Candor Solutions LLC</td><td>Prior CBP TSD bidder; SDVOSB + likely CIO-SP3 SB</td><td><span class="tag tag-amber">Low-Medium</span> — Would need immediate outreach</td></tr>
+        <tr><td>Other SDVOSB CIO-SP3 SB holders</td><td>NITAAC e-GOS list of holders with DHS/IT experience</td><td><span class="tag tag-red">Low</span> — No existing relationship</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="subsection">Strategic Teaming Recommendation</h3>
+    <p><strong>For this bridge: Do not pursue sub teaming.</strong> The timeline is compressed, the incumbent advantage is high, and Changeis's value-add to a CIO-SP3 SB prime (program management/CBP knowledge) does not overcome the mobilization and relationship barriers in 3 weeks.</p>
+
+    <p><strong>For the STARS III main recompete:</strong> The strategic play is different. If Changeis pursues 8(a) teaming or partnership with a qualified STARS III prime, Varun's CBP network and CBP past performance become genuine differentiators. This is where BD energy should be directed. The STARS III TSD awardee (when named) should be approached as a long-term teaming target for the full follow-on work after the bridge year.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 8. Go/No-Go Recommendation -->
+  <div class="section">
+    <div class="section-header">8. Go / No-Go Recommendation</div>
+
+    <table>
+      <thead><tr><th>Factor</th><th>Assessment</th><th>Weight</th></tr></thead>
+      <tbody>
+        <tr><td>Vehicle Eligibility (CIO-SP3 SB)</td><td><span class="tag tag-red">FAIL — Not held</span></td><td>Eliminatory</td></tr>
+        <tr><td>Socioeconomic Eligibility (SDVOSB)</td><td><span class="tag tag-red">FAIL — Changeis is WOSB</span></td><td>Eliminatory</td></tr>
+        <tr><td>Incumbent Advantage</td><td><span class="tag tag-red">HIGH — Patriot 5+ yr incumbent</span></td><td>High</td></tr>
+        <tr><td>Timeline</td><td><span class="tag tag-red">COMPRESSED — ~3 wks to award</span></td><td>High</td></tr>
+        <tr><td>CBP Capability Match</td><td><span class="tag tag-green">STRONG — CBP OIT past perf.</span></td><td>Medium</td></tr>
+        <tr><td>Varun CBP Network</td><td><span class="tag tag-green">STRONG — Deep CBP familiarity</span></td><td>Medium</td></tr>
+        <tr><td>Service Desk Capability</td><td><span class="tag tag-amber">ADJACENT — Not direct call-center ops</span></td><td>Medium</td></tr>
+        <tr><td>RAG Score</td><td><span class="tag tag-amber">MODERATE — 0.61</span></td><td>Low</td></tr>
+      </tbody>
+    </table>
+
+    <div class="verdict-box" style="margin-top: 16px;">
+      <div class="verdict-label">Final Recommendation</div>
+      <div class="verdict-headline">NO-GO — Bridge Contract</div>
+      <div class="verdict-sub">Two eliminatory hard gates (CIO-SP3 SB vehicle + SDVOSB set-aside). No viable prime path. Sub teaming not worth pursuing given compressed timeline and no existing prime relationship. Resources better directed at STARS III recompete intelligence and relationship development with the eventual STARS III awardee.</div>
+    </div>
+
+    <h3 class="subsection">Recommended Actions</h3>
+    <ol>
+      <li><strong>Monitor STARS III TSD Award:</strong> Track the separate STARS III award (originally Q4 FY2025, likely slipped). Once named, the STARS III awardee becomes the key teaming target for TSD-adjacent work.</li>
+      <li><strong>Cultivate Katy Marin / David Harrod relationships:</strong> These CBP OIT contacts (ITRO and SBS Coordinator) are relevant beyond TSD. Varun's CBP background gives standing for relationship-building without a formal bid.</li>
+      <li><strong>Assess STARS III eligibility path:</strong> If Changeis ever pursues 8(a) certification (unlikely given WOSB/EDWOSB positioning), this becomes a high-value target. Alternatively, identify a certified 8(a) STARS III holder for a strategic JV or teaming arrangement.</li>
+      <li><strong>Flag for 2027 pipeline:</strong> Post-bridge, CBP will either exercise STARS III option years or re-examine the service desk model. A 2027–2028 follow-on review is worth monitoring for an OASIS+ pathway if vehicle scope expands.</li>
+    </ol>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Session Context -->
+  <div class="ctx-toggle-wrap">
+    <div class="ctx-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span>Session Context &amp; Methodology</span>
+      <span class="ctx-arrow" id="ctxArrow">▼</span>
+    </div>
+    <div class="ctx-body" id="ctxBody">
+
+      <div class="ctx-section">
+        <h4>Original Instructions</h4>
+        <p>Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjWFgJcp2Wxmr → APFS F2026072317 CBP/OIT Technology Service Desk (TSD) Services - Bridge. Vehicle: NITAAC CIO-SP3 SB. Dollar: $20M–$50M. RAG: 0.61 MODERATE. Bridge contracts = short-term continuation while agency recompetes. Varun's background is deep CBP. Assess CIO-SP3 SB eligibility, incumbent landscape, capability match, teaming options, Go/No-Go.</p>
+      </div>
+
+      <div class="ctx-section">
+        <h4>Approach</h4>
+        <ul>
+          <li>Read full JSON metadata from /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2026072317.json</li>
+          <li>Ran RAG engine query against Changeis past performance corpus (top_n=50)</li>
+          <li>Researched incumbent via USASpending, HigherGov, Washington Technology, JD Supra</li>
+          <li>Researched CIO-SP3 SB current status (CIO-SP4 cancellation, extension to April 2027)</li>
+          <li>Confirmed Changeis vehicle portfolio via changeis.com (OASIS+ only, no CIO-SP3 SB)</li>
+          <li>Cross-referenced with CBP STARS III recompete announcement (Feb 2025, $100M+, 8(a))</li>
+        </ul>
+      </div>
+
+      <div class="ctx-section">
+        <h4>Key Findings</h4>
+        <ul>
+          <li>Incumbent is Patriot LLC (SDVOSB), contract 70B04C20F00001438, $45.5M via CIO-SP3 SB (Sep 2020–Dec 2025)</li>
+          <li>Changeis does NOT hold CIO-SP3 SB — hard eliminatory gate for prime pursuit</li>
+          <li>Changeis is WOSB/EDWOSB, not SDVOSB — second hard eliminatory gate</li>
+          <li>CIO-SP4 was cancelled January 2026; CIO-SP3 SB extended through April 29, 2027</li>
+          <li>Main TSD recompete announced Feb 2025 via STARS III (8(a), $100M+) — Changeis also not eligible as prime</li>
+          <li>RAG engine top match is CBP OFAM contract (score 0.65) — confirms CBP past performance but not service desk delivery</li>
+          <li>Bridge award is compressed (anticipated April 29, 2026) and strongly favors Patriot as incumbent</li>
+        </ul>
+      </div>
+
+      <div class="ctx-section">
+        <h4>Dead Ends</h4>
+        <ul>
+          <li>USASpending direct contract lookup — used HigherGov and JD Supra as surrogates which provided equivalent data</li>
+          <li>NITAAC e-GOS holder list — not publicly accessible; used known holders via company websites and search</li>
+          <li>Changeis CIO-SP3 SB confirmation — confirmed NOT held via changeis.com contract vehicles page</li>
+        </ul>
+      </div>
+
+      <div class="ctx-section">
+        <h4>Assumptions</h4>
+        <ul>
+          <li>Changeis does not hold CIO-SP3 SB (confirmed via changeis.com)</li>
+          <li>Changeis is not SDVOSB-certified (confirmed as WOSB/EDWOSB)</li>
+          <li>Patriot LLC remains the most likely bridge awardee given 5+ year incumbent position</li>
+          <li>STARS III TSD main recompete award has slipped from Q4 FY2025</li>
+          <li>Bridge period is June 16, 2026–June 15, 2027 as stated in APFS data</li>
+        </ul>
+      </div>
+
+      <div class="ctx-section">
+        <h4>Open Questions</h4>
+        <ul>
+          <li>Has the STARS III TSD recompete been awarded yet? Who won?</li>
+          <li>Does Patriot LLC have any relationship with Changeis or Varun?</li>
+          <li>Will CBP issue further bridges after this one if STARS III continues to slip?</li>
+          <li>Is Candor Solutions LLC still active and competing on this bridge?</li>
+          <li>What is the exact scope delta between this bridge and the original Patriot incumbent contract?</li>
+        </ul>
+      </div>
+
+      <div class="ctx-section">
+        <h4>Data Sources</h4>
+        <ul>
+          <li>APFS JSON: /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2026072317.json</li>
+          <li>RAG Engine: <a href="https://changeis-bd-rag-production.up.railway.app/match" target="_blank">changeis-bd-rag-production.up.railway.app</a></li>
+          <li>USASpending: <a href="https://www.usaspending.gov/award/CONT_AWD_70B04C20F00001438_7014_HHSN316201200065W_7529" target="_blank">Award 70B04C20F00001438</a></li>
+          <li>HigherGov: <a href="https://www.highergov.com/contract/HHSN316201200065W-70B04C20F00001438/" target="_blank">Contract details</a></li>
+          <li>Washington Technology: <a href="https://www.washingtontechnology.com/contracts/2025/02/cbp-sketches-out-blueprint-tech-support-desk-recompete/403256/" target="_blank">CBP TSD Recompete Article (Feb 2025)</a></li>
+          <li>JD Supra: <a href="https://www.jdsupra.com/legalnews/bass-berry-sims-successfully-protests-4206181/" target="_blank">Patriot protest history</a></li>
+          <li>HSToday: <a href="https://www.hstoday.us/procurement/nitaacs-50b-cio-sp4-it-contract-vehicle-canceled/" target="_blank">CIO-SP4 Cancellation</a></li>
+          <li>Global Services Inc: <a href="https://globalservicesinc.com/2026/02/23/cio-sp4-cancellation/" target="_blank">CIO-SP4 Post-Cancellation Analysis</a></li>
+          <li>Changeis Contract Vehicles: <a href="https://changeis.com/contract-vehicles/" target="_blank">changeis.com/contract-vehicles</a></li>
+          <li>GovCon Wire: <a href="https://www.govconwire.com/articles/cbp-competition-tech-service-desk-operations-contract-requirement" target="_blank">CBP STARS III TSD Announcement</a></li>
+        </ul>
+      </div>
+
+      <div class="ctx-section">
+        <h4>Next Steps</h4>
+        <ul>
+          <li>Monitor STARS III TSD award announcement — key teaming intelligence target</li>
+          <li>Reach out to Katy Marin / David Harrod via Varun's CBP network for relationship building (not bid pursuit)</li>
+          <li>Research Candor Solutions LLC to understand if still competing and on what vehicles</li>
+          <li>Consider pipeline entry for any 2027+ CBP TSD opportunity via OASIS+ if vehicle scope expands</li>
+          <li>Close Todoist task 6gQhjWFgJcp2Wxmr with vm2-done label</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Hidden JSON context data -->
+  <script type="application/json" id="vm2-context-data">
+  {
+    "task_name": "Deep Dive CBP TSD Bridge F2026072317",
+    "task_date": "2026-04-22",
+    "deliverable_file": "deep-dive-cbp-tsd-bridge-f2026072317-2026-04-22.html",
+    "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-tsd-bridge-f2026072317-2026-04-22.html",
+    "version": 1,
+    "created_date": "2026-04-22",
+    "revised_date": null,
+    "prior_versions": [],
+    "related_deliverables": [],
+    "original_instructions": "Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjWFgJcp2Wxmr. APFS F2026072317 CBP/OIT Technology Service Desk (TSD) Services - Bridge. Vehicle: NITAAC CIO-SP3 SB. Dollar: $20M-$50M. RAG: 0.61 MODERATE. Bridge contracts = short-term continuation while agency recompetes main contract. CIO-SP3 SB Small Business vehicle - Changeis needs to check CIO-SP3 SB status. Service Desk/IT operations labor services is core Changeis capability. Varun's background is deep CBP.",
+    "approach": "Read APFS JSON, ran RAG engine, researched incumbent via USASpending/HigherGov/Washington Technology, confirmed CIO-SP3 SB vehicle status post-CIO-SP4 cancellation, confirmed Changeis vehicle portfolio, analyzed STARS III main recompete context.",
+    "key_findings": [
+      "Incumbent is Patriot LLC (SDVOSB), contract 70B04C20F00001438, $45.5M via CIO-SP3 SB",
+      "Changeis does NOT hold CIO-SP3 SB - eliminatory hard gate",
+      "Changeis is WOSB not SDVOSB - second eliminatory gate",
+      "CIO-SP4 cancelled Jan 2026; CIO-SP3 SB extended through April 29, 2027",
+      "Main TSD recompete via STARS III (8(a), $100M+) - Changeis not eligible as prime there either",
+      "Bridge award compressed (~3 weeks to Apr 29 award) and heavily favors Patriot incumbent"
+    ],
+    "dead_ends": [
+      "USASpending direct lookup - used HigherGov/JD Supra as surrogates",
+      "NITAAC e-GOS holder list not publicly accessible",
+      "Changeis CIO-SP3 SB - confirmed NOT held via changeis.com"
+    ],
+    "assumptions": [
+      "Changeis does not hold CIO-SP3 SB (confirmed via changeis.com)",
+      "Changeis is not SDVOSB-certified (confirmed WOSB/EDWOSB)",
+      "Patriot LLC remains most likely bridge awardee",
+      "STARS III TSD main recompete award has slipped from Q4 FY2025"
+    ],
+    "open_questions": [
+      "Has the STARS III TSD recompete been awarded yet?",
+      "Does Patriot LLC have any relationship with Changeis or Varun?",
+      "Will CBP issue further bridges if STARS III continues to slip?",
+      "Is Candor Solutions LLC still active and competing?"
+    ],
+    "data_sources": [
+      {"name": "APFS JSON", "url": "local:F2026072317.json"},
+      {"name": "RAG Engine", "url": "https://changeis-bd-rag-production.up.railway.app/match"},
+      {"name": "USASpending Award", "url": "https://www.usaspending.gov/award/CONT_AWD_70B04C20F00001438_7014_HHSN316201200065W_7529"},
+      {"name": "HigherGov Contract", "url": "https://www.highergov.com/contract/HHSN316201200065W-70B04C20F00001438/"},
+      {"name": "Washington Technology CBP TSD Recompete", "url": "https://www.washingtontechnology.com/contracts/2025/02/cbp-sketches-out-blueprint-tech-support-desk-recompete/403256/"},
+      {"name": "JD Supra Patriot Protest", "url": "https://www.jdsupra.com/legalnews/bass-berry-sims-successfully-protests-4206181/"},
+      {"name": "HSToday CIO-SP4 Cancellation", "url": "https://www.hstoday.us/procurement/nitaacs-50b-cio-sp4-it-contract-vehicle-canceled/"},
+      {"name": "Changeis Contract Vehicles", "url": "https://changeis.com/contract-vehicles/"},
+      {"name": "GovCon Wire STARS III", "url": "https://www.govconwire.com/articles/cbp-competition-tech-service-desk-operations-contract-requirement"}
+    ],
+    "next_steps": [
+      "Monitor STARS III TSD award announcement",
+      "Varun CBP network outreach to Katy Marin / David Harrod (relationship, not bid)",
+      "Research Candor Solutions LLC for intelligence",
+      "Consider 2027+ CBP TSD pipeline via OASIS+ if vehicle scope allows"
+    ],
+    "cost_estimate": {
+      "model": "claude-sonnet-4-6",
+      "model_pricing": "$3/$15 per 1M tokens",
+      "input_tokens_est": "~55,000",
+      "output_tokens_est": "~9,000",
+      "search_calls": 6,
+      "subagent_calls": 0,
+      "cost_conservative": "$0.30",
+      "cost_ceiling": "$0.55",
+      "notes": "3 search batches (incumbent, vehicle status, Changeis vehicles), 1 RAG call, JSON read, HTML generation. Moderate complexity deep dive with incumbent research."
+    }
+  }
+  </script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · CBP TSD Bridge Deep Dive · April 22, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    const arrow = document.getElementById('ctxArrow');
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    toggle.classList.toggle('open', !isOpen);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-tsd-bridge-f2026072317-2026-04-22.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the CBP TSD Bridge Deep Dive (F2026072317).
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context at the bottom) and continue from where the last session left off.
+
+Open questions from last session:
+- Has the STARS III TSD recompete been awarded?
+- Is Candor Solutions LLC still competing?
+- Will CBP issue further bridges if STARS III continues to slip?
+
+Suggested next steps:
+- Monitor STARS III TSD award announcement
+- Research Candor Solutions LLC for intelligence
+- Consider 2027+ CBP TSD pipeline via OASIS+
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    });
+  }
+
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: CBP TSD Bridge Deep Dive F2026072317');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP\n\nPrevious deliverable: ${DELIVERABLE_URL}\n\nContinue this work. Read the Session Context at the bottom of the deliverable for full context.\n\nAdditional instructions:\n[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  const todoistTitle = encodeURIComponent('Follow up: CBP TSD Bridge Deep Dive F2026072317');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
