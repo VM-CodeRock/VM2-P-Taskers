@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: TSA Okta Maintenance — F2025071410</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --verdict-nogo-bg: #fdf0f0;
+    --verdict-nogo-border: #c53a3a;
+    --verdict-nogo-text: #7a1a1a;
+    --warning-bg: #fff8e6;
+    --warning-border: #e6a817;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --verdict-nogo-bg: #2a1a1a;
+    --verdict-nogo-border: #c53a3a;
+    --verdict-nogo-text: #f5a0a0;
+    --warning-bg: #2a2212;
+    --warning-border: #e6a817;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 18px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Verdict box */
+  .verdict-box {
+    border: 2px solid var(--verdict-nogo-border);
+    background: var(--verdict-nogo-bg);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--red); margin-bottom: 6px;
+  }
+  .verdict-decision {
+    font-size: 28px; font-weight: 800;
+    color: var(--verdict-nogo-text);
+    font-family: system-ui, sans-serif;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+  [data-theme="dark"] .verdict-decision { color: #f5a0a0; }
+  .verdict-rationale {
+    font-size: 15px; color: var(--text);
+    line-height: 1.55;
+  }
+
+  /* Warning callout */
+  .warning-callout {
+    background: var(--warning-bg);
+    border-left: 4px solid var(--warning-border);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .warning-callout strong {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: #b07a00;
+    display: block; margin-bottom: 4px;
+  }
+  [data-theme="dark"] .warning-callout strong { color: #e6a817; }
+
+  /* Meta grid */
+  .meta-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-bottom: 24px;
+  }
+  @media (max-width: 600px) { .meta-grid { grid-template-columns: 1fr; } }
+  .meta-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .meta-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--text-muted); margin-bottom: 3px;
+  }
+  .meta-value {
+    font-size: 14px; font-weight: 700;
+    font-family: system-ui, sans-serif;
+    color: var(--text);
+  }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px; line-height: 1.45;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Pattern badge */
+  .pattern-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    background: #c53a3a; color: #fff;
+    padding: 2px 8px; border-radius: 3px;
+    margin-left: 6px; vertical-align: middle;
+  }
+
+  /* RAG hit */
+  .rag-hit {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    font-size: 13.5px;
+  }
+  .rag-hit-header {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--navy); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  [data-theme="dark"] .rag-hit-header { color: #7eb3e0; }
+  .rag-score {
+    font-size: 11px; font-weight: 600;
+    background: var(--surface-alt); color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 1px 7px; border-radius: 10px;
+    font-family: system-ui, sans-serif;
+  }
+  .rag-excerpt {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 5px;
+    border-left: 3px solid var(--border);
+    padding-left: 10px;
+    line-height: 1.5;
+  }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .note {
+    font-size: 13px; color: var(--text-muted);
+    font-style: italic; margin-top: 6px;
+  }
+
+  .highlight-pill {
+    display: inline-block;
+    background: #c53a3a18;
+    color: var(--red);
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Changeis BD Intelligence</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">◐ Toggle Theme</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive</div>
+    <h1>TSA Okta Maintenance</h1>
+    <div class="hero-sub">APFS F2025071410 · Identity-as-a-Service License &amp; Maintenance Renewal</div>
+    <div class="hero-date">Created: 2026-04-22</div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Verdict</div>
+    <div class="verdict-box">
+      <div class="verdict-label">Final Verdict</div>
+      <div class="verdict-decision">NO-GO</div>
+      <div class="verdict-rationale">
+        This opportunity is a <strong>confirmed NASA SEWP V OEM brand-name license/maintenance delivery order</strong> — not a labor or O&amp;M services buy. The current award (contract 70T03025F7667N056, $1.98M) was placed directly through SEWP V Group B (HUBZone set-aside, NNG15SD08B) to <strong>Anacapa Micro Products, Inc.</strong>, an authorized Okta reseller. The renewal will follow the same pattern: a brand-name product CLIN for Okta Identity Cloud licenses issued as a SEWP V delivery order. There is no services wrapper, no labor component, and no professional services foothold. Changeis cannot displace the incumbent reseller without holding a SEWP V contract and Okta reseller authorization. This is a textbook SEWP V false-positive IAM maintenance buy.
+      </div>
+    </div>
+  </div>
+
+  <!-- SEWP V False Positive Pattern -->
+  <div class="section">
+    <div class="section-header">SEWP V False-Positive Pattern <span class="pattern-badge">Alert</span></div>
+    <div class="warning-callout">
+      <strong>9th Pattern Match: SEWP V Brand-Name OEM License/Maintenance</strong>
+      This opportunity matches the recurring false-positive pattern where a federal agency posts an APFS forecast for "software maintenance" that appears to be an IT services requirement but is actually a brand-name commercial product renewal issued as a SEWP V delivery order. The NAICS 541519, FFP contract type, single-year PoP, and OEM-specific title (Okta) are all hallmarks of this pattern.
+    </div>
+    <p style="font-size:15px; margin-bottom:12px;">Key false-positive indicators present in this opportunity:</p>
+    <ul style="padding-left:20px; margin-bottom:0;">
+      <li style="margin-bottom:5px; font-size:15px;"><strong>Contract vehicle:</strong> Listed as "GWAC" in APFS — confirmed SEWP V via award record (Referenced IDV: NNG15SD08B)</li>
+      <li style="margin-bottom:5px; font-size:15px;"><strong>OEM brand-name in title:</strong> "Okta Maintenance" — sole-source commercial product renewal, not professional services</li>
+      <li style="margin-bottom:5px; font-size:15px;"><strong>NAICS 541519:</strong> Other Computer Related Services — used for SEWP V product/SaaS buys, not O&amp;M labor</li>
+      <li style="margin-bottom:5px; font-size:15px;"><strong>PSC 7C20:</strong> IT and Telecom — Data Center Products (Hardware and Perpetual License Software), confirmed product buy</li>
+      <li style="margin-bottom:5px; font-size:15px;"><strong>Set-aside:</strong> HUBZone (NNG15SD08B is a HUBZone SEWP V group) — narrows competition to SEWP V HUBZone holders only</li>
+      <li style="margin-bottom:5px; font-size:15px;"><strong>Incumbent:</strong> Anacapa Micro Products (HUBZone, Oxnard CA) — pure product VAR with no IT services delivery capability</li>
+      <li style="margin-bottom:5px; font-size:15px;"><strong>Dollar range:</strong> $1–2M aligns precisely with prior $1.98M award — a direct subscription renewal</li>
+    </ul>
+  </div>
+
+  <!-- Opportunity Metadata -->
+  <div class="section">
+    <div class="section-header">Opportunity Metadata</div>
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">APFS Number</div>
+        <div class="meta-value">F2025071410</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Agency</div>
+        <div class="meta-value">TSA / DHS</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Dollar Range</div>
+        <div class="meta-value">$1M – $2M</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Contract Type</div>
+        <div class="meta-value">Firm Fixed Price</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Contract Vehicle</div>
+        <div class="meta-value">NASA SEWP V (NNG15SD08B)</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Set-Aside</div>
+        <div class="meta-value">HUBZone (SEWP V Group B)</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">NAICS</div>
+        <div class="meta-value">541519 — Other Computer Related Services</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Competitive Status</div>
+        <div class="meta-value">Follow-on to Existing Contract</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Award Quarter</div>
+        <div class="meta-value">Q4 FY2026 (anticipated 09/02/2026)</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">PoP</div>
+        <div class="meta-value">09/30/2026 – 09/29/2027 (1 year)</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Requirements Office</div>
+        <div class="meta-value">OIT/CIO-TSA 11</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Contracting Office</div>
+        <div class="meta-value">ACQ03 Enterprise IT Acquisition Division</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Requirements Title</td>
+          <td>Okta Maintenance</td>
+        </tr>
+        <tr>
+          <td>Requirement Description</td>
+          <td>Renews annual Okta licensing and maintenance for TSA's Identity-as-a-Service solution. Secures applications per OMB M-22-09 Federal Zero Trust Strategy with MFA. Supports PIV credential enforcement.</td>
+        </tr>
+        <tr>
+          <td>Requirements Contact</td>
+          <td>Kiree Young, kiree.young@tsa.dhs.gov, (571) 227-1703</td>
+        </tr>
+        <tr>
+          <td>SBS Coordinator</td>
+          <td>Elizabeth Harrington, TSASmallBiz@tsa.dhs.gov, (571) 227-1067</td>
+        </tr>
+        <tr>
+          <td>Place of Performance</td>
+          <td>Springfield, VA</td>
+        </tr>
+        <tr>
+          <td>Published Date</td>
+          <td>09/23/2025</td>
+        </tr>
+        <tr>
+          <td>RAG Classification</td>
+          <td>MODERATE (top score: 0.623) — pre-analysis; deep dive overrides to NO-GO</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Incumbent Landscape -->
+  <div class="section">
+    <div class="section-header">Incumbent Landscape</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Incumbent</strong></td>
+          <td>Anacapa Micro Products, Inc. (Oxnard/Ventura, CA)</td>
+        </tr>
+        <tr>
+          <td><strong>Award ID (Current)</strong></td>
+          <td><a href="https://www.usaspending.gov/award/CONT_AWD_70T03025F7667N056_7012_NNG15SD08B_8000/" target="_blank" rel="noopener">70T03025F7667N056</a></td>
+        </tr>
+        <tr>
+          <td><strong>Referenced IDV / Vehicle</strong></td>
+          <td>NNG15SD08B — NASA SEWP V, Group B (HUBZone Set-Aside)</td>
+        </tr>
+        <tr>
+          <td><strong>Award Date</strong></td>
+          <td>September 30, 2025</td>
+        </tr>
+        <tr>
+          <td><strong>Current Award Value</strong></td>
+          <td>$1,980,668.06 (100% obligated)</td>
+        </tr>
+        <tr>
+          <td><strong>Current PoP</strong></td>
+          <td>09/30/2025 – 09/29/2026</td>
+        </tr>
+        <tr>
+          <td><strong>PSC Code</strong></td>
+          <td>7C20 — IT and Telecom: Data Center Products (Hardware and Perpetual License Software)</td>
+        </tr>
+        <tr>
+          <td><strong>Description (USASpending)</strong></td>
+          <td>"Okta Identity and Access Cloud Solutions License, Maintenance, and Support Renewal"</td>
+        </tr>
+        <tr>
+          <td><strong>Competition</strong></td>
+          <td>Full &amp; Open After Exclusion of Sources; 3 bids received; HUBZone set-aside</td>
+        </tr>
+        <tr>
+          <td><strong>Anacapa Profile</strong></td>
+          <td>HUBZone-certified VAR (since 1991), Okta authorized reseller, SEWP V contract holder (Groups B &amp; C), headquartered Ventura County CA. Pure product VAR — no professional services or labor delivery capacity.</td>
+        </tr>
+        <tr>
+          <td><strong>Other SEWP V Okta Resellers</strong></td>
+          <td>Carahsoft Technology Corp (NNG15SC03B, NNG15SC27B), Thundercat Technology (NNG15SD26B — confirmed State Dept award), SHI International, CDW Government</td>
+        </tr>
+        <tr>
+          <td><strong>Okta Federal Channel</strong></td>
+          <td>Carahsoft is Okta's primary federal distributor; agency buys route through Carahsoft-authorized resellers on SEWP V, GSA MAS, or CIO-CS</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:10px;">Sources: <a href="https://orangeslices.ai/contract-award-2m-dhs-tsa-okta-identity-and-access-cloud-solutions/" target="_blank" rel="noopener">OrangeSlices.ai TSA Okta award</a> · <a href="https://www.highergov.com/contract/NNG15SD08B-70T03025F7667N056/" target="_blank" rel="noopener">HigherGov contract detail</a> · <a href="https://www.anacapamicro.com/nasa-sewp-v-2/" target="_blank" rel="noopener">Anacapa SEWP V page</a> · <a href="https://www.carahsoft.com/okta/contracts" target="_blank" rel="noopener">Carahsoft Okta contracts</a></p>
+  </div>
+
+  <!-- TSA IAM Context -->
+  <div class="section">
+    <div class="section-header">TSA IAM Context &amp; Regulatory Driver</div>
+    <p style="font-size:15px; margin-bottom:12px;">TSA's Okta deployment is a compliance-driven, infrastructure-layer identity platform — not an IT services engagement. Key context:</p>
+    <ul style="padding-left:20px; margin-bottom:12px;">
+      <li style="margin-bottom:6px; font-size:15px;"><strong>OMB M-22-09 (Federal Zero Trust Strategy):</strong> Mandates that all federal agencies achieve phishing-resistant MFA and zero-trust architecture by FY2024. TSA's Okta Workforce Identity Cloud is the technical implementation of this mandate.</li>
+      <li style="margin-bottom:6px; font-size:15px;"><strong>PIV Credential Enforcement:</strong> Per the requirement description, "all users must use Personal Identity Verification credentials when accessing TSA resources" — Okta provides the integration layer between PIV smart cards and application authentication.</li>
+      <li style="margin-bottom:6px; font-size:15px;"><strong>Identity-as-a-Service (IDaaS):</strong> Okta is a SaaS/cloud subscription product. TSA buys seat licenses (per-user/per-app). There is no custom development, integration labor, or services component in this award — it is a pure license renewal.</li>
+      <li style="margin-bottom:6px; font-size:15px;"><strong>Annual renewal cadence:</strong> The current award runs 09/30/2025–09/29/2026. The APFS forecast targets the next annual cycle (09/30/2026–09/29/2027). This is a predictable, recurring single-year delivery order.</li>
+      <li style="margin-bottom:6px; font-size:15px;"><strong>SEWP V lock-in:</strong> TSA has established SEWP V as the procurement vehicle for this requirement. Without a SEWP V contract and Okta reseller authorization, participation is not possible regardless of company size or capabilities.</li>
+    </ul>
+  </div>
+
+  <!-- RAG Engine Top Hits -->
+  <div class="section">
+    <div class="section-header">RAG Engine — Top Hits</div>
+    <p style="font-size:14px; color:var(--text-muted); margin-bottom:12px;">Changeis corpus query: "TSA Okta identity access management IAM subscription maintenance single sign on workforce identity" — top matches below. Note: RAG corpus is Changeis past performance on DOT/Volpe contracts; no direct IAM/SEWP-product experience exists.</p>
+
+    <div class="rag-hit">
+      <div class="rag-hit-header">
+        Task Order V3132127 · Contract 6913G621F400039
+        <span class="rag-score">Score: 0.578</span>
+        <span style="font-family:system-ui;font-size:11px;color:var(--text-muted);">End Clients: DOT, FMCSA, TSA, Volpe</span>
+      </div>
+      <div style="font-family:system-ui;font-size:12px;color:var(--text-muted);margin-bottom:4px;">Doc Types: MTPR | Relevance: Tangential (TSA client listed, no Okta/IAM content)</div>
+      <div class="rag-excerpt">"BUS OPS ACE-AIM … Maintain OST approved multi-factor authentication application using PIV cards … Perform monthly smoke testing in web environments … monthly validation reports using AWS Analysis Server."</div>
+    </div>
+
+    <div class="rag-hit">
+      <div class="rag-hit-header">
+        Task Order V3142064 · No Contract Number
+        <span class="rag-score">Score: 0.623 (pre-existing RAG)</span>
+        <span style="font-family:system-ui;font-size:11px;color:var(--text-muted);">End Clients: DOT, FAA, FMCSA, FRA, FTA, PHMSA, USCG, Volpe</span>
+      </div>
+      <div style="font-family:system-ui;font-size:12px;color:var(--text-muted);margin-bottom:4px;">Doc Types: TORFP | Relevance: MFA/PIV mention only</div>
+      <div class="rag-excerpt">"Maintain OST approved multi-factor authentication application using PIV cards … IS data, and SAI data using Oracle."</div>
+    </div>
+
+    <div class="rag-hit">
+      <div class="rag-hit-header">
+        Task Order V3142016 · Contract 6913G620F400068
+        <span class="rag-score">Score: 0.618</span>
+        <span style="font-family:system-ui;font-size:11px;color:var(--text-muted);">End Clients: DOT, FAA, FMCSA, FRA, FTA, PHMSA, USCG, Volpe</span>
+      </div>
+      <div style="font-family:system-ui;font-size:12px;color:var(--text-muted);margin-bottom:4px;">Doc Types: AWARD, MTPR, OTHER, SOW | Relevance: MFA/PIV mention only</div>
+      <div class="rag-excerpt">"Maintain OST approved multi-factor authentication application using PIV cards … Website and system maintenance notes Microsoft Word Quarterly."</div>
+    </div>
+
+    <div class="rag-hit">
+      <div class="rag-hit-header">
+        Task Order V3142041 · Contract 6913G620F400106
+        <span class="rag-score">Score: 0.591</span>
+        <span style="font-family:system-ui;font-size:11px;color:var(--text-muted);">End Clients: DOT, FAA, FMCSA, FRA, FTA, PHMSA, USCG, Volpe</span>
+      </div>
+      <div style="font-family:system-ui;font-size:12px;color:var(--text-muted);margin-bottom:4px;">Doc Types: SOW, TORFP | Relevance: MFA/PIV maintenance within DAMIS/SAI application support</div>
+      <div class="rag-excerpt">"Maintain OST approved multi-factor authentication application using PIV cards … Maintain the Volpe developed DAMIS and SAI web applications, written in Microsoft ASP.NET."</div>
+    </div>
+
+    <p class="note" style="margin-top:8px;"><strong>RAG Assessment:</strong> All top matches surface generic MFA/PIV maintenance mentions within DOT/Volpe application O&amp;M task orders — not Okta product licensing or SEWP V brand-name buys. The RAG engine's MODERATE classification (0.623) reflects superficial keyword overlap (MFA, PIV, identity) with no substantive relevance to a commercial SaaS license renewal vehicle. RAG top scores do not indicate competitive fit.</p>
+  </div>
+
+  <!-- Competitive Barrier Analysis -->
+  <div class="section">
+    <div class="section-header">Competitive Barrier Analysis</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Barrier</th>
+          <th>Assessment</th>
+          <th>Changeis Position</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SEWP V Contract Required</strong></td>
+          <td>Must hold SEWP V Group B (HUBZone) or Group C (SB) prime contract to submit quotes</td>
+          <td style="color:var(--red);font-weight:700;">No SEWP V contract — cannot bid</td>
+        </tr>
+        <tr>
+          <td><strong>Okta Authorized Reseller Status</strong></td>
+          <td>Okta requires channel partner certification to resell government licenses; Carahsoft is primary distributor</td>
+          <td style="color:var(--red);font-weight:700;">Not an Okta reseller</td>
+        </tr>
+        <tr>
+          <td><strong>HUBZone Set-Aside</strong></td>
+          <td>Competition restricted to HUBZone SEWP V holders (Group B: NNG15SD08B)</td>
+          <td style="color:var(--red);font-weight:700;">Not HUBZone certified</td>
+        </tr>
+        <tr>
+          <td><strong>Subcontracting Path</strong></td>
+          <td>Could theoretically team under Anacapa or another SEWP V holder, but product resale has no subcontract services layer</td>
+          <td style="color:var(--text-muted);">No viable teaming path — pure product transaction</td>
+        </tr>
+        <tr>
+          <td><strong>Professional Services Overlay</strong></td>
+          <td>Requirement is strictly "license, maintenance, and support renewal" per USASpending description — no SOW services scope</td>
+          <td style="color:var(--text-muted);">No services hook; labor not in scope</td>
+        </tr>
+        <tr>
+          <td><strong>Brand Name Justification</strong></td>
+          <td>TSA has standardized on Okta for zero-trust/PIV compliance; brand-name J&amp;A expected under FAR 11.105</td>
+          <td style="color:var(--text-muted);">No ability to offer alternative product</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Strategic Notes -->
+  <div class="section">
+    <div class="section-header">Strategic Notes &amp; Monitoring Guidance</div>
+    <ul style="padding-left:20px;">
+      <li style="margin-bottom:8px; font-size:15px;"><strong>Flag and close:</strong> This opportunity should be closed as NO-GO immediately. No BD resources should be applied to the procurement itself.</li>
+      <li style="margin-bottom:8px; font-size:15px;"><strong>Adjacent opportunity watch:</strong> TSA OIT does procure IT O&amp;M labor through OASIS+ and other vehicle types. Monitor APFS for TSA OIT requirements titled "Identity and Access Management Support Services" or "Zero Trust Implementation" — those would represent genuine labor service opportunities.</li>
+      <li style="margin-bottom:8px; font-size:15px;"><strong>False-positive pattern documentation:</strong> Add to the SEWP V false-positive pattern library. Identifiers: NAICS 541519, PSC 7C20, brand-name OEM in title, "maintenance" or "renewal" in title, GWAC vehicle, single-year FFP, &lt;$3M.</li>
+      <li style="margin-bottom:8px; font-size:15px;"><strong>SEWP V participation:</strong> If Changeis wishes to pursue product-based resale opportunities at TSA, obtaining a SEWP V vehicle and Okta reseller authorization would be a prerequisite — a multi-month investment not justified by this single opportunity.</li>
+      <li style="margin-bottom:8px; font-size:15px;"><strong>Contacts for future relationship:</strong> Kiree Young (OIT/CIO-TSA 11, requirements lead) may be worth engaging for future IAM services requirements discussion. TSA's zero-trust roadmap will require professional services beyond product licensing.</li>
+    </ul>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" onclick="toggleContext(this)">
+      <span class="arrow">▶</span> Session Context &amp; Methodology
+    </button>
+    <div class="context-body">ORIGINAL INSTRUCTIONS:
+Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjRXmGHxfxcWr → APFS F2025071410 TSA Okta Maintenance.
+Expected verdict: 9th SEWP V brand-name license/maintenance false positive pattern likely. TSA + Okta (specific OEM IAM product). Verify the vehicle — if NASA SEWP V or any brand-name maintenance buy, NO-GO. If genuine O&M labor services under OASIS+/MAS, could be MODERATE GO.
+
+APPROACH:
+1. Read full opportunity JSON from /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025071410.json
+2. Ran RAG engine against Changeis corpus (query: TSA Okta IAM maintenance single sign on workforce identity, top_n=50)
+3. USASpending research: searched for TSA Okta awards, incumbent reseller, award amounts, vehicle confirmation
+4. Anacapa Micro Products profile research: confirmed HUBZone SEWP V Group B holder, Okta authorized reseller
+5. SEWP V vehicle analysis: confirmed NNG15SD08B (HUBZone), PSC 7C20 (product), 3-bid competition
+6. Pattern analysis: matched against SEWP V false-positive OEM brand-name criteria
+
+KEY FINDINGS:
+- Current award 70T03025F7667N056 ($1,980,668.06) to Anacapa Micro Products via SEWP V NNG15SD08B (HUBZone)
+- PSC 7C20 (IT Data Center Products/Perpetual License) — pure product delivery order, not services
+- 3 bids received under HUBZone set-aside; Anacapa is SEWP V Group B holder since 2015
+- RAG top scores (0.578–0.623) reflect MFA/PIV keyword overlap in DOT app maintenance SOWs — not Okta product relevance
+- No Changeis path: no SEWP V contract, not HUBZone, not Okta authorized reseller
+- All three structural blockers (vehicle, certification, set-aside) are independently disqualifying
+
+DEAD ENDS:
+- RAG engine returned no TSA-specific Okta/IDaaS corpus hits; all top matches are DOT Volpe O&M application maintenance
+- No OASIS+ or GSA MAS vehicle reference found — SEWP V is sole vehicle
+- No professional services layer identified in current or forecast requirements
+
+ASSUMPTIONS:
+- FY2026 renewal will follow identical pattern (SEWP V, HUBZone, brand-name Okta, ~$2M, 1-year FFP)
+- OMB M-22-09 compliance requirement ensures Okta lock-in continues (brand-name justification available)
+- Anacapa will re-compete on same vehicle; 3 SEWP V HUBZone Okta resellers likely to bid again
+
+OPEN QUESTIONS:
+- Does TSA have any professional services IAM implementation work under separate contract vehicles?
+- Is there an adjacent zero-trust implementation services opportunity at TSA OIT?
+- Will TSA consider a multi-year base + options structure for the next award cycle?
+
+DATA SOURCES:
+- /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025071410.json
+- https://orangeslices.ai/contract-award-2m-dhs-tsa-okta-identity-and-access-cloud-solutions/
+- https://www.highergov.com/contract/NNG15SD08B-70T03025F7667N056/
+- https://www.anacapamicro.com/nasa-sewp-v-2/
+- https://www.carahsoft.com/okta/contracts
+- RAG engine: https://changeis-bd-rag-production.up.railway.app/match
+- Changeis RAG top score: 0.623 (V3142064, TORFP, DOT MFA/PIV application maintenance)
+
+NEXT STEPS:
+1. Close Todoist task 6gQhjRXmGHxfxcWr with vm2-done label
+2. Add to SEWP V false-positive pattern library (pattern #9)
+3. Monitor TSA APFS for OIT labor/services IAM opportunities (keyword: "Zero Trust Implementation Support", "Identity Management Services")
+4. Consider relationship development with Kiree Young (TSA OIT requirements lead) for future professional services pipeline
+
+COST ESTIMATE: see hidden JSON block</div>
+  </div>
+
+  <!-- Continue This Work -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Share, follow up, or create a next task from this analysis.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyPrompt()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up%3A%20TSA%20Okta%20Deep%20Dive%20F2025071410&body=Deep%20Dive%20complete%20-%20NO-GO.%20SEWP%20V%20brand-name%20Okta%20license%20renewal%20via%20Anacapa%20Micro%20(NNG15SD08B%2C%20HUBZone).%20No%20Changeis%20path.%0A%0ADeliverable%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fdeep-dive-tsa-okta-f2025071410-2026-04-22.html">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <button class="btn btn-secondary" onclick="createTodoist()">
+        <span class="btn-icon">✅</span> Create Todoist Follow-Up
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential · TSA Okta Maintenance Deep Dive · April 22, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Hidden JSON context -->
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Deep Dive: TSA Okta Maintenance — F2025071410",
+  "task_date": "2026-04-22",
+  "created_date": "2026-04-22",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-tsa-okta-f2025071410-2026-04-22.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-okta-f2025071410-2026-04-22.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjRXmGHxfxcWr → APFS F2025071410 TSA Okta Maintenance. Expected verdict: SEWP V brand-name license/maintenance false positive. Verify vehicle.",
+  "approach": "Read opp JSON, run RAG engine (top_n=50), USASpending research for incumbent and award vehicle, Anacapa profile research, SEWP V false-positive pattern analysis.",
+  "key_findings": [
+    "Current award 70T03025F7667N056 ($1,980,668) to Anacapa Micro Products via SEWP V NNG15SD08B (HUBZone)",
+    "PSC 7C20 (Data Center Products/Perpetual License) — pure product delivery order, not services",
+    "3 bids under HUBZone set-aside; Anacapa is SEWP V Group B holder and Okta authorized reseller",
+    "RAG top scores reflect MFA/PIV keyword overlap in DOT app maintenance SOWs — not Okta product relevance",
+    "Triple structural blocker: no SEWP V contract + not HUBZone + not Okta reseller"
+  ],
+  "dead_ends": [
+    "RAG engine returned no TSA-specific Okta corpus hits",
+    "No OASIS+ or GSA MAS vehicle reference found — SEWP V is sole vehicle",
+    "No professional services layer in current or forecast requirements"
+  ],
+  "assumptions": [
+    "FY2026 renewal follows identical SEWP V HUBZone pattern",
+    "OMB M-22-09 ensures Okta brand-name lock-in",
+    "Anacapa will re-compete; ~3 SEWP V HUBZone Okta resellers expected to bid"
+  ],
+  "open_questions": [
+    "Does TSA have adjacent professional services IAM work under separate vehicles?",
+    "Will TSA consider multi-year structure for next award?",
+    "Are there related TSA zero-trust implementation services opportunities?"
+  ],
+  "data_sources": [
+    {"name": "Opportunity JSON", "url": "file:///home/user/workspace/cron_tracking/6f5371ab/opp_details/F2025071410.json"},
+    {"name": "OrangeSlices TSA Okta Award", "url": "https://orangeslices.ai/contract-award-2m-dhs-tsa-okta-identity-and-access-cloud-solutions/"},
+    {"name": "HigherGov Contract Detail", "url": "https://www.highergov.com/contract/NNG15SD08B-70T03025F7667N056/"},
+    {"name": "Anacapa SEWP V Page", "url": "https://www.anacapamicro.com/nasa-sewp-v-2/"},
+    {"name": "Carahsoft Okta Contracts", "url": "https://www.carahsoft.com/okta/contracts"},
+    {"name": "RAG Engine", "url": "https://changeis-bd-rag-production.up.railway.app/match"}
+  ],
+  "next_steps": [
+    "Close Todoist task 6gQhjRXmGHxfxcWr with vm2-done label",
+    "Add to SEWP V false-positive pattern library (pattern #9)",
+    "Monitor TSA APFS for OIT labor/services IAM opportunities",
+    "Consider relationship with Kiree Young (TSA OIT) for future professional services pipeline"
+  ],
+  "verdict": "NO-GO",
+  "verdict_rationale": "Confirmed NASA SEWP V OEM brand-name license/maintenance delivery order via Anacapa Micro Products (HUBZone, NNG15SD08B). Triple structural blocker: no SEWP V contract, not HUBZone, not Okta reseller.",
+  "incumbent": "Anacapa Micro Products, Inc.",
+  "cost_estimate": {
+    "model": "claude-sonnet-4-5",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 4,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "Large opp JSON read + RAG API call + 2 web search batches + HTML generation; moderate complexity deep dive"
+  }
+}
+</script>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+
+  function toggleContext(btn) {
+    btn.classList.toggle('open');
+    const body = btn.nextElementSibling;
+    body.classList.toggle('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function copyPrompt() {
+    const prompt = `Follow-up on VM2 Deep Dive: TSA Okta Maintenance (F2025071410)
+
+Deliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-tsa-okta-f2025071410-2026-04-22.html
+
+Verdict: NO-GO — Confirmed NASA SEWP V OEM brand-name license/maintenance delivery order via Anacapa Micro Products (HUBZone, NNG15SD08B, $1.98M). No Changeis path: no SEWP V contract, not HUBZone certified, not Okta authorized reseller.
+
+Context: TSA uses Okta Workforce Identity Cloud for OMB M-22-09 / Federal Zero Trust Strategy compliance. Annual renewal, ~$2M FFP, HUBZone set-aside. Pattern #9 in SEWP V false-positive library.
+
+Potential follow-up task: Monitor TSA APFS for adjacent OIT labor/services opportunities (Zero Trust implementation, IAM integration services).`;
+    navigator.clipboard.writeText(prompt).then(() => showToast('Follow-up prompt copied!'));
+  }
+
+  function createTodoist() {
+    const url = 'https://todoist.com/add?content=Monitor+TSA+APFS+for+OIT+IAM+labor+services+opps+(Zero+Trust+impl%2C+Identity+Mgmt+Services)+%E2%80%94+follow+on+from+NO-GO+F2025071410+Okta+deep+dive';
+    window.open(url, '_blank');
+  }
+</script>
+
+</body>
+</html>
