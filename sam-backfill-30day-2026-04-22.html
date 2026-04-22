@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAM.gov 30-Day Backfill & Database Persistence — 2026-04-22</title>
+<style>
+  :root {
+    --navy: #1B2A4A; --red: #c53a3a; --red-hover: #a82e2e;
+    --bg: #FAFAF8; --surface: #FFFFFF; --surface-alt: #F4F3F0;
+    --border: #D4D1CA; --text: #1a1a1a; --text-muted: #5a5a5a; --text-faint: #999;
+    --code-bg: #F0EFEC; --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A; --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A; --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3; --badge-bg: #c53a3a; --badge-text: #fff;
+    --slug-bg: #F6F5F2; --slug-border: #D4D1CA; --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A; --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC; --btn-secondary-text: #1B2A4A; --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+  }
+  [data-theme="dark"] {
+    --bg: #111318; --surface: #1a1d25; --surface-alt: #22252e;
+    --border: #333740; --text: #d8d8d8; --text-muted: #8a8e96; --text-faint: #555960;
+    --code-bg: #22252e; --table-alt: #1e2129; --slug-bg: #1a1d25; --slug-border: #333740;
+    --panel-bg: #22252e; --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a; --btn-text: #fff;
+    --btn-secondary-bg: #22252e; --btn-secondary-text: #d8d8d8; --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Charter, Georgia, 'Times New Roman', serif; background: var(--bg); color: var(--text); line-height: 1.55; font-size: 16px; -webkit-font-smoothing: antialiased; }
+  .topbar { position: sticky; top: 0; z-index: 100; background: var(--topbar-bg); color: var(--topbar-text); font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; letter-spacing: 0.02em; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif; transition: background 0.2s; }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+  .container { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+  .hero { text-align: center; padding: 48px 0 28px; border-bottom: 2px solid var(--border); margin-bottom: 28px; }
+  .hero-badge { display: inline-block; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; background: var(--badge-bg); color: var(--badge-text); padding: 3px 12px; border-radius: 3px; margin-bottom: 16px; }
+  .hero h1 { font-size: 34px; font-weight: 700; color: var(--navy); line-height: 1.15; margin-bottom: 8px; }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub { font-size: 17px; color: var(--text-muted); font-style: italic; margin-bottom: 6px; }
+  .meta-line { font-family: system-ui, sans-serif; font-size: 13px; color: var(--text-faint); letter-spacing: 0.02em; }
+  .section { margin-bottom: 34px; }
+  .section-header { font-family: system-ui, sans-serif; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--red); border-bottom: 2px solid var(--red); padding-bottom: 6px; margin-bottom: 14px; }
+  .section p, .section li { font-size: 15px; line-height: 1.6; }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 6px; }
+  a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+  .cards-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 14px; }
+  @media (max-width: 760px) { .cards-row { grid-template-columns: repeat(2, 1fr); } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 14px; box-shadow: var(--card-shadow); }
+  .card .label { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+  .card .value { font-size: 28px; font-weight: 700; color: var(--navy); line-height: 1; }
+  [data-theme="dark"] .card .value { color: #e2e2e2; }
+  .card .sub { font-size: 12px; color: var(--text-faint); margin-top: 4px; font-family: system-ui, sans-serif; }
+  .tier-strong .value { color: #c53a3a; }
+  table { width: 100%; border-collapse: collapse; font-family: system-ui, sans-serif; font-size: 13px; margin-top: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  th { background: var(--table-header-bg); color: var(--table-header-text); text-align: left; padding: 8px 10px; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--table-alt); }
+  .title-cell { max-width: 320px; }
+  code { font-family: ui-monospace, 'SF Mono', Consolas, monospace; font-size: 12.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+  .panel { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-top: 14px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .btn { display: inline-block; font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px; cursor: pointer; border: 1px solid transparent; text-decoration: none; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { background: var(--red); color: #fff; }
+  .btn-secondary { background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border-color: var(--btn-secondary-border); }
+  details { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; margin-top: 14px; }
+  details summary { font-family: system-ui, sans-serif; font-weight: 700; cursor: pointer; font-size: 14px; color: var(--navy); }
+  [data-theme="dark"] details summary { color: #d8d8d8; }
+  details div { margin-top: 12px; font-size: 14px; line-height: 1.55; }
+  details h4 { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--red); margin-top: 14px; margin-bottom: 6px; }
+  .footer { text-align: center; font-size: 12px; color: var(--text-faint); padding: 26px 0 32px; margin-top: 40px; border-top: 1px solid var(--border); font-family: system-ui, sans-serif; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 10px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left"><span class="topbar-dot">●</span> VM2 · Deliverable</div>
+  <button class="theme-toggle" onclick="toggleTheme()">Dark</button>
+</div>
+
+<div class="container">
+
+<div class="hero">
+  <div class="hero-badge">Infrastructure Overhaul</div>
+  <h1>SAM.gov 30-Day Backfill &amp; Database Persistence</h1>
+  <p class="hero-sub">Replacing a broken JSON state file with a crash-safe SQLite source of truth</p>
+  <div class="meta-line">Created: 2026-04-22</div>
+</div>
+
+<div class="section">
+  <div class="section-header">Executive Summary</div>
+  <p>The old SAM.gov daily monitor had been returning <strong>zero opportunities for 18 consecutive business days</strong> because it called the unauthenticated <code>sam.gov/api/prod/sgs/v1/search</code> endpoint whose schema had changed. Today we rebuilt the pipeline end-to-end:</p>
+  <ul>
+    <li>Switched to the authenticated <code>api.sam.gov/opportunities/v2/search</code> endpoint with your API key</li>
+    <li>Built a persistent SQLite database at <code>/home/user/workspace/data/sam/sam.sqlite</code> as the single source of truth</li>
+    <li>Backfilled 30 days across <strong>49 NAICS codes</strong> in the 541xxx family plus 518210, 561110, 611430</li>
+    <li>Applied Changeis RAG Engine scoring to every record</li>
+    <li>Rewrote cron 8f2a4ac1 to use the DB — every run is now idempotent and resumable</li>
+  </ul>
+
+  <div class="cards-row">
+    <div class="card"><div class="label">Total Opps</div><div class="value">1,452</div><div class="sub">30-day window, priority NAICS only</div></div>
+    <div class="card tier-strong"><div class="label">STRONG</div><div class="value">221</div><div class="sub">RAG ≥ 0.65</div></div>
+    <div class="card"><div class="label">MODERATE</div><div class="value">1,100</div><div class="sub">RAG 0.50–0.64</div></div>
+    <div class="card"><div class="label">NAICS Codes</div><div class="value">38</div><div class="sub">distinct 6-digit codes</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">What Changed</div>
+  <div class="two-col">
+    <div class="panel">
+      <h3 style="font-family: system-ui, sans-serif; font-size:15px; color:var(--red); margin-bottom:8px;">Before</h3>
+      <ul>
+        <li>Unauthenticated endpoint returning 0 hits silently</li>
+        <li>JSON file <code>seen_notice_ids.json</code> as the only dedup mechanism</li>
+        <li>No history — only knew what was "new this run"</li>
+        <li>If a run failed, state was corrupt or partial</li>
+        <li>No RAG scoring before filtering</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3 style="font-family: system-ui, sans-serif; font-size:15px; color:var(--red); margin-bottom:8px;">After</h3>
+      <ul>
+        <li>Authenticated api.sam.gov with retry/backoff</li>
+        <li>SQLite DB: 3 tables (opportunities, runs, opp_run_seen)</li>
+        <li>Every opp has first_seen_run_id, last_seen_run_id, full raw_json</li>
+        <li>Crash-safe: transactional upserts, re-runs are idempotent</li>
+        <li>RAG score attached to every record</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">RAG Tier Distribution</div>
+  <p>Every opportunity was scored against the Changeis task-order corpus. Classification thresholds: STRONG ≥ 0.65, MODERATE 0.50–0.64, RELEVANT 0.45–0.49, LOW &lt; 0.45.</p>
+  <table>
+    <tr><th>Tier</th><th>Count</th><th>Share</th></tr>
+    <tr><td><strong style="color:#c53a3a;">STRONG</strong></td><td>221</td><td>15.2%</td></tr>
+    <tr><td>MODERATE</td><td>1,100</td><td>75.8%</td></tr>
+    <tr><td>RELEVANT</td><td>98</td><td>6.7%</td></tr>
+    <tr><td>LOW</td><td>33</td><td>2.3%</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-header">Top 50 STRONG Opportunities</div>
+  <p>Sorted by RAG score (highest capability match first). Click title to open in SAM.gov.</p>
+  <table>
+    <tr><th>NAICS</th><th>Score</th><th>Department</th><th>Title</th><th>Type</th><th>Posted</th><th>Set-Aside</th></tr>
+    
+<tr>
+<td>541330</td>
+<td><strong>0.729</strong></td>
+<td>NATIONAL AERONAUTICS AND SP…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/3ccea98a032d47b2a7fef72614fe80b3/view" target="_blank">Spectrum and Resources Management, Engineering and Programmatic Support (S…</a></td>
+<td>Justification</td>
+<td>2026-04-10</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541715</td>
+<td><strong>0.727</strong></td>
+<td>VETERANS AFFAIRS, DEPARTMEN…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/af57ee1e5ced4cf193cdf000a9860304/view" target="_blank">AN42--Intent to Modify Current Contract -  Henry M. Jackson Foundation for…</a></td>
+<td>Special Notice</td>
+<td>2026-03-31</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541511</td>
+<td><strong>0.720</strong></td>
+<td>TRANSPORTATION, DEPARTMENT …</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/8e9a36b518ff4f7c9080b24bb7e87c0d/view" target="_blank">Department of Transportation, Build America Bureau, Railroad Credit Assess…</a></td>
+<td>Special Notice</td>
+<td>2026-03-26</td>
+<td>No Set aside used</td>
+</tr>
+<tr>
+<td>541990</td>
+<td><strong>0.716</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/df9853113ca8423f9dc1c9ed486d6475/view" target="_blank">T2COM J&amp;A (Justification)</a></td>
+<td>Justification</td>
+<td>2026-04-06</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>561110</td>
+<td><strong>0.715</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/9a1b24293e264fc2a2a7419bcef6534e/view" target="_blank">595th Transportation Brigade Logistics Support Services Deployment and Dis…</a></td>
+<td>Solicitation</td>
+<td>2026-04-16</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541512</td>
+<td><strong>0.710</strong></td>
+<td>HOUSE OF REPRESENTATIVES, T…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/177eb6140cde4fa393ec1bca3365073b/view" target="_blank">Human Resource Management System - Amendment 0002</a></td>
+<td>Solicitation</td>
+<td>2026-04-15</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541330</td>
+<td><strong>0.710</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/43d436e5ed6247b98820edf69421d651/view" target="_blank">Electromagnetic Spectrum (EMS) Services Applied Engineering, Spectrum, and…</a></td>
+<td>Solicitation</td>
+<td>2026-04-07</td>
+<td>No Set aside used</td>
+</tr>
+<tr>
+<td>541360</td>
+<td><strong>0.709</strong></td>
+<td>INTERIOR, DEPARTMENT OF THE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/dc8ccc5b6eab46cc9f0c791d4dc05755/view" target="_blank">C--Fugro USA Land, Inc.
+GEOSPATIAL PRODUCTS AND SERVICES CONTRACT v4 (GPSC…</a></td>
+<td>Award Notice</td>
+<td>2026-04-16</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541360</td>
+<td><strong>0.706</strong></td>
+<td>INTERIOR, DEPARTMENT OF THE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/dbee11493f6a4abaaa6bdf7e55cc3fee/view" target="_blank">C--Fugro USA Land, Inc.
+GEOSPATIAL PRODUCTS AND SERVICES CONTRACT v4 (GPSC…</a></td>
+<td>Award Notice</td>
+<td>2026-04-08</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541715</td>
+<td><strong>0.706</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/24e4e4f6b1654da7b77d0f9cbfda3168/view" target="_blank">Notice of Contract Action - Precise Ensemble Network Communications Allowi…</a></td>
+<td>Special Notice</td>
+<td>2026-03-25</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541330</td>
+<td><strong>0.705</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/1a6dcc8b6ce641e8b13ac99a7504678a/view" target="_blank">Spectrum Mission Data and Information Engineering Services</a></td>
+<td>Sources Sought</td>
+<td>2026-04-06</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541512</td>
+<td><strong>0.704</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/a52fa89820b94b7aaef9685bfa927d62/view" target="_blank">Logistics IT Integration and Support (LIIS) Capability Modernization, Depl…</a></td>
+<td>Special Notice</td>
+<td>2026-04-20</td>
+<td>Partial Small Business Set-Aside (…</td>
+</tr>
+<tr>
+<td>541511</td>
+<td><strong>0.702</strong></td>
+<td>TRANSPORTATION, DEPARTMENT …</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/91e4c03c125d49098407209a5f16458b/view" target="_blank">Limited Sources Justification-TruData (Data Platform)/Motor Carrier Manage…</a></td>
+<td>Justification</td>
+<td>2026-03-25</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541330</td>
+<td><strong>0.702</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/bf7aaa6f12f4424186b571ce9bf623de/view" target="_blank">Market Survey Results - N65236-26-RFPREQ-LSUBP00095-0008 MFOM Systems and …</a></td>
+<td>Special Notice</td>
+<td>2026-04-14</td>
+<td>Total Small Business Set-Aside (FA…</td>
+</tr>
+<tr>
+<td>541330</td>
+<td><strong>0.701</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/906e52520a744e3cbe9bd79e7fe124ef/view" target="_blank">Systems Engineering Support (A Dept)</a></td>
+<td>Sources Sought</td>
+<td>2026-04-13</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541519</td>
+<td><strong>0.701</strong></td>
+<td>VETERANS AFFAIRS, DEPARTMEN…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/cd6fdc4bb6014972900329acebadf60b/view" target="_blank">N063--NNG15SD41B 36C10B26F0113 | VISN 5 Video  Surveillance and Physical A…</a></td>
+<td>Award Notice</td>
+<td>2026-04-21</td>
+<td>Service-Disabled Veteran-Owned Sma…</td>
+</tr>
+<tr>
+<td>541611</td>
+<td><strong>0.697</strong></td>
+<td>HEALTH AND HUMAN SERVICES, …</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/3d09f89d619b456fa9dc36fead364e63/view" target="_blank">Data Analysis and Statistical Program Support</a></td>
+<td>Justification</td>
+<td>2026-04-14</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541620</td>
+<td><strong>0.697</strong></td>
+<td>ENERGY, DEPARTMENT OF</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/da1f762af9374613ad30360b0ac75e62/view" target="_blank">Technical Support Services for National Environmental Policy Act (NEPA) co…</a></td>
+<td>Solicitation</td>
+<td>2026-04-21</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541360</td>
+<td><strong>0.696</strong></td>
+<td>INTERIOR, DEPARTMENT OF THE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/b7069cbdb5b0495db0d85d847a0b00d7/view" target="_blank">C--NV5 Geospatial, Inc.
+GEOSPATIAL PRODUCTS AND SERVICES CONTRACT v4 (GPSC…</a></td>
+<td>Award Notice</td>
+<td>2026-04-16</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541519</td>
+<td><strong>0.695</strong></td>
+<td>VETERANS AFFAIRS, DEPARTMEN…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/2d99423586a54a8e93e7e1928fa54e55/view" target="_blank">DA10--VISN 19 MUSE Sustainment  POP 9/1/2026-8/31/2031</a></td>
+<td>Special Notice</td>
+<td>2026-03-31</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541519</td>
+<td><strong>0.695</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/ca47a725057245c5b43feed26d2712c8/view" target="_blank">Teamcenter Sole Source Contract Modification</a></td>
+<td>Combined Synopsis/Solicitation</td>
+<td>2026-04-06</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541519</td>
+<td><strong>0.695</strong></td>
+<td>COMMERCE, DEPARTMENT OF</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/e6b5d91b63ef4ab29ba2f9f707549567/view" target="_blank">PTAG RFI: Seeking Contractor for USPTO Asset Management Program Support Se…</a></td>
+<td>Sources Sought</td>
+<td>2026-04-03</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541715</td>
+<td><strong>0.694</strong></td>
+<td>NATIONAL AERONAUTICS AND SP…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/591c0fe7f07d41a38ab65078545f3bc1/view" target="_blank">This contract shall provide composite aircraft manufacturing technology as…</a></td>
+<td>Combined Synopsis/Solicitation</td>
+<td>2026-04-17</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541330</td>
+<td><strong>0.694</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/c4451a9a4d084391bb938330dcc26d0f/view" target="_blank">Engineering and Technical Services in Support of Depot Level Repairs for t…</a></td>
+<td>Sources Sought</td>
+<td>2026-04-15</td>
+<td>No Set aside used</td>
+</tr>
+<tr>
+<td>541715</td>
+<td><strong>0.693</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/1a4bb7db0f3146ce8689eb2b2f6a46d1/view" target="_blank">RDTE Program Technical Services</a></td>
+<td>Award Notice</td>
+<td>2026-04-08</td>
+<td>Women-Owned Small Business</td>
+</tr>
+<tr>
+<td>541360</td>
+<td><strong>0.693</strong></td>
+<td>INTERIOR, DEPARTMENT OF THE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/10593d2f079841f6aeaa770a34d16e28/view" target="_blank">C--NV5 Geospatial, Inc.
+GEOSPATIAL PRODUCTS AND SERVICES CONTRACT v4 (GPSC…</a></td>
+<td>Award Notice</td>
+<td>2026-04-08</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541611</td>
+<td><strong>0.692</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/a73f503c6aaf435db117fd6b925e4b7f/view" target="_blank">Process Improvement and Project Management Support</a></td>
+<td>Combined Synopsis/Solicitation</td>
+<td>2026-04-14</td>
+<td>Women-Owned Small Business</td>
+</tr>
+<tr>
+<td>541990</td>
+<td><strong>0.692</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/45782c0afc9242dd961e7817259bc60c/view" target="_blank">Sole Source: Defense Security Cooperation Agency (DSCA) Assessment, Monito…</a></td>
+<td>Justification</td>
+<td>2026-04-03</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541511</td>
+<td><strong>0.692</strong></td>
+<td>HOUSING AND URBAN DEVELOPME…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/7d3efa81ca834574b01a6bce3a97a67d/view" target="_blank">Knowledge Management System and Services (KMSS)</a></td>
+<td>Sources Sought</td>
+<td>2026-03-27</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541519</td>
+<td><strong>0.692</strong></td>
+<td>ENERGY, DEPARTMENT OF</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/e228c6c0ed5949f2913bfe5d99ef0294/view" target="_blank">7A--Information Technology Purchase for Portsmouth Pad</a></td>
+<td>Award Notice</td>
+<td>2026-04-13</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541715</td>
+<td><strong>0.692</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/57d8d5ce9d1049adbe865c7272e9d481/view" target="_blank">Engineering Support for Design, Development, and Integration of RF and HF …</a></td>
+<td>Sources Sought</td>
+<td>2026-04-02</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541611</td>
+<td><strong>0.691</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/1d595cb7c23545609b72f37d8775869d/view" target="_blank">FA521526R0006 - Civil Engineering Services Pacific (CESPAC) Multiple Award…</a></td>
+<td>Solicitation</td>
+<td>2026-04-03</td>
+<td>8a Competed</td>
+</tr>
+<tr>
+<td>541330</td>
+<td><strong>0.689</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/e58d2fc787ce48b099622a1d13d9defc/view" target="_blank">SECURITY PROGRAM AND COMPLIANCE SUPPORT SERVICES FOR THE PROTECTION OF PER…</a></td>
+<td>Sources Sought</td>
+<td>2026-04-07</td>
+<td>No Set aside used</td>
+</tr>
+<tr>
+<td>541330</td>
+<td><strong>0.689</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/bbec41bc6ea1403a867d9333117a1205/view" target="_blank">Mission Engineering and Analysis Support</a></td>
+<td>Sources Sought</td>
+<td>2026-04-22</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541519</td>
+<td><strong>0.689</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/67d352de38ac41ff9a6e0e28e534b25c/view" target="_blank">Enterprise Service Delivery III (ESD III) Increased Support - OT Travel Te…</a></td>
+<td>Justification</td>
+<td>2026-04-02</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541519</td>
+<td><strong>0.689</strong></td>
+<td>ENERGY, DEPARTMENT OF</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/63ee9f848f8a49f6965d6d681c09add6/view" target="_blank">7A--Information Technology Purchase for Portsmouth Pad</a></td>
+<td>Award Notice</td>
+<td>2026-04-15</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>611430</td>
+<td><strong>0.688</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/bab2d44c37d149c9814ae27db50520f3/view" target="_blank">26-SIMACQ-BD3-0039 Training</a></td>
+<td>Combined Synopsis/Solicitation</td>
+<td>2026-04-21</td>
+<td>Total Small Business Set-Aside (FA…</td>
+</tr>
+<tr>
+<td>541330</td>
+<td><strong>0.688</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/6ca40f43e0494cec9ea5bf0017e4734a/view" target="_blank">N6660426R3102: NUWCDIVNPT Code 107 PAS Services</a></td>
+<td>Solicitation</td>
+<td>2026-04-15</td>
+<td>Service-Disabled Veteran-Owned Sma…</td>
+</tr>
+<tr>
+<td>541715</td>
+<td><strong>0.687</strong></td>
+<td>NATIONAL AERONAUTICS AND SP…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/46a543e71a884d66aa03c6b9e32b011e/view" target="_blank">Appendix 26A: Small Business Innovation Research (SBIR) Phase I</a></td>
+<td>Solicitation</td>
+<td>2026-04-21</td>
+<td>Total Small Business Set-Aside (FA…</td>
+</tr>
+<tr>
+<td>541620</td>
+<td><strong>0.686</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/f52c84e33dc1422da74b8892786479d9/view" target="_blank">Facility Environmental Compliance, Planning, and Resiliency Technical supp…</a></td>
+<td>Solicitation</td>
+<td>2026-04-20</td>
+<td>Total Small Business Set-Aside (FA…</td>
+</tr>
+<tr>
+<td>541380</td>
+<td><strong>0.686</strong></td>
+<td>VETERANS AFFAIRS, DEPARTMEN…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/721abd815d0840e38a36773988ca197e/view" target="_blank">F103--OKC VA Water Testing IDIQ (URGENT RESPONSE REQUIRED)  POP: 05/01/26 …</a></td>
+<td>Combined Synopsis/Solicitation</td>
+<td>2026-04-22</td>
+<td>Service-Disabled Veteran-Owned Sma…</td>
+</tr>
+<tr>
+<td>541611</td>
+<td><strong>0.686</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/cc630b020b4a4c91877fe77eb79a398f/view" target="_blank">DLA Transportation Process Support</a></td>
+<td>Combined Synopsis/Solicitation</td>
+<td>2026-04-15</td>
+<td>Total Small Business Set-Aside (FA…</td>
+</tr>
+<tr>
+<td>541330</td>
+<td><strong>0.686</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/39d7e61b44a340caa1900f7360dddb89/view" target="_blank">Follow-On Administrative Support Services</a></td>
+<td>Solicitation</td>
+<td>2026-03-26</td>
+<td>8a Competed</td>
+</tr>
+<tr>
+<td>541715</td>
+<td><strong>0.685</strong></td>
+<td>NATIONAL AERONAUTICS AND SP…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/8268a9cca50348579237c1b71b08868c/view" target="_blank">Appendix 26B: Small Business Technology Transfer (STTR) Phase I Funding Op…</a></td>
+<td>Solicitation</td>
+<td>2026-04-21</td>
+<td>Total Small Business Set-Aside (FA…</td>
+</tr>
+<tr>
+<td>541715</td>
+<td><strong>0.685</strong></td>
+<td>NATIONAL AERONAUTICS AND SP…</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/710a021b1a784f22bd054521aa03e974/view" target="_blank">Appendix 26B: Small Business Innovation Research (SBIR) Phase I</a></td>
+<td>Solicitation</td>
+<td>2026-04-21</td>
+<td>Total Small Business Set-Aside (FA…</td>
+</tr>
+<tr>
+<td>541519</td>
+<td><strong>0.685</strong></td>
+<td>DEPT OF DEFENSE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/fc5ff1cc17ec43b0bfcfb18e64bd097a/view" target="_blank">GCSS-MC Capability Support and Decommissioning Services</a></td>
+<td>Sources Sought</td>
+<td>2026-04-16</td>
+<td>No Set aside used</td>
+</tr>
+<tr>
+<td>541519</td>
+<td><strong>0.684</strong></td>
+<td>ENERGY, DEPARTMENT OF</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/46616bc44be34d4791baf3d3c5f99e34/view" target="_blank">7A--Information Technology Purchase for Portsmouth Pad</a></td>
+<td>Award Notice</td>
+<td>2026-04-20</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541519</td>
+<td><strong>0.684</strong></td>
+<td>ENERGY, DEPARTMENT OF</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/faf64634e9af4e4d91dfdfd0bd1e2b94/view" target="_blank">7A--Information Technology Purchase for Portsmouth Pad</a></td>
+<td>Award Notice</td>
+<td>2026-04-22</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541360</td>
+<td><strong>0.684</strong></td>
+<td>INTERIOR, DEPARTMENT OF THE</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/4229528487da4b8fbb2fa7478984e3f8/view" target="_blank">C--WOOLPERT
+GEOSPATIAL PRODUCTS AND SERVICES CONTRACT v4 (GPSC4)</a></td>
+<td>Award Notice</td>
+<td>2026-04-16</td>
+<td>Full &amp; Open</td>
+</tr>
+<tr>
+<td>541511</td>
+<td><strong>0.684</strong></td>
+<td>COMMERCE, DEPARTMENT OF</td>
+<td class="title-cell"><a href="https://sam.gov/workspace/contract/opp/930bc29d69f747feb94d02c357dc65bb/view" target="_blank">Sources Sought - Dynamic Frequency Comb Applications Support IDIQ</a></td>
+<td>Sources Sought</td>
+<td>2026-03-31</td>
+<td>Full &amp; Open</td>
+</tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-header">Department Mix (STRONG + MODERATE)</div>
+  <table>
+    <tr><th>Department</th><th>Count</th><th>Share</th></tr>
+    <tr><td>DEPT OF DEFENSE</td><td>574</td><td>45.4%</td></tr><tr><td>VETERANS AFFAIRS, DEPARTMENT OF</td><td>210</td><td>16.6%</td></tr><tr><td>INTERIOR, DEPARTMENT OF THE</td><td>112</td><td>8.9%</td></tr><tr><td>HEALTH AND HUMAN SERVICES, DEPARTMENT OF</td><td>78</td><td>6.2%</td></tr><tr><td>GENERAL SERVICES ADMINISTRATION</td><td>61</td><td>4.8%</td></tr><tr><td>NATIONAL AERONAUTICS AND SPACE ADMINISTRATION</td><td>38</td><td>3.0%</td></tr><tr><td>COMMERCE, DEPARTMENT OF</td><td>32</td><td>2.5%</td></tr><tr><td>HOMELAND SECURITY, DEPARTMENT OF</td><td>30</td><td>2.4%</td></tr><tr><td>ENERGY, DEPARTMENT OF</td><td>30</td><td>2.4%</td></tr><tr><td>AGRICULTURE, DEPARTMENT OF</td><td>27</td><td>2.1%</td></tr><tr><td>TRANSPORTATION, DEPARTMENT OF</td><td>22</td><td>1.7%</td></tr><tr><td>STATE, DEPARTMENT OF</td><td>20</td><td>1.6%</td></tr><tr><td>JUSTICE, DEPARTMENT OF</td><td>15</td><td>1.2%</td></tr><tr><td>ENVIRONMENTAL PROTECTION AGENCY</td><td>10</td><td>0.8%</td></tr><tr><td>TREASURY, DEPARTMENT OF THE</td><td>5</td><td>0.4%</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-header">NAICS Distribution (all 1,452)</div>
+  <div class="two-col">
+    <table><tr><th>NAICS</th><th>Count</th><th>Share</th></tr><tr><td><code>541330</code></td><td>286</td><td>19.7%</td></tr><tr><td><code>541519</code></td><td>215</td><td>14.8%</td></tr><tr><td><code>541715</code></td><td>149</td><td>10.3%</td></tr><tr><td><code>541380</code></td><td>100</td><td>6.9%</td></tr><tr><td><code>541990</code></td><td>99</td><td>6.8%</td></tr><tr><td><code>541512</code></td><td>88</td><td>6.1%</td></tr><tr><td><code>541611</code></td><td>83</td><td>5.7%</td></tr><tr><td><code>541511</code></td><td>67</td><td>4.6%</td></tr><tr><td><code>541620</code></td><td>52</td><td>3.6%</td></tr><tr><td><code>541690</code></td><td>44</td><td>3.0%</td></tr><tr><td><code>541614</code></td><td>38</td><td>2.6%</td></tr><tr><td><code>541310</code></td><td>27</td><td>1.9%</td></tr><tr><td><code>541714</code></td><td>24</td><td>1.7%</td></tr><tr><td><code>541350</code></td><td>17</td><td>1.2%</td></tr><tr><td><code>541370</code></td><td>16</td><td>1.1%</td></tr><tr><td><code>541930</code></td><td>16</td><td>1.1%</td></tr><tr><td><code>541360</code></td><td>14</td><td>1.0%</td></tr><tr><td><code>611430</code></td><td>14</td><td>1.0%</td></tr><tr><td><code>541720</code></td><td>13</td><td>0.9%</td></tr></table>
+    <table><tr><th>NAICS</th><th>Count</th><th>Share</th></tr><tr><td><code>518210</code></td><td>10</td><td>0.7%</td></tr><tr><td><code>541513</code></td><td>10</td><td>0.7%</td></tr><tr><td><code>541618</code></td><td>9</td><td>0.6%</td></tr><tr><td><code>541910</code></td><td>8</td><td>0.6%</td></tr><tr><td><code>541940</code></td><td>8</td><td>0.6%</td></tr><tr><td><code>541110</code></td><td>6</td><td>0.4%</td></tr><tr><td><code>541613</code></td><td>5</td><td>0.3%</td></tr><tr><td><code>541219</code></td><td>4</td><td>0.3%</td></tr><tr><td><code>541430</code></td><td>4</td><td>0.3%</td></tr><tr><td><code>541820</code></td><td>4</td><td>0.3%</td></tr><tr><td><code>541850</code></td><td>4</td><td>0.3%</td></tr><tr><td><code>561110</code></td><td>4</td><td>0.3%</td></tr><tr><td><code>541191</code></td><td>3</td><td>0.2%</td></tr><tr><td><code>541612</code></td><td>3</td><td>0.2%</td></tr><tr><td><code>541810</code></td><td>3</td><td>0.2%</td></tr><tr><td><code>541713</code></td><td>2</td><td>0.1%</td></tr><tr><td><code>541199</code></td><td>1</td><td>0.1%</td></tr><tr><td><code>541211</code></td><td>1</td><td>0.1%</td></tr><tr><td><code>541320</code></td><td>1</td><td>0.1%</td></tr></table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">Opportunity Type &amp; Set-Aside Mix</div>
+  <div class="two-col">
+    <div>
+      <h4 style="font-family: system-ui, sans-serif; font-size:13px; color:var(--text-muted); margin-bottom:6px;">By Notice Type</h4>
+      <table><tr><th>Type</th><th>Count</th><th>%</th></tr><tr><td>Sources Sought</td><td>306</td><td>21.1%</td></tr><tr><td>Solicitation</td><td>261</td><td>18.0%</td></tr><tr><td>Award Notice</td><td>238</td><td>16.4%</td></tr><tr><td>Special Notice</td><td>200</td><td>13.8%</td></tr><tr><td>Combined Synopsis/Solicitation</td><td>188</td><td>12.9%</td></tr><tr><td>Presolicitation</td><td>142</td><td>9.8%</td></tr><tr><td>Justification</td><td>115</td><td>7.9%</td></tr><tr><td>Consolidate/(Substantially) Bundle</td><td>2</td><td>0.1%</td></tr></table>
+    </div>
+    <div>
+      <h4 style="font-family: system-ui, sans-serif; font-size:13px; color:var(--text-muted); margin-bottom:6px;">By Set-Aside</h4>
+      <table><tr><th>Set-Aside</th><th>Count</th><th>%</th></tr><tr><td>None (Full &amp; Open)</td><td>742</td><td>51.1%</td></tr><tr><td>No Set aside used</td><td>317</td><td>21.8%</td></tr><tr><td>Total Small Business Set-Aside (FAR 19.5)</td><td>230</td><td>15.8%</td></tr><tr><td>Service-Disabled Veteran-Owned Small Business Set Aside</td><td>108</td><td>7.4%</td></tr><tr><td>8a Competed</td><td>17</td><td>1.2%</td></tr><tr><td>Partial Small Business Set-Aside (FAR 19.5)</td><td>10</td><td>0.7%</td></tr><tr><td>Women-Owned Small Business</td><td>7</td><td>0.5%</td></tr><tr><td>Buy Indian Set-Aside (specific to Department of Health…</td><td>5</td><td>0.3%</td></tr><tr><td>SDVOSB Sole Source</td><td>4</td><td>0.3%</td></tr><tr><td>8(a) Sole Source</td><td>4</td><td>0.3%</td></tr></table>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">Posted-Date Distribution</div>
+  <p>Most activity concentrated in the last 3 business days — SAM.gov's posting cadence is irregular with bulk drops on end-of-week.</p>
+  <table>
+    <tr><th>Posted Date</th><th>Count</th></tr>
+    <tr><td>2026-04-22</td><td>52</td></tr><tr><td>2026-04-21</td><td>121</td></tr><tr><td>2026-04-20</td><td>113</td></tr><tr><td>2026-04-19</td><td>1</td></tr><tr><td>2026-04-18</td><td>2</td></tr><tr><td>2026-04-17</td><td>84</td></tr><tr><td>2026-04-16</td><td>108</td></tr><tr><td>2026-04-15</td><td>113</td></tr><tr><td>2026-04-14</td><td>76</td></tr><tr><td>2026-04-13</td><td>65</td></tr><tr><td>2026-04-12</td><td>1</td></tr><tr><td>2026-04-11</td><td>1</td></tr><tr><td>2026-04-10</td><td>44</td></tr><tr><td>2026-04-09</td><td>78</td></tr><tr><td>2026-04-08</td><td>63</td></tr><tr><td>2026-04-07</td><td>71</td></tr><tr><td>2026-04-06</td><td>33</td></tr><tr><td>2026-04-03</td><td>30</td></tr><tr><td>2026-04-02</td><td>79</td></tr><tr><td>2026-04-01</td><td>62</td></tr><tr><td>2026-03-31</td><td>67</td></tr><tr><td>2026-03-30</td><td>36</td></tr><tr><td>2026-03-27</td><td>29</td></tr><tr><td>2026-03-26</td><td>45</td></tr><tr><td>2026-03-25</td><td>36</td></tr><tr><td>2026-03-24</td><td>42</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-header">Database Architecture</div>
+  <p>Three tables. Every notice_id ever seen is persisted. A failed run can be re-run and will not double-process.</p>
+  <table>
+    <tr><th>Table</th><th>Rows</th><th>Purpose</th></tr>
+    <tr><td><code>opportunities</code></td><td>1,452</td><td>50 fields per opp: full API response + RAG score + lifecycle + workflow flags (deep_dive_requested, is_skipped, user_flagged)</td></tr>
+    <tr><td><code>runs</code></td><td>2</td><td>Every cron run with window, totals, errors, duration</td></tr>
+    <tr><td><code>opp_run_seen</code></td><td>junction</td><td>Which opps were seen in which run, with is_new / is_updated flags</td></tr>
+  </table>
+  <p style="margin-top: 10px;">Indices on <code>notice_id</code> (PK), <code>posted_date</code>, <code>rag_classification</code>, <code>active</code>. Schema file and scripts live under <code>/home/user/workspace/data/sam/</code>.</p>
+</div>
+
+<div class="section">
+  <div class="section-header">Run History</div>
+  <p>Every pipeline run is logged. Fresh starts after a failure simply re-query the window; the DB handles dedup.</p>
+  <table>
+    <tr><th>Run ID</th><th>UTC</th><th>Found</th><th>New</th><th>Updated</th><th>Duration</th><th>Status</th></tr>
+    <tr><td><code>reconcile_non541_20260422T173…</code></td><td>2026-04-22T17:33:49.610917Z</td><td>28</td><td>28</td><td>0</td><td>—</td><td>completed</td></tr><tr><td><code>backfill_20260422T172918Z</code></td><td>2026-04-22T17:29:18Z</td><td>1424</td><td>1424</td><td>0</td><td>82s</td><td>success</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-header">How the Daily Monitor Works Now</div>
+  <ol style="padding-left: 22px; font-size: 15px; line-height: 1.65;">
+    <li>Cron 8f2a4ac1 fires weekdays at 9:00 AM EDT</li>
+    <li>Runs <code>python3 /home/user/workspace/data/sam/daily_monitor.py</code></li>
+    <li>Queries <code>api.sam.gov</code> across 52 priority NAICS for the last 7 days</li>
+    <li>Upserts into the DB — duplicates are transparent no-ops</li>
+    <li>Calls RAG Engine for any truly NEW opps (score + top matches)</li>
+    <li>Writes <code>sam_daily_YYYYMMDDTHHMMSSZ.json</code> for the Combined Daily Brief cron to pick up</li>
+    <li>Sanity alarm fires if zero hits come back across all NAICS</li>
+  </ol>
+</div>
+
+<details>
+<summary>Session Context</summary>
+<div>
+  <h4>Original Instructions</h4>
+  <p>"Pull all 541* opportunities for the last 30 days and reconcile against what we had already pulled. Figure out some way to make sure we keep a database so we can pick up where we left off if things break."</p>
+
+  <h4>Approach</h4>
+  <p>Built SQLite DB (3 tables, 50 opp fields, indices). Pulled api.sam.gov with authenticated key across 49 NAICS codes in the 541xxx family + 3 non-541 priorities (518210, 561110, 611430) using 10-day slices over the last 30 days. Upserted 1,452 unique opportunities. Applied RAG Engine scoring to every record. Updated cron 8f2a4ac1 to use the DB as single source of truth.</p>
+
+  <h4>Key Findings</h4>
+  <ul>
+    <li>1,452 unique priority-NAICS opportunities from the last 30 days now persisted</li>
+    <li>RAG: 221 STRONG, 1,100 MODERATE, 98 RELEVANT, 33 LOW</li>
+    <li>Old cron had been returning 0 hits for 18 consecutive business days (bad endpoint)</li>
+    <li>49 distinct 541xxx NAICS queried; 541330, 541519, 541715 are the biggest volumes</li>
+    <li>Top department: DoD (574), VA (210), Interior (112), HHS (78), GSA (61)</li>
+    <li>Database supports crash-safe resumption via first_seen / last_seen run IDs</li>
+  </ul>
+
+  <h4>Dead Ends</h4>
+  <ul>
+    <li>Old unauthenticated sam.gov endpoint silently returns 0 totalRecords</li>
+    <li>Initial backfill missed 28 non-541 priority opps — reconciled from old state file</li>
+  </ul>
+
+  <h4>Assumptions</h4>
+  <ul>
+    <li>RAG thresholds: STRONG ≥ 0.65, MODERATE ≥ 0.50, RELEVANT ≥ 0.45</li>
+    <li>7-day daily lookback catches late-posted amendments</li>
+    <li>Priority NAICS = 49 codes in 541xxx + 518210, 561110, 611430</li>
+  </ul>
+
+  <h4>Open Questions</h4>
+  <ul>
+    <li>Expand beyond 541xxx to construction (238xxx) or non-430 training (611xxx)?</li>
+    <li>Is the 1,100 MODERATE volume actionable, or does it need a secondary filter?</li>
+  </ul>
+
+  <h4>Data Sources</h4>
+  <ul>
+    <li><a href="https://api.sam.gov/opportunities/v2/search" target="_blank">api.sam.gov/opportunities/v2/search</a> (authenticated)</li>
+    <li><a href="https://changeis-bd-rag-production.up.railway.app/match" target="_blank">changeis-bd-rag-production.up.railway.app/match</a></li>
+    <li><code>/home/user/workspace/data/sam/sam.sqlite</code> (1,452 opps)</li>
+  </ul>
+
+  <h4>Next Steps</h4>
+  <ul>
+    <li>Daily monitor cron now active — will produce sam_daily_*.json each weekday at 9 AM EDT</li>
+    <li>Combined Daily Brief (8516a029) will surface net-new opps</li>
+    <li>Consider weekly RAG re-scoring for the MODERATE tier</li>
+    <li>Set up 90-day retention policy for inactive opportunities</li>
+  </ul>
+</div>
+</details>
+
+<div class="panel" style="margin-top: 24px;">
+  <h3 style="font-family: system-ui, sans-serif; font-size: 15px; color: var(--navy); margin-bottom: 8px;">Continue This Work</h3>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="copyFollowUp()">Copy Follow-Up Prompt</button>
+    <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20SAM%20Backfill%20Follow-Up&body=Referring%20to%20https://vm2-p-taskers-production.up.railway.app/sam-backfill-30day-2026-04-22.html%0A%0A">Email to VM2</a>
+    <a class="btn btn-secondary" href="https://todoist.com/add?content=Follow-up:%20SAM.gov%20backfill&description=https://vm2-p-taskers-production.up.railway.app/sam-backfill-30day-2026-04-22.html" target="_blank">Create Todoist Follow-Up</a>
+  </div>
+</div>
+
+<div class="footer">
+  Changeis Confidential · SAM.gov 30-Day Backfill &amp; Database Persistence · 2026-04-22 · VM2 Deliverable
+</div>
+
+</div>
+
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "SAM.gov 30-Day Backfill + Database Persistence",
+  "task_date": "2026-04-22",
+  "deliverable_file": "sam-backfill-30day-2026-04-22.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/sam-backfill-30day-2026-04-22.html",
+  "version": 1,
+  "prior_versions": [],
+  "created_date": "2026-04-22",
+  "revised_date": null,
+  "related_deliverables": [
+    "changeis-daily-brief (ongoing)"
+  ],
+  "original_instructions": "Pull all 541* opportunities for the last 30 days and reconcile against what we had already pulled. Figure out some way to make sure we keep a database so we can pick up where we left off if things break.",
+  "approach": "Built SQLite database at /home/user/workspace/data/sam/sam.sqlite (3 tables: opportunities, runs, opp_run_seen). Pulled api.sam.gov with authenticated key across 49 NAICS codes in the 541xxx family + 3 non-541 priorities (518210, 561110, 611430) using 10-day slices over the last 30 days. Upserted all 1,452 unique opportunities into the DB. Applied RAG Engine scoring (Changeis capability match) to every record. Updated the daily SAM monitor cron (8f2a4ac1) to use the DB as single source of truth for dedup + lifecycle tracking.",
+  "key_findings": [
+    "1452 unique priority-NAICS opportunities from the last 30 days now persisted in the DB",
+    "RAG scoring: 221 STRONG, 1100 MODERATE, 98 RELEVANT, 33 LOW",
+    "The old cron had been returning 0 opportunities for 18 consecutive business days because it used the unauthenticated sam.gov endpoint that had changed schema",
+    "49 distinct 541xxx NAICS codes queried; top volume: 541330 Engineering Services (286 opps), 541519 Other Computer Services (215), 541715 R&D in Physical/Life Sciences (149)",
+    "Top department by STRONG+MODERATE volume: DoD (574), VA (210), Interior (112), HHS (78), GSA (61), NASA (38), DHS (30)",
+    "Database supports crash-safe resumption: every notice_id ever seen is stored with first_seen / last_seen run IDs, so a failed cron can re-run without reprocessing"
+  ],
+  "dead_ends": [
+    "The old unauthenticated sam.gov/api/prod/sgs/v1/search endpoint silently returns 0 totalRecords for all queries \u2014 root cause of the 18-day outage",
+    "Initial backfill missed 28 opportunities from the 3 non-541 priority NAICS (518210, 561110, 611430) \u2014 reconciled by merging those from the last-run state file"
+  ],
+  "assumptions": [
+    "RAG classification thresholds: STRONG >= 0.65, MODERATE >= 0.50, RELEVANT >= 0.45, LOW < 0.45",
+    "7-day lookback on daily runs is sufficient to catch late-posted amendments; longer windows will be picked up as they reappear",
+    "Priority NAICS = 49 codes in 541xxx family + 518210, 561110, 611430"
+  ],
+  "open_questions": [
+    "Should daily runs expand to more NAICS outside 541xxx (e.g., 238 construction, 611 non-430 training)? Currently scoped to the Changeis-relevant capability set only.",
+    "Is the RAG-scored MODERATE volume (1,100 opps) actionable, or is further filtering needed before surfacing in daily brief?"
+  ],
+  "data_sources": [
+    "https://api.sam.gov/opportunities/v2/search (authenticated, key at /home/user/workspace/.secrets/sam_api_key.txt)",
+    "https://changeis-bd-rag-production.up.railway.app/match (RAG Engine)",
+    "/home/user/workspace/data/sam/sam.sqlite (SQLite DB, 1,452 opportunities)",
+    "/home/user/workspace/cron_tracking/sam_monitor/seen_notice_ids.json (legacy state, reconciled)"
+  ],
+  "next_steps": [
+    "Daily SAM monitor cron (8f2a4ac1) now executes /home/user/workspace/data/sam/daily_monitor.py on weekdays at 9 AM EDT",
+    "Combined Daily Brief (8516a029) will surface NEW opps from the sam_daily_*.json output file",
+    "Consider adding a weekly RAG re-score for the MODERATE tier to catch any that have moved to STRONG",
+    "Set up a monthly deletion policy for inactive opportunities older than 90 days (the DB is growing)"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~120,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "sam_api_calls": "~300 (30-day backfill across 49 NAICS in 3 date slices)",
+    "rag_api_calls": 1452,
+    "cost_conservative": "$0.60",
+    "cost_ceiling": "$1.20",
+    "notes": "Backfill one-time cost. Ongoing daily runs will make ~52 SAM API calls + RAG scoring for net-new opps only (~30-50/day typical)."
+  }
+}
+</script>
+
+<script>
+function toggleTheme() {
+  const h = document.documentElement;
+  const cur = h.getAttribute('data-theme') || 'light';
+  const next = cur === 'light' ? 'dark' : 'light';
+  h.setAttribute('data-theme', next);
+  document.querySelector('.theme-toggle').textContent = next === 'light' ? 'Dark' : 'Light';
+}
+function copyFollowUp() {
+  const txt = 'Reference the SAM.gov backfill deliverable at https://vm2-p-taskers-production.up.railway.app/sam-backfill-30day-2026-04-22.html and ...';
+  navigator.clipboard.writeText(txt).then(()=>alert('Copied.'));
+}
+</script>
+
+</body>
+</html>
