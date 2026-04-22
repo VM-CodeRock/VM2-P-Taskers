@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: CBP NIDPS Data Entry Services — F2026072290</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --verdict-nogo-bg: #fdf0f0;
+    --verdict-nogo-border: #c53a3a;
+    --verdict-mod-bg: #fffbf0;
+    --verdict-mod-border: #d97d2a;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --verdict-nogo-bg: #1c1215;
+    --verdict-nogo-border: #c53a3a;
+    --verdict-mod-bg: #1c1a10;
+    --verdict-mod-border: #d97d2a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.18; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p { font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { font-size: 15px; margin-bottom: 4px; line-height: 1.55; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Verdict box */
+  .verdict-box {
+    border-left: 4px solid;
+    border-radius: 0 8px 8px 0;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .verdict-box.nogo {
+    background: var(--verdict-nogo-bg);
+    border-color: var(--verdict-nogo-border);
+  }
+  .verdict-box.moderate {
+    background: var(--verdict-mod-bg);
+    border-color: var(--verdict-mod-border);
+  }
+  .verdict-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .verdict-box.nogo .verdict-label { color: var(--verdict-nogo-border); }
+  .verdict-box.moderate .verdict-label { color: #d97d2a; }
+  .verdict-title {
+    font-size: 20px; font-weight: 700; margin-bottom: 8px;
+    color: var(--text);
+  }
+  .verdict-rationale {
+    font-size: 15px; color: var(--text-muted); line-height: 1.6;
+  }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Callout */
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--navy);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    font-size: 14.5px;
+  }
+  .callout-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .callout-label { color: #7eb3e0; }
+  [data-theme="dark"] .callout { border-left-color: #7eb3e0; }
+
+  /* Stat cards */
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
+    margin-top: 10px; margin-bottom: 16px;
+  }
+  @media (max-width: 600px) { .stat-grid { grid-template-columns: 1fr; } }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .stat-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text-muted); margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 20px; font-weight: 700; color: var(--navy);
+    font-family: system-ui, sans-serif;
+  }
+  [data-theme="dark"] .stat-value { color: #e2e2e2; }
+  .stat-sub {
+    font-size: 12px; color: var(--text-faint); margin-top: 2px;
+    font-family: system-ui, sans-serif;
+  }
+
+  /* RAG badge */
+  .rag-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    padding: 2px 10px; border-radius: 3px;
+  }
+  .rag-moderate { background: #fff3cd; color: #856404; }
+  .rag-go { background: #d1e7dd; color: #0f5132; }
+  .rag-nogo { background: #f8d7da; color: #842029; }
+
+  /* Alert box */
+  .alert {
+    background: var(--verdict-nogo-bg);
+    border: 1px solid #f5c2c7;
+    border-left: 4px solid var(--red);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 16px; margin-bottom: 16px;
+    font-size: 14.5px;
+  }
+  [data-theme="dark"] .alert { border-color: var(--red); background: #1c1215; }
+  .alert strong { color: var(--red); }
+
+  /* Context section */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    border: none; cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; color: inherit; text-decoration: none; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px; padding: 18px 24px;
+    border-top: 1px solid var(--border);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    text-align: center;
+  }
+
+  /* Meta tag line */
+  .meta-line {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    margin-bottom: 24px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark/Light</button>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-badge">Deep Dive</div>
+    <h1>CBP NIDPS Data Entry Services</h1>
+    <div class="hero-sub">APFS F2026072290 · CBP/OIT/PSPO · AbilityOne Mandatory Source</div>
+    <div class="hero-date">Created: 2026-04-22</div>
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section">
+    <div class="section-header">Executive Summary</div>
+
+    <div class="verdict-box nogo">
+      <div class="verdict-label">Verdict</div>
+      <div class="verdict-title">NO-GO — AbilityOne Mandatory Direct Award</div>
+      <div class="verdict-rationale">
+        This contract is explicitly designated as a direct award to an AbilityOne-designated nonprofit under FAR Subpart 8.2. The incumbent, Coleman Professional Services (Kent, OH), is an AbilityOne/SourceAmerica participant and will almost certainly receive the follow-on via the mandatory source process. No competitive set-aside exists; there is no vehicle Changeis could pursue. The opportunity is structurally closed to commercial firms.
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Dollar Range</div>
+        <div class="stat-value">$5M–$10M</div>
+        <div class="stat-sub">FFP · PO (FAR 13.5)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">RAG Score</div>
+        <div class="stat-value"><span class="rag-badge rag-moderate">MODERATE 0.56</span></div>
+        <div class="stat-sub">Closest: CBP OFAM (HCaTS) at 0.639</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Award Quarter</div>
+        <div class="stat-value">Q3 FY2026</div>
+        <div class="stat-sub">PoP: 05/01/2026 – 04/30/2028</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Key Finding</div>
+      Despite a meaningful RAG score (0.56) driven by Changeis's CBP past performance, the acquisition strategy is unambiguous: <em>"This will be a direct award with AbilityOne in accordance with FAR Subpart 8.2."</em> No competition is contemplated. Changeis cannot compete for this award and should not expend BD resources pursuing it. Monitor for any future migration off AbilityOne status, which would convert this to a competed requirement.
+    </div>
+  </div>
+
+  <!-- OPPORTUNITY OVERVIEW -->
+  <div class="section">
+    <div class="section-header">Opportunity Overview</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>APFS Number</td><td>F2026072290</td></tr>
+        <tr><td>Requirements Title</td><td>Data Entry Services for Non-Immigrant Data Processing Services (NIDPS) and Currency and Monetary Instruments Report (CMIR) 2.0</td></tr>
+        <tr><td>Organization</td><td>CBP/OIT/PSPO (Passenger Systems Program Office)</td></tr>
+        <tr><td>Requirements Office</td><td>Information Technology Requirements Office (ITRO)</td></tr>
+        <tr><td>Contracting Office</td><td>Information Technology (ITCD)</td></tr>
+        <tr><td>NAICS</td><td>518210 — Computing Infrastructure Providers, Data Processing, Web Hosting, and Related Services</td></tr>
+        <tr><td>Contract Type</td><td>Firm Fixed Price</td></tr>
+        <tr><td>Contract Vehicle</td><td>PO (FAR Subpart 13.5)</td></tr>
+        <tr><td>Dollar Range</td><td>$5,000,000 – $10,000,000</td></tr>
+        <tr><td>Competitive Type</td><td>Follow-on to Existing Contract (Non-Competitive, AbilityOne)</td></tr>
+        <tr><td>Small Business Program</td><td>AbilityOne</td></tr>
+        <tr><td>PoP Start</td><td>05/01/2026</td></tr>
+        <tr><td>PoP End</td><td>04/30/2028</td></tr>
+        <tr><td>Anticipated Award</td><td>04/29/2026</td></tr>
+        <tr><td>Solicitation Release (Est.)</td><td>02/23/2026</td></tr>
+        <tr><td>Place of Performance</td><td>Kent, DC (Kent, OH facility of Coleman Professional Services)</td></tr>
+        <tr><td>Requirements Contact</td><td>Gary Orr — <a href="mailto:GARY.ORR@CBP.DHS.GOV">GARY.ORR@CBP.DHS.GOV</a> · (317) 614-4573</td></tr>
+        <tr><td>Alternate Contact</td><td>Natalie Wu — <a href="mailto:Natalie.J.Wu@cbp.dhs.gov">Natalie.J.Wu@cbp.dhs.gov</a> · (407) 335-2214</td></tr>
+        <tr><td>SBS Coordinator</td><td>David Harrod — <a href="mailto:David.K.Harrod@cbp.dhs.gov">David.K.Harrod@cbp.dhs.gov</a></td></tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:14px;">The requirement covers contractor support to streamline and automate the entire life cycle of NIDPS and CMIR documents: receiving physical forms, digitizing/scanning, entering data electronically, and transmitting to CBP — while minimizing labor costs and maximizing technological efficiencies. This is a labor-intensive, high-volume document digitization operation, not an IT development contract.</p>
+  </div>
+
+  <!-- NIDPS BACKGROUND -->
+  <div class="section">
+    <div class="section-header">NIDPS &amp; CMIR Background — What Is This System?</div>
+
+    <p><strong>NIDPS (Non-Immigrant Data Processing System)</strong> is CBP's legacy system for processing paper arrival/departure forms submitted by non-citizens at U.S. ports of entry — principally Form I-94 (Arrival/Departure Record) at land border crossings. Air and sea ports of entry shifted to fully electronic I-94 issuance in 2013, but land border crossings still generate paper I-94 forms that must be manually digitized and entered into CBP's passenger vetting systems.</p>
+
+    <p><strong>CMIR (Currency and Monetary Instruments Report)</strong> is FinCEN Form 105, required of travelers who bring more than $10,000 in currency or monetary instruments into or out of the U.S. CBP collects these paper forms at ports of entry; they must be digitized, entered, and transmitted to Treasury/FinCEN for anti-money-laundering and anti-trafficking enforcement.</p>
+
+    <p>Together, NIDPS and CMIR 2.0 represent the paper document digitization backlog that still flows from physical ports of entry. The Passenger Systems Program Office (PSPO) within CBP's Office of Information Technology (OIT) owns and operates these systems and manages the data entry service contract.</p>
+
+    <div class="callout">
+      <div class="callout-label">Operational Context</div>
+      Per SourceAmerica, Coleman Data Solutions (operating as Coleman Professional Services) receives daily shipments of physical documents from CBP. Workers — over 30 people with disabilities — sort documents into 20 categories, operate high-speed scanners, and manually key handwritten form data into CBP systems. The operation runs continuously to prevent backlog accumulation. This is mission-critical, high-accuracy work tightly integrated into CBP's passenger vetting and financial intelligence pipelines.
+    </div>
+  </div>
+
+  <!-- VEHICLE / CONTRACT ANALYSIS -->
+  <div class="section">
+    <div class="section-header">Vehicle &amp; Contract Analysis</div>
+
+    <div class="alert">
+      <strong>DISQUALIFYING FACTOR: AbilityOne Mandatory Source (FAR 8.2)</strong><br>
+      The AbilityOne Program (Javits-Wagner-O'Day Act, 41 U.S.C. §§ 8501–8506) creates a statutory mandatory source requirement. Federal agencies must purchase services on the Procurement List from designated nonprofit agencies employing people with disabilities. CBP has no discretion to compete this requirement while it remains on the AbilityOne Procurement List. There is no mechanism for a commercial firm to compete for or team on an AbilityOne direct award.
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Attribute</th><th>Analysis</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Contract Vehicle</td>
+          <td>Purchase Order (FAR Subpart 13.5) — simplified acquisition used for AbilityOne direct awards. No ID/IQ, no task order competition.</td>
+        </tr>
+        <tr>
+          <td>AbilityOne Status</td>
+          <td>Service is on the AbilityOne Procurement List. Mandatory purchase from designated NPA. Cannot be waived without Commission approval.</td>
+        </tr>
+        <tr>
+          <td>Competitive Type</td>
+          <td>APFS shows "NO" competition, "Follow-on to Existing Contract." APFS Status: REC (Recompetition), but recompetition within AbilityOne ecosystem only.</td>
+        </tr>
+        <tr>
+          <td>Award Mechanism</td>
+          <td>Direct award to AbilityOne NPA (Coleman Professional Services). No solicitation on SAM.gov expected for general market.</td>
+        </tr>
+        <tr>
+          <td>Pricing Control</td>
+          <td>AbilityOne Commission sets fair market price. Government pays Commission-approved rates; contractor cannot be undercut on price by commercial vendors.</td>
+        </tr>
+        <tr>
+          <td>Subcontracting Path</td>
+          <td>Theoretically possible to subcontract to AbilityOne NPA as prime, but CBP is issuing a direct PO — no prime competition for Changeis to access.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- INCUMBENT LANDSCAPE -->
+  <div class="section">
+    <div class="section-header">Incumbent Landscape</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Entity</th>
+          <th>Role</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Coleman Professional Services, Inc.</strong></td>
+          <td>Prime Contractor / Incumbent</td>
+          <td>AbilityOne/SourceAmerica nonprofit agency headquartered in Kent, OH. UEI K844HKZV9U89, CAGE 37RJ7. Operates as "Coleman Data Solutions" for this contract. Employs 30+ people with disabilities on CBP work.</td>
+        </tr>
+        <tr>
+          <td>Contract #70B04C24P00000146</td>
+          <td>Current Award</td>
+          <td>Awarded 05/03/2024 at $2,157,915 initial obligation. Total obligated through Sep 2025: $5,303,757. In progress with ~8–16 days remaining as of early-to-mid April 2026. Follow-on PoP 05/01/2026–04/30/2028.</td>
+        </tr>
+        <tr>
+          <td>SourceAmerica</td>
+          <td>AbilityOne Intermediary</td>
+          <td>One of two central nonprofit agencies managing the AbilityOne program (the other being NIB). SourceAmerica represents Coleman in maintaining this service on the Procurement List and negotiating fair market price with the Commission.</td>
+        </tr>
+        <tr>
+          <td>AbilityOne Commission</td>
+          <td>Regulatory Authority</td>
+          <td>Sets pricing, maintains Procurement List, grants any waivers. No waiver likely — CBP has used Coleman continuously for this work for multiple contract periods.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:12px;">Coleman Professional Services has operated this CBP data entry program for multiple contract periods. The <a href="https://www.sourceamerica.org/newsroom/feature-stories/taking-travel-documents-the-next-digital-level" target="_blank">SourceAmerica feature story</a> confirms their operational model: daily document shipments, three-stage processing (mailroom sorting, high-speed scanning, manual data entry), and continuous quality control. Their incumbent advantage is absolute — no other vendor can displace them while the service remains on the AbilityOne Procurement List.</p>
+  </div>
+
+  <!-- CHANGEIS CAPABILITY MATCH -->
+  <div class="section">
+    <div class="section-header">Changeis Capability Match</div>
+
+    <p>While Changeis is structurally ineligible to compete for this contract, an honest capability assessment is provided for future positioning purposes.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Capability Dimension</th>
+          <th>Changeis Position</th>
+          <th>Relevance to NIDPS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>CBP Past Performance</td>
+          <td><strong>STRONG</strong> — RAG top match is CBP OFAM (HCaTS, score 0.639), confirming active CBP relationships. Tier IV BI experience documented in RAG.</td>
+          <td>High — PSPO shares CBP security infrastructure; past COR/CO relationships relevant to relationship development.</td>
+        </tr>
+        <tr>
+          <td>DHS Passenger Systems Knowledge</td>
+          <td>Moderate — no direct NIDPS/CMIR system experience identified in RAG corpus.</td>
+          <td>Medium — relevant for future modernization plays.</td>
+        </tr>
+        <tr>
+          <td>Data Entry / Digitization Operations</td>
+          <td>Low — Changeis is a professional services firm; not structured to employ 30+ data entry operators processing physical mail.</td>
+          <td>Low for this requirement — the work is purely operational, not advisory or technical.</td>
+        </tr>
+        <tr>
+          <td>AbilityOne NPA Status</td>
+          <td>None — Changeis is a commercial IT/management consulting firm, not an AbilityOne-designated nonprofit.</td>
+          <td>Disqualifying — mandatory for this award.</td>
+        </tr>
+        <tr>
+          <td>RAG Score</td>
+          <td>0.56 (MODERATE) — Driven by CBP/DHS past performance in administrative and financial support work, not document digitization per se.</td>
+          <td>Score reflects relationship relevance, not specific operational capability match.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <div class="callout-label">RAG Context</div>
+      The RAG engine's top match — CBP OFAM (HCaTS) at 0.639 — shows strong CBP institutional knowledge but is in the administrative/financial support domain, not document digitization operations. Secondary matches (Volpe/DOT country clearances, FMCSA DataQs) are administrative support functions. None represent data entry operations work, reinforcing the assessment that Changeis's value to CBP is as a professional services and IT firm, not a back-office processing operation.
+    </div>
+  </div>
+
+  <!-- COMPETITIVE POSITIONING -->
+  <div class="section">
+    <div class="section-header">Competitive Positioning</div>
+
+    <p>Because this award is non-competitive by statute, there is no competitive positioning available for Changeis on this specific requirement. The analysis below addresses how to position for adjacent opportunities.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Opportunity Vector</th>
+          <th>Description</th>
+          <th>Viability</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>NIDPS/CMIR Modernization</td>
+          <td>CBP has periodically explored modernizing legacy paper-based intake. If PSPO issues a separate IT modernization effort to automate NIDPS document processing (OCR, AI-assisted data extraction, workflow automation), Changeis could compete as an IT services prime.</td>
+          <td><strong>Medium-term</strong> — monitor CBP PSPO procurement forecasts for IT modernization language.</td>
+        </tr>
+        <tr>
+          <td>CBP OFAM Expansion</td>
+          <td>Changeis's strongest RAG match is CBP OFAM (HCaTS). Deepening that relationship provides access to CBP OIT and PSPO leadership who own the NIDPS requirement.</td>
+          <td><strong>Active</strong> — use existing CBP relationships to engage Gary Orr / PSPO on the modernization roadmap.</td>
+        </tr>
+        <tr>
+          <td>Adjacent DHS Data Processing IT</td>
+          <td>Similar digitization/automation work across DHS (ICE, USCIS, TSA) may be competed vehicles where Changeis could bring automation solutions that reduce reliance on AbilityOne labor models.</td>
+          <td><strong>Medium</strong> — watch USCIS Form Processing IT and TSA Checkpoint Technology modernization.</td>
+        </tr>
+        <tr>
+          <td>AbilityOne Teaming (Future)</td>
+          <td>If CBP were to shift this requirement to a competed vehicle (e.g., due to automation reducing the labor component below AbilityOne thresholds), Changeis could potentially team with an AbilityOne NPA as a technology subcontractor.</td>
+          <td><strong>Low probability near-term</strong> — would require Commission-level changes to Procurement List.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- GO/NO-GO RECOMMENDATION -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Recommendation</div>
+
+    <div class="verdict-box nogo">
+      <div class="verdict-label">Final Recommendation</div>
+      <div class="verdict-title">NO-GO</div>
+      <div class="verdict-rationale">
+        <strong>Primary disqualifier:</strong> AbilityOne mandatory source (FAR 8.2) — direct award to Coleman Professional Services. No competitive pathway exists for any commercial firm, including Changeis. The acquisition strategy is explicit: "direct award with AbilityOne in accordance with FAR Subpart 8.2."<br><br>
+        <strong>Secondary factors:</strong> (1) The service is labor-intensive document digitization using workers with disabilities — outside Changeis's operational model. (2) Dollar range ($5M–$10M over 2 years) is attractive, but accessibility is zero. (3) RAG score of 0.56 reflects CBP relationship depth, not this contract type.<br><br>
+        <strong>Action:</strong> Zero BD investment in this specific procurement. Use the opportunity as intelligence to engage CBP PSPO on future NIDPS/CMIR modernization (IT automation). Log Gary Orr and Natalie Wu as PSPO contacts for relationship management.
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Criterion</th><th>Weight</th><th>Score</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Contract Accessibility</td><td>Critical</td><td style="color:var(--red);font-weight:700;">FAIL</td><td>AbilityOne mandatory direct award — structurally inaccessible</td></tr>
+        <tr><td>Vehicle Fit</td><td>High</td><td style="color:var(--red);font-weight:700;">FAIL</td><td>PO under FAR 13.5 — no competition mechanism</td></tr>
+        <tr><td>Capability Match</td><td>Medium</td><td>LOW</td><td>Labor/operational work outside Changeis's model</td></tr>
+        <tr><td>CBP Relationship Leverage</td><td>Medium</td><td>STRONG</td><td>Strong CBP PP (OFAM/HCaTS), relevant for intelligence gathering only</td></tr>
+        <tr><td>Future Positioning Value</td><td>Low-Medium</td><td>MODERATE</td><td>NIDPS modernization is a potential future opportunity</td></tr>
+        <tr><td><strong>Overall Verdict</strong></td><td>—</td><td colspan="2"><strong>NO-GO — pursue zero dollars of BD spend on this award</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SESSION CONTEXT -->
+  <div class="context-section">
+    <button class="context-toggle" onclick="toggleContext(this)">
+      <span class="arrow">▶</span> Session Context &amp; Methodology
+    </button>
+    <div class="context-body">
+ORIGINAL INSTRUCTIONS:
+Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjRf4v7wxPFgr → APFS F2026072290 CBP/OIT/PSPO Data Entry Services for NIDPS.
+Sections: Executive Summary (GO/MODERATE/NO-GO + rationale), Opportunity Overview, Vehicle/Contract Analysis, Incumbent Landscape, Changeis Capability Match (emphasize CBP past performance), Competitive Positioning, Go/No-Go Recommendation.
+
+APPROACH:
+1. Read /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2026072290.json — extracted all metadata.
+2. Ran RAG engine (changeis-bd-rag-production.up.railway.app/match) with query on CBP passenger systems NIDPS data entry.
+3. Researched via web: NIDPS background, CBP PSPO, Coleman Professional Services incumbent, AbilityOne program mechanics.
+4. Fetched USASpending.gov award record CONT_AWD_70B04C24P00000146 — confirmed $5.3M total obligations.
+5. Fetched SourceAmerica feature story on Coleman Data Solutions CBP work — confirmed operational model.
+6. Reviewed APFS public record at apfs-cloud.dhs.gov/record/72290/public-print/.
+
+KEY FINDINGS:
+- Contract is an AbilityOne mandatory direct award (FAR 8.2) to Coleman Professional Services — not competitive.
+- Acquisition strategy explicitly states "direct award with AbilityOne in accordance with FAR Subpart 8.2."
+- Incumbent Coleman Professional Services (Kent, OH) is an AbilityOne/SourceAmerica nonprofit; total obligations ~$5.3M on current contract (70B04C24P00000146, awarded May 2024).
+- NIDPS processes paper I-94 forms from land border crossings; CMIR processes FinCEN Form 105 currency reports.
+- RAG top match: CBP OFAM (HCaTS) at 0.639 — strong CBP relationship but in admin/financial support domain, not document digitization.
+- The RAG MODERATE score (0.56) in the JSON is driven by CBP institutional knowledge, not operational data entry capability.
+
+DEAD ENDS:
+- HigherGov Coleman Professional Services page returned no contract detail (paywall-gated data).
+- No GSA Advantage or AbilityOne Procurement List record directly accessed, but AbilityOne.gov FAQs confirmed statutory mandatory source requirement.
+
+ASSUMPTIONS:
+- Coleman Professional Services will receive follow-on award as expected — no intelligence suggesting AbilityOne removal under consideration.
+- "Kent, DC" in place of performance is a data entry error in APFS; true location is Kent, OH (Coleman headquarters).
+- Award will proceed on or before 04/29/2026 as anticipated.
+
+OPEN QUESTIONS:
+- Has CBP PSPO scoped any future IT modernization (OCR/AI automation) that would reduce dependence on manual data entry labor?
+- Are there any advisory/oversight task orders associated with PSPO that Changeis could pursue for NIDPS/CMIR system modernization?
+- What is the AbilityOne Procurement List entry number for this specific service?
+
+DATA SOURCES:
+- /home/user/workspace/cron_tracking/6f5371ab/opp_details/F2026072290.json
+- https://apfs-cloud.dhs.gov/record/72290/public-print/
+- https://www.usaspending.gov/award/CONT_AWD_70B04C24P00000146_7014_-NONE-_-NONE-/
+- https://www.sourceamerica.org/newsroom/feature-stories/taking-travel-documents-the-next-digital-level
+- https://www.highergov.com/awardee/coleman-professional-services-inc-10008097/
+- https://www.abilityone.gov/abilityone_program/faqs.html
+- RAG engine: https://changeis-bd-rag-production.up.railway.app/match
+
+NEXT STEPS:
+1. Log Gary Orr (CBP PSPO) and Natalie Wu as contacts for NIDPS modernization intelligence.
+2. Monitor CBP PSPO for any IT modernization solicitations related to automated form processing.
+3. Explore CBP OFAM expansion opportunities (strongest RAG match at 0.639).
+4. Consider BD engagement at CBP OIT level to position for NIDPS 2.0 / automation work.
+    </div>
+  </div>
+
+  <!-- Hidden JSON context block -->
+  <script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Deep Dive: CBP NIDPS Data Entry Services F2026072290",
+  "task_date": "2026-04-22",
+  "created_date": "2026-04-22",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-cbp-nidps-f2026072290-2026-04-22.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-nidps-f2026072290-2026-04-22.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute VM2 Opportunity Deep Dive for Todoist task 6gQhjRf4v7wxPFgr → APFS F2026072290 CBP/OIT/PSPO Data Entry Services for NIDPS. RAG: 0.56 MODERATE. AbilityOne mandatory direct award.",
+  "approach": "Read JSON metadata, ran RAG engine query, researched NIDPS/CMIR background, fetched USASpending award data for incumbent contract, fetched SourceAmerica feature on Coleman, reviewed APFS public record.",
+  "key_findings": [
+    "AbilityOne mandatory direct award (FAR 8.2) — structurally inaccessible to commercial firms including Changeis",
+    "Incumbent: Coleman Professional Services, Inc. (Kent, OH) — AbilityOne/SourceAmerica nonprofit, ~$5.3M obligated on current contract 70B04C24P00000146",
+    "NIDPS processes paper I-94 forms from land border crossings; CMIR processes FinCEN Form 105 currency reports",
+    "RAG top match CBP OFAM (HCaTS) 0.639 — strong CBP relationship in admin/financial support, not document digitization",
+    "No competitive pathway exists; BD spend on this award is not warranted"
+  ],
+  "dead_ends": [
+    "HigherGov Coleman detail page paywalled",
+    "No direct AbilityOne Procurement List record accessed"
+  ],
+  "assumptions": [
+    "Coleman Professional Services will receive follow-on — no indication of AbilityOne removal",
+    "Kent, DC in APFS is a data error; actual location is Kent, OH",
+    "Award will proceed on or near 04/29/2026 anticipated date"
+  ],
+  "open_questions": [
+    "Has CBP PSPO scoped any future IT modernization (OCR/AI automation) reducing dependence on manual data entry?",
+    "Are there advisory/IT task orders for NIDPS/CMIR modernization Changeis could pursue?",
+    "What is the AbilityOne Procurement List entry number for this service?"
+  ],
+  "data_sources": [
+    "/home/user/workspace/cron_tracking/6f5371ab/opp_details/F2026072290.json",
+    "https://apfs-cloud.dhs.gov/record/72290/public-print/",
+    "https://www.usaspending.gov/award/CONT_AWD_70B04C24P00000146_7014_-NONE-_-NONE-/",
+    "https://www.sourceamerica.org/newsroom/feature-stories/taking-travel-documents-the-next-digital-level",
+    "https://www.abilityone.gov/abilityone_program/faqs.html",
+    "https://changeis-bd-rag-production.up.railway.app/match (RAG engine)"
+  ],
+  "next_steps": [
+    "Log Gary Orr and Natalie Wu (CBP PSPO) as contacts for NIDPS modernization intelligence",
+    "Monitor CBP PSPO for IT modernization solicitations related to automated form processing / OCR",
+    "Leverage CBP OFAM relationship for PSPO access",
+    "Consider BD engagement at CBP OIT level for NIDPS 2.0 / automation positioning"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-5",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~55,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.30",
+    "cost_ceiling": "$0.55",
+    "notes": "6 web searches, 3 URL fetches, 1 RAG engine call, file reads. Moderate complexity deep dive."
+  }
+}
+  </script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up where this analysis left off</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up%3A%20CBP%20NIDPS%20Deep%20Dive%20F2026072290&body=Follow-up%20on%20deep%20dive%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fdeep-dive-cbp-nidps-f2026072290-2026-04-22.html%0A%0AVERDICT%3A%20NO-GO%20(AbilityOne%20mandatory%20direct%20award%2C%20Coleman%20Professional%20Services%20incumbent)">Email to VM2</a>
+      <button class="btn btn-secondary" onclick="createTodoist()">Create Todoist Follow-Up</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Changeis Confidential · CBP NIDPS Data Entry Services Deep Dive · April 2026 · VM2 Deliverable<br>
+  <span style="font-size:11px;">Sources: <a href="https://apfs-cloud.dhs.gov/record/72290/public-print/" target="_blank">APFS F2026072290</a> · <a href="https://www.usaspending.gov/award/CONT_AWD_70B04C24P00000146_7014_-NONE-_-NONE-/" target="_blank">USASpending 70B04C24P00000146</a> · <a href="https://www.sourceamerica.org/newsroom/feature-stories/taking-travel-documents-the-next-digital-level" target="_blank">SourceAmerica</a></span>
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+
+function toggleContext(btn) {
+  btn.classList.toggle('open');
+  const body = btn.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+function copyFollowUp() {
+  const url = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-cbp-nidps-f2026072290-2026-04-22.html';
+  const prompt = `Continue the VM2 deep dive for CBP NIDPS (F2026072290).\n\nPrevious analysis: ${url}\n\nVerdict: NO-GO (AbilityOne mandatory direct award to Coleman Professional Services)\n\nFollow-up focus: Research CBP PSPO modernization opportunities — any upcoming IT solicitations for NIDPS/CMIR automation, OCR, or workflow modernization that Changeis could compete on as an IT services prime. Also explore expanding the CBP OFAM (HCaTS) relationship to engage PSPO leadership.`;
+  navigator.clipboard.writeText(prompt).then(() => alert('Follow-up prompt copied to clipboard.')).catch(() => alert('Copy failed. See console.'));
+}
+
+function createTodoist() {
+  const url = 'https://todoist.com/app/project/inbox?task=add&content=Follow-Up%3A%20CBP%20PSPO%20NIDPS%20Modernization%20Research%20%E2%80%94%20Deep%20Dive%20F2026072290%20NO-GO';
+  window.open(url, '_blank');
+}
+</script>
+
+</body>
+</html>
