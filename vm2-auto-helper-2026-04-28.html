@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todoist Auto-Helper — 2026-04-28</title>
+<!-- Charter not on Google Fonts; Georgia serves as the serif fallback -->
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 24px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 16px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 8px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .card-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .card-title { font-family: system-ui, sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .card-meta { font-family: system-ui, sans-serif; font-size: 12px; color: var(--text-muted); }
+  .badge {
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .card-body { padding: 14px 16px 16px; }
+  .card-body h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--red);
+    margin: 12px 0 6px;
+  }
+  .card-body p { color: var(--text); }
+
+  .card-actions { margin-top: 14px; }
+  .btn {
+    display: inline-block;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    padding: 9px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .btn:hover { filter: brightness(0.92); }
+
+  details {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+    margin: 18px 0;
+    overflow: hidden;
+  }
+  summary {
+    cursor: pointer;
+    padding: 12px 14px;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--border);
+  }
+  .details-body { padding: 12px 14px; }
+  .details-body h4 { color: var(--red); font-family: system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin: 12px 0 6px; }
+  .details-body pre { white-space: pre-wrap; background: var(--code-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
+  .details-body ul { padding-left: 18px; }
+  .details-body li { margin: 4px 0; }
+
+  .continue-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 18px;
+  }
+  .continue-title { font-family: system-ui, sans-serif; font-weight: 800; margin-bottom: 10px; }
+  .continue-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn-secondary {
+    display: inline-block;
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+    padding: 9px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  footer {
+    margin: 28px 0 22px;
+    text-align: center;
+    color: var(--text-muted);
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left"><span class="topbar-dot">•</span><span>VM2 · Perplexity Computer</span></div>
+    <button class="theme-toggle" id="themeToggle">Toggle Dark</button>
+  </div>
+
+  <div class="container">
+    <div class="hero">
+      <div class="hero-badge">Auto-Helper</div>
+      <h1>Todoist Auto-Helper — 2026-04-28</h1>
+      <div class="hero-sub">Suggestions for non-VM2 Todoist tasks where AI could help</div>
+    </div>
+
+    
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Review undated backlog for this week</div>
+              <div class="card-meta">6V39g3hc8wqgm2WV · Due: every day</div>
+            </div>
+            <div class="badge">Backlog grooming</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can help cluster the backlog into themes, suggest priorities, and propose a realistic weekly plan.</p>
+            <h3>Suggested approach</h3>
+            <p>Group tasks by project/theme; identify quick wins vs deep work; produce a weekly plan with time estimates.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - Review undated backlog for this week&body=Task: Review undated backlog for this week
+Project: 6V39g3hc8wqgm2WV
+Due: every day
+Why AI can help: AI can help cluster the backlog into themes, suggest priorities, and propose a realistic weekly plan.
+Suggested approach: Group tasks by project/theme; identify quick wins vs deep work; produce a weekly plan with time estimates.
+Todoist task id: 662R6rHwcCM2qfp8">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Download Upwork Statement for the month</div>
+              <div class="card-meta">Corporate · Due: every 5th · Labels: 15m</div>
+            </div>
+            <div class="badge">Finance admin / statements</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can outline the fastest way to pull the right statements/invoices and create a repeatable checklist.</p>
+            <h3>Suggested approach</h3>
+            <p>Identify source system and required date range; produce step-by-step retrieval instructions; optionally convert to a monthly SOP.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - Download Upwork Statement for the month&body=Task: Download Upwork Statement for the month
+Project: Corporate
+Due: every 5th
+Labels: 15m
+Why AI can help: AI can outline the fastest way to pull the right statements/invoices and create a repeatable checklist.
+Suggested approach: Identify source system and required date range; produce step-by-step retrieval instructions; optionally convert to a monthly SOP.
+Todoist task id: 662QGqrW9VQCxPpX">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">What are my top 3 tasks for the day?</div>
+              <div class="card-meta">Weekly GTD · Labels: 5m</div>
+            </div>
+            <div class="badge">Daily prioritization</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can help triage today’s task list and propose the highest-leverage top 3 based on due dates, importance, and effort.</p>
+            <h3>Suggested approach</h3>
+            <p>Pull today/overdue tasks; categorize by impact/urgency; propose top 3 + time-blocked plan.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - What are my top 3 tasks for the day?&body=Task: What are my top 3 tasks for the day?
+Project: Weekly GTD
+Labels: 5m
+Why AI can help: AI can help triage today’s task list and propose the highest-leverage top 3 based on due dates, importance, and effort.
+Suggested approach: Pull today/overdue tasks; categorize by impact/urgency; propose top 3 + time-blocked plan.
+Todoist task id: 662QF2WJX6rmM6Rg">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">[AutoIt - AutoIt](https://www.autoitscript.com/site/autoit/)</div>
+              <div class="card-meta">6CrfCWr955r7ppXG</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - [AutoIt - AutoIt](https://www.autoitscript.com/site/autoit/)&body=Task: [AutoIt - AutoIt](https://www.autoitscript.com/site/autoit/)
+Project: 6CrfCWr955r7ppXG
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 662R646H2g4j3pGp">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">http://intro.mydario.com/DarioGlucoseMeter/intro1.php?utm_source=facebook&amp;utm_medium=cpm&amp;utm_campaign=dongle (My Dario)</div>
+              <div class="card-meta">6CrfCWr96v53gpvV</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - http://intro.mydario.com/DarioGlucoseMeter/intro1.php?utm_source=facebook&amp;utm_medium=cpm&amp;utm_campaign=dongle (My Dario)&body=Task: http://intro.mydario.com/DarioGlucoseMeter/intro1.php?utm_source=facebook&amp;utm_medium=cpm&amp;utm_campaign=dongle (My Dario)
+Project: 6CrfCWr96v53gpvV
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 662QFXq9gwv57qMV">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">https://www.carlfriedrik.com/products/vallance-slim-leather-briefcase?variant=35918448400 (Vallance) - Great looking briefcase in leather</div>
+              <div class="card-meta">6CrfCWr96v53gpvV</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - https://www.carlfriedrik.com/products/vallance-slim-leather-briefcase?variant=35918448400 (Vallance) - Great looking briefcase in leather&body=Task: https://www.carlfriedrik.com/products/vallance-slim-leather-briefcase?variant=35918448400 (Vallance) - Great looking briefcase in leather
+Project: 6CrfCWr96v53gpvV
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 662RCP9xXCQVmXX3">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">[Three Waypoints On The Journey | Conscious Leadership Group Blog](https://conscious.is/blogs/three-waypoints-on-the-journey)</div>
+              <div class="card-meta">6MhJR7GMw9HX5FHM · Labels: CLG</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - [Three Waypoints On The Journey | Conscious Leadership Group Blog](https://conscious.is/blogs/three-waypoints-on-the-journey)&body=Task: [Three Waypoints On The Journey | Conscious Leadership Group Blog](https://conscious.is/blogs/three-waypoints-on-the-journey)
+Project: 6MhJR7GMw9HX5FHM
+Labels: CLG
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 67gwP3ppxrcxmXpM">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">[What Does it Look Like to Feel Emotions Consciously? | Conscious Leadership Group Blog](https://conscious.is/blogs/what-does-it-look-like-to-feel-emotions-consciously)</div>
+              <div class="card-meta">6MhJR7GMw9HX5FHM · Labels: CLG</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - [What Does it Look Like to Feel Emotions Consciously? | Conscious Leadership Group Blog](https://conscious.is/blogs/what-does-it-look-like-to-feel-emotions-consciously)&body=Task: [What Does it Look Like to Feel Emotions Consciously? | Conscious Leadership Group Blog](https://conscious.is/blogs/what-does-it-look-like-to-feel-emotions-consciously)
+Project: 6MhJR7GMw9HX5FHM
+Labels: CLG
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 67gwWMV6VpgqWWfM">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">[Munch | Content Repurposing Done Smart.](https://www.getmunch.com/)? #AI #YPO</div>
+              <div class="card-meta">6PHCx2rgrr7G9CMH</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - [Munch | Content Repurposing Done Smart.](https://www.getmunch.com/)? #AI #YPO&body=Task: [Munch | Content Repurposing Done Smart.](https://www.getmunch.com/)? #AI #YPO
+Project: 6PHCx2rgrr7G9CMH
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 69Hgc3fhjFGWPqGH">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">[Travel Services &amp; Solutions For Members // Marchay](https://marchay.com/service/)</div>
+              <div class="card-meta">6PHCx2rgrr7G9CMH</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - [Travel Services &amp; Solutions For Members // Marchay](https://marchay.com/service/)&body=Task: [Travel Services &amp; Solutions For Members // Marchay](https://marchay.com/service/)
+Project: 6PHCx2rgrr7G9CMH
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 699J85PpcRwmRQWq">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">[Riverside.fm - Record Podcasts And Videos From Anywhere](https://riverside.fm/) #YPO #Ideas</div>
+              <div class="card-meta">6QCW42PvWFQjcRrG</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - [Riverside.fm - Record Podcasts And Videos From Anywhere](https://riverside.fm/) #YPO #Ideas&body=Task: [Riverside.fm - Record Podcasts And Videos From Anywhere](https://riverside.fm/) #YPO #Ideas
+Project: 6QCW42PvWFQjcRrG
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 69HfWF56mJqw97fG">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">[ZBrain - Build a ChatGPT App](https://zbrain.ai/)</div>
+              <div class="card-meta">6QCW42PvWFQjcRrG</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - [ZBrain - Build a ChatGPT App](https://zbrain.ai/)&body=Task: [ZBrain - Build a ChatGPT App](https://zbrain.ai/)
+Project: 6QCW42PvWFQjcRrG
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 69C5q2VW7gH2P6FG">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">[Review Refinu Assessment](https://user.refinu.com/dashboard)</div>
+              <div class="card-meta">6V32xjHwrvvjhWPh</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - [Review Refinu Assessment](https://user.refinu.com/dashboard)&body=Task: [Review Refinu Assessment](https://user.refinu.com/dashboard)
+Project: 6V32xjHwrvvjhWPh
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 6RXQ5Wj34wH7fcP3">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">https://www.manager-tools.com/manager-tools-basics (Review MT Basics)</div>
+              <div class="card-meta">Development</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - https://www.manager-tools.com/manager-tools-basics (Review MT Basics)&body=Task: https://www.manager-tools.com/manager-tools-basics (Review MT Basics)
+Project: Development
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 662QhcGcWQWXq2Mj">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Read http://www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/ (A Quick Overview of the Momentum Planners - Productive Flourishing -)</div>
+              <div class="card-meta">Weekly GTD · Labels: 2P</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can read the linked resource and summarize key takeaways or recommended actions.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the link; extract key points; provide a concise summary and any actionable next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - Read http://www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/ (A Quick Overview of the Momentum Planners - Productive Flourishing -)&body=Task: Read http://www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/ (A Quick Overview of the Momentum Planners - Productive Flourishing -)
+Project: Weekly GTD
+Labels: 2P
+Why AI can help: AI can read the linked resource and summarize key takeaways or recommended actions.
+Suggested approach: Open the link; extract key points; provide a concise summary and any actionable next steps.
+Todoist task id: 662RCQc5mVQ2fc3g">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Create Strategy Circle for PMS</div>
+              <div class="card-meta">Changeis Performance Management System · Labels: Desk</div>
+            </div>
+            <div class="badge">Research / strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can do structured research, synthesize options, and propose a concrete plan you can execute.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify objective + audience; gather 5–10 high-signal references; produce a short brief with recommendations and next actions.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - Create Strategy Circle for PMS&body=Task: Create Strategy Circle for PMS
+Project: Changeis Performance Management System
+Labels: Desk
+Why AI can help: AI can do structured research, synthesize options, and propose a concrete plan you can execute.
+Suggested approach: Clarify objective + audience; gather 5–10 high-signal references; produce a short brief with recommendations and next actions.
+Todoist task id: 662RJGH7phPgGW95">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Research personal social media strategy</div>
+              <div class="card-meta">Development</div>
+            </div>
+            <div class="badge">Research / strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can do structured research, synthesize options, and propose a concrete plan you can execute.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify objective + audience; gather 5–10 high-signal references; produce a short brief with recommendations and next actions.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - Research personal social media strategy&body=Task: Research personal social media strategy
+Project: Development
+Why AI can help: AI can do structured research, synthesize options, and propose a concrete plan you can execute.
+Suggested approach: Clarify objective + audience; gather 5–10 high-signal references; produce a short brief with recommendations and next actions.
+Todoist task id: 662R7jmwxGwFHH4j">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Operations research project</div>
+              <div class="card-meta">Innovation</div>
+            </div>
+            <div class="badge">Research / strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can do structured research, synthesize options, and propose a concrete plan you can execute.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify objective + audience; gather 5–10 high-signal references; produce a short brief with recommendations and next actions.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2 - Operations research project&body=Task: Operations research project
+Project: Innovation
+Why AI can help: AI can do structured research, synthesize options, and propose a concrete plan you can execute.
+Suggested approach: Clarify objective + audience; gather 5–10 high-signal references; produce a short brief with recommendations and next actions.
+Todoist task id: 662R7Vr3mWh4X58J">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+    <details>
+      <summary>Session Context</summary>
+      <div class="details-body">
+        <h4>Original Instructions</h4>
+        <pre>Daily Todoist Auto-Helper: Scan ALL Todoist tasks (not just VM2-labeled ones) and identify tasks where AI could help. This is NOT for executing VM2 tasks — that&#x27;s a separate hourly cron.
+
+PURPOSE: Find non-VM2 tasks that Perplexity Computer could assist with, and generate a living page with suggestions and one-click &quot;Task VM2&quot; email buttons (mailto:vm2.viru@gmail.com).
+
+PROCEDURE:
+1. Load skills: changeis-style, research-assistant
+2. Read /home/user/workspace/deliverable-specs.md for context slug spec
+3. Use Todoist connector (source: todoist__pipedream, tool: todoist-search-tasks) to fetch ALL tasks across all projects
+4. Filter OUT tasks that already have the VM2 label (label ID: 2183231010) or vm2-done label — those are handled by the VM2 Task Execution hourly cron
+5. Analyze remaining tasks: which ones could Perplexity Computer help with? (research, writing, analysis, scheduling, etc.)
+6. Generate vm2-auto-helper-YYYY-MM-DD.html with required styling and context panel
+7. Push plain HTML to GitHub repo vm-coderock/VM2-P-Taskers
+8. Update portal.html with new entry
+9. Save to Dropbox at &quot;V M2/VM2-main-folder/VM2-P/&quot;</pre>
+
+        <h4>Approach</h4>
+        <ul><li>Fetched current uncompleted Todoist tasks, projects, and labels via the Todoist connector.</li><li>Filtered out tasks labeled VM2 or vm2-done.</li><li>Applied lightweight heuristics to identify tasks where AI assistance is likely valuable (research, link summarization, planning, admin checklists).</li><li>Generated a Changeis-styled HTML page with per-task cards and one-click mailto buttons to delegate to VM2.</li></ul>
+
+        <h4>Key Findings</h4>
+        <ul><li>Total tasks fetched: 50</li><li>After filtering VM2/vm2-done: 45</li><li>Suggestions generated: 18</li></ul>
+
+        <h4>Dead Ends</h4>
+        <ul><li>Todoist API endpoint used returns uncompleted tasks only; completed task history is not included.</li></ul>
+
+        <h4>Assumptions</h4>
+        <ul><li>Tasks that are birthdays/anniversaries or simple reminders are usually not good candidates for AI help, so they are excluded from suggestions.</li></ul>
+
+        <h4>Open Questions</h4>
+        <ul><li>If you want AI suggestions for completed tasks (postmortems, summaries), we would need a separate export/endpoint or a saved activity log.</li></ul>
+
+        <h4>Data Sources</h4>
+        <ul><li>Todoist REST API documentation (Tasks): <a href="https://developer.todoist.com/api/v1#tag/Tasks/operation/get_tasks_api_v1_tasks_get">https://developer.todoist.com/api/v1#tag/Tasks/operation/get_tasks_api_v1_tasks_get</a></li><li>Todoist REST API documentation (Projects): <a href="https://developer.todoist.com/api/v1#tag/Projects/operation/get_projects_api_v1_projects_get">https://developer.todoist.com/api/v1#tag/Projects/operation/get_projects_api_v1_projects_get</a></li><li>Todoist REST API documentation (Labels): <a href="https://developer.todoist.com/api/v1#tag/Labels/operation/get_labels_api_v1_labels_get">https://developer.todoist.com/api/v1#tag/Labels/operation/get_labels_api_v1_labels_get</a></li></ul>
+
+        <h4>Next Steps</h4>
+        <ul><li>Click “Task VM2” on any card to delegate via email.</li><li>If the heuristics are too broad/narrow, we can tune filters (e.g., include recurring reviews, exclude reading lists, prioritize near-term due dates).</li></ul>
+      </div>
+    </details>
+
+    <script type="application/json" id="vm2-context-data">{
+  "task_name": "Todoist Auto-Helper",
+  "task_date": "2026-04-28",
+  "deliverable_file": "vm2-auto-helper-2026-04-28.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-04-28.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Daily Todoist Auto-Helper: Scan ALL Todoist tasks (not just VM2-labeled ones) and identify tasks where AI could help. This is NOT for executing VM2 tasks — that's a separate hourly cron.\n\nPURPOSE: Find non-VM2 tasks that Perplexity Computer could assist with, and generate a living page with suggestions and one-click \"Task VM2\" email buttons (mailto:vm2.viru@gmail.com).\n\nPROCEDURE:\n1. Load skills: changeis-style, research-assistant\n2. Read /home/user/workspace/deliverable-specs.md for context slug spec\n3. Use Todoist connector (source: todoist__pipedream, tool: todoist-search-tasks) to fetch ALL tasks across all projects\n4. Filter OUT tasks that already have the VM2 label (label ID: 2183231010) or vm2-done label — those are handled by the VM2 Task Execution hourly cron\n5. Analyze remaining tasks: which ones could Perplexity Computer help with? (research, writing, analysis, scheduling, etc.)\n6. Generate vm2-auto-helper-YYYY-MM-DD.html with required styling and context panel\n7. Push plain HTML to GitHub repo vm-coderock/VM2-P-Taskers\n8. Update portal.html with new entry\n9. Save to Dropbox at \"V M2/VM2-main-folder/VM2-P/\"",
+  "approach": [
+    "Fetched current uncompleted Todoist tasks, projects, and labels via the Todoist connector.",
+    "Filtered out tasks labeled VM2 or vm2-done.",
+    "Applied lightweight heuristics to identify tasks where AI assistance is likely valuable (research, link summarization, planning, admin checklists).",
+    "Generated a Changeis-styled HTML page with per-task cards and one-click mailto buttons to delegate to VM2."
+  ],
+  "key_findings": [
+    "Total tasks fetched: 50",
+    "After filtering VM2/vm2-done: 45",
+    "Suggestions generated: 18"
+  ],
+  "dead_ends": [
+    "Todoist API endpoint used returns uncompleted tasks only; completed task history is not included."
+  ],
+  "assumptions": [
+    "Tasks that are birthdays/anniversaries or simple reminders are usually not good candidates for AI help, so they are excluded from suggestions."
+  ],
+  "open_questions": [
+    "If you want AI suggestions for completed tasks (postmortems, summaries), we would need a separate export/endpoint or a saved activity log."
+  ],
+  "data_sources": [
+    {
+      "name": "Todoist REST API documentation (Tasks)",
+      "url": "https://developer.todoist.com/api/v1#tag/Tasks/operation/get_tasks_api_v1_tasks_get"
+    },
+    {
+      "name": "Todoist REST API documentation (Projects)",
+      "url": "https://developer.todoist.com/api/v1#tag/Projects/operation/get_projects_api_v1_projects_get"
+    },
+    {
+      "name": "Todoist REST API documentation (Labels)",
+      "url": "https://developer.todoist.com/api/v1#tag/Labels/operation/get_labels_api_v1_labels_get"
+    }
+  ],
+  "next_steps": [
+    "Click “Task VM2” on any card to delegate via email.",
+    "If the heuristics are too broad/narrow, we can tune filters (e.g., include recurring reviews, exclude reading lists, prioritize near-term due dates)."
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~20,000",
+    "output_tokens_est": "~5,000",
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.10",
+    "cost_ceiling": "$0.25",
+    "notes": "Primarily local processing of Todoist task metadata + HTML generation; no web research."
+  }
+}</script>
+
+    <div class="continue-panel">
+      <div class="continue-title">Continue This Work</div>
+      <div class="continue-actions">
+        <a class="btn-secondary" href="#" id="copyPromptBtn">Copy Follow-Up Prompt</a>
+        <a class="btn-secondary" href="mailto:vm2.viru@gmail.com?subject=VM2 - Todoist Auto-Helper follow-up&body=Please continue from: https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-04-28.html
+
+Focus on: improving heuristics, prioritizing near-term items, and adding richer task context as needed.">Email to VM2</a>
+        <a class="btn-secondary" href="https://todoist.com/add" target="_blank" rel="noopener">Create Todoist Follow-Up</a>
+      </div>
+    </div>
+
+    <footer>Changeis Confidential · Todoist Auto-Helper — 2026-04-28 · 2026-04-28 · VM2 Deliverable</footer>
+  </div>
+
+<script>
+(function() {
+  const htmlEl = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('vm2-theme');
+  if (saved) htmlEl.setAttribute('data-theme', saved);
+  function updateBtn() {
+    btn.textContent = htmlEl.getAttribute('data-theme') === 'dark' ? 'Toggle Light' : 'Toggle Dark';
+  }
+  updateBtn();
+  btn.addEventListener('click', () => {
+    const next = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    htmlEl.setAttribute('data-theme', next);
+    localStorage.setItem('vm2-theme', next);
+    updateBtn();
+  });
+
+  const copyBtn = document.getElementById('copyPromptBtn');
+  copyBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const ctx = document.getElementById('vm2-context-data');
+    const data = JSON.parse(ctx.textContent);
+    const prompt = 'Continue this work: ' + data.railway_url + "\n\nGoals:\n- Improve the task suggestions (better filtering/prioritization)\n- Draft crisp next-step outputs for the top candidates\n\nContext JSON:\n" + ctx.textContent;
+    navigator.clipboard.writeText(prompt).then(() => {
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => copyBtn.textContent = 'Copy Follow-Up Prompt', 1200);
+    });
+  });
+})();
+</script>
+</body>
+</html>
