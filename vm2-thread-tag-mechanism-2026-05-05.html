@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VM2 Thread Tag Mechanism — Design &amp; APEX Pilot</title>
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-alt: #f7f7f7;
+  --bg-code: #f3f4f6;
+  --text: #1a1a1a;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --accent: #1B2A4A;
+  --accent-light: #2E6DA4;
+  --teal: #008B8B;
+  --teal-bg: #E8F4F8;
+  --border: #e5e7eb;
+  --border-light: #f3f4f6;
+  --font-serif: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, Georgia, serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  --content-width: 900px;
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2.5rem;
+  --space-xl: 4rem;
+}
+[data-theme="dark"] {
+  --bg: #111827;
+  --bg-alt: #1f2937;
+  --bg-code: #1f2937;
+  --text: #f3f4f6;
+  --text-secondary: #d1d5db;
+  --text-muted: #6b7280;
+  --accent: #93bbfc;
+  --accent-light: #60a5fa;
+  --teal: #2dd4bf;
+  --teal-bg: #064e3b;
+  --border: #374151;
+  --border-light: #1f2937;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font-serif);font-size:1rem;line-height:1.75;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;transition:background 0.3s,color 0.3s;}
+
+/* Topbar */
+.topbar{border-bottom:1px solid var(--border);padding:0.75rem 1.5rem;display:flex;justify-content:space-between;align-items:center;max-width:var(--content-width);margin:0 auto;}
+.topbar-brand{font-family:var(--font-sans);font-size:0.78rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text);}
+.topbar-right{display:flex;align-items:center;gap:1rem;}
+.topbar-meta{font-family:var(--font-sans);font-size:0.78rem;color:var(--text-muted);}
+.theme-toggle{background:none;border:1px solid var(--border);border-radius:6px;padding:0.28rem 0.5rem;cursor:pointer;font-size:0.85rem;color:var(--text-secondary);}
+
+/* Cover banner */
+.cover-banner{background:var(--accent);color:#fff;padding:2.5rem 2rem 2rem;max-width:var(--content-width);margin:0 auto;}
+.cover-banner .overline{font-family:var(--font-sans);font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;opacity:0.7;margin-bottom:0.5rem;}
+.cover-banner h1{font-family:var(--font-sans);font-size:1.75rem;font-weight:700;line-height:1.2;margin-bottom:0.5rem;}
+.cover-banner .subtitle{font-family:var(--font-sans);font-size:1rem;opacity:0.85;}
+.cover-meta{margin-top:1.25rem;display:flex;gap:1.5rem;flex-wrap:wrap;}
+.cover-meta .meta-item{font-family:var(--font-sans);font-size:0.78rem;opacity:0.7;}
+.cover-meta .meta-item strong{opacity:1;}
+
+/* Page */
+.page{max-width:var(--content-width);margin:0 auto;padding:2rem 1.5rem 4rem;}
+
+/* Sections */
+.section{margin-bottom:2.5rem;}
+.section-heading{font-family:var(--font-sans);font-size:1.1rem;font-weight:700;color:#002060;border-bottom:2px solid var(--border);padding-bottom:0.4rem;margin-bottom:1.25rem;}
+[data-theme="dark"] .section-heading{color:var(--accent-light);}
+
+h2.section-heading{font-size:1.3rem;color:#1B2A4A;}
+h3.sub-heading{font-family:var(--font-sans);font-size:1rem;font-weight:700;color:#1F4D78;margin:1.25rem 0 0.5rem;}
+[data-theme="dark"] h3.sub-heading{color:var(--teal);}
+
+p{margin-bottom:0.85rem;color:var(--text-secondary);}
+p:last-child{margin-bottom:0;}
+
+/* Callout */
+.callout{background:var(--teal-bg);border-left:4px solid var(--teal);padding:1rem 1.25rem;border-radius:0 6px 6px 0;margin:1.25rem 0;}
+.callout p{color:var(--text);margin:0;}
+[data-theme="dark"] .callout{background:#064e3b;}
+
+/* Code blocks */
+pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;overflow-x:auto;margin:1rem 0;}
+code{font-family:var(--font-mono);font-size:0.85rem;color:#1F4D78;}
+[data-theme="dark"] code{color:#93bbfc;}
+.inline-code{background:var(--bg-code);border-radius:4px;padding:0.15em 0.4em;font-family:var(--font-mono);font-size:0.85em;color:#1F4D78;}
+[data-theme="dark"] .inline-code{color:#93bbfc;}
+
+/* Table */
+.data-table{width:100%;border-collapse:collapse;font-family:var(--font-sans);font-size:0.88rem;margin:1rem 0;}
+.data-table th{background:#1B2A4A;color:#fff;padding:0.6rem 1rem;text-align:left;font-weight:600;font-size:0.82rem;}
+.data-table td{padding:0.6rem 1rem;border-bottom:1px solid var(--border);}
+.data-table tr:nth-child(even) td{background:var(--bg-alt);}
+.data-table a{color:var(--accent-light);text-decoration:none;}
+.data-table a:hover{text-decoration:underline;}
+
+/* Tag chip */
+.tag-chip{display:inline-block;background:#e8f0fe;color:#1a56db;font-family:var(--font-sans);font-size:0.75rem;font-weight:600;padding:0.18rem 0.55rem;border-radius:10px;white-space:nowrap;}
+.tag-chip.faa-apex{background:#fef3c7;color:#92400e;}
+.tag-chip.apex-framework{background:#ede9fe;color:#5b21b6;}
+[data-theme="dark"] .tag-chip{background:#1e3a5f;color:#93bbfc;}
+[data-theme="dark"] .tag-chip.faa-apex{background:#44370a;color:#fcd34d;}
+[data-theme="dark"] .tag-chip.apex-framework{background:#2e1065;color:#c4b5fd;}
+
+/* Numbered list */
+ol.design-list{padding-left:1.5rem;color:var(--text-secondary);}
+ol.design-list li{margin-bottom:0.6rem;}
+ul.design-list{padding-left:1.5rem;color:var(--text-secondary);}
+ul.design-list li{margin-bottom:0.4rem;}
+
+/* Thread timeline preview */
+.thread-preview{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:1.25rem 0;}
+.thread-preview-header{background:#1B2A4A;color:#fff;padding:0.65rem 1rem;font-family:var(--font-sans);font-size:0.82rem;font-weight:700;}
+.thread-item{padding:0.75rem 1rem;border-bottom:1px solid var(--border);display:flex;gap:1rem;align-items:flex-start;}
+.thread-item:last-child{border-bottom:none;}
+.thread-dot{width:10px;height:10px;border-radius:50%;background:var(--teal);flex-shrink:0;margin-top:0.35rem;}
+.thread-item-body{flex:1;}
+.thread-item-title{font-family:var(--font-sans);font-size:0.9rem;font-weight:600;color:var(--text);}
+.thread-item-meta{font-family:var(--font-sans);font-size:0.78rem;color:var(--text-muted);margin-top:0.1rem;}
+
+/* Context slug panel */
+details.context-panel{margin:2rem 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+details.context-panel summary{background:var(--bg-alt);padding:0.75rem 1rem;cursor:pointer;font-family:var(--font-sans);font-size:0.82rem;font-weight:700;color:var(--text);list-style:none;display:flex;justify-content:space-between;align-items:center;}
+details.context-panel summary::after{content:"▼";font-size:0.7rem;color:var(--text-muted);}
+details.context-panel[open] summary::after{content:"▲";}
+.context-panel-body{padding:1rem 1.25rem;}
+.context-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+@media(max-width:640px){.context-grid{grid-template-columns:1fr;}}
+.context-field label{font-family:var(--font-sans);font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:0.2rem;}
+.context-field .value{font-family:var(--font-sans);font-size:0.88rem;color:var(--text);}
+.continue-panel{margin-top:1rem;padding:1rem;background:var(--teal-bg);border-radius:6px;}
+.continue-panel p{font-family:var(--font-sans);font-size:0.82rem;color:var(--text);margin:0 0 0.75rem;}
+.btn-row{display:flex;gap:0.5rem;flex-wrap:wrap;}
+.btn{font-family:var(--font-sans);font-size:0.78rem;font-weight:600;padding:0.4rem 0.85rem;border-radius:6px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem;}
+.btn-primary{background:#1B2A4A;color:#fff;}
+.btn-secondary{background:var(--bg-alt);color:var(--text);border:1px solid var(--border);}
+.btn:hover{opacity:0.88;}
+
+/* Footer */
+.footer{max-width:var(--content-width);margin:0 auto;padding:1.5rem;border-top:1px solid var(--border-light);font-family:var(--font-sans);font-size:0.76rem;color:var(--text-muted);text-align:center;}
+
+@media(max-width:640px){
+  .cover-banner{padding:1.75rem 1rem 1.5rem;}
+  .cover-banner h1{font-size:1.3rem;}
+  .page{padding:1.5rem 1rem 3rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- Context Data (Machine-Readable) -->
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "VM2 Thread Tag Mechanism - APEX Pilot",
+  "task_date": "2026-05-05",
+  "deliverable_file": "vm2-thread-tag-mechanism-2026-05-05.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-thread-tag-mechanism-2026-05-05.html",
+  "version": 1,
+  "prior_versions": [],
+  "thread": "vm2-system",
+  "created_date": "2026-05-05",
+  "revised_date": null,
+  "related_deliverables": [
+    "faa-apex-industry-day-analysis-2026-05-04.html",
+    "faa-apex-controller-recruiting-2026-04-10.html",
+    "apex-agentic-framework-2026-04-16.html",
+    "faa-apex-thread.html"
+  ],
+  "original_instructions": "VM2 task email from varunm24@hotmail.com (email_id 19df7c5a3dc9f2cd). Subject: 'VM2 - APEX Industry Day follow-up'. Request: design a tag/mechanism to keep adding to analysis over time, keep things related together; work via Gmail + Todoist workflows.",
+  "approach": "Designed a lightweight thread-tag system: data-thread HTML attribute on portal rows, 'thread' field in context slugs, Gmail subject convention [thread:X], Todoist label convention vm2-thread-X, portal filter extension, and a dedicated thread aggregator page. Applied as pilot to FAA APEX opportunity deliverables.",
+  "key_findings": [
+    "Thread tags are orthogonal to versioning — threads aggregate different deliverables, versions chain a single deliverable",
+    "data-thread attribute is fully additive — no existing portal JS breaks",
+    "Gmail [thread:X] subject extraction handled by intake cron (2da8354a) with a single regex",
+    "FAA APEX thread has 2 deliverables (faa-apex); Apex Agentic Framework is a separate thread (apex-framework)",
+    "Thread view page reads portal.html client-side — zero backend changes required"
+  ],
+  "dead_ends": [],
+  "assumptions": [
+    "Intake cron 2da8354a is the primary Gmail-to-deliverable pipeline",
+    "Portal.html JS filter already uses data-type; extending to data-thread follows same pattern",
+    "Railway serves all HTML files at vm2-p-taskers-production.up.railway.app"
+  ],
+  "open_questions": [
+    "Should the Thread filter in portal.html show a dropdown or pills like Type?",
+    "Todoist: single 'vm2-thread' label + description line, or per-thread label (vm2-thread-faa-apex)?",
+    "Should thread pages be static (pre-generated) or always client-side filtered?"
+  ],
+  "data_sources": [
+    {"name": "portal.html", "url": "https://vm2-p-taskers-production.up.railway.app/portal.html"},
+    {"name": "FAA APEX Industry Day Analysis", "url": "https://vm2-p-taskers-production.up.railway.app/faa-apex-industry-day-analysis-2026-05-04.html"},
+    {"name": "FAA APEX Controller Recruiting", "url": "https://vm2-p-taskers-production.up.railway.app/faa-apex-controller-recruiting-2026-04-10.html"},
+    {"name": "Apex Agentic Framework", "url": "https://vm2-p-taskers-production.up.railway.app/apex-agentic-framework-2026-04-16.html"}
+  ],
+  "next_steps": [
+    "Update intake cron (2da8354a) to extract [thread:X] from Gmail subjects and inject into data-thread + context slug",
+    "Add Thread filter dropdown to portal.html alongside Type pills",
+    "Create apex-framework-thread.html for the Apex Agentic Organization Framework thread",
+    "Reply to source email 19df7c5a3dc9f2cd with thread page links"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-5",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~25,000",
+    "output_tokens_est": "~9,000",
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.21",
+    "cost_ceiling": "$0.42",
+    "notes": "Design synthesis + HTML authoring. No external searches required — all inputs from existing deliverables in workspace."
+  }
+}
+</script>
+
+<!-- Topbar -->
+<nav class="topbar">
+  <span class="topbar-brand">VM2 · System Design</span>
+  <div class="topbar-right">
+    <span class="topbar-meta">Thread Tag Mechanism — 2026-05-05</span>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+  </div>
+</nav>
+
+<!-- Cover Banner -->
+<div class="cover-banner">
+  <div class="overline">VM2 System Design · Changeis Confidential</div>
+  <h1>VM2 Thread Tag Mechanism</h1>
+  <div class="subtitle">Design specification for persistent, cross-deliverable analysis threads — Gmail, Todoist, and portal integration</div>
+  <div class="cover-meta">
+    <div class="meta-item"><strong>Date:</strong> May 5, 2026</div>
+    <div class="meta-item"><strong>Pilot Thread:</strong> FAA APEX (faa-apex)</div>
+    <div class="meta-item"><strong>Status:</strong> Implemented — v1</div>
+    <div class="meta-item"><strong>Task Name:</strong> VM2 Thread Tag Mechanism - APEX Pilot</div>
+  </div>
+</div>
+
+<main class="page">
+
+  <!-- 1. Overview -->
+  <section class="section">
+    <h2 class="section-heading">1. Overview</h2>
+    <p>Varun's VM2 workflow produces many deliverables over time. Some of those deliverables are logically part of the same ongoing analysis — for example, three separate briefs all tracking the FAA APEX opportunity. Without a grouping mechanism, these deliverables are connected only by text search, not by explicit structure.</p>
+    <p>The Thread Tag system adds a lightweight, additive dimension — a <span class="inline-code">thread</span> slug — that binds related deliverables together without changing how any existing file or workflow operates. It surfaces as:</p>
+    <ul class="design-list">
+      <li>A <span class="inline-code">data-thread="&lt;slug&gt;"</span> attribute on portal.html table rows</li>
+      <li>A <span class="inline-code">"thread": "&lt;slug&gt;"</span> field inside each deliverable's context slug JSON</li>
+      <li>A <span class="inline-code">[thread:X]</span> marker in Gmail subject lines (auto-extracted by intake cron)</li>
+      <li>A <span class="inline-code">vm2-thread-X</span> label in Todoist (or inline in task description)</li>
+      <li>A dedicated thread aggregator page (e.g., <span class="inline-code">faa-apex-thread.html</span>) that renders all tagged deliverables in a chronological timeline</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>Design principle:</strong> Threads and versions are orthogonal. Versions chain a single deliverable (v1 → v2 → v3). Threads aggregate multiple different deliverables. A deliverable can have both a version chain and a thread tag simultaneously.</p>
+    </div>
+  </section>
+
+  <!-- 2. Data Model -->
+  <section class="section">
+    <h2 class="section-heading">2. Data Model</h2>
+
+    <h3 class="sub-heading">2.1 Thread Slug Convention</h3>
+    <p>Slugs are kebab-case, lowercase, descriptive. Examples:</p>
+    <table class="data-table">
+      <thead><tr><th>Thread</th><th>Slug</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag-chip faa-apex">faa-apex</span></td><td><span class="inline-code">faa-apex</span></td><td>FAA APEX program opportunity — NavTac II TO-16 successor, $5–20M</td></tr>
+        <tr><td><span class="tag-chip apex-framework">apex-framework</span></td><td><span class="inline-code">apex-framework</span></td><td>Apex Agentic Organization Framework — internal Changeis thought leadership</td></tr>
+        <tr><td><span class="tag-chip">ydc-golf</span></td><td><span class="inline-code">ydc-golf</span></td><td>Example: YDC golf event thread</td></tr>
+        <tr><td><span class="tag-chip">dsca-it-idiq</span></td><td><span class="inline-code">dsca-it-idiq</span></td><td>Example: DSCA IT IDIQ opportunity</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub-heading">2.2 portal.html Row Attribute</h3>
+    <p>Add <span class="inline-code">data-thread="&lt;slug&gt;"</span> to the <span class="inline-code">&lt;tr&gt;</span> element, alongside existing <span class="inline-code">data-date</span>, <span class="inline-code">data-type</span>, and <span class="inline-code">data-updated</span>:</p>
+    <pre><code>&lt;tr data-date="2026-05-04" data-type="Research Brief"
+    data-updated="2026-05-04" data-thread="faa-apex"&gt;
+  &lt;td class="col-date"&gt;2026-05-04&lt;/td&gt;
+  &lt;td class="col-title"&gt;&lt;a href="faa-apex-industry-day-analysis-2026-05-04.html"&gt;
+    FAA APEX Industry Day — Analysis &amp;amp; Next Steps&lt;/a&gt;&lt;/td&gt;
+  ...
+&lt;/tr&gt;</code></pre>
+
+    <h3 class="sub-heading">2.3 Context Slug JSON Field</h3>
+    <p>Add a <span class="inline-code">"thread"</span> field to the <span class="inline-code">vm2-context-data</span> script block, adjacent to <span class="inline-code">related_deliverables</span>:</p>
+    <pre><code>{
+  "task_name": "FAA APEX Industry Day Analysis",
+  "task_date": "2026-05-04",
+  "thread": "faa-apex",
+  "related_deliverables": [
+    "faa-apex-controller-recruiting-2026-04-10.html",
+    ...
+  ],
+  ...
+}</code></pre>
+  </section>
+
+  <!-- 3. Gmail Workflow -->
+  <section class="section">
+    <h2 class="section-heading">3. Gmail Workflow</h2>
+
+    <h3 class="sub-heading">3.1 Subject Line Convention</h3>
+    <p>To tag a new Gmail-submitted task to a thread, include <span class="inline-code">[thread:slug]</span> anywhere in the subject line:</p>
+    <pre><code>Subject: VM2 - [thread:faa-apex] Post-event debrief APEX Industry Day
+Subject: VM2 - [thread:faa-apex] Teaming shortlist follow-up
+Subject: VM2 - [thread:apex-framework] New use cases for agentic org model</code></pre>
+    <p>The intake cron (cron job <span class="inline-code">2da8354a</span>) extracts the tag with a single regex and injects it into:</p>
+    <ul class="design-list">
+      <li>The <span class="inline-code">data-thread</span> attribute on the new portal row</li>
+      <li>The <span class="inline-code">"thread"</span> field in the new deliverable's context slug</li>
+    </ul>
+
+    <h3 class="sub-heading">3.2 Intake Cron Extraction Logic</h3>
+    <pre><code># Pseudocode — intake cron 2da8354a
+subject = email.subject  # e.g. "VM2 - [thread:faa-apex] Post-event debrief"
+
+thread_match = re.search(r'\[thread:([a-z0-9\-]+)\]', subject, re.IGNORECASE)
+thread_slug = thread_match.group(1).lower() if thread_match else None
+
+# Inject into task context
+task_context['thread'] = thread_slug  # e.g. "faa-apex"
+
+# Inject into portal row (when generating the new &lt;tr&gt;)
+thread_attr = f'data-thread="{thread_slug}"' if thread_slug else ''
+row_html = f'&lt;tr data-date="{date}" data-type="{type_}" data-updated="{date}" {thread_attr}&gt;'</code></pre>
+
+    <h3 class="sub-heading">3.3 Reply-to-Thread Convention</h3>
+    <p>When replying to an existing VM2 email thread (e.g., replying to the APEX Industry Day email), the thread tag is automatically inherited if the original email contained <span class="inline-code">[thread:X]</span> in the subject. No additional marker is needed in the reply body — the intake cron can detect the thread ID from the Gmail thread context.</p>
+    <p>Alternative: include <span class="inline-code">[thread:faa-apex]</span> anywhere in the reply body's first paragraph as a fallback extraction point.</p>
+  </section>
+
+  <!-- 4. Todoist Workflow -->
+  <section class="section">
+    <h2 class="section-heading">4. Todoist Workflow</h2>
+
+    <h3 class="sub-heading">4.1 Label Convention (Option A — Recommended)</h3>
+    <p>Create a single Todoist label <span class="inline-code">vm2-thread</span>. When creating a VM2 task that belongs to a thread, apply this label and put the thread slug as the first line of the task description:</p>
+    <pre><code>Task name:  FAA APEX — post-event debrief
+Labels:     vm2, vm2-thread
+Description (first line):  thread:faa-apex
+            (rest):         Write up key takeaways from Industry Day May 15.
+                            Include teaming status + acquisition vehicle update.</code></pre>
+    <p>The intake cron parses the task description's first line for <span class="inline-code">thread:&lt;slug&gt;</span> and injects it accordingly.</p>
+
+    <h3 class="sub-heading">4.2 Per-Thread Label Convention (Option B)</h3>
+    <p>Create individual labels per thread: <span class="inline-code">vm2-thread-faa-apex</span>, <span class="inline-code">vm2-thread-apex-framework</span>, etc. Apply the relevant label to each task. The intake cron strips <span class="inline-code">vm2-thread-</span> prefix to extract the slug. Simpler extraction but creates label sprawl over time.</p>
+    <p><strong>Recommendation:</strong> Use Option A (single <span class="inline-code">vm2-thread</span> label + description-first-line slug) to minimize Todoist label proliferation.</p>
+
+    <h3 class="sub-heading">4.3 Todoist Extraction Pseudocode</h3>
+    <pre><code># When processing a Todoist task with label "vm2-thread"
+description_lines = task.description.strip().split('\n')
+first_line = description_lines[0].strip()  # e.g. "thread:faa-apex"
+
+thread_slug = None
+if first_line.startswith('thread:'):
+    thread_slug = first_line.split('thread:')[1].strip().lower()
+
+task_context['thread'] = thread_slug</code></pre>
+  </section>
+
+  <!-- 5. Portal Changes -->
+  <section class="section">
+    <h2 class="section-heading">5. Portal Changes (portal.html)</h2>
+
+    <h3 class="sub-heading">5.1 Thread Filter Dropdown</h3>
+    <p>Add a Thread dropdown filter to the <span class="inline-code">filter-bar</span> section, above or below the existing type pills. The dropdown dynamically reads all distinct <span class="inline-code">data-thread</span> values from table rows and offers them as filter options:</p>
+    <pre><code>&lt;!-- Add to filter-bar, after search-row --&gt;
+&lt;div class="thread-row"&gt;
+  &lt;label for="threadFilter"&gt;Thread:&lt;/label&gt;
+  &lt;select id="threadFilter"&gt;
+    &lt;option value=""&gt;All threads&lt;/option&gt;
+    &lt;!-- populated by JS from data-thread attribute values --&gt;
+  &lt;/select&gt;
+  &lt;a id="threadViewLink" href="#" style="display:none"&gt;View thread page ↗&lt;/a&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+// Collect distinct thread slugs
+const threads = new Set();
+document.querySelectorAll('tr[data-thread]').forEach(r =&gt; threads.add(r.dataset.thread));
+const sel = document.getElementById('threadFilter');
+[...threads].sort().forEach(t =&gt; {
+  const opt = document.createElement('option');
+  opt.value = t; opt.textContent = t;
+  sel.appendChild(opt);
+});
+// Filter on change
+sel.addEventListener('change', () =&gt; {
+  const slug = sel.value;
+  document.getElementById('threadViewLink').style.display = slug ? 'inline' : 'none';
+  document.getElementById('threadViewLink').href = slug + '-thread.html';
+  applyFilters(); // extend existing applyFilters to check data-thread
+});
+&lt;/script&gt;</code></pre>
+
+    <h3 class="sub-heading">5.2 applyFilters Extension</h3>
+    <p>Extend the existing <span class="inline-code">applyFilters()</span> function with a single additional condition:</p>
+    <pre><code>// Add inside applyFilters(), after the existing date/type checks:
+const threadFilter = document.getElementById('threadFilter')?.value;
+if (threadFilter && row.getAttribute('data-thread') !== threadFilter) visible = false;</code></pre>
+
+    <h3 class="sub-heading">5.3 Thread Badge in Table Rows</h3>
+    <p>Optionally, add a thread tag chip to the title cell so threads are visually scannable in the main table:</p>
+    <pre><code>&lt;td class="col-title"&gt;
+  &lt;a href="faa-apex-industry-day-analysis-2026-05-04.html"&gt;
+    FAA APEX Industry Day — Analysis &amp;amp; Next Steps&lt;/a&gt;
+  &lt;span class="tag-chip"&gt;faa-apex&lt;/span&gt;
+&lt;/td&gt;</code></pre>
+  </section>
+
+  <!-- 6. Thread View Page -->
+  <section class="section">
+    <h2 class="section-heading">6. Thread View Page</h2>
+
+    <h3 class="sub-heading">6.1 Page Pattern</h3>
+    <p>Each active thread gets a dedicated HTML page named <span class="inline-code">&lt;slug&gt;-thread.html</span> (e.g., <span class="inline-code">faa-apex-thread.html</span>). The page:</p>
+    <ul class="design-list">
+      <li>Renders a header card summarizing the thread topic (opportunity status, key dates, context)</li>
+      <li>Reads the portal.html table client-side via <span class="inline-code">fetch()</span> and filters rows where <span class="inline-code">data-thread="faa-apex"</span></li>
+      <li>Renders a chronological timeline of all matching deliverables</li>
+      <li>Links to the individual deliverable for each entry</li>
+      <li>Refreshes automatically when portal.html is updated — no separate maintenance</li>
+    </ul>
+
+    <h3 class="sub-heading">6.2 Example Markup (Abbreviated)</h3>
+    <pre><code>&lt;!-- faa-apex-thread.html (simplified skeleton) --&gt;
+&lt;div class="thread-header"&gt;
+  &lt;h1&gt;FAA APEX — Thread View&lt;/h1&gt;
+  &lt;p&gt;NavTac II TO-16 successor · $5–20M estimate · Industry Day May 15&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;div id="timeline"&gt;Loading...&lt;/div&gt;
+
+&lt;script&gt;
+fetch('/portal.html')
+  .then(r =&gt; r.text())
+  .then(html =&gt; {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const rows = [...doc.querySelectorAll('tr[data-thread="faa-apex"]')];
+    rows.sort((a,b) =&gt; b.dataset.date.localeCompare(a.dataset.date));
+    const tl = document.getElementById('timeline');
+    tl.innerHTML = rows.map(row =&gt; {
+      const a = row.querySelector('a');
+      return `&lt;div class="tl-item"&gt;
+        &lt;div class="tl-date"&gt;${row.dataset.date}&lt;/div&gt;
+        &lt;div class="tl-title"&gt;&lt;a href="${a.href}"&gt;${a.textContent}&lt;/a&gt;&lt;/div&gt;
+      &lt;/div&gt;`;
+    }).join('');
+  });
+&lt;/script&gt;</code></pre>
+
+    <h3 class="sub-heading">6.3 Live FAA APEX Thread Page</h3>
+    <p>The thread page for the FAA APEX pilot is live at: <a href="faa-apex-thread.html">faa-apex-thread.html</a> (Railway: <a href="https://vm2-p-taskers-production.up.railway.app/faa-apex-thread.html">https://vm2-p-taskers-production.up.railway.app/faa-apex-thread.html</a>)</p>
+
+    <!-- Preview of what the thread page looks like -->
+    <div class="thread-preview">
+      <div class="thread-preview-header">FAA APEX Thread — Chronological Timeline Preview</div>
+      <div class="thread-item">
+        <div class="thread-dot"></div>
+        <div class="thread-item-body">
+          <div class="thread-item-title"><a href="faa-apex-industry-day-analysis-2026-05-04.html">FAA APEX Industry Day — Analysis &amp; Next Steps</a></div>
+          <div class="thread-item-meta">2026-05-04 · Research Brief · Industry Day May 15 · Register by May 11</div>
+        </div>
+      </div>
+      <div class="thread-item">
+        <div class="thread-dot"></div>
+        <div class="thread-item-body">
+          <div class="thread-item-title"><a href="faa-apex-controller-recruiting-2026-04-10.html">FAA APEX + Controller Recruiting — April 10</a></div>
+          <div class="thread-item-meta">2026-04-10 · Research Brief · RFI response submitted April 17</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Versioning -->
+  <section class="section">
+    <h2 class="section-heading">7. Versioning (Orthogonal to Threads)</h2>
+    <p>Threads and versions serve different purposes and stack independently:</p>
+    <table class="data-table">
+      <thead><tr><th>Dimension</th><th>Mechanism</th><th>Purpose</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Version</strong></td><td>Filename suffix <span class="inline-code">-v2.html</span>; <span class="inline-code">prior_versions</span> chain in context slug</td><td>Track revisions of a single deliverable</td><td><span class="inline-code">faa-apex-industry-day-v2.html</span></td></tr>
+        <tr><td><strong>Thread</strong></td><td><span class="inline-code">data-thread</span> attribute; <span class="inline-code">"thread"</span> in context slug</td><td>Group multiple different deliverables on one topic</td><td>Both v1 and v2 have <span class="inline-code">data-thread="faa-apex"</span></td></tr>
+      </tbody>
+    </table>
+    <p>A versioned deliverable retains its thread tag across all versions. The thread page shows all versions as distinct timeline entries (since they are distinct deliverable files), with their dates in chronological order.</p>
+  </section>
+
+  <!-- 8. Migration Path -->
+  <section class="section">
+    <h2 class="section-heading">8. Migration Path for Existing Deliverables</h2>
+    <p>Backfilling thread tags is additive and non-breaking. Steps:</p>
+    <ol class="design-list">
+      <li><strong>Identify clusters:</strong> Group existing deliverables by topic (APEX, govcon, daily briefs, internal frameworks, etc.)</li>
+      <li><strong>Assign slugs:</strong> Pick a stable kebab-case slug per cluster</li>
+      <li><strong>Edit portal.html rows:</strong> Add <span class="inline-code">data-thread="&lt;slug&gt;"</span> to each relevant <span class="inline-code">&lt;tr&gt;</span></li>
+      <li><strong>Edit context slugs (optional):</strong> Add <span class="inline-code">"thread": "&lt;slug&gt;"</span> to each deliverable's <span class="inline-code">vm2-context-data</span> JSON block</li>
+      <li><strong>Create thread pages:</strong> Generate <span class="inline-code">&lt;slug&gt;-thread.html</span> for each cluster with a relevant header card</li>
+    </ol>
+    <p>Deliverables without a thread tag are unaffected — the <span class="inline-code">data-thread</span> attribute is optional and the portal filter shows all rows by default.</p>
+  </section>
+
+  <!-- 9. FAA APEX Pilot -->
+  <section class="section">
+    <h2 class="section-heading">9. FAA APEX Pilot — Tagged Deliverables</h2>
+    <p>The following deliverables have been tagged <span class="inline-code">data-thread="faa-apex"</span> in portal.html as part of this pilot:</p>
+    <table class="data-table">
+      <thead><tr><th>File</th><th>Date</th><th>Thread</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><a href="faa-apex-industry-day-analysis-2026-05-04.html">faa-apex-industry-day-analysis-2026-05-04.html</a></td>
+          <td>2026-05-04</td>
+          <td><span class="tag-chip faa-apex">faa-apex</span></td>
+          <td>Industry Day — register by May 11; event May 15 11–12 ET</td>
+        </tr>
+        <tr>
+          <td><a href="faa-apex-controller-recruiting-2026-04-10.html">faa-apex-controller-recruiting-2026-04-10.html</a></td>
+          <td>2026-04-10</td>
+          <td><span class="tag-chip faa-apex">faa-apex</span></td>
+          <td>RFI response; APEX first contact; RAG 0.6208</td>
+        </tr>
+        <tr>
+          <td><a href="apex-agentic-framework-2026-04-16.html">apex-agentic-framework-2026-04-16.html</a></td>
+          <td>2026-04-16</td>
+          <td><span class="tag-chip apex-framework">apex-framework</span></td>
+          <td>Separate thread — internal Changeis thought leadership, not FAA opportunity</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <p><strong>Thread separation rationale:</strong> "FAA APEX" and "Apex Agentic Framework" share the word "Apex" but are entirely different topics. <span class="inline-code">faa-apex</span> tracks the FAA NavTac II successor acquisition. <span class="inline-code">apex-framework</span> tracks Changeis's internal thought leadership on agentic organizational design. They are separate threads with separate thread pages.</p>
+    </div>
+    <p>Thread page: <a href="faa-apex-thread.html">faa-apex-thread.html</a> — <a href="https://vm2-p-taskers-production.up.railway.app/faa-apex-thread.html">https://vm2-p-taskers-production.up.railway.app/faa-apex-thread.html</a></p>
+  </section>
+
+  <!-- Session Context Panel -->
+  <details class="context-panel">
+    <summary>Session Context &amp; Continue This Work</summary>
+    <div class="context-panel-body">
+      <div class="context-grid">
+        <div class="context-field"><label>Task Name</label><span class="value">VM2 Thread Tag Mechanism - APEX Pilot</span></div>
+        <div class="context-field"><label>Created</label><span class="value">2026-05-05</span></div>
+        <div class="context-field"><label>Thread</label><span class="value">vm2-system</span></div>
+        <div class="context-field"><label>Version</label><span class="value">1</span></div>
+        <div class="context-field"><label>Source Email</label><span class="value">19df7c5a3dc9f2cd (varunm24@hotmail.com)</span></div>
+        <div class="context-field"><label>Railway URL</label><span class="value"><a href="https://vm2-p-taskers-production.up.railway.app/vm2-thread-tag-mechanism-2026-05-05.html">vm2-thread-tag-mechanism-2026-05-05.html</a></span></div>
+      </div>
+      <div class="continue-panel">
+        <p>To continue this work, copy the follow-up prompt and paste into a new VM2 session, or email to VM2.</p>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="copyFollowUpPrompt()">Copy Follow-Up Prompt</button>
+          <a class="btn btn-secondary" href="faa-apex-thread.html">View FAA APEX Thread ↗</a>
+          <a class="btn btn-secondary" href="portal.html">Back to Portal ↗</a>
+        </div>
+      </div>
+    </div>
+  </details>
+
+</main>
+
+<footer class="footer">
+  Changeis Confidential — System Design — May 2026 · <a href="https://vm2-p-taskers-production.up.railway.app/portal.html">portal.html</a> · <a href="https://vm2-p-taskers-production.up.railway.app/faa-apex-thread.html">faa-apex-thread.html</a>
+</footer>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+function copyFollowUpPrompt() {
+  const prompt = `VM2 Thread Tag Mechanism — follow-up
+
+Reference deliverable: https://vm2-p-taskers-production.up.railway.app/vm2-thread-tag-mechanism-2026-05-05.html
+FAA APEX thread page: https://vm2-p-taskers-production.up.railway.app/faa-apex-thread.html
+
+The thread tag system (v1) is deployed. Possible next steps:
+1. Update intake cron 2da8354a to auto-extract [thread:X] from Gmail subjects.
+2. Add Thread filter dropdown to portal.html alongside the type pills.
+3. Create apex-framework-thread.html for the Apex Agentic Organization Framework thread.
+4. Backfill data-thread tags for other existing topic clusters (govcon, SAM scans, etc.).
+
+Please advise on priorities or proceed with one of the above.`;
+  navigator.clipboard.writeText(prompt)
+    .then(() => alert('Follow-up prompt copied.'))
+    .catch(() => alert('Copy failed — please copy manually.'));
+}
+</script>
+</body>
+</html>
