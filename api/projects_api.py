@@ -154,6 +154,19 @@ class StatusRequest(BaseModel):
     status: Literal["active", "watching", "closed"]
 
 
+class DeliverableInfo(BaseModel):
+    file: str
+    date: str
+    title_guess: str
+    project_slug: Optional[str] = None  # Which project owns this, if any
+    project_title: Optional[str] = None
+
+
+class AddManyRequest(BaseModel):
+    slug: str
+    files: list[str] = Field(min_length=1, max_length=100)
+
+
 class APIResponse(BaseModel):
     ok: bool
     project_url: Optional[str] = None
@@ -173,6 +186,51 @@ def get_projects():
     if list_projects is None:
         raise HTTPException(500, "project_helper not loaded")
     return list_projects()
+
+
+@app.get("/api/deliverables", response_model=list[DeliverableInfo])
+def get_deliverables():
+    """List every dated deliverable HTML file in the repo with current project membership.
+
+    Used by the 'Add previous analysis' picker on projects.html so you can
+    browse the full archive, multi-select, and bulk-add to a project.
+    """
+    import re
+    DATE_RE = re.compile(r"-(\d{4}-\d{2}-\d{2})\.html$")
+    # Build a {filename: (slug, title)} map of current project membership
+    membership: dict[str, tuple[str, str]] = {}
+    for proj in list_projects():
+        state = load_state(proj["slug"])
+        if not state:
+            continue
+        for entry in state.get("timeline", []):
+            f = entry.get("file")
+            if f:
+                membership[f] = (proj["slug"], proj["title"])
+
+    out: list[DeliverableInfo] = []
+    for f in sorted(REPO.glob("*.html"), reverse=True):
+        name = f.name
+        # Skip portal, project pages, redirects, kanban
+        if name in ("index.html", "portal.html", "projects.html", "kanban.html"):
+            continue
+        if name.startswith("project-"):
+            continue
+        m = DATE_RE.search(name)
+        if not m:
+            continue
+        date = m.group(1)
+        # Friendly title from filename
+        stem = name[:-5]  # strip .html
+        stem = stem[: -len(date) - 1]  # strip -YYYY-MM-DD
+        title_guess = stem.replace("-", " ").title()
+        slug = membership.get(name, (None, None))[0]
+        title = membership.get(name, (None, None))[1]
+        out.append(DeliverableInfo(
+            file=name, date=date, title_guess=title_guess,
+            project_slug=slug, project_title=title,
+        ))
+    return out
 
 
 @app.post("/api/projects/promote", response_model=APIResponse)
@@ -254,6 +312,47 @@ def add_snapshot(req: AddSnapshotRequest):
     )
     return APIResponse(ok=True, project_url=f"/{p.name}", commit=commit,
                        message=f"Added to {req.slug}.")
+
+
+@app.post("/api/projects/add-many", response_model=APIResponse)
+def add_many(req: AddManyRequest):
+    """Bulk-add multiple deliverables to a single project.
+
+    Used by the 'Add previous analysis' picker. One commit, one push, atomic.
+    Skips files already in the project's timeline.
+    """
+    state = load_state(req.slug)
+    if not state:
+        raise HTTPException(404, f"Project '{req.slug}' not found.")
+    import re
+    existing = {e.get("file") for e in state.get("timeline", [])}
+    added = []
+    for fname in req.files:
+        if fname in existing:
+            continue
+        f = REPO / fname
+        if not f.exists():
+            continue
+        m = re.search(r"(\d{4}-\d{2}-\d{2})", fname)
+        date = m.group(1) if m else today_iso()
+        title = fname.replace(".html", "").replace("-", " ").title()
+        state.setdefault("timeline", []).append({
+            "file": fname, "date": date, "title": title,
+            "kind": "snapshot", "body": "",
+        })
+        added.append(fname)
+    if not added:
+        return APIResponse(ok=True, project_url=f"/project-{req.slug}.html",
+                           message="All files were already in the timeline (no-op).")
+    p = write_project(state)
+    commit = git_commit_and_push(
+        f"Add {len(added)} deliverable(s) to {req.slug}",
+        [p.name],
+    )
+    return APIResponse(
+        ok=True, project_url=f"/{p.name}", commit=commit,
+        message=f"Added {len(added)} file(s) to {req.slug}.",
+    )
 
 
 @app.post("/api/projects/append", response_model=APIResponse)
