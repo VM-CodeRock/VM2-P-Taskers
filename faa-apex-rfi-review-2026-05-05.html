@@ -138,7 +138,7 @@
   .dot-low { background: #2D7D4A; }
 </style>
 </head>
-<body>
+<body data-vm2-deliverable="faa-apex-rfi-review-2026-05-05.html">
 <div class="topbar">
   <div class="topbar-left">
     <span class="topbar-brand">VM2 · Perplexity Computer</span>
@@ -624,5 +624,341 @@ www.changeis.com`;
     navigator.clipboard.writeText(text).then(() => alert('Registration email copied to clipboard.')).catch(() => alert('Copy failed — please select and copy the email text manually.'));
   }
 </script>
+<!--
+  VM2 Promote-to-Project Button — drop into every deliverable's topbar.
+
+  How to use:
+    1. Add this entire block somewhere inside the deliverable's <body>.
+    2. Set the data attribute on the <body> (or a parent element) so the
+       button knows which file to operate on:
+         <body data-vm2-deliverable="army-maps-bid-decision-2026-04-14.html">
+    3. The button will:
+       - Show "Promote to Project ▾" if the deliverable is unlinked
+       - Show "📌 Project: <title>" if it already belongs to a project
+       - Open a dropdown to pick existing or create new project
+       - POST to /api/projects/* on the same origin
+       - Reload after success so the new state is visible
+
+  Style is self-contained (no external deps, no CSS conflicts).
+-->
+<div id="vm2-promote-root" data-mounted="false"></div>
+
+<style>
+  #vm2-promote-root {
+    position: fixed;
+    top: 14px;
+    right: 24px;
+    z-index: 1000;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 13px;
+  }
+  .vm2-btn {
+    background: #fff;
+    border: 1px solid #b9b6ad;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #2a2a2a;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: all 0.15s;
+    font-family: inherit;
+    font-size: inherit;
+  }
+  .vm2-btn:hover { border-color: #c53a3a; color: #c53a3a; }
+  .vm2-btn.linked { background: #f5e3e3; border-color: #c53a3a; color: #c53a3a; }
+  .vm2-dropdown {
+    position: absolute;
+    top: 38px;
+    right: 0;
+    width: 380px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #d0cdc6;
+    border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+    padding: 16px;
+    display: none;
+  }
+  .vm2-dropdown.open { display: block; }
+  .vm2-dropdown h3 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 12px;
+    color: #2a2a2a;
+  }
+  .vm2-dropdown input[type="text"] {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #d0cdc6;
+    border-radius: 5px;
+    font-size: 13px;
+    font-family: inherit;
+    margin-bottom: 8px;
+  }
+  .vm2-dropdown input[type="text"]:focus {
+    outline: none;
+    border-color: #c53a3a;
+  }
+  .vm2-section {
+    border-top: 1px solid #eee;
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+  .vm2-section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    margin-bottom: 8px;
+  }
+  .vm2-project-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .vm2-project-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 9px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+  .vm2-project-item:hover { background: #f4f1ea; }
+  .vm2-project-name { font-weight: 500; }
+  .vm2-project-meta { font-size: 11px; color: #888; }
+  .vm2-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .vm2-action {
+    padding: 6px 14px;
+    border-radius: 5px;
+    border: 1px solid #b9b6ad;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .vm2-action.primary { background: #c53a3a; color: #fff; border-color: #c53a3a; }
+  .vm2-action.primary:disabled { background: #ddd; border-color: #ddd; cursor: not-allowed; }
+  .vm2-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #2a2a2a;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    z-index: 2000;
+    max-width: 360px;
+  }
+  .vm2-toast.error { background: #c53a3a; }
+  .vm2-toast a { color: #fff; text-decoration: underline; }
+  .vm2-empty { color: #888; font-size: 12px; padding: 8px 0; font-style: italic; }
+</style>
+
+<script>
+(function() {
+  const ROOT = document.getElementById('vm2-promote-root');
+  if (!ROOT || ROOT.dataset.mounted === 'true') return;
+  ROOT.dataset.mounted = 'true';
+
+  // Resolve the deliverable filename
+  const FILE = (
+    document.querySelector('[data-vm2-deliverable]')?.dataset.vm2Deliverable ||
+    location.pathname.split('/').pop() ||
+    ''
+  );
+  if (!FILE || !FILE.endsWith('.html') || FILE.startsWith('project-') || FILE === 'portal.html') {
+    return; // No-op on portal page or project pages themselves
+  }
+
+  let projects = [];
+  let currentProject = null;
+
+  function toast(msg, isError) {
+    const t = document.createElement('div');
+    t.className = 'vm2-toast' + (isError ? ' error' : '');
+    t.innerHTML = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 5000);
+  }
+
+  function suggestSlug(file) {
+    // foo-bar-2026-04-12.html → foo-bar
+    return file.replace(/-\d{4}-\d{2}-\d{2}\.html$/, '').replace(/\.html$/, '');
+  }
+
+  async function fetchProjects() {
+    try {
+      const r = await fetch('/api/projects');
+      if (!r.ok) throw new Error(r.statusText);
+      projects = await r.json();
+      currentProject = projects.find(p => false) || null; // Will be set if we know
+    } catch (e) {
+      projects = [];
+    }
+  }
+
+  function renderButton() {
+    const btn = document.createElement('button');
+    btn.className = 'vm2-btn' + (currentProject ? ' linked' : '');
+    btn.textContent = currentProject
+      ? `📌 ${currentProject.title}`
+      : '📌 Promote to Project ▾';
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const dd = ROOT.querySelector('.vm2-dropdown');
+      dd.classList.toggle('open');
+    };
+    return btn;
+  }
+
+  function renderDropdown() {
+    const dd = document.createElement('div');
+    dd.className = 'vm2-dropdown';
+    const suggested = suggestSlug(FILE);
+
+    dd.innerHTML = `
+      <h3>Promote this deliverable to a project</h3>
+      <div class="vm2-section">
+        <div class="vm2-section-label">Existing projects</div>
+        <input type="text" id="vm2-search" placeholder="🔎 Search…" />
+        <div class="vm2-project-list" id="vm2-project-list">
+          ${projects.length === 0 ? '<div class="vm2-empty">No projects yet.</div>' : ''}
+        </div>
+      </div>
+      <div class="vm2-section">
+        <div class="vm2-section-label">＋ Or create new project</div>
+        <input type="text" id="vm2-new-slug" placeholder="slug (e.g. eitss-2)" value="${suggested}" />
+        <input type="text" id="vm2-new-title" placeholder="title (display name)" value="${suggested.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}" />
+      </div>
+      <div class="vm2-actions">
+        <button class="vm2-action" id="vm2-cancel">Cancel</button>
+        <button class="vm2-action primary" id="vm2-submit">Promote</button>
+      </div>
+    `;
+
+    const list = dd.querySelector('#vm2-project-list');
+    function renderList(filter) {
+      list.innerHTML = '';
+      const filtered = projects.filter(p =>
+        !filter || p.slug.includes(filter.toLowerCase()) || p.title.toLowerCase().includes(filter.toLowerCase())
+      );
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="vm2-empty">No matches.</div>';
+        return;
+      }
+      for (const p of filtered) {
+        const it = document.createElement('div');
+        it.className = 'vm2-project-item';
+        it.innerHTML = `<span class="vm2-project-name">● ${p.title}</span>
+                        <span class="vm2-project-meta">${p.deliverable_count}d · ${p.status}</span>`;
+        it.onclick = () => addToExisting(p.slug);
+        list.appendChild(it);
+      }
+    }
+    renderList('');
+
+    dd.querySelector('#vm2-search').oninput = (e) => renderList(e.target.value);
+    dd.querySelector('#vm2-cancel').onclick = () => dd.classList.remove('open');
+    dd.querySelector('#vm2-submit').onclick = () => {
+      const slug = dd.querySelector('#vm2-new-slug').value.trim();
+      const title = dd.querySelector('#vm2-new-title').value.trim();
+      if (!slug.match(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)) {
+        toast('Invalid slug. Lowercase, hyphens, alphanumeric only.', true);
+        return;
+      }
+      if (projects.find(p => p.slug === slug)) {
+        addToExisting(slug);
+      } else {
+        createNew(slug, title);
+      }
+    };
+
+    return dd;
+  }
+
+  async function addToExisting(slug) {
+    setBusy(true);
+    try {
+      const r = await fetch('/api/projects/add-snapshot', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ slug, deliverable_file: FILE })
+      });
+      if (!r.ok) throw new Error((await r.text()).slice(0, 200));
+      const data = await r.json();
+      toast(`Added to <a href="${data.project_url}">project-${slug}</a> — refreshing…`);
+      setTimeout(() => location.reload(), 1500);
+    } catch (e) {
+      toast(`Error: ${e.message}`, true);
+      setBusy(false);
+    }
+  }
+
+  async function createNew(slug, title) {
+    setBusy(true);
+    try {
+      const r = await fetch('/api/projects/promote', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ slug, title, deliverable_file: FILE })
+      });
+      if (!r.ok) throw new Error((await r.text()).slice(0, 200));
+      const data = await r.json();
+      toast(`Created <a href="${data.project_url}">project-${slug}</a> — refreshing…`);
+      setTimeout(() => location.reload(), 1500);
+    } catch (e) {
+      toast(`Error: ${e.message}`, true);
+      setBusy(false);
+    }
+  }
+
+  function setBusy(busy) {
+    const btn = ROOT.querySelector('#vm2-submit');
+    if (btn) {
+      btn.disabled = busy;
+      btn.textContent = busy ? 'Working…' : 'Promote';
+    }
+  }
+
+  // Click-outside-to-close
+  document.addEventListener('click', (e) => {
+    const dd = ROOT.querySelector('.vm2-dropdown');
+    if (dd && dd.classList.contains('open') && !ROOT.contains(e.target)) {
+      dd.classList.remove('open');
+    }
+  });
+
+  (async () => {
+    await fetchProjects();
+    // Detect whether this deliverable is already in a project
+    for (const p of projects) {
+      try {
+        const r = await fetch(`/project-${p.slug}.html`);
+        if (r.ok) {
+          const txt = await r.text();
+          if (txt.includes(`href="${FILE}"`)) {
+            currentProject = p;
+            break;
+          }
+        }
+      } catch (e) { /* ignore */ }
+    }
+    ROOT.innerHTML = '';
+    ROOT.appendChild(renderButton());
+    ROOT.appendChild(renderDropdown());
+  })();
+})();
+</script>
+
 </body>
 </html>

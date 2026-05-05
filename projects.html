@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects · VM2</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --text: #2a2a2a;
+    --text-dim: #6b6b6b;
+    --border: #e3e1dc;
+    --border-strong: #b9b6ad;
+    --accent: #c53a3a;
+    --accent-soft: #f5e3e3;
+    --link: #1f4d78;
+    --status-active: #2d7d4a;
+    --status-watching: #b8860b;
+    --status-closed: #6b6b6b;
+    --hover: #f4f1ea;
+    --shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  [data-theme="dark"] {
+    --bg: #1a1a1a;
+    --surface: #232323;
+    --text: #e8e6e0;
+    --text-dim: #999;
+    --border: #383838;
+    --border-strong: #555;
+    --accent: #e85a5a;
+    --accent-soft: #3a2222;
+    --link: #6ba3d6;
+    --status-active: #5cb878;
+    --status-watching: #d4a83a;
+    --status-closed: #999;
+    --hover: #2d2d2d;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Charter', 'Iowan Old Style', 'Georgia', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    font-size: 16px;
+  }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .topbar-left {
+    display: flex; align-items: center; gap: 16px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+  }
+  .topbar-left .brand { color: var(--accent); }
+  .topbar-left .crumb { color: var(--text-dim); font-weight: 400; }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 12.5px; font-weight: 500;
+    padding: 6px 12px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface); color: var(--text);
+    border-radius: 6px; cursor: pointer;
+    text-decoration: none; transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: #a02f2f; color: #fff; }
+  .btn.primary:disabled { background: #ddd; border-color: #ddd; color: #888; cursor: not-allowed; }
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+
+  /* ─── Filter bar ─── */
+  .filter-bar {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    align-items: center;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .filter-bar input[type="text"] {
+    flex: 1 1 220px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: inherit; font-size: 13px;
+    background: var(--bg); color: var(--text);
+  }
+  .filter-bar input:focus { outline: none; border-color: var(--accent); }
+  .filter-group {
+    display: flex; gap: 4px; align-items: center;
+  }
+  .filter-label {
+    color: var(--text-dim);
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.8px; margin-right: 6px;
+  }
+  .pill {
+    padding: 4px 11px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 12px;
+    background: var(--bg);
+    color: var(--text);
+    transition: all 0.12s;
+    user-select: none;
+  }
+  .pill:hover { border-color: var(--accent); }
+  .pill.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pill .count { opacity: 0.7; margin-left: 4px; font-size: 11px; }
+
+  /* ─── Stats row ─── */
+  .stats {
+    display: flex; gap: 24px;
+    margin-bottom: 20px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .stats strong { color: var(--text); font-size: 18px; font-weight: 700; margin-right: 6px; }
+
+  /* ─── Cards view ─── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-auto-rows: 1fr;
+    gap: 16px;
+    align-items: stretch;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    transition: all 0.15s;
+    cursor: pointer;
+    display: flex; flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--shadow);
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .card-head {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .card-title {
+    font-size: 17px; font-weight: 600;
+    line-height: 1.3;
+    color: var(--text);
+  }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 8px;
+    border-radius: 11px;
+    font-family: system-ui, sans-serif;
+    font-weight: 600; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .status-pill::before {
+    content: ''; width: 5px; height: 5px;
+    border-radius: 50%; background: currentColor;
+  }
+  .status-active { color: var(--status-active); background: rgba(45,125,74,0.12); }
+  .status-watching { color: var(--status-watching); background: rgba(184,134,11,0.12); }
+  .status-closed { color: var(--status-closed); background: rgba(107,107,107,0.12); }
+  .card-meta {
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+  .card-summary {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+    flex: 1;
+    margin-bottom: 12px;
+    /* clamp to 4 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-actions {
+    display: flex; gap: 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: auto;
+    flex-shrink: 0;
+  }
+  .card-actions .btn { font-size: 12px; padding: 5px 10px; flex: 1; text-align: center; }
+
+  /* ─── List view ─── */
+  .list {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .list-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 100px 90px 110px;
+    gap: 16px; padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.12s;
+    font-family: system-ui, sans-serif;
+    font-size: 13.5px;
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row:hover { background: var(--hover); }
+  .list-row.head {
+    background: var(--bg);
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text-dim);
+    font-weight: 600;
+    cursor: default;
+  }
+  .list-row.head:hover { background: var(--bg); }
+  .list-title { font-weight: 600; color: var(--text); }
+  .list-meta { color: var(--text-dim); font-size: 12.5px; }
+
+  /* ─── Compact view ─── */
+  .compact {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .compact-row {
+    display: flex; align-items: center;
+    padding: 6px 4px;
+    border-bottom: 1px dashed var(--border);
+    gap: 12px;
+  }
+  .compact-row:last-child { border-bottom: none; }
+  .compact-row:hover { background: var(--hover); }
+  .compact-row a { color: var(--text); text-decoration: none; flex: 1; font-weight: 500; }
+  .compact-row a:hover { color: var(--accent); }
+  .compact-meta { color: var(--text-dim); font-size: 12px; }
+
+  /* ─── Group headers ─── */
+  .group-header {
+    font-family: system-ui, sans-serif;
+    font-size: 11.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-dim);
+    margin: 26px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .group-header:first-child { margin-top: 0; }
+
+  /* ─── Empty state ─── */
+  .empty-state {
+    padding: 48px 24px; text-align: center;
+    color: var(--text-dim);
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+  }
+
+  /* ─── Modal ─── */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 200;
+    padding: 24px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 12px;
+    width: 100%; max-width: 720px;
+    max-height: 90vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  }
+  .modal-head {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-head h3 { font-size: 17px; font-weight: 600; font-family: system-ui, sans-serif; }
+  .modal-close {
+    background: none; border: none;
+    color: var(--text-dim); font-size: 22px;
+    cursor: pointer; padding: 0 4px;
+  }
+  .modal-close:hover { color: var(--accent); }
+  .modal-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    flex: 1;
+    font-family: system-ui, sans-serif;
+    font-size: 13.5px;
+  }
+  .modal-toolbar {
+    display: flex; gap: 10px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .modal-toolbar input {
+    flex: 1;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .modal-toolbar select {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+  }
+  .deliv-list {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+  .deliv-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .deliv-row:last-child { border-bottom: none; }
+  .deliv-row:hover { background: var(--hover); }
+  .deliv-row.linked { opacity: 0.55; }
+  .deliv-row.linked:hover { background: var(--surface); cursor: not-allowed; }
+  .deliv-check {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 3px;
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .deliv-row.selected .deliv-check {
+    background: var(--accent); border-color: var(--accent);
+    color: #fff; font-size: 11px; font-weight: 700;
+  }
+  .deliv-row.selected .deliv-check::after { content: '✓'; }
+  .deliv-meta { color: var(--text-dim); font-size: 11.5px; }
+  .deliv-badge {
+    font-size: 10px; padding: 1px 6px;
+    border-radius: 8px; background: var(--accent-soft); color: var(--accent);
+    font-weight: 600; flex-shrink: 0;
+  }
+  .modal-foot {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .selection-count { color: var(--text-dim); }
+  .modal-actions { display: flex; gap: 8px; }
+
+  /* ─── Toast ─── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #2a2a2a; color: #fff;
+    padding: 10px 16px; border-radius: 6px;
+    font-family: system-ui, sans-serif; font-size: 13px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    z-index: 300; max-width: 360px;
+  }
+  .toast.error { background: var(--accent); }
+  .toast a { color: #fff; text-decoration: underline; }
+
+  @media (max-width: 720px) {
+    .list-row { grid-template-columns: 2fr 1fr 80px; gap: 10px; padding: 10px; }
+    .list-row .col-updated, .list-row.head .col-updated { display: none; }
+    .filter-bar { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="brand">VM2</span>
+    <span class="crumb">· Projects</span>
+  </div>
+  <div class="topbar-right">
+    <a href="portal.html" class="btn">↗ Portal</a>
+    <button class="btn" onclick="toggleTheme()">◐</button>
+  </div>
+</div>
+
+<main>
+  <h1>Projects</h1>
+  <p class="subtitle">Long-lived topic threads. Each project aggregates its dated snapshots into a single timeline.</p>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <input type="text" id="search" placeholder="🔎 Search projects by name, slug, or summary…" />
+
+    <div class="filter-group">
+      <span class="filter-label">Status</span>
+      <span class="pill on" data-filter-status="all">All <span class="count" id="count-all"></span></span>
+      <span class="pill" data-filter-status="active">Active <span class="count" id="count-active"></span></span>
+      <span class="pill" data-filter-status="watching">Watching <span class="count" id="count-watching"></span></span>
+      <span class="pill" data-filter-status="closed">Closed <span class="count" id="count-closed"></span></span>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">View</span>
+      <span class="pill on" data-view="cards">Cards</span>
+      <span class="pill" data-view="list">List</span>
+      <span class="pill" data-view="compact">Compact</span>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Sort</span>
+      <select id="sort" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text);font-family:inherit;">
+        <option value="updated">Last updated</option>
+        <option value="created">Date created</option>
+        <option value="title">Title (A-Z)</option>
+        <option value="count">Deliverables (most)</option>
+        <option value="status">Status</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Group</span>
+      <select id="group" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text);font-family:inherit;">
+        <option value="none">None</option>
+        <option value="status">By status</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="stats"></div>
+
+  <!-- Container -->
+  <div id="content"></div>
+</main>
+
+<!-- Add-previous-analysis modal -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">Add previous analysis</h3>
+      <button class="modal-close" id="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-dim);margin-bottom:14px;">
+        Browse all dated deliverables in the repo. Pick the ones to add to this project — they'll be appended to the timeline atomically.
+      </p>
+      <div class="modal-toolbar">
+        <input type="text" id="modal-search" placeholder="Filter by filename or title…" />
+        <select id="modal-membership">
+          <option value="unlinked">Unlinked only</option>
+          <option value="all">All deliverables</option>
+        </select>
+      </div>
+      <div class="deliv-list" id="deliv-list"></div>
+    </div>
+    <div class="modal-foot">
+      <span class="selection-count" id="selection-count">0 selected</span>
+      <div class="modal-actions">
+        <button class="btn" id="modal-cancel">Cancel</button>
+        <button class="btn primary" id="modal-submit" disabled>Add to project</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const state = {
+    projects: [],
+    deliverables: [],
+    statusFilter: 'all',
+    view: 'cards',
+    sort: 'updated',
+    group: 'none',
+    search: '',
+    modalProject: null,
+    modalSelection: new Set(),
+  };
+
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => document.querySelectorAll(sel);
+
+  function toast(msg, isError) {
+    const t = document.createElement('div');
+    t.className = 'toast' + (isError ? ' error' : '');
+    t.innerHTML = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 5000);
+  }
+
+  function escapeHtml(s) {
+    return (s || '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  async function loadAll() {
+    try {
+      const [projRes, delRes] = await Promise.all([
+        fetch('/api/projects'),
+        fetch('/api/deliverables'),
+      ]);
+      if (!projRes.ok) throw new Error('Projects API failed: ' + projRes.statusText);
+      state.projects = await projRes.json();
+      state.deliverables = delRes.ok ? await delRes.json() : [];
+      // Pre-fetch latest_summary for cards: pull from the project's HTML
+      // (best-effort; if it fails we just show the title)
+      await Promise.all(state.projects.map(async p => {
+        try {
+          const r = await fetch(`/project-${p.slug}.html`);
+          if (r.ok) {
+            const txt = await r.text();
+            const m = txt.match(/PROJECT_STATE_JSON_BEGIN([\s\S]*?)PROJECT_STATE_JSON_END/);
+            if (m) {
+              const st = JSON.parse(m[1].trim());
+              p.latest_summary = st.latest_summary || '';
+              p.created = st.created || '';
+              p.open_items = st.open_items || [];
+              p.related = st.related || [];
+            }
+          }
+        } catch (e) { /* ignore */ }
+      }));
+      render();
+    } catch (e) {
+      $('#content').innerHTML = `<div class="empty-state">⚠ Could not load projects: ${escapeHtml(e.message)}<br><br>The Projects API may not be deployed yet. See <a href="/api/health">/api/health</a>.</div>`;
+    }
+  }
+
+  function filtered() {
+    let projs = [...state.projects];
+    if (state.statusFilter !== 'all') {
+      projs = projs.filter(p => p.status === state.statusFilter);
+    }
+    if (state.search) {
+      const q = state.search.toLowerCase();
+      projs = projs.filter(p =>
+        p.slug.toLowerCase().includes(q) ||
+        (p.title || '').toLowerCase().includes(q) ||
+        (p.latest_summary || '').toLowerCase().includes(q)
+      );
+    }
+    const cmp = {
+      updated: (a, b) => (b.updated || '').localeCompare(a.updated || ''),
+      created: (a, b) => (b.created || '').localeCompare(a.created || ''),
+      title: (a, b) => (a.title || '').localeCompare(b.title || ''),
+      count: (a, b) => (b.deliverable_count || 0) - (a.deliverable_count || 0),
+      status: (a, b) => (a.status || '').localeCompare(b.status || ''),
+    }[state.sort];
+    projs.sort(cmp);
+    return projs;
+  }
+
+  function render() {
+    renderStats();
+    renderCounts();
+    renderContent();
+  }
+
+  function renderStats() {
+    const all = state.projects;
+    const totalDeliverables = all.reduce((sum, p) => sum + (p.deliverable_count || 0), 0);
+    const filteredCount = filtered().length;
+    $('#stats').innerHTML = `
+      <span><strong>${filteredCount}</strong>${filteredCount !== all.length ? `<span style="color:var(--text-dim);font-size:13px">/${all.length}</span>`:''} project${filteredCount===1?'':'s'}</span>
+      <span><strong>${totalDeliverables}</strong> linked deliverables</span>
+      <span><strong>${state.deliverables.length}</strong> total in repo</span>
+    `;
+  }
+
+  function renderCounts() {
+    const all = state.projects;
+    $('#count-all').textContent = all.length;
+    $('#count-active').textContent = all.filter(p => p.status === 'active').length;
+    $('#count-watching').textContent = all.filter(p => p.status === 'watching').length;
+    $('#count-closed').textContent = all.filter(p => p.status === 'closed').length;
+  }
+
+  function renderContent() {
+    const projs = filtered();
+    if (projs.length === 0) {
+      $('#content').innerHTML = '<div class="empty-state">No projects match the current filters.</div>';
+      return;
+    }
+    if (state.group === 'status') {
+      const groups = ['active', 'watching', 'closed'];
+      let html = '';
+      for (const g of groups) {
+        const subset = projs.filter(p => p.status === g);
+        if (subset.length === 0) continue;
+        html += `<div class="group-header">${g.toUpperCase()} <span style="color:var(--text-dim);font-weight:400;letter-spacing:0">· ${subset.length}</span></div>`;
+        html += renderView(subset);
+      }
+      $('#content').innerHTML = html;
+    } else {
+      $('#content').innerHTML = renderView(projs);
+    }
+    // Wire up Add buttons
+    $$('.add-btn').forEach(b => {
+      b.onclick = (e) => {
+        e.stopPropagation(); e.preventDefault();
+        openModal(b.dataset.slug);
+      };
+    });
+  }
+
+  function renderView(projs) {
+    if (state.view === 'cards') return renderCards(projs);
+    if (state.view === 'list') return renderList(projs);
+    return renderCompact(projs);
+  }
+
+  function renderCards(projs) {
+    return '<div class="cards">' + projs.map(p => `
+      <div class="card" onclick="location.href='project-${p.slug}.html'">
+        <div class="card-head">
+          <div class="card-title">${escapeHtml(p.title)}</div>
+          <span class="status-pill status-${p.status}">${p.status}</span>
+        </div>
+        <div class="card-meta">
+          ${p.deliverable_count} deliverable${p.deliverable_count===1?'':'s'} · updated ${escapeHtml(p.updated || '—')}
+          ${p.open_items?.length ? ` · ${p.open_items.filter(i => !i.done).length} open item${p.open_items.filter(i => !i.done).length===1?'':'s'}` : ''}
+        </div>
+        <div class="card-summary">${escapeHtml((p.latest_summary || '').slice(0, 280) || 'No summary yet.')}</div>
+        <div class="card-actions" onclick="event.stopPropagation()">
+          <button class="btn add-btn" data-slug="${p.slug}">+ Add deliverable</button>
+          <a class="btn primary" href="project-${p.slug}.html">Open →</a>
+        </div>
+      </div>`).join('') + '</div>';
+  }
+
+  function renderList(projs) {
+    return '<div class="list">' +
+      `<div class="list-row head">
+        <div>Title</div>
+        <div>Slug</div>
+        <div>Status</div>
+        <div>Deliverables</div>
+        <div class="col-updated">Updated</div>
+       </div>` +
+      projs.map(p => `
+        <div class="list-row" onclick="location.href='project-${p.slug}.html'">
+          <div class="list-title">${escapeHtml(p.title)}</div>
+          <div class="list-meta">${escapeHtml(p.slug)}</div>
+          <div><span class="status-pill status-${p.status}">${p.status}</span></div>
+          <div class="list-meta">${p.deliverable_count}</div>
+          <div class="col-updated list-meta">${escapeHtml(p.updated || '—')}</div>
+        </div>`).join('') + '</div>';
+  }
+
+  function renderCompact(projs) {
+    return '<div class="compact">' + projs.map(p => `
+      <div class="compact-row">
+        <a href="project-${p.slug}.html">${escapeHtml(p.title)}</a>
+        <span class="compact-meta">${p.deliverable_count}d</span>
+        <span class="status-pill status-${p.status}">${p.status}</span>
+        <button class="btn add-btn" data-slug="${p.slug}" style="padding:3px 8px;font-size:11px;">+ Add</button>
+      </div>`).join('') + '</div>';
+  }
+
+  // ─── Modal: Add previous analysis ───
+  function openModal(slug) {
+    const proj = state.projects.find(p => p.slug === slug);
+    if (!proj) return;
+    state.modalProject = proj;
+    state.modalSelection.clear();
+    $('#modal-title').textContent = `Add previous analysis to "${proj.title}"`;
+    $('#modal-search').value = '';
+    $('#modal-membership').value = 'unlinked';
+    renderModalList();
+    updateSelectionCount();
+    $('#modal-backdrop').classList.add('open');
+  }
+
+  function closeModal() {
+    $('#modal-backdrop').classList.remove('open');
+    state.modalProject = null;
+    state.modalSelection.clear();
+  }
+
+  function renderModalList() {
+    const filter = $('#modal-search').value.toLowerCase();
+    const membership = $('#modal-membership').value;
+    let delivs = state.deliverables;
+    if (membership === 'unlinked') {
+      delivs = delivs.filter(d => !d.project_slug);
+    }
+    if (filter) {
+      delivs = delivs.filter(d =>
+        d.file.toLowerCase().includes(filter) ||
+        d.title_guess.toLowerCase().includes(filter)
+      );
+    }
+    const list = $('#deliv-list');
+    if (delivs.length === 0) {
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-dim);">No deliverables match.</div>';
+      return;
+    }
+    list.innerHTML = delivs.slice(0, 200).map(d => {
+      const linked = !!d.project_slug;
+      const sel = state.modalSelection.has(d.file);
+      return `
+        <div class="deliv-row ${linked?'linked':''} ${sel?'selected':''}" data-file="${escapeHtml(d.file)}" ${linked?'title="Already in '+escapeHtml(d.project_title||'')+'"':''}>
+          <span class="deliv-check"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(d.title_guess)}</div>
+            <div class="deliv-meta">${escapeHtml(d.file)}</div>
+          </div>
+          <div class="deliv-meta">${d.date}</div>
+          ${linked ? `<span class="deliv-badge">${escapeHtml(d.project_title||'in project')}</span>` : ''}
+        </div>`;
+    }).join('') + (delivs.length > 200 ? `<div style="padding:12px;text-align:center;color:var(--text-dim);font-size:12px;">Showing first 200 of ${delivs.length}. Refine search to narrow.</div>` : '');
+    list.querySelectorAll('.deliv-row').forEach(row => {
+      if (row.classList.contains('linked')) return;
+      row.onclick = () => {
+        const f = row.dataset.file;
+        if (state.modalSelection.has(f)) state.modalSelection.delete(f);
+        else state.modalSelection.add(f);
+        row.classList.toggle('selected');
+        updateSelectionCount();
+      };
+    });
+  }
+
+  function updateSelectionCount() {
+    const n = state.modalSelection.size;
+    $('#selection-count').textContent = `${n} selected`;
+    $('#modal-submit').disabled = n === 0;
+  }
+
+  async function submitModal() {
+    if (!state.modalProject) return;
+    const slug = state.modalProject.slug;
+    const files = [...state.modalSelection];
+    if (files.length === 0) return;
+    $('#modal-submit').disabled = true;
+    $('#modal-submit').textContent = 'Adding…';
+    try {
+      const r = await fetch('/api/projects/add-many', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ slug, files })
+      });
+      if (!r.ok) throw new Error((await r.text()).slice(0, 200));
+      const data = await r.json();
+      toast(`${data.message} <a href="${data.project_url}">Open →</a>`);
+      closeModal();
+      // Refresh data
+      await loadAll();
+    } catch (e) {
+      toast(`Error: ${e.message}`, true);
+      $('#modal-submit').disabled = false;
+      $('#modal-submit').textContent = 'Add to project';
+    }
+  }
+
+  // ─── Wire up controls ───
+  $('#search').oninput = e => { state.search = e.target.value; render(); };
+  $('#sort').onchange = e => { state.sort = e.target.value; render(); };
+  $('#group').onchange = e => { state.group = e.target.value; render(); };
+  $$('[data-filter-status]').forEach(p => {
+    p.onclick = () => {
+      $$('[data-filter-status]').forEach(x => x.classList.remove('on'));
+      p.classList.add('on');
+      state.statusFilter = p.dataset.filterStatus;
+      render();
+    };
+  });
+  $$('[data-view]').forEach(p => {
+    p.onclick = () => {
+      $$('[data-view]').forEach(x => x.classList.remove('on'));
+      p.classList.add('on');
+      state.view = p.dataset.view;
+      render();
+    };
+  });
+  $('#modal-search').oninput = renderModalList;
+  $('#modal-membership').onchange = renderModalList;
+  $('#modal-close').onclick = closeModal;
+  $('#modal-cancel').onclick = closeModal;
+  $('#modal-submit').onclick = submitModal;
+  $('#modal-backdrop').onclick = e => { if (e.target.id === 'modal-backdrop') closeModal(); };
+
+  // Theme toggle
+  window.toggleTheme = function() {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('vm2-theme', next);
+  };
+  const saved = localStorage.getItem('vm2-theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+
+  loadAll();
+})();
+</script>
+
+</body>
+</html>
