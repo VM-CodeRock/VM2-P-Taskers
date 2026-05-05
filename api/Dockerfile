@@ -21,9 +21,12 @@ RUN chmod +x /app/entrypoint.sh
 # image stays decoupled from any single repo state). project_helper.py
 # gets imported from /repo/scripts/.
 ENV REPO_PATH=/repo
+# Railway provides PORT as an env var; default to 8000 for local dev
 ENV PORT=8000
 
 EXPOSE 8000
 
+# entrypoint.sh handles repo clone/pull, then exec's the CMD.
+# We use sh -c so $PORT (set by Railway) gets expanded at runtime.
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["uvicorn", "projects_api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn projects_api:app --host 0.0.0.0 --port ${PORT:-8000}"]
