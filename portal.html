@@ -357,6 +357,7 @@ body {
 <nav class="topbar">
 <span class="topbar-brand">VM2</span>
 <div class="topbar-right">
+<a href="projects.html" style="font-family:var(--font-sans);font-size:0.78rem;color:var(--text);text-decoration:none;border:1px solid var(--border);padding:5px 10px;border-radius:6px;">↗ Projects</a>
 <span class="topbar-date">Task Index</span>
 <button aria-label="Toggle theme" class="theme-toggle" onclick="toggleTheme()">◐</button>
 </div>
@@ -418,6 +419,7 @@ body {
 <th class="col-date" onclick="sortTable('date')">Created <span class="sort-arrow"></span></th>
 <th class="col-title" onclick="sortTable('title')">Title <span class="sort-arrow"></span></th>
 <th class="col-type" onclick="sortTable('type')">Type <span class="sort-arrow"></span></th>
+<th class="col-project">Project</th>
 <th class="col-updated" onclick="sortTable('updated')">Updated <span class="sort-arrow">▼</span></th>
 <th class="col-link">Link</th>
 </tr>
@@ -435,6 +437,7 @@ body {
               <td class="col-title"><a href="wsr-madison-2026-05-05.html">WSR Madison Brief — Week Ending May 1, 2026</a></td>
               <td class="col-type"><span class="badge badge-monitoring">WSR Brief</span></td>
               <td class="col-updated">2026-05-05</td>
+              <td class="col-link"><a class="link-icon" href="wsr-madison-2026-05-05.html" title="Open">↗</a></td>
             </tr>
             <tr data-date="2026-05-05" data-type="BD &amp; Capture" data-thread="faa-atlas" data-updated="2026-05-05">
 <td class="col-date">2026-05-05</td><td class="col-title"><a href="bd-faa-atlas-industry-day-2026-05-05.html">FAA ATLAS Industry Day — BD Analysis for Changeis (Phase 2 Readiness, CLIN Matrix, AVS Deep Dive)</a></td><td class="col-type"><span class="badge badge-bd">BD &amp; Capture</span></td><td class="col-updated">2026-05-05</td><td class="col-link"><a class="link-icon" href="bd-faa-atlas-industry-day-2026-05-05.html" title="Open">↗</a></td>
@@ -651,7 +654,6 @@ body {
 <td class="col-type"><span class="badge badge-monitoring">Compliance</span></td>
 <td class="col-updated">2026-05-05</td>
 <td class="col-link"><a class="link-icon" href="compliance-audit-2026-05-05.html" title="Open">↗</a></td>
-<td class="col-link"><a class="link-icon" href="vm2-thread-tag-mechanism-2026-05-05.html" title="Open">VM2 Thread Tag Mechanism</a></td>
 </tr>
 
 <tr data-date="2026-05-04" data-type="Compliance" data-updated="2026-05-04">
@@ -4740,5 +4742,281 @@ sortTable('updated');
 applyFilters();
 
 </script>
+
+<!-- ─── Project decoration layer ─── -->
+<!-- Adds Project column cells, project filter pills, and per-row Project
+     dropdown to every existing <tr>. Pulls data from /api/projects and
+     /api/deliverables. Self-contained; degrades gracefully if API offline. -->
+<style>
+.col-project { font-family: var(--font-sans); font-size: 0.78rem; }
+.col-project select, .col-project .proj-link {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  max-width: 160px;
+}
+.col-project .proj-link {
+  text-decoration: none;
+  display: inline-block;
+  background: rgba(197, 58, 58, 0.10);
+  border-color: rgba(197, 58, 58, 0.4);
+  color: #c53a3a;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.col-project .proj-link:hover { background: #c53a3a; color: #fff; }
+.col-project .proj-edit-btn {
+  font-size: 10px; padding: 2px 5px; margin-left: 4px;
+  border: 1px solid var(--border); border-radius: 3px;
+  background: var(--bg); cursor: pointer; color: var(--text-muted);
+}
+.col-project .proj-edit-btn:hover { color: #c53a3a; border-color: #c53a3a; }
+.col-project .proj-empty { color: var(--text-muted); font-style: italic; }
+.proj-filter-row {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  align-items: center; padding: 8px 0;
+  margin-bottom: 8px;
+}
+.proj-filter-row .label {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+.proj-filter-pill {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--text);
+}
+.proj-filter-pill:hover { border-color: #c53a3a; }
+.proj-filter-pill.on { background: #c53a3a; color: #fff; border-color: #c53a3a; }
+.vm2-toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: #2a2a2a; color: #fff;
+  padding: 10px 16px; border-radius: 6px;
+  font-family: system-ui, sans-serif; font-size: 13px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  z-index: 2000; max-width: 360px;
+}
+.vm2-toast.error { background: #c53a3a; }
+.vm2-toast a { color: #fff; text-decoration: underline; }
+</style>
+
+<script>
+(async function() {
+  // Wait until existing portal init has rendered the table
+  await new Promise(r => setTimeout(r, 200));
+
+  let projects = [];
+  let membership = {}; // filename -> { slug, title }
+  try {
+    const [pRes, dRes] = await Promise.all([
+      fetch('/api/projects'),
+      fetch('/api/deliverables'),
+    ]);
+    if (pRes.ok) projects = await pRes.json();
+    if (dRes.ok) {
+      const delivs = await dRes.json();
+      for (const d of delivs) {
+        if (d.project_slug) {
+          membership[d.file] = { slug: d.project_slug, title: d.project_title };
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Projects API offline; project column will be inactive', e);
+  }
+
+  function toast(msg, isError) {
+    const t = document.createElement('div');
+    t.className = 'vm2-toast' + (isError ? ' error' : '');
+    t.innerHTML = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 4500);
+  }
+  function escapeHtml(s) {
+    return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+
+  // ── Inject Project filter pills into the existing pill bar ──
+  const pillBar = document.querySelector('.filter-pills') || document.querySelector('[class*="filter"]');
+  if (pillBar && projects.length) {
+    const row = document.createElement('div');
+    row.className = 'proj-filter-row';
+    let html = '<span class="label">Project</span>';
+    html += '<span class="proj-filter-pill on" data-project-filter="all">All</span>';
+    for (const p of projects) {
+      html += `<span class="proj-filter-pill" data-project-filter="${escapeHtml(p.slug)}" title="${escapeHtml(p.title)}">${escapeHtml(p.title.length > 30 ? p.title.slice(0,27)+'…' : p.title)} <span style="opacity:0.6;font-size:10px;">${p.deliverable_count}</span></span>`;
+    }
+    html += `<span class="proj-filter-pill" data-project-filter="unlinked">Unlinked</span>`;
+    row.innerHTML = html;
+    pillBar.parentElement.insertBefore(row, pillBar.nextSibling);
+
+    let projFilter = 'all';
+    row.querySelectorAll('[data-project-filter]').forEach(pill => {
+      pill.onclick = () => {
+        row.querySelectorAll('[data-project-filter]').forEach(x => x.classList.remove('on'));
+        pill.classList.add('on');
+        projFilter = pill.dataset.projectFilter;
+        applyProjectFilter(projFilter);
+      };
+    });
+  }
+
+  function applyProjectFilter(slug) {
+    const tbody = document.getElementById('tableBody');
+    if (!tbody) return;
+    let visibleCount = 0;
+    tbody.querySelectorAll('tr').forEach(row => {
+      const file = (row.querySelector('a[href]')?.getAttribute('href') || '');
+      const m = membership[file];
+      let visible;
+      if (slug === 'all') visible = true;
+      else if (slug === 'unlinked') visible = !m;
+      else visible = m && m.slug === slug;
+      // Don't override existing type filter — combine via data attr
+      row.dataset.projectMatch = visible ? '1' : '0';
+      // Re-apply combined visibility
+      const typeMatch = row.style.display !== 'none' && (!row.dataset.typeMatch || row.dataset.typeMatch === '1');
+      const finalVisible = visible && (row.dataset.typeMatch !== '0');
+      row.style.display = finalVisible ? '' : 'none';
+      if (finalVisible) visibleCount++;
+    });
+  }
+
+  // ── Decorate every existing row with a Project cell ──
+  const tbody = document.getElementById('tableBody');
+  if (!tbody) return;
+
+  function renderProjectCell(file) {
+    const m = membership[file];
+    if (m) {
+      return `
+        <a class="proj-link" href="/project-${escapeHtml(m.slug)}.html" title="${escapeHtml(m.title)}">${escapeHtml(m.title.length > 22 ? m.title.slice(0,20)+'…' : m.title)}</a>
+        <button class="proj-edit-btn" data-file="${escapeHtml(file)}" title="Change project">⋯</button>
+      `;
+    } else {
+      return `<button class="proj-edit-btn" data-file="${escapeHtml(file)}" title="Assign to project" style="font-size:11px;padding:3px 8px;">+ Assign</button>`;
+    }
+  }
+
+  tbody.querySelectorAll('tr').forEach(row => {
+    // Find filename from the title cell <a href>
+    const link = row.querySelector('td.col-title a, td.col-link a');
+    const file = link ? link.getAttribute('href') : null;
+    if (!file) return;
+    // Insert col-project cell before col-updated
+    const updatedCell = row.querySelector('td.col-updated');
+    if (!updatedCell || row.querySelector('td.col-project')) return;
+    const projCell = document.createElement('td');
+    projCell.className = 'col-project';
+    projCell.innerHTML = renderProjectCell(file);
+    row.insertBefore(projCell, updatedCell);
+  });
+
+  // ── Per-row dropdown handler ──
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.proj-edit-btn');
+    if (!btn) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const file = btn.dataset.file;
+    const current = membership[file];
+
+    // Close any existing menu
+    document.querySelectorAll('.proj-row-menu').forEach(m => m.remove());
+
+    const menu = document.createElement('div');
+    menu.className = 'proj-row-menu';
+    menu.style.cssText = 'position:absolute;background:var(--surface,#fff);border:1px solid var(--border,#ccc);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,0.18);padding:6px;z-index:1500;font-family:system-ui,sans-serif;font-size:12.5px;min-width:200px;max-height:300px;overflow-y:auto;';
+    let inner = '';
+    if (current) {
+      inner += `<div style="padding:6px 8px;color:#888;font-size:11px;">Currently in <strong>${escapeHtml(current.title)}</strong></div>`;
+    }
+    inner += '<div style="padding:4px 8px 2px;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:0.6px;">Move to</div>';
+    for (const p of projects) {
+      if (current && p.slug === current.slug) continue;
+      inner += `<div class="proj-menu-item" data-action="move" data-slug="${escapeHtml(p.slug)}" style="padding:6px 8px;cursor:pointer;border-radius:4px;">${escapeHtml(p.title)} <span style="color:#888;font-size:10px;">${p.deliverable_count}d</span></div>`;
+    }
+    if (current) {
+      inner += `<div style="border-top:1px solid var(--border,#eee);margin-top:4px;"></div>`;
+      inner += `<div class="proj-menu-item" data-action="detach" style="padding:6px 8px;cursor:pointer;border-radius:4px;color:#888;">↺ Detach (no project)</div>`;
+    }
+    inner += `<div style="border-top:1px solid var(--border,#eee);margin-top:4px;"></div>`;
+    inner += `<div class="proj-menu-item" data-action="open" data-file="${escapeHtml(file)}" style="padding:6px 8px;cursor:pointer;border-radius:4px;color:#1f4d78;">↗ Open deliverable</div>`;
+    menu.innerHTML = inner;
+    document.body.appendChild(menu);
+
+    // Position next to button
+    const r = btn.getBoundingClientRect();
+    menu.style.left = `${Math.min(r.left, window.innerWidth - 220) + window.scrollX}px`;
+    menu.style.top = `${r.bottom + window.scrollY + 4}px`;
+
+    menu.querySelectorAll('.proj-menu-item').forEach(item => {
+      item.onmouseenter = () => item.style.background = 'rgba(197,58,58,0.10)';
+      item.onmouseleave = () => item.style.background = '';
+      item.onclick = async () => {
+        const action = item.dataset.action;
+        if (action === 'open') {
+          location.href = '/' + file;
+          return;
+        }
+        menu.remove();
+        const targetSlug = action === 'detach' ? null : item.dataset.slug;
+        try {
+          const r = await fetch('/api/projects/move-snapshot', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              deliverable_file: file,
+              to_slug: targetSlug,
+              from_slug: current ? current.slug : null,
+            })
+          });
+          if (!r.ok) throw new Error((await r.text()).slice(0, 200));
+          const data = await r.json();
+          if (targetSlug) {
+            const proj = projects.find(p => p.slug === targetSlug);
+            membership[file] = { slug: targetSlug, title: proj ? proj.title : targetSlug };
+            toast(`Moved to <a href="${data.project_url}">${proj ? proj.title : targetSlug}</a>`);
+          } else {
+            delete membership[file];
+            toast('Detached from project.');
+          }
+          // Re-render the cell in place
+          const tr = document.querySelector(`a[href="${file}"]`)?.closest('tr');
+          if (tr) {
+            const cell = tr.querySelector('td.col-project');
+            if (cell) cell.innerHTML = renderProjectCell(file);
+          }
+        } catch (e) {
+          toast(`Error: ${e.message}`, true);
+        }
+      };
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.proj-row-menu') && !e.target.closest('.proj-edit-btn')) {
+      document.querySelectorAll('.proj-row-menu').forEach(m => m.remove());
+    }
+  });
+})();
+</script>
+
 </body>
 </html>

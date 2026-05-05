@@ -154,6 +154,25 @@ class StatusRequest(BaseModel):
     status: Literal["active", "watching", "closed"]
 
 
+class MoveSnapshotRequest(BaseModel):
+    deliverable_file: str
+    to_slug: Optional[str] = None  # None means "detach from any project"
+    from_slug: Optional[str] = None  # If known; otherwise auto-detect
+
+
+class CreateEmptyRequest(BaseModel):
+    slug: str = Field(pattern=r"^[a-z0-9][a-z0-9-]*[a-z0-9]$", min_length=2, max_length=64)
+    title: Optional[str] = None
+    status: Literal["active", "watching", "closed"] = "active"
+    owner: str = "Varun"
+    summary: Optional[str] = None
+
+
+class MergeRequest(BaseModel):
+    from_slug: str  # Project to merge IN (will be deleted)
+    into_slug: str  # Project to merge INTO (kept)
+
+
 class DeliverableInfo(BaseModel):
     file: str
     date: str
@@ -279,6 +298,37 @@ def promote(req: PromoteRequest):
     )
 
 
+def _extract_summary_from_html(file_path) -> str:
+    """Best-effort extract first heading + first 2 paragraphs from a deliverable."""
+    try:
+        text = file_path.read_text(encoding="utf-8", errors="replace")
+    except Exception:
+        return ""
+    import re
+    # Strip script/style blocks
+    text = re.sub(r"<script[\s\S]*?</script>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<style[\s\S]*?</style>", "", text, flags=re.IGNORECASE)
+    # Find first <h1>/<h2>
+    h_match = re.search(r"<h[12][^>]*>([\s\S]*?)</h[12]>", text, re.IGNORECASE)
+    heading = re.sub(r"<[^>]+>", "", h_match.group(1)).strip() if h_match else ""
+    # First 2 paragraphs after the heading
+    body_text = text[h_match.end():] if h_match else text
+    paras = re.findall(r"<p[^>]*>([\s\S]*?)</p>", body_text, re.IGNORECASE)
+    cleaned = []
+    for p in paras[:3]:
+        plain = re.sub(r"<[^>]+>", " ", p)
+        plain = re.sub(r"\s+", " ", plain).strip()
+        if len(plain) > 20:
+            cleaned.append(plain)
+        if len(cleaned) >= 2:
+            break
+    out = ""
+    if heading:
+        out = heading + (". " if not heading.endswith(".") else " ")
+    out += "\n\n".join(cleaned)
+    return out[:1200].strip()
+
+
 @app.post("/api/projects/add-snapshot", response_model=APIResponse)
 def add_snapshot(req: AddSnapshotRequest):
     state = load_state(req.slug)
@@ -303,8 +353,14 @@ def add_snapshot(req: AddSnapshotRequest):
         "kind": "snapshot",
         "body": req.body or "",
     })
+    # Auto-extract summary unless user explicitly disabled it (auto_summary=false)
+    # or unless they passed an explicit summary.
     if req.summary:
         state["latest_summary"] = req.summary
+    elif state.get("auto_summary", True):
+        extracted = _extract_summary_from_html(f)
+        if extracted:
+            state["latest_summary"] = extracted
     p = write_project(state)
     commit = git_commit_and_push(
         f"Add {req.deliverable_file} to project {req.slug}",
@@ -406,6 +462,167 @@ def rename(req: RenameRequest):
     )
     return APIResponse(ok=True, project_url=f"/{new_path.name}", commit=commit,
                        message=f"Renamed {req.old_slug} → {req.new_slug}.")
+
+
+@app.post("/api/projects/move-snapshot", response_model=APIResponse)
+def move_snapshot(req: MoveSnapshotRequest):
+    """Re-assign a deliverable from one project to another (or detach)."""
+    f = REPO / req.deliverable_file
+    if not f.exists():
+        raise HTTPException(404, f"Deliverable '{req.deliverable_file}' not found.")
+
+    # Find which project currently owns it
+    from_slug = req.from_slug
+    if not from_slug:
+        for proj in list_projects():
+            s = load_state(proj["slug"])
+            if s and any(e.get("file") == req.deliverable_file for e in s.get("timeline", [])):
+                from_slug = proj["slug"]
+                break
+
+    touched_files = []
+
+    # Remove from old project
+    if from_slug:
+        old_state = load_state(from_slug)
+        if old_state:
+            old_state["timeline"] = [e for e in old_state.get("timeline", [])
+                                      if e.get("file") != req.deliverable_file]
+            old_path = write_project(old_state)
+            touched_files.append(old_path.name)
+
+    # Add to new project (if specified)
+    if req.to_slug:
+        new_state = load_state(req.to_slug)
+        if not new_state:
+            raise HTTPException(404, f"Target project '{req.to_slug}' not found.")
+        if not any(e.get("file") == req.deliverable_file for e in new_state.get("timeline", [])):
+            import re
+            m = re.search(r"(\d{4}-\d{2}-\d{2})", req.deliverable_file)
+            date = m.group(1) if m else today_iso()
+            title = req.deliverable_file.replace(".html", "").replace("-", " ").title()
+            new_state.setdefault("timeline", []).append({
+                "file": req.deliverable_file, "date": date, "title": title,
+                "kind": "snapshot", "body": "",
+            })
+            if new_state.get("auto_summary", True):
+                extracted = _extract_summary_from_html(f)
+                if extracted:
+                    new_state["latest_summary"] = extracted
+            new_path = write_project(new_state)
+            touched_files.append(new_path.name)
+
+    if not touched_files:
+        return APIResponse(ok=True, message="No-op.")
+
+    msg = f"Move {req.deliverable_file}"
+    if from_slug:
+        msg += f" from {from_slug}"
+    if req.to_slug:
+        msg += f" to {req.to_slug}"
+    commit = git_commit_and_push(msg, list(set(touched_files)))
+
+    target_url = f"/project-{req.to_slug}.html" if req.to_slug else None
+    return APIResponse(ok=True, project_url=target_url, commit=commit, message=msg)
+
+
+@app.post("/api/projects/create-empty", response_model=APIResponse)
+def create_empty(req: CreateEmptyRequest):
+    """Create a project with no deliverables yet (used by + New Project on projects.html)."""
+    if load_state(req.slug):
+        raise HTTPException(409, f"Project '{req.slug}' already exists.")
+    state = {
+        "slug": req.slug,
+        "title": req.title or req.slug.replace("-", " ").title(),
+        "status": req.status,
+        "owner": req.owner,
+        "created": today_iso(),
+        "updated": today_iso(),
+        "latest_summary": req.summary or "",
+        "open_items": [],
+        "related": [],
+        "timeline": [],
+        "auto_summary": True,
+    }
+    p = write_project(state)
+    commit = git_commit_and_push(f"Create empty project: {req.slug}", [p.name])
+    return APIResponse(ok=True, project_url=f"/{p.name}", commit=commit,
+                       message=f"Created empty project '{req.slug}'.")
+
+
+@app.post("/api/projects/merge", response_model=APIResponse)
+def merge(req: MergeRequest):
+    """Merge from_slug into into_slug. from_slug is deleted; its timeline + open
+    items are folded into into_slug. Updates back-references in other projects.
+    """
+    src = load_state(req.from_slug)
+    dst = load_state(req.into_slug)
+    if not src:
+        raise HTTPException(404, f"Source project '{req.from_slug}' not found.")
+    if not dst:
+        raise HTTPException(404, f"Target project '{req.into_slug}' not found.")
+    if req.from_slug == req.into_slug:
+        raise HTTPException(400, "Cannot merge a project into itself.")
+
+    # Merge timeline (dedup by file or by date+title for update notes)
+    seen_files = {e.get("file") for e in dst.get("timeline", []) if e.get("file")}
+    seen_notes = {(e.get("date"), e.get("title")) for e in dst.get("timeline", []) if e.get("kind") == "update"}
+    for entry in src.get("timeline", []):
+        if entry.get("kind") == "snapshot":
+            if entry.get("file") in seen_files:
+                continue
+            seen_files.add(entry.get("file"))
+        else:
+            key = (entry.get("date"), entry.get("title"))
+            if key in seen_notes:
+                continue
+            seen_notes.add(key)
+        dst.setdefault("timeline", []).append(entry)
+
+    # Merge open items by text
+    seen_text = {i.get("text") for i in dst.get("open_items", [])}
+    for item in src.get("open_items", []):
+        if item.get("text") not in seen_text:
+            dst.setdefault("open_items", []).append(item)
+            seen_text.add(item.get("text"))
+
+    # Merge related (and remove self-refs)
+    related = list(dict.fromkeys(dst.get("related", []) + src.get("related", [])))
+    related = [r for r in related if r != req.from_slug and r != req.into_slug]
+    dst["related"] = related
+
+    # Add a merge note to the dst timeline
+    dst.setdefault("timeline", []).append({
+        "date": today_iso(),
+        "title": f"Merged {req.from_slug} into this project",
+        "kind": "update",
+        "body": f"Project '{req.from_slug}' was merged into '{req.into_slug}'. "
+                f"Timeline entries and open items were combined.",
+    })
+
+    dst_path = write_project(dst)
+    src_path = REPO / f"project-{req.from_slug}.html"
+    if src_path.exists():
+        src_path.unlink()
+
+    # Update back-references in other projects
+    touched = [dst_path.name, src_path.name]
+    for proj in list_projects():
+        if proj["slug"] in (req.from_slug, req.into_slug):
+            continue
+        s = load_state(proj["slug"])
+        if s and req.from_slug in s.get("related", []):
+            s["related"] = [req.into_slug if r == req.from_slug else r for r in s["related"]]
+            other_path = write_project(s)
+            touched.append(other_path.name)
+
+    git("add", "-A", str(src_path.name))
+    commit = git_commit_and_push(
+        f"Merge project {req.from_slug} into {req.into_slug}",
+        list(set(touched)),
+    )
+    return APIResponse(ok=True, project_url=f"/{dst_path.name}", commit=commit,
+                       message=f"Merged {req.from_slug} → {req.into_slug}.")
 
 
 @app.post("/api/projects/set-status", response_model=APIResponse)

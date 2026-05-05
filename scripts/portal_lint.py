@@ -49,11 +49,13 @@ def lint(path: Path) -> list[str]:
         errors.append(f"Found {len(bad)} <li> tag(s) immediately after </td> (table corruption)")
 
     # 5. Column count per <tr data-date>
+    # Accept 5 (legacy: date/title/type/updated/link) or 6 (new: + project col).
+    # The Project column is decorated by JS at runtime for legacy 5-col rows.
     rows = re.findall(r"<tr\s+data-date=[^>]*>(.*?)</tr>", text, re.DOTALL)
     for i, row in enumerate(rows):
         td_count = len(re.findall(r"<td\b", row))
-        if td_count != 5:
-            errors.append(f"Row #{i+1} has {td_count} <td> cells (expected 5)")
+        if td_count not in (5, 6):
+            errors.append(f"Row #{i+1} has {td_count} <td> cells (expected 5 or 6)")
             if len([e for e in errors if "Row #" in e]) > 3:
                 break
 

@@ -433,7 +433,8 @@
     <span class="crumb">· Projects</span>
   </div>
   <div class="topbar-right">
-    <a href="portal.html" class="btn">↗ Portal</a>
+    <a href="portal.html" class="btn">↗ All Deliverables</a>
+    <button class="btn primary" onclick="openNewProjectModal()">+ New Project</button>
     <button class="btn" onclick="toggleTheme()">◐</button>
   </div>
 </div>
@@ -487,6 +488,44 @@
   <!-- Container -->
   <div id="content"></div>
 </main>
+
+<!-- New Project modal -->
+<div class="modal-backdrop" id="new-project-backdrop">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-head">
+      <h3>Create new project</h3>
+      <button class="modal-close" onclick="closeNewProjectModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-dim);margin-bottom:14px;">
+        Empty projects are fine — you can attach deliverables right after creation.
+      </p>
+      <label style="display:block;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:4px;">Slug (URL-safe identifier)</label>
+      <input type="text" id="np-slug" placeholder="e.g. faa-clmrs" pattern="^[a-z0-9][a-z0-9-]*[a-z0-9]$" />
+      <p style="font-size:11px;color:var(--text-dim);margin:-4px 0 12px;">Lowercase, hyphen-separated, alphanumeric.</p>
+
+      <label style="display:block;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:4px;">Title (display name)</label>
+      <input type="text" id="np-title" placeholder="e.g. FAA CLMRS Recompete" />
+
+      <label style="display:block;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.7px;margin:12px 0 4px;">Status</label>
+      <select id="np-status" style="padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);font-family:inherit;width:100%;">
+        <option value="active">Active</option>
+        <option value="watching">Watching</option>
+        <option value="closed">Closed</option>
+      </select>
+
+      <label style="display:block;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.7px;margin:12px 0 4px;">Initial summary (optional)</label>
+      <textarea id="np-summary" placeholder="Brief context for the project (auto-extracted from deliverables later)" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);min-height:70px;resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+    <div class="modal-foot">
+      <span></span>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeNewProjectModal()">Cancel</button>
+        <button class="btn primary" id="np-submit" onclick="submitNewProject()">Create &amp; attach deliverables</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Add-previous-analysis modal -->
 <div class="modal-backdrop" id="modal-backdrop">
@@ -835,6 +874,49 @@
   $('#modal-cancel').onclick = closeModal;
   $('#modal-submit').onclick = submitModal;
   $('#modal-backdrop').onclick = e => { if (e.target.id === 'modal-backdrop') closeModal(); };
+
+  // ─── New Project modal ───
+  window.openNewProjectModal = function() {
+    document.getElementById('np-slug').value = '';
+    document.getElementById('np-title').value = '';
+    document.getElementById('np-status').value = 'active';
+    document.getElementById('np-summary').value = '';
+    document.getElementById('new-project-backdrop').classList.add('open');
+  };
+  window.closeNewProjectModal = function() {
+    document.getElementById('new-project-backdrop').classList.remove('open');
+  };
+  window.submitNewProject = async function() {
+    const slug = document.getElementById('np-slug').value.trim();
+    const title = document.getElementById('np-title').value.trim();
+    const status = document.getElementById('np-status').value;
+    const summary = document.getElementById('np-summary').value.trim();
+    if (!slug.match(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)) {
+      toast('Invalid slug. Lowercase, hyphens, alphanumeric only.', true);
+      return;
+    }
+    const btn = document.getElementById('np-submit');
+    btn.disabled = true; btn.textContent = 'Creating…';
+    try {
+      const r = await fetch('/api/projects/create-empty', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ slug, title: title || null, status, summary: summary || null })
+      });
+      if (!r.ok) throw new Error((await r.text()).slice(0, 200));
+      const data = await r.json();
+      toast(`Created <a href="${data.project_url}">${slug}</a> — opening attach modal…`);
+      closeNewProjectModal();
+      await loadAll();
+      // Open the attach-deliverables modal for this brand-new project
+      setTimeout(() => openModal(slug), 400);
+    } catch (e) {
+      toast(`Error: ${e.message}`, true);
+      btn.disabled = false; btn.textContent = 'Create & attach deliverables';
+    }
+  };
+  document.getElementById('new-project-backdrop').onclick = e => {
+    if (e.target.id === 'new-project-backdrop') closeNewProjectModal();
+  };
 
   // Theme toggle
   window.toggleTheme = function() {

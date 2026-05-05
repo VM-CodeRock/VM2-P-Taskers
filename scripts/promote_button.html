@@ -1,30 +1,29 @@
 <!--
-  VM2 Promote-to-Project Button — drop into every deliverable's topbar.
+  VM2 Deliverable Toolkit — drop into every deliverable's <body>.
+
+  Provides three top-right buttons:
+    - 📌 Project: <name>  (or "Promote to Project ▾" if not yet linked)
+    - ✎ Revise            (opens dropdown: Quick note / Request rewrite)
+    - (theme toggle / portal already exist on most pages)
 
   How to use:
-    1. Add this entire block somewhere inside the deliverable's <body>.
-    2. Set the data attribute on the <body> (or a parent element) so the
-       button knows which file to operate on:
-         <body data-vm2-deliverable="army-maps-bid-decision-2026-04-14.html">
-    3. The button will:
-       - Show "Promote to Project ▾" if the deliverable is unlinked
-       - Show "📌 Project: <title>" if it already belongs to a project
-       - Open a dropdown to pick existing or create new project
-       - POST to /api/projects/* on the same origin
-       - Reload after success so the new state is visible
-
-  Style is self-contained (no external deps, no CSS conflicts).
+    1. Add data-vm2-deliverable="<filename.html>" to the <body> tag
+    2. Inline this entire file before </body>
+    3. Self-contained — no external deps, no CSS conflicts.
 -->
-<div id="vm2-promote-root" data-mounted="false"></div>
+<div id="vm2-toolkit" data-mounted="false"></div>
 
 <style>
-  #vm2-promote-root {
+  #vm2-toolkit {
     position: fixed;
     top: 14px;
     right: 24px;
     z-index: 1000;
     font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
     font-size: 13px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
   }
   .vm2-btn {
     background: #fff;
@@ -38,16 +37,20 @@
     transition: all 0.15s;
     font-family: inherit;
     font-size: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
   .vm2-btn:hover { border-color: #c53a3a; color: #c53a3a; }
   .vm2-btn.linked { background: #f5e3e3; border-color: #c53a3a; color: #c53a3a; }
+  .vm2-btn.linked:hover { background: #c53a3a; color: #fff; }
+  .vm2-pop-anchor { position: relative; }
   .vm2-dropdown {
     position: absolute;
-    top: 38px;
-    right: 0;
+    top: 38px; right: 0;
     width: 380px;
-    max-height: 70vh;
-    overflow-y: auto;
+    max-height: 75vh; overflow-y: auto;
     background: #fff;
     border: 1px solid #d0cdc6;
     border-radius: 8px;
@@ -57,101 +60,99 @@
   }
   .vm2-dropdown.open { display: block; }
   .vm2-dropdown h3 {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 13px; font-weight: 600;
     margin: 0 0 12px;
     color: #2a2a2a;
   }
-  .vm2-dropdown input[type="text"] {
+  .vm2-dropdown input[type="text"], .vm2-dropdown textarea {
     width: 100%;
-    padding: 6px 10px;
+    padding: 7px 10px;
     border: 1px solid #d0cdc6;
     border-radius: 5px;
     font-size: 13px;
     font-family: inherit;
     margin-bottom: 8px;
+    box-sizing: border-box;
   }
-  .vm2-dropdown input[type="text"]:focus {
-    outline: none;
-    border-color: #c53a3a;
+  .vm2-dropdown textarea {
+    resize: vertical;
+    min-height: 90px;
+  }
+  .vm2-dropdown input:focus, .vm2-dropdown textarea:focus {
+    outline: none; border-color: #c53a3a;
   }
   .vm2-section {
     border-top: 1px solid #eee;
     margin-top: 12px;
     padding-top: 12px;
   }
+  .vm2-section:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
   .vm2-section-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #888;
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: #888;
     margin-bottom: 8px;
   }
-  .vm2-project-list {
-    max-height: 200px;
-    overflow-y: auto;
-  }
+  .vm2-project-list { max-height: 200px; overflow-y: auto; }
   .vm2-project-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 7px 9px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-bottom: 2px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 9px; border-radius: 5px;
+    cursor: pointer; margin-bottom: 2px;
   }
   .vm2-project-item:hover { background: #f4f1ea; }
   .vm2-project-name { font-weight: 500; }
   .vm2-project-meta { font-size: 11px; color: #888; }
   .vm2-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
+    display: flex; justify-content: flex-end; gap: 8px;
     margin-top: 12px;
   }
   .vm2-action {
-    padding: 6px 14px;
-    border-radius: 5px;
-    border: 1px solid #b9b6ad;
-    background: #fff;
-    cursor: pointer;
-    font-size: 13px;
-    font-family: inherit;
+    padding: 6px 14px; border-radius: 5px;
+    border: 1px solid #b9b6ad; background: #fff;
+    cursor: pointer; font-size: 13px; font-family: inherit;
   }
   .vm2-action.primary { background: #c53a3a; color: #fff; border-color: #c53a3a; }
   .vm2-action.primary:disabled { background: #ddd; border-color: #ddd; cursor: not-allowed; }
+  .vm2-tabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 12px;
+  }
+  .vm2-tab {
+    padding: 6px 12px; cursor: pointer;
+    font-size: 13px; color: #888;
+    border-bottom: 2px solid transparent;
+  }
+  .vm2-tab.on { color: #c53a3a; border-bottom-color: #c53a3a; font-weight: 600; }
+  .vm2-tab-panel { display: none; }
+  .vm2-tab-panel.on { display: block; }
   .vm2-toast {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    background: #2a2a2a;
-    color: #fff;
-    padding: 10px 16px;
-    border-radius: 6px;
-    font-size: 13px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-    z-index: 2000;
-    max-width: 360px;
+    position: fixed; bottom: 24px; right: 24px;
+    background: #2a2a2a; color: #fff;
+    padding: 10px 16px; border-radius: 6px;
+    font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    z-index: 2000; max-width: 360px;
+    font-family: system-ui, sans-serif;
   }
   .vm2-toast.error { background: #c53a3a; }
   .vm2-toast a { color: #fff; text-decoration: underline; }
   .vm2-empty { color: #888; font-size: 12px; padding: 8px 0; font-style: italic; }
+  .vm2-help { color: #666; font-size: 12px; margin-bottom: 10px; line-height: 1.4; }
 </style>
 
 <script>
 (function() {
-  const ROOT = document.getElementById('vm2-promote-root');
+  const ROOT = document.getElementById('vm2-toolkit');
   if (!ROOT || ROOT.dataset.mounted === 'true') return;
   ROOT.dataset.mounted = 'true';
 
-  // Resolve the deliverable filename
   const FILE = (
     document.querySelector('[data-vm2-deliverable]')?.dataset.vm2Deliverable ||
     location.pathname.split('/').pop() ||
     ''
   );
-  if (!FILE || !FILE.endsWith('.html') || FILE.startsWith('project-') || FILE === 'portal.html') {
-    return; // No-op on portal page or project pages themselves
+  if (!FILE || !FILE.endsWith('.html') || FILE.startsWith('project-') ||
+      ['portal.html','projects.html','index.html','kanban.html'].includes(FILE)) {
+    return;
   }
 
   let projects = [];
@@ -164,10 +165,11 @@
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 5000);
   }
-
   function suggestSlug(file) {
-    // foo-bar-2026-04-12.html → foo-bar
     return file.replace(/-\d{4}-\d{2}-\d{2}\.html$/, '').replace(/\.html$/, '');
+  }
+  function escapeHtml(s) {
+    return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   }
 
   async function fetchProjects() {
@@ -175,56 +177,117 @@
       const r = await fetch('/api/projects');
       if (!r.ok) throw new Error(r.statusText);
       projects = await r.json();
-      currentProject = projects.find(p => false) || null; // Will be set if we know
-    } catch (e) {
-      projects = [];
-    }
+    } catch (e) { projects = []; }
   }
 
-  function renderButton() {
-    const btn = document.createElement('button');
-    btn.className = 'vm2-btn' + (currentProject ? ' linked' : '');
-    btn.textContent = currentProject
-      ? `📌 ${currentProject.title}`
-      : '📌 Promote to Project ▾';
-    btn.onclick = (e) => {
+  async function detectCurrentProject() {
+    for (const p of projects) {
+      try {
+        const r = await fetch(`/project-${p.slug}.html`);
+        if (r.ok) {
+          const txt = await r.text();
+          if (txt.includes(`href="${FILE}"`)) {
+            currentProject = p;
+            return;
+          }
+        }
+      } catch (e) { /* ignore */ }
+    }
+    currentProject = null;
+  }
+
+  function renderUI() {
+    ROOT.innerHTML = '';
+
+    // ── Project button (linked or unlinked variant) ──
+    const projWrapper = document.createElement('div');
+    projWrapper.className = 'vm2-pop-anchor';
+    const projBtn = document.createElement('button');
+    projBtn.className = 'vm2-btn' + (currentProject ? ' linked' : '');
+    if (currentProject) {
+      projBtn.innerHTML = `📌 <span>${escapeHtml(currentProject.title)}</span>`;
+      projBtn.title = `Open ${currentProject.title}`;
+      projBtn.onclick = (e) => {
+        e.stopPropagation();
+        // Click navigates to project; right-click / shift-click shows manage menu
+        if (e.shiftKey || e.metaKey) {
+          location.href = `/project-${currentProject.slug}.html`;
+        } else {
+          const dd = projWrapper.querySelector('.vm2-dropdown');
+          dd.classList.toggle('open');
+        }
+      };
+    } else {
+      projBtn.innerHTML = '📌 Promote to Project ▾';
+      projBtn.onclick = (e) => {
+        e.stopPropagation();
+        const dd = projWrapper.querySelector('.vm2-dropdown');
+        dd.classList.toggle('open');
+      };
+    }
+    projWrapper.appendChild(projBtn);
+    projWrapper.appendChild(renderProjectDropdown());
+    ROOT.appendChild(projWrapper);
+
+    // ── Revise button ──
+    const reviseWrapper = document.createElement('div');
+    reviseWrapper.className = 'vm2-pop-anchor';
+    const reviseBtn = document.createElement('button');
+    reviseBtn.className = 'vm2-btn';
+    reviseBtn.innerHTML = '✎ Revise';
+    reviseBtn.title = 'Add an update note or request a rewrite';
+    reviseBtn.onclick = (e) => {
       e.stopPropagation();
-      const dd = ROOT.querySelector('.vm2-dropdown');
+      const dd = reviseWrapper.querySelector('.vm2-dropdown');
       dd.classList.toggle('open');
     };
-    return btn;
+    reviseWrapper.appendChild(reviseBtn);
+    reviseWrapper.appendChild(renderReviseDropdown());
+    ROOT.appendChild(reviseWrapper);
   }
 
-  function renderDropdown() {
+  function renderProjectDropdown() {
     const dd = document.createElement('div');
     dd.className = 'vm2-dropdown';
     const suggested = suggestSlug(FILE);
+    const titleGuess = suggested.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    const linkedHeader = currentProject ? `
+      <div class="vm2-section">
+        <div class="vm2-help">
+          Currently linked to
+          <a href="/project-${currentProject.slug}.html" style="color:#c53a3a;font-weight:600;">${escapeHtml(currentProject.title)}</a>.
+          You can move it to a different project below, or open the project page.
+        </div>
+      </div>` : '';
 
     dd.innerHTML = `
-      <h3>Promote this deliverable to a project</h3>
+      <h3>${currentProject ? 'Manage project link' : 'Promote this deliverable to a project'}</h3>
+      ${linkedHeader}
       <div class="vm2-section">
-        <div class="vm2-section-label">Existing projects</div>
+        <div class="vm2-section-label">${currentProject ? 'Move to a different project' : 'Existing projects'}</div>
         <input type="text" id="vm2-search" placeholder="🔎 Search…" />
-        <div class="vm2-project-list" id="vm2-project-list">
-          ${projects.length === 0 ? '<div class="vm2-empty">No projects yet.</div>' : ''}
-        </div>
+        <div class="vm2-project-list" id="vm2-project-list"></div>
       </div>
       <div class="vm2-section">
         <div class="vm2-section-label">＋ Or create new project</div>
-        <input type="text" id="vm2-new-slug" placeholder="slug (e.g. eitss-2)" value="${suggested}" />
-        <input type="text" id="vm2-new-title" placeholder="title (display name)" value="${suggested.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}" />
+        <input type="text" id="vm2-new-slug" placeholder="slug (e.g. eitss-2)" value="${escapeHtml(suggested)}" />
+        <input type="text" id="vm2-new-title" placeholder="title (display name)" value="${escapeHtml(titleGuess)}" />
       </div>
       <div class="vm2-actions">
         <button class="vm2-action" id="vm2-cancel">Cancel</button>
-        <button class="vm2-action primary" id="vm2-submit">Promote</button>
+        <button class="vm2-action primary" id="vm2-submit">${currentProject ? 'Move' : 'Promote'}</button>
       </div>
     `;
 
-    const list = dd.querySelector('#vm2-project-list');
     function renderList(filter) {
+      const list = dd.querySelector('#vm2-project-list');
       list.innerHTML = '';
       const filtered = projects.filter(p =>
-        !filter || p.slug.includes(filter.toLowerCase()) || p.title.toLowerCase().includes(filter.toLowerCase())
+        (!currentProject || p.slug !== currentProject.slug) &&
+        (!filter ||
+          p.slug.toLowerCase().includes(filter.toLowerCase()) ||
+          p.title.toLowerCase().includes(filter.toLowerCase()))
       );
       if (filtered.length === 0) {
         list.innerHTML = '<div class="vm2-empty">No matches.</div>';
@@ -233,15 +296,14 @@
       for (const p of filtered) {
         const it = document.createElement('div');
         it.className = 'vm2-project-item';
-        it.innerHTML = `<span class="vm2-project-name">● ${p.title}</span>
+        it.innerHTML = `<span class="vm2-project-name">● ${escapeHtml(p.title)}</span>
                         <span class="vm2-project-meta">${p.deliverable_count}d · ${p.status}</span>`;
-        it.onclick = () => addToExisting(p.slug);
+        it.onclick = () => assignToProject(p.slug);
         list.appendChild(it);
       }
     }
     renderList('');
-
-    dd.querySelector('#vm2-search').oninput = (e) => renderList(e.target.value);
+    dd.querySelector('#vm2-search').oninput = e => renderList(e.target.value);
     dd.querySelector('#vm2-cancel').onclick = () => dd.classList.remove('open');
     dd.querySelector('#vm2-submit').onclick = () => {
       const slug = dd.querySelector('#vm2-new-slug').value.trim();
@@ -251,35 +313,91 @@
         return;
       }
       if (projects.find(p => p.slug === slug)) {
-        addToExisting(slug);
+        assignToProject(slug);
       } else {
-        createNew(slug, title);
+        createNewProject(slug, title);
       }
     };
-
     return dd;
   }
 
-  async function addToExisting(slug) {
-    setBusy(true);
+  function renderReviseDropdown() {
+    const dd = document.createElement('div');
+    dd.className = 'vm2-dropdown';
+    dd.innerHTML = `
+      <h3>Revise this analysis</h3>
+      <div class="vm2-tabs">
+        <div class="vm2-tab on" data-tab="quick">Quick note</div>
+        <div class="vm2-tab" data-tab="rewrite">Request rewrite</div>
+      </div>
+
+      <div class="vm2-tab-panel on" data-panel="quick">
+        <div class="vm2-help">
+          Add a small correction, addendum, or follow-up. Appended as a timestamped
+          update note to the project's timeline. The original deliverable stays unchanged.
+        </div>
+        <textarea id="vm2-note" placeholder="What's the update? E.g. 'Booz Allen confirmed as prime, our role moves to subcontractor.'"></textarea>
+        <div class="vm2-actions">
+          <button class="vm2-action" data-cancel>Cancel</button>
+          <button class="vm2-action primary" id="vm2-note-submit">Append note</button>
+        </div>
+      </div>
+
+      <div class="vm2-tab-panel" data-panel="rewrite">
+        <div class="vm2-help">
+          Substantive change to the analysis. Drafts an email to VM2 that you can
+          review and send. The next cron run produces a fresh dated deliverable
+          and adds it to the project; this one stays as historical record.
+        </div>
+        <textarea id="vm2-rewrite" placeholder="What needs to change? E.g. 'Update with new RFP amendment 0005, refresh past performance table, recheck pricing model.'"></textarea>
+        <div class="vm2-actions">
+          <button class="vm2-action" data-cancel>Cancel</button>
+          <button class="vm2-action primary" id="vm2-rewrite-submit">Open email draft</button>
+        </div>
+      </div>
+    `;
+    dd.querySelectorAll('.vm2-tab').forEach(t => {
+      t.onclick = () => {
+        dd.querySelectorAll('.vm2-tab').forEach(x => x.classList.remove('on'));
+        dd.querySelectorAll('.vm2-tab-panel').forEach(x => x.classList.remove('on'));
+        t.classList.add('on');
+        dd.querySelector(`[data-panel="${t.dataset.tab}"]`).classList.add('on');
+      };
+    });
+    dd.querySelectorAll('[data-cancel]').forEach(b => {
+      b.onclick = () => dd.classList.remove('open');
+    });
+    dd.querySelector('#vm2-note-submit').onclick = submitQuickNote;
+    dd.querySelector('#vm2-rewrite-submit').onclick = openRewriteDraft;
+    return dd;
+  }
+
+  async function assignToProject(slug) {
+    busy(true);
     try {
-      const r = await fetch('/api/projects/add-snapshot', {
+      const endpoint = currentProject
+        ? '/api/projects/move-snapshot'
+        : '/api/projects/add-snapshot';
+      const body = currentProject
+        ? { deliverable_file: FILE, to_slug: slug, from_slug: currentProject.slug }
+        : { slug, deliverable_file: FILE };
+      const r = await fetch(endpoint, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ slug, deliverable_file: FILE })
+        body: JSON.stringify(body)
       });
       if (!r.ok) throw new Error((await r.text()).slice(0, 200));
       const data = await r.json();
-      toast(`Added to <a href="${data.project_url}">project-${slug}</a> — refreshing…`);
+      toast(`${currentProject ? 'Moved to' : 'Added to'} <a href="${data.project_url}">${slug}</a> — refreshing…`);
       setTimeout(() => location.reload(), 1500);
     } catch (e) {
       toast(`Error: ${e.message}`, true);
-      setBusy(false);
+      busy(false);
     }
   }
 
-  async function createNew(slug, title) {
-    setBusy(true);
+  async function createNewProject(slug, title) {
+    busy(true);
     try {
       const r = await fetch('/api/projects/promote', {
         method: 'POST',
@@ -292,44 +410,63 @@
       setTimeout(() => location.reload(), 1500);
     } catch (e) {
       toast(`Error: ${e.message}`, true);
-      setBusy(false);
+      busy(false);
     }
   }
 
-  function setBusy(busy) {
-    const btn = ROOT.querySelector('#vm2-submit');
-    if (btn) {
-      btn.disabled = busy;
-      btn.textContent = busy ? 'Working…' : 'Promote';
+  async function submitQuickNote() {
+    if (!currentProject) {
+      toast('Promote this deliverable to a project first.', true);
+      return;
     }
+    const ta = ROOT.querySelector('#vm2-note');
+    const text = ta.value.trim();
+    if (!text) { toast('Note cannot be empty.', true); return; }
+    busy(true);
+    try {
+      const note = `[Revision to ${FILE}] ${text}`;
+      const r = await fetch('/api/projects/append', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ slug: currentProject.slug, note })
+      });
+      if (!r.ok) throw new Error((await r.text()).slice(0, 200));
+      const data = await r.json();
+      toast(`Note appended to <a href="${data.project_url}">${currentProject.title}</a>`);
+      ta.value = '';
+      ROOT.querySelector('.vm2-dropdown').classList.remove('open');
+    } catch (e) {
+      toast(`Error: ${e.message}`, true);
+    }
+    busy(false);
   }
 
-  // Click-outside-to-close
+  function openRewriteDraft() {
+    const ta = ROOT.querySelector('#vm2-rewrite');
+    const text = ta.value.trim();
+    if (!text) { toast('Describe the change first.', true); return; }
+    const subject = `VM2 revise ${FILE}`;
+    const body = `Please revise ${FILE} with the following:\n\n${text}\n\n---\nDeliverable: ${location.href}\nProject: ${currentProject ? currentProject.title : '(not linked)'}`;
+    const mailto = `mailto:vm2.viru@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  }
+
+  function busy(b) {
+    ROOT.querySelectorAll('button.vm2-action.primary').forEach(btn => {
+      btn.disabled = b;
+    });
+  }
+
   document.addEventListener('click', (e) => {
-    const dd = ROOT.querySelector('.vm2-dropdown');
-    if (dd && dd.classList.contains('open') && !ROOT.contains(e.target)) {
-      dd.classList.remove('open');
+    if (!ROOT.contains(e.target)) {
+      ROOT.querySelectorAll('.vm2-dropdown.open').forEach(d => d.classList.remove('open'));
     }
   });
 
   (async () => {
     await fetchProjects();
-    // Detect whether this deliverable is already in a project
-    for (const p of projects) {
-      try {
-        const r = await fetch(`/project-${p.slug}.html`);
-        if (r.ok) {
-          const txt = await r.text();
-          if (txt.includes(`href="${FILE}"`)) {
-            currentProject = p;
-            break;
-          }
-        }
-      } catch (e) { /* ignore */ }
-    }
-    ROOT.innerHTML = '';
-    ROOT.appendChild(renderButton());
-    ROOT.appendChild(renderDropdown());
+    await detectCurrentProject();
+    renderUI();
   })();
 })();
 </script>
