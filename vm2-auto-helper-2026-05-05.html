@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todoist Auto-Helper — 2026-05-05</title>
+<!-- Charter not on Google Fonts; Georgia serves as the serif fallback -->
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    /* badge palette */
+    --badge-research-bg: #1F4D78;
+    --badge-analysis-bg: #2D7D4A;
+    --badge-writing-bg: #6B4C9A;
+    --badge-planning-bg: #D97D2A;
+    --badge-data-bg: #008B8B;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 24px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 16px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 8px;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    justify-content: center;
+    margin: 0 0 28px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .stat-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 14px;
+    color: var(--text-muted);
+  }
+  .stat-pill strong { color: var(--text); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .card-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .card-title { font-family: system-ui, sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .card-meta { font-family: system-ui, sans-serif; font-size: 12px; color: var(--text-muted); }
+  .badge {
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    color: #fff;
+    padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .badge-research  { background: var(--badge-research-bg); }
+  .badge-analysis  { background: var(--badge-analysis-bg); }
+  .badge-writing   { background: var(--badge-writing-bg); }
+  .badge-planning  { background: var(--badge-planning-bg); }
+  .badge-data      { background: var(--badge-data-bg); }
+
+  .card-body { padding: 14px 16px 16px; }
+  .card-body h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--red);
+    margin: 12px 0 6px;
+  }
+  .card-body p { color: var(--text); }
+
+  .card-actions { margin-top: 14px; }
+  .btn {
+    display: inline-block;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    padding: 9px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .btn:hover { filter: brightness(0.92); }
+
+  details {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+    margin: 18px 0;
+    overflow: hidden;
+  }
+  summary {
+    cursor: pointer;
+    padding: 12px 14px;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--border);
+  }
+  .details-body { padding: 12px 14px; }
+  .details-body h4 { color: var(--red); font-family: system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin: 12px 0 6px; }
+  .details-body pre { white-space: pre-wrap; background: var(--code-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 12px; }
+  .details-body ul { padding-left: 18px; }
+  .details-body li { margin: 4px 0; }
+
+  .continue-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 18px;
+  }
+  .continue-title { font-family: system-ui, sans-serif; font-weight: 800; margin-bottom: 10px; }
+  .continue-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn-secondary {
+    display: inline-block;
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+    padding: 9px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  footer {
+    margin: 28px 0 22px;
+    text-align: center;
+    color: var(--text-muted);
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left"><span class="topbar-dot">•</span><span>VM2 · Perplexity Computer</span></div>
+    <button class="theme-toggle" id="themeToggle">Toggle Dark</button>
+  </div>
+
+  <div class="container">
+    <div class="hero">
+      <div class="hero-badge">Auto-Helper</div>
+      <h1>Todoist Auto-Helper — 2026-05-05</h1>
+      <div class="hero-sub">Highest-value non-VM2 tasks where Perplexity Computer could help · Tuesday May 5, 2026</div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-pill">Tasks scanned: <strong>703</strong></div>
+      <div class="stat-pill">VM2-excluded: <strong>24</strong></div>
+      <div class="stat-pill">Completed-excluded: <strong>0</strong></div>
+      <div class="stat-pill">Candidates: <strong>679</strong></div>
+      <div class="stat-pill">AI-helpful found: <strong>232</strong></div>
+      <div class="stat-pill">Curated suggestions: <strong>12</strong></div>
+    </div>
+
+    
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">FAA APEX Industry Day — Analysis & Next Steps · May 4, 2026</div>
+              <div class="card-meta">Task ID: 6gX8vMPP4mMpWr35 · Due: May 5, 2026 · Project: E2 — Important & Not Urgent</div>
+            </div>
+            <div class="badge badge-research">Research / Strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>A VM2 deliverable was produced yesterday for the FAA APEX Industry Day. AI can build on that analysis to identify bid/no-bid signals, differentiators, teaming opportunities, and next capture steps.</p>
+            <h3>Suggested approach</h3>
+            <p>Review the linked analysis page; extract key opportunity signals; draft a capture action plan with owner, deadline, and teaming recommendations.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20FAA%20APEX%20Industry%20Day%20%E2%80%94%20Analysis%20%26%20Next%20Steps%20%C2%B7%20May%204%2C%202026&body=Task%3A%20%5BFAA%20APEX%20Industry%20Day%20%E2%80%94%20Analysis%20%26%20Next%20Steps%20%C2%B7%20May%204%2C%202026%5D%28https%3A//vm2-p-taskers-production.up.railway.app/faa-apex-industry-day-analysis-2026-05-04.html%29%0AProject%3A%20E2%20%E2%80%94%20Important%20%26%20Not%20Urgent%0ADue%3A%20May%205%2C%202026%0A%0AWhy%20AI%20can%20help%3A%20A%20VM2%20deliverable%20was%20produced%20yesterday%20for%20the%20FAA%20APEX%20Industry%20Day.%20AI%20can%20build%20on%20that%20analysis%20to%20identify%20bid/no-bid%20signals%2C%20differentiators%2C%20teaming%20opportunities%2C%20and%20next%20capture%20steps.%0A%0ASuggested%20approach%3A%20Review%20the%20linked%20analysis%20page%3B%20extract%20key%20opportunity%20signals%3B%20draft%20a%20capture%20action%20plan%20with%20owner%2C%20deadline%2C%20and%20teaming%20recommendations.%0A%0ATodoist%20task%20id%3A%206gX8vMPP4mMpWr35%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">OFAM FO Administrative Support Capture</div>
+              <div class="card-meta">Task ID: 6gP5mHg795FQmV2X · Due: May 6, 2026 · Project: E3 — Urgent & Unimportant</div>
+            </div>
+            <div class="badge badge-research">Research / Analysis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>This capture has a linked DHS APFS forecast record. AI can read the forecast, extract key requirements, set size/NAICS context, and identify competitive landscape.</p>
+            <h3>Suggested approach</h3>
+            <p>Fetch the APFS forecast at https://apfs-cloud.dhs.gov/record/73307/public-print/; extract set-aside, NAICS, estimated value, and timeline; compare with Changeis capabilities; produce a one-page capture brief.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20OFAM%20FO%20Administrative%20Support%20Capture&body=Task%3A%20OFAM%20FO%20Administrative%20Support%20Capture%0AProject%3A%20E3%20%E2%80%94%20Urgent%20%26%20Unimportant%0ADue%3A%20May%206%2C%202026%0A%0AWhy%20AI%20can%20help%3A%20This%20capture%20has%20a%20linked%20DHS%20APFS%20forecast%20record.%20AI%20can%20read%20the%20forecast%2C%20extract%20key%20requirements%2C%20set%20size/NAICS%20context%2C%20and%20identify%20competitive%20landscape.%0A%0ASuggested%20approach%3A%20Fetch%20the%20APFS%20forecast%20at%20https%3A//apfs-cloud.dhs.gov/record/73307/public-print/%3B%20extract%20set-aside%2C%20NAICS%2C%20estimated%20value%2C%20and%20timeline%3B%20compare%20with%20Changeis%20capabilities%3B%20produce%20a%20one-page%20capture%20brief.%0A%0ATodoist%20task%20id%3A%206gP5mHg795FQmV2X%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Review Pipeline — VM</div>
+              <div class="card-meta">Task ID: 6C6wRxH8m3xR2VXJ · Due: Every Friday · Project: BD</div>
+            </div>
+            <div class="badge badge-analysis">Analysis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>Weekly pipeline review is high-leverage when AI pre-digests deal status, surfaces stalled pursuits, and flags go/no-go decisions. AI can produce a structured review dashboard in minutes.</p>
+            <h3>Suggested approach</h3>
+            <p>Pull all open BD/Capture tasks; categorize by stage (identify → qualify → pursue → proposal → award); flag stalled items; produce a concise pipeline health summary with recommended actions.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20Review%20Pipeline%20%E2%80%94%20VM&body=Task%3A%20Review%20Pipeline%20-%20VM%0AProject%3A%20BD%0ADue%3A%20Every%20Friday%0A%0AWhy%20AI%20can%20help%3A%20Weekly%20pipeline%20review%20is%20high-leverage%20when%20AI%20pre-digests%20deal%20status%2C%20surfaces%20stalled%20pursuits%2C%20and%20flags%20go/no-go%20decisions.%20AI%20can%20produce%20a%20structured%20review%20dashboard%20in%20minutes.%0A%0ASuggested%20approach%3A%20Pull%20all%20open%20BD/Capture%20tasks%3B%20categorize%20by%20stage%20%28identify%20%E2%86%92%20qualify%20%E2%86%92%20pursue%20%E2%86%92%20proposal%20%E2%86%92%20award%29%3B%20flag%20stalled%20items%3B%20produce%20a%20concise%20pipeline%20health%20summary%20with%20recommended%20actions.%0A%0ATodoist%20task%20id%3A%206C6wRxH8m3xR2VXJ%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Process Consulting Agreement — Changeis / Kinnetek (Rachel Siebert)</div>
+              <div class="card-meta">Task ID: 6g5c3Jrp2Vxqgwg5 · Due: May 10, 2026 · Project: E2 — Important & Not Urgent</div>
+            </div>
+            <div class="badge badge-writing">Writing / Contracts</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>A draft consulting agreement needs to be processed. AI can review the document for standard legal gaps, flag missing provisions, and produce a redline with suggested language.</p>
+            <h3>Suggested approach</h3>
+            <p>Open the draft DOCX; flag non-standard clauses, missing IP/IP assignment, termination, liability, and payment terms; suggest redline edits and generate a clean revised draft.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20Process%20Consulting%20Agreement%20%E2%80%94%20Changeis%20/%20Kinnetek%20%28Rachel%20Siebert%29&body=Task%3A%20Process%20Consulting%20Agreement_Changeis_kinnetek%20%28Rachel%20Siebert%29%20DRAFT%2020260209.docx%0AProject%3A%20E2%20%E2%80%94%20Important%20%26%20Not%20Urgent%0ADue%3A%20May%2010%2C%202026%0A%0AWhy%20AI%20can%20help%3A%20A%20draft%20consulting%20agreement%20needs%20to%20be%20processed.%20AI%20can%20review%20the%20document%20for%20standard%20legal%20gaps%2C%20flag%20missing%20provisions%2C%20and%20produce%20a%20redline%20with%20suggested%20language.%0A%0ASuggested%20approach%3A%20Open%20the%20draft%20DOCX%3B%20flag%20non-standard%20clauses%2C%20missing%20IP/IP%20assignment%2C%20termination%2C%20liability%2C%20and%20payment%20terms%3B%20suggest%20redline%20edits%20and%20generate%20a%20clean%20revised%20draft.%0A%0ATodoist%20task%20id%3A%206g5c3Jrp2Vxqgwg5%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Changeis Strategic Options Planning and Principal OKRs Set Up</div>
+              <div class="card-meta">Task ID: 6RjWwr9qxjG78JFr · Due: No due date · Project: E2 — Important & Not Urgent</div>
+            </div>
+            <div class="badge badge-planning">Planning / Strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>Setting up OKRs and evaluating strategic options is a structured analysis task. AI can frame the options, apply a weighted scoring matrix, and draft the OKR hierarchy for the principal team.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify the 3-5 strategic options under consideration; apply a weighted criteria matrix (market, capability fit, risk, ROI); draft a Principal OKR structure with O/KR/initiative alignment.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20Changeis%20Strategic%20Options%20Planning%20and%20Principal%20OKRs%20Set%20Up&body=Task%3A%20Changeis%20Strategic%20Options%20Planning%20and%20Principal%20OKRs%20Set%20up%0AProject%3A%20E2%20%E2%80%94%20Important%20%26%20Not%20Urgent%0ADue%3A%20TBD%0A%0AWhy%20AI%20can%20help%3A%20Setting%20up%20OKRs%20and%20evaluating%20strategic%20options%20is%20a%20structured%20analysis%20task.%20AI%20can%20frame%20the%20options%2C%20apply%20a%20weighted%20scoring%20matrix%2C%20and%20draft%20the%20OKR%20hierarchy%20for%20the%20principal%20team.%0A%0ASuggested%20approach%3A%20Clarify%20the%203-5%20strategic%20options%20under%20consideration%3B%20apply%20a%20weighted%20criteria%20matrix%20%28market%2C%20capability%20fit%2C%20risk%2C%20ROI%29%3B%20draft%20a%20Principal%20OKR%20structure%20with%20O/KR/initiative%20alignment.%0A%0ATodoist%20task%20id%3A%206RjWwr9qxjG78JFr%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Growth Strategy and Exec Comp Package</div>
+              <div class="card-meta">Task ID: 662QpVvjcMm7xxXh · Due: No due date · Project: Strategy</div>
+            </div>
+            <div class="badge badge-research">Research / Writing</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>Designing an executive compensation package tied to growth strategy requires benchmarking data and structured frameworks. AI can research comp norms, model scenarios, and draft the framework.</p>
+            <h3>Suggested approach</h3>
+            <p>Research GovCon exec comp benchmarks (SIC/NAICS peers, revenue band); build a pay-for-performance model linking growth targets to base/bonus/equity; draft the framework document.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20Growth%20Strategy%20and%20Exec%20Comp%20Package&body=Task%3A%20Growth%20Strategy%20and%20Exec%20comp%20package%0AProject%3A%20Strategy%0ADue%3A%20TBD%0A%0AWhy%20AI%20can%20help%3A%20Designing%20an%20executive%20compensation%20package%20tied%20to%20growth%20strategy%20requires%20benchmarking%20data%20and%20structured%20frameworks.%20AI%20can%20research%20comp%20norms%2C%20model%20scenarios%2C%20and%20draft%20the%20framework.%0A%0ASuggested%20approach%3A%20Research%20GovCon%20exec%20comp%20benchmarks%20%28SIC/NAICS%20peers%2C%20revenue%20band%29%3B%20build%20a%20pay-for-performance%20model%20linking%20growth%20targets%20to%20base/bonus/equity%3B%20draft%20the%20framework%20document.%0A%0ATodoist%20task%20id%3A%20662QpVvjcMm7xxXh%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Schedule DHS/ICE: SEVP IT PMO (Recompete)</div>
+              <div class="card-meta">Task ID: 6g8cvMhFc6M4v7WX · Due: May 7, 2026 · Project: E1 — Urgent & Important · Labels: VMCC-DHS-SEVP</div>
+            </div>
+            <div class="badge badge-research">Research / Capture</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>The SEVP IT PMO recompete is urgent. AI can research the incumbent, contract history, re-compete timeline, and key stakeholders to support scheduling conversations and bid strategy.</p>
+            <h3>Suggested approach</h3>
+            <p>Research USASpending and SAM.gov for SEVP IT PMO contract history; identify incumbent, NAICS, past performance, and expiration; produce a one-page competitive brief for scheduling context.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20Schedule%20DHS/ICE%3A%20SEVP%20IT%20PMO%20%28Recompete%29&body=Task%3A%20Schedule%20DHS/ICE%3A%20SEVP%20IT%20PMO%20%28Recompete%29%0AProject%3A%20E1%20%E2%80%94%20Urgent%20%26%20Important%0ADue%3A%20May%207%2C%202026%0ALabels%3A%20VMCC-DHS-SEVP%0A%0AWhy%20AI%20can%20help%3A%20The%20SEVP%20IT%20PMO%20recompete%20is%20urgent.%20AI%20can%20research%20the%20incumbent%2C%20contract%20history%2C%20re-compete%20timeline%2C%20and%20key%20stakeholders%20to%20support%20scheduling%20conversations%20and%20bid%20strategy.%0A%0ASuggested%20approach%3A%20Research%20USASpending%20and%20SAM.gov%20for%20SEVP%20IT%20PMO%20contract%20history%3B%20identify%20incumbent%2C%20NAICS%2C%20past%20performance%2C%20and%20expiration%3B%20produce%20a%20one-page%20competitive%20brief%20for%20scheduling%20context.%0A%0ATodoist%20task%20id%3A%206g8cvMhFc6M4v7WX%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Set Up Call with Kate Watts re: Rebrand Phase 2</div>
+              <div class="card-meta">Task ID: 6gJf5MJ4VMqPgRcr · Due: May 5, 2026 · Project: E3 — Urgent & Unimportant · Labels: VMCC-Changeis-Rebrand</div>
+            </div>
+            <div class="badge badge-writing">Writing / Coordination</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>A rebrand Phase 2 call needs to be set up. AI can draft a crisp agenda, pre-call briefing, and scheduling email so the conversation is structured and productive.</p>
+            <h3>Suggested approach</h3>
+            <p>Draft a 3-item meeting agenda for Phase 2 rebrand (deliverables review, decision points, timeline); write a scheduling email to Kate Watts with context and proposed times.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20Set%20Up%20Call%20with%20Kate%20Watts%20re%3A%20Rebrand%20Phase%202&body=Task%3A%20Set%20up%20call%20with%20Kate%20Watts%20re%3A%20rebrand%20Phase%202%0AProject%3A%20E3%20%E2%80%94%20Urgent%20%26%20Unimportant%0ADue%3A%20May%205%2C%202026%0ALabels%3A%20VMCC-Changeis-Rebrand%0A%0AWhy%20AI%20can%20help%3A%20A%20rebrand%20Phase%202%20call%20needs%20to%20be%20set%20up.%20AI%20can%20draft%20a%20crisp%20agenda%2C%20pre-call%20briefing%2C%20and%20scheduling%20email%20so%20the%20conversation%20is%20structured%20and%20productive.%0A%0ASuggested%20approach%3A%20Draft%20a%203-item%20meeting%20agenda%20for%20Phase%202%20rebrand%20%28deliverables%20review%2C%20decision%20points%2C%20timeline%29%3B%20write%20a%20scheduling%20email%20to%20Kate%20Watts%20with%20context%20and%20proposed%20times.%0A%0ATodoist%20task%20id%3A%206gJf5MJ4VMqPgRcr%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Peter Attia Health Resources Research</div>
+              <div class="card-meta">Task ID: 6V95Vc5qHX7Cx2Hr · Due: No due date · Project: E3 — Urgent & Unimportant</div>
+            </div>
+            <div class="badge badge-research">Research</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>Gathering, organizing, and synthesizing Peter Attia's health resources (protocols, podcasts, book) into a personalized health brief is exactly the kind of research-heavy task AI excels at.</p>
+            <h3>Suggested approach</h3>
+            <p>Compile key Attia protocols (Zone 2, strength, sleep, metabolic markers); cross-reference with current health metrics; produce a prioritized personal health research brief.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20Peter%20Attia%20Health%20Resources%20Research&body=Task%3A%20Peter%20Attia%20Health%20Resources%20Research%0AProject%3A%20E3%20%E2%80%94%20Urgent%20%26%20Unimportant%0ADue%3A%20TBD%0A%0AWhy%20AI%20can%20help%3A%20Gathering%2C%20organizing%2C%20and%20synthesizing%20Peter%20Attia%27s%20health%20resources%20%28protocols%2C%20podcasts%2C%20book%29%20into%20a%20personalized%20health%20brief%20is%20exactly%20the%20kind%20of%20research-heavy%20task%20AI%20excels%20at.%0A%0ASuggested%20approach%3A%20Compile%20key%20Attia%20protocols%20%28Zone%202%2C%20strength%2C%20sleep%2C%20metabolic%20markers%29%3B%20cross-reference%20with%20current%20health%20metrics%3B%20produce%20a%20prioritized%20personal%20health%20research%20brief.%0A%0ATodoist%20task%20id%3A%206V95Vc5qHX7Cx2Hr%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">VM Notes Weekly</div>
+              <div class="card-meta">Task ID: 6fMHQQJjf9cWQ8QJ · Due: Every Tuesday · Project: E2 — Important & Not Urgent</div>
+            </div>
+            <div class="badge badge-writing">Writing</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>Weekly VM notes are a recurring writing task. AI can structure the notes, pull highlights from the week's completed tasks and outputs, and produce a clean weekly summary.</p>
+            <h3>Suggested approach</h3>
+            <p>Pull this week's completed VM2 deliverables and Todoist completed tasks; summarize key outputs, decisions made, open items; format as structured weekly notes.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20VM%20Notes%20Weekly&body=Task%3A%20VM%20Notes%20Weekly%0AProject%3A%20E2%20%E2%80%94%20Important%20%26%20Not%20Urgent%0ADue%3A%20Every%20Tuesday%0A%0AWhy%20AI%20can%20help%3A%20Weekly%20VM%20notes%20are%20a%20recurring%20writing%20task.%20AI%20can%20structure%20the%20notes%2C%20pull%20highlights%20from%20the%20week%27s%20completed%20tasks%20and%20outputs%2C%20and%20produce%20a%20clean%20weekly%20summary.%0A%0ASuggested%20approach%3A%20Pull%20this%20week%27s%20completed%20VM2%20deliverables%20and%20Todoist%20completed%20tasks%3B%20summarize%20key%20outputs%2C%20decisions%20made%2C%20open%20items%3B%20format%20as%20structured%20weekly%20notes.%0A%0ATodoist%20task%20id%3A%206fMHQQJjf9cWQ8QJ%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">What Are My Top 3 Tasks for the Day?</div>
+              <div class="card-meta">Task ID: 662QF2WJX6rmM6Rg · Due: Every weekday · Project: Weekly GTD · Labels: 5m</div>
+            </div>
+            <div class="badge badge-analysis">Analysis / Prioritization</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>Daily triage is high-value when AI considers due dates, priority flags, project context, and energy required. Today specifically: May 5, 2026 (Tuesday) — a focused top-3 would help.</p>
+            <h3>Suggested approach</h3>
+            <p>Pull today's and overdue Todoist tasks; apply urgency × impact matrix; propose Top 3 with rationale and suggested time allocation for the day.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20What%20Are%20My%20Top%203%20Tasks%20for%20the%20Day%3F&body=Task%3A%20What%20are%20my%20top%203%20tasks%20for%20the%20day%3F%0AProject%3A%20Weekly%20GTD%0ADue%3A%20Every%20weekday%0ALabels%3A%205m%0A%0AWhy%20AI%20can%20help%3A%20Daily%20triage%20is%20high-value%20when%20AI%20considers%20due%20dates%2C%20priority%20flags%2C%20project%20context%2C%20and%20energy%20required.%20Today%20specifically%3A%20May%205%2C%202026%20%28Tuesday%29%20%E2%80%94%20a%20focused%20top-3%20would%20help.%0A%0ASuggested%20approach%3A%20Pull%20today%27s%20and%20overdue%20Todoist%20tasks%3B%20apply%20urgency%20%C3%97%20impact%20matrix%3B%20propose%20Top%203%20with%20rationale%20and%20suggested%20time%20allocation%20for%20the%20day.%0A%0ATodoist%20task%20id%3A%20662QF2WJX6rmM6Rg%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Operations Research Project</div>
+              <div class="card-meta">Task ID: 662R7Vr3mWh4X58J · Due: No due date · Project: Innovation</div>
+            </div>
+            <div class="badge badge-research">Research / Analysis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>Operations research can span process optimization, resourcing, or capability building. AI can scope the project, synthesize current best practices, and recommend a structured approach.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify scope (internal ops vs. client offering vs. BD opportunity); gather relevant frameworks and data; produce a structured project brief with questions, hypotheses, and recommended next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20%E2%80%94%20Operations%20Research%20Project&body=Task%3A%20Operations%20research%20project%0AProject%3A%20Innovation%0ADue%3A%20TBD%0A%0AWhy%20AI%20can%20help%3A%20Operations%20research%20can%20span%20process%20optimization%2C%20resourcing%2C%20or%20capability%20building.%20AI%20can%20scope%20the%20project%2C%20synthesize%20current%20best%20practices%2C%20and%20recommend%20a%20structured%20approach.%0A%0ASuggested%20approach%3A%20Clarify%20scope%20%28internal%20ops%20vs.%20client%20offering%20vs.%20BD%20opportunity%29%3B%20gather%20relevant%20frameworks%20and%20data%3B%20produce%20a%20structured%20project%20brief%20with%20questions%2C%20hypotheses%2C%20and%20recommended%20next%20steps.%0A%0ATodoist%20task%20id%3A%20662R7Vr3mWh4X58J%0A%0A---%0AContext%3A%20vm2-auto-helper-2026-05-05%20%7C%20cost_estimate%3A%20~%240.10">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+    <details>
+      <summary>Session Context</summary>
+      <div class="details-body">
+        <h4>Procedure</h4>
+        <ul>
+          <li>Fetched all 703 Todoist tasks via REST API v1 with full pagination (4 pages, limit=200 each).</li>
+          <li>Filtered out 24 tasks with VM2 or vm2-done labels (handled by the separate VM2 Task Execution cron).</li>
+          <li>Filtered out 0 completed tasks.</li>
+          <li>Applied heuristics to categorize 679 remaining tasks — identified 232 as AI-helpful.</li>
+          <li>Curated the top 12 highest-value suggestions, skipping pure bookmarks, birthday reminders, and scheduling-only stubs.</li>
+        </ul>
+
+        <h4>Key Findings</h4>
+        <ul>
+          <li>Total tasks scanned: 703 (vs. 50 from Pipedream connector — full pagination yields 14× more coverage)</li>
+          <li>VM2-labeled tasks excluded: 24</li>
+          <li>AI-helpful candidates: 232 raw; 12 curated suggestions</li>
+          <li>Top themes: BD/Capture research, strategic planning, contract writing, pipeline analysis</li>
+          <li>2 items due today (May 5): FAA APEX follow-up and Kate Watts rebrand call setup</li>
+          <li>Projects are organized by Eisenhower quadrants (E1=Urgent+Important, E2=Important+Not Urgent, E3=Urgent+Unimportant)</li>
+        </ul>
+
+        <h4>Assumptions</h4>
+        <ul>
+          <li>Tasks with VM2 or vm2-done labels (by name) are excluded — VM2 Task Execution cron handles those separately.</li>
+          <li>Birthday reminders, work anniversaries, pure scheduling stubs, and golf score goals are skipped as NOT-AI-HELPFUL.</li>
+          <li>Reading/link tasks appear in the candidates list but are curated down — only the highest-context links appear here.</li>
+        </ul>
+
+        <h4>Data Sources</h4>
+        <ul>
+          <li>Todoist REST API v1 Tasks: <a href="https://developer.todoist.com/api/v1#tag/Tasks">https://developer.todoist.com/api/v1#tag/Tasks</a></li>
+          <li>Todoist REST API v1 Projects: <a href="https://developer.todoist.com/api/v1#tag/Projects">https://developer.todoist.com/api/v1#tag/Projects</a></li>
+          <li>DHS APFS Forecast Record 73307: <a href="https://apfs-cloud.dhs.gov/record/73307/public-print/">https://apfs-cloud.dhs.gov/record/73307/public-print/</a></li>
+        </ul>
+
+        <h4>Next Steps</h4>
+        <ul>
+          <li>Click "Task VM2" on any card to delegate via email to vm2.viru@gmail.com.</li>
+          <li>The VM2 Task Execution cron will process tasks in the VM2 label queue separately.</li>
+          <li>For deeper curation, filter by Eisenhower quadrant or badge color.</li>
+        </ul>
+      </div>
+    </details>
+
+    <script type="application/json" id="vm2-context-data">{
+  "task_name": "Todoist Auto-Helper",
+  "task_date": "2026-05-05",
+  "deliverable_file": "vm2-auto-helper-2026-05-05.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-05.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "cron_id": "27d43c4a",
+  "stats": {
+    "total_tasks": 703,
+    "vm2_excluded": 24,
+    "completed_excluded": 0,
+    "candidates": 679,
+    "ai_helpful_found": 232,
+    "curated_suggestions": 12
+  },
+  "key_findings": [
+    "Total tasks scanned: 703 (full pagination — 4 API pages)",
+    "VM2-labeled tasks excluded: 24",
+    "AI-helpful candidates: 232 raw; 12 curated",
+    "2 items due today May 5: FAA APEX follow-up, Kate Watts rebrand call",
+    "Projects organized by Eisenhower quadrants (E1/E2/E3)"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~25,000",
+    "output_tokens_est": "~6,000",
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.12",
+    "cost_ceiling": "$0.30",
+    "notes": "Full pagination fetch of 703 tasks + categorization + HTML generation; no external web research calls."
+  }
+}</script>
+
+    <div class="continue-panel">
+      <div class="continue-title">Continue This Work</div>
+      <div class="continue-actions">
+        <a class="btn-secondary" href="#" id="copyPromptBtn">Copy Follow-Up Prompt</a>
+        <a class="btn-secondary" href="mailto:vm2.viru@gmail.com?subject=VM2 - Todoist Auto-Helper follow-up 2026-05-05&body=Please continue from: https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-05.html%0A%0AFocus on: executing the top suggestions, especially FAA APEX follow-up and OFAM FO capture brief.">Email to VM2</a>
+        <a class="btn-secondary" href="https://todoist.com/add" target="_blank" rel="noopener">Create Todoist Follow-Up</a>
+      </div>
+    </div>
+
+    <footer>Changeis Confidential · Todoist Auto-Helper — 2026-05-05 · VM2 Deliverable</footer>
+  </div>
+
+<script>
+(function() {
+  const htmlEl = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('vm2-theme');
+  if (saved) htmlEl.setAttribute('data-theme', saved);
+  function updateBtn() {
+    btn.textContent = htmlEl.getAttribute('data-theme') === 'dark' ? 'Toggle Light' : 'Toggle Dark';
+  }
+  updateBtn();
+  btn.addEventListener('click', () => {
+    const next = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    htmlEl.setAttribute('data-theme', next);
+    localStorage.setItem('vm2-theme', next);
+    updateBtn();
+  });
+
+  const copyBtn = document.getElementById('copyPromptBtn');
+  copyBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const ctx = document.getElementById('vm2-context-data');
+    const data = JSON.parse(ctx.textContent);
+    const prompt = 'Continue this work: ' + data.railway_url + "\n\nGoals:\n- Execute on top suggestions (FAA APEX follow-up, OFAM FO capture brief)\n- Improve heuristics for next run\n\nContext JSON:\n" + ctx.textContent;
+    navigator.clipboard.writeText(prompt).then(() => {
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => copyBtn.textContent = 'Copy Follow-Up Prompt', 1200);
+    });
+  });
+})();
+</script>
+</body>
+</html>
