@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MKT.AIC Aviation Innovation Coalition Tracker · VM2</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --text: #2a2a2a;
+    --text-dim: #6b6b6b;
+    --border: #e3e1dc;
+    --border-strong: #b9b6ad;
+    --navy: #1B2A4A;
+    --deep-navy: #002060;
+    --section-blue: #1F4D78;
+    --teal: #008B8B;
+    --green: #2D7D4A;
+    --accent: #1B2A4A;
+    --accent-soft: #e8f0f8;
+    --link: #1F4D78;
+    --status-active: #2d7d4a;
+    --status-pending: #b8860b;
+    --status-done: #6b6b6b;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --callout-bg: #E8F4F8;
+    --callout-border: #008B8B;
+  }
+  [data-theme="dark"] {
+    --bg: #1a1a1a;
+    --surface: #232323;
+    --text: #e8e6e0;
+    --text-dim: #999;
+    --border: #383838;
+    --border-strong: #555;
+    --accent: #6ba3d6;
+    --accent-soft: #1a2a3a;
+    --link: #6ba3d6;
+    --status-active: #5cb878;
+    --status-pending: #d4a83a;
+    --status-done: #999;
+    --callout-bg: #1a2a30;
+    --callout-border: #008B8B;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Georgia', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 16px;
+  }
+  /* TOPBAR */
+  .topbar {
+    background: var(--navy);
+    color: #fff;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .topbar-left .brand { color: #fff; font-size: 15px; letter-spacing: 1px; }
+  .topbar-left .sep { color: rgba(255,255,255,0.4); }
+  .topbar-left .crumb { color: rgba(255,255,255,0.75); font-weight: 400; }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: transparent;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: rgba(255,255,255,0.15); }
+  /* HEADER BAND */
+  .header-band {
+    background: var(--navy);
+    color: #fff;
+    padding: 28px 32px 24px;
+    border-bottom: 4px solid var(--teal);
+  }
+  .project-code {
+    font-family: system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 6px;
+  }
+  .project-title {
+    font-family: system-ui, sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+  }
+  .meta-row strong { color: #fff; }
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .status-pill::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .pill-active { color: #4ade80; background: rgba(74,222,128,0.18); }
+  .pill-pending { color: #fbbf24; background: rgba(251,191,36,0.18); }
+  .pill-done { color: #9ca3af; background: rgba(156,163,175,0.18); }
+  /* LAYOUT */
+  main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+  /* EXECUTIVE SUMMARY CALLOUT */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 4px solid var(--callout-border);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin-bottom: 32px;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .callout strong { color: var(--section-blue); }
+  /* SECTIONS */
+  section {
+    margin-bottom: 36px;
+  }
+  .section-heading {
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--section-blue);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-heading .badge-count {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 10px;
+    font-size: 11px;
+    padding: 1px 7px;
+    font-weight: 600;
+  }
+  /* DELIVERABLE INDEX */
+  .deliverable-list { list-style: none; }
+  .deliverable-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+  }
+  .deliverable-list li:last-child { border-bottom: none; }
+  .del-date { color: var(--text-dim); min-width: 86px; font-size: 12px; padding-top: 1px; }
+  .del-type {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 80px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .type-prep { background: #e8f4e8; color: #2D7D4A; }
+  .type-review { background: #e8f0f8; color: #1F4D78; }
+  .type-brief { background: #f5f0e8; color: #8B6914; }
+  .del-link a { color: var(--link); text-decoration: none; border-bottom: 1px solid transparent; }
+  .del-link a:hover { border-bottom-color: var(--link); }
+  /* MEETINGS LOG TABLE */
+  .meetings-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: system-ui, sans-serif;
+    font-size: 13.5px;
+  }
+  .meetings-table th {
+    background: var(--navy);
+    color: #fff;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .meetings-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .meetings-table tr:nth-child(even) td { background: #F2F6FA; }
+  [data-theme="dark"] .meetings-table tr:nth-child(even) td { background: rgba(255,255,255,0.04); }
+  .outcome-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tag-supportive { background: #d1fae5; color: #065f46; }
+  .tag-completed { background: #dbeafe; color: #1e40af; }
+  .tag-pending { background: #fef3c7; color: #92400e; }
+  /* MEMBER ROSTER */
+  .roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .member-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .member-card .member-name {
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--deep-navy);
+    margin-bottom: 3px;
+  }
+  [data-theme="dark"] .member-card .member-name { color: var(--link); }
+  .member-card .member-org {
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+  .member-card .member-role {
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 8px;
+    font-weight: 600;
+  }
+  /* WORKSTREAMS */
+  .workstream-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .ws-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+    border-top: 3px solid var(--teal);
+  }
+  .ws-card h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--section-blue);
+    margin-bottom: 8px;
+  }
+  .ws-card p {
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .ws-status {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-family: system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .ws-active { background: #d1fae5; color: #065f46; }
+  .ws-building { background: #fef3c7; color: #92400e; }
+  /* ACTION ITEMS */
+  .action-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .action-table th {
+    background: var(--section-blue);
+    color: #fff;
+    padding: 9px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  .action-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .action-table tr:nth-child(even) td { background: #F2F6FA; }
+  [data-theme="dark"] .action-table tr:nth-child(even) td { background: rgba(255,255,255,0.04); }
+  .priority-high { color: #dc2626; font-weight: 700; }
+  .priority-med { color: #b8860b; font-weight: 600; }
+  .priority-low { color: var(--text-dim); }
+  .owner-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  /* DECISION LOG */
+  details.decision-log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  details.decision-log summary {
+    padding: 14px 18px;
+    cursor: pointer;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--section-blue);
+    background: var(--accent-soft);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  details.decision-log summary::before {
+    content: '▶';
+    font-size: 10px;
+    transition: transform 0.2s;
+  }
+  details[open].decision-log summary::before { transform: rotate(90deg); }
+  .decision-entry {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .decision-entry:last-child { border-bottom: none; }
+  .decision-entry .d-date {
+    font-family: system-ui, sans-serif;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .decision-entry .d-title {
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .decision-entry .d-body {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  /* CALENDAR */
+  .calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .calendar-table th {
+    background: var(--navy);
+    color: #fff;
+    padding: 9px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  .calendar-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .calendar-table tr:nth-child(even) td { background: #F2F6FA; }
+  [data-theme="dark"] .calendar-table tr:nth-child(even) td { background: rgba(255,255,255,0.04); }
+  .evt-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .evt-meeting { background: #dbeafe; color: #1e40af; }
+  .evt-deadline { background: #fee2e2; color: #991b1b; }
+  .evt-event { background: #d1fae5; color: #065f46; }
+  .evt-tbd { background: #f3f4f6; color: #6b7280; }
+  /* CONTEXT SLUG */
+  .context-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 24px;
+  }
+  .context-panel summary {
+    padding: 12px 18px;
+    cursor: pointer;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    background: var(--bg);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .context-panel summary::before { content: '▶'; font-size: 10px; transition: transform 0.2s; }
+  details[open].context-panel summary::before { transform: rotate(90deg); }
+  .context-body { padding: 16px 18px; font-family: system-ui, sans-serif; font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .cta-btn {
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .cta-btn:hover { background: var(--accent-soft); color: var(--accent); }
+  footer {
+    margin-top: 60px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="brand">VM2</span>
+    <span class="sep">·</span>
+    <span class="crumb">MKT.AIC</span>
+    <span class="sep">·</span>
+    <span class="crumb">Aviation Innovation Coalition</span>
+  </div>
+  <div class="topbar-right">
+    <a href="mkt-aic-thread.html" class="btn">Thread ↗</a>
+    <a href="portal.html" class="btn">Portal ↗</a>
+    <button class="btn" onclick="toggleTheme()">◐</button>
+  </div>
+</div>
+
+<div class="header-band">
+  <div style="max-width:1000px;margin:0 auto;">
+    <div class="project-code">Project Code · MKT.AIC · [thread:mkt-aic]</div>
+    <div class="project-title">Aviation Innovation Coalition</div>
+    <div class="meta-row">
+      <span class="status-pill pill-active">Active</span>
+      <span>Owner: <strong>Varun Malhotra</strong></span>
+      <span>Managed via: <strong>Crossroads Strategies (Scott Brenner)</strong></span>
+      <span>Created: <strong>2026-05-05</strong></span>
+      <span>Updated: <strong>2026-05-05</strong></span>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <section id="executive-summary">
+    <div class="section-heading">Executive Summary</div>
+    <div class="callout">
+      <p>The <strong>Aviation Innovation Coalition (AIC)</strong> is a newly formed industry group of Founding Members convened by <strong>Crossroads Strategies (Scott Brenner)</strong> to advance FAA ATC modernization through coordinated industry advocacy. Varun Malhotra / Changeis is a <strong>Founding Member</strong>.</p>
+      <p style="margin-top:10px;">Phase 1 Hill outreach concluded the week of April 8, 2026 with <strong>6 congressional and agency meetings</strong> — receiving strong bipartisan support. Policymakers welcomed the AIC's coordinated voice and are eager for best-practice and technology performance data. DOT Under Secretary Ryan McCormack encouraged outreach to Secretary Duffy's Chief of Staff and the Deputy Secretary. A request to meet with FAA Administrator Bedford has been submitted.</p>
+      <p style="margin-top:10px;"><strong>Next steps</strong>: Board structure finalization, inaugural press release, member dues collection, and a follow-on meeting with FAA Administrator / DOT senior officials. Three time-sensitive action items are open for each Founding Member (Board rep, headshot/bio, invoicing contact).</p>
+    </div>
+  </section>
+
+  <!-- PRIOR WORK INDEX -->
+  <section id="prior-work">
+    <div class="section-heading">Prior AIC Deliverables <span class="badge-count">3</span></div>
+    <ul class="deliverable-list">
+      <li>
+        <span class="del-date">2026-04-08</span>
+        <span class="del-type type-prep">Prep Brief</span>
+        <span class="del-link"><a href="aic-hill-meetings-prep-2026-04-08.html">AIC Hill Meetings Prep Brief — April 8, 2026</a></span>
+      </li>
+      <li>
+        <span class="del-date">2026-03-31</span>
+        <span class="del-type type-brief">Intel Brief</span>
+        <span class="del-link"><a href="aic-hill-meetings-prep-2026-03-31.html">AIC Meetings on the Hill — Congressional Prep Brief</a></span>
+      </li>
+      <li>
+        <span class="del-date">2026-03-31</span>
+        <span class="del-type type-review">Hub / Review</span>
+        <span class="del-link"><a href="aic-founding-member-review-2026-03-31.html">AIC Project Hub — Founding Member Review &amp; Engagement Plan</a></span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- HILL MEETINGS OUTCOMES LOG -->
+  <section id="hill-meetings">
+    <div class="section-heading">Hill Meetings Outcomes Log — April 8, 2026</div>
+    <table class="meetings-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Office / Agency</th>
+          <th>Staff Met</th>
+          <th>Location</th>
+          <th>Outcome / Signal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>8:30 AM</td>
+          <td>Breakfast at Crossroads Strategies</td>
+          <td>AIC Founding Members</td>
+          <td>800 N Capitol St NW #800</td>
+          <td><span class="outcome-tag tag-completed">Completed</span> Pre-meeting brief</td>
+        </tr>
+        <tr>
+          <td>10:00 AM</td>
+          <td>House THUD Appropriations</td>
+          <td>Christina Monroe (Clerk) &amp; Jaclyn Kilroy (PSM)</td>
+          <td>1036 Longworth</td>
+          <td><span class="outcome-tag tag-supportive">Supportive</span> Strong reception; eager for FAA modernization data</td>
+        </tr>
+        <tr>
+          <td>12:00 PM</td>
+          <td>U.S. DOT — Office of the Under Secretary for Policy</td>
+          <td>Ryan McCormack (Under Secretary)</td>
+          <td>1200 New Jersey Ave SE</td>
+          <td><span class="outcome-tag tag-supportive">Supportive</span> Encouraged meeting with Sec. Duffy's Chief of Staff &amp; Deputy Secretary; pursuing now</td>
+        </tr>
+        <tr>
+          <td>1:00 PM</td>
+          <td>House T&amp;I Minority Staff</td>
+          <td>Alexandra Menardy (Sr. PSM)</td>
+          <td>590 Ford</td>
+          <td><span class="outcome-tag tag-supportive">Supportive</span> Aligned on coordinated industry voice for ATC modernization</td>
+        </tr>
+        <tr>
+          <td>2:00 PM</td>
+          <td>House T&amp;I Majority Staff</td>
+          <td>Archie Miller (RA), Joseph Schmoll (Sr. PSM), Will Moore (LA)</td>
+          <td>2251 Rayburn</td>
+          <td><span class="outcome-tag tag-supportive">Supportive</span> Genuine enthusiasm for AIC industry coordination</td>
+        </tr>
+        <tr>
+          <td>3:00 PM</td>
+          <td>Senate Commerce — Aviation Majority</td>
+          <td>Andrew Miller (Policy Director)</td>
+          <td>451 Dirksen</td>
+          <td><span class="outcome-tag tag-supportive">Supportive</span> Strong interest; advancing ATC modernization agenda</td>
+        </tr>
+        <tr>
+          <td>4:00 PM</td>
+          <td>Senate Commerce THUD Appropriations</td>
+          <td>Jo Eckert (Dem. Clerk) &amp; Mike Clarke (Rep. Clerk)</td>
+          <td>192 Dirksen</td>
+          <td><span class="outcome-tag tag-supportive">Supportive</span> Bipartisan support; interest in $12.5B FAA modernization deployment</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-family:system-ui,sans-serif;font-size:12px;color:var(--text-dim);margin-top:10px;">Source: AIC Hill Meetings Briefing Memorandum, April 6, 2026 · Crossroads Strategies. Post-meeting update from Scott Brenner, April 14, 2026.</p>
+  </section>
+
+  <!-- MEMBER ROSTER -->
+  <section id="member-roster">
+    <div class="section-heading">Founding Member Roster</div>
+    <div class="roster-grid">
+      <div class="member-card">
+        <div class="member-name">Varun Malhotra</div>
+        <div class="member-org">Changeis, Inc.</div>
+        <span class="member-role">Board Rep Confirmed</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Gene Hayman</div>
+        <div class="member-org">Stratify Aerospace</div>
+        <span class="member-role">Board Rep Confirmed</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Mary Pritchard</div>
+        <div class="member-org">Cavan Solutions</div>
+        <span class="member-role">Board Rep Confirmed</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Nicole A. Gates</div>
+        <div class="member-org">SAIC</div>
+        <span class="member-role">Board Rep Confirmed</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Charles Keegan</div>
+        <div class="member-org">Aviation Management Group</div>
+        <span class="member-role">Board Rep TBD</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Jonathan Edge / T. McKnight</div>
+        <div class="member-org">ASRC Federal</div>
+        <span class="member-role">Board Rep TBD</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Kim Mackey</div>
+        <div class="member-org">Google</div>
+        <span class="member-role">Board Rep TBD</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Kathryn Maxwell</div>
+        <div class="member-org">Peraton</div>
+        <span class="member-role">Board Rep TBD</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Sharon Pinkerton</div>
+        <div class="member-org">Airlines for America</div>
+        <span class="member-role">Board Rep TBD</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Matt Metcalfe</div>
+        <div class="member-org">Deloitte</div>
+        <span class="member-role">Board Rep TBD</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Jeff Wehner</div>
+        <div class="member-org">Astrion</div>
+        <span class="member-role">Board Rep TBD</span>
+      </div>
+      <div class="member-card">
+        <div class="member-name">Scott Brenner / Wally Burnett</div>
+        <div class="member-org">Crossroads Strategies (Convener)</div>
+        <span class="member-role">Principal / Coordinator</span>
+      </div>
+    </div>
+    <p style="font-family:system-ui,sans-serif;font-size:12px;color:var(--text-dim);margin-top:12px;">Board representatives confirmed as of April 14, 2026: Gene Hayman, Varun Malhotra, Mary Pritchard, Nicole Gates. No alternates permitted. Board meets quarterly or as needed.</p>
+  </section>
+
+  <!-- ACTIVE WORKSTREAMS -->
+  <section id="workstreams">
+    <div class="section-heading">Active Workstreams</div>
+    <div class="workstream-grid">
+      <div class="ws-card">
+        <h3>Policy Advocacy</h3>
+        <p>Capitol Hill and DOT outreach. Phase 1 complete. Phase 2: FAA Administrator + DOT senior officials meeting scheduled.</p>
+        <span class="ws-status ws-active">Active</span>
+      </div>
+      <div class="ws-card">
+        <h3>Member Development</h3>
+        <p>Board structure finalization. Board rep confirmations, headshots/bios, and invoicing contacts pending from remaining members.</p>
+        <span class="ws-status ws-building">In Progress</span>
+      </div>
+      <div class="ws-card">
+        <h3>Branding &amp; Comms</h3>
+        <p>Website build pending Board rep materials. Inaugural press release in preparation. AIC public launch imminent.</p>
+        <span class="ws-status ws-building">In Progress</span>
+      </div>
+      <div class="ws-card">
+        <h3>Events &amp; Meetings</h3>
+        <p>Quarterly Board meetings established. Next: Follow-on DOT/FAA Administrator meeting (scheduling in progress). Inaugural Board meeting TBD.</p>
+        <span class="ws-status ws-building">Building</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACTION ITEMS / NEXT-STEP REGISTER -->
+  <section id="action-items">
+    <div class="section-heading">Action Items &amp; Next-Step Register</div>
+    <table class="action-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Action Item</th>
+          <th>Priority</th>
+          <th>Owner</th>
+          <th>Due Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AI-01</td>
+          <td>Submit Board Representative name (individual who will represent org on AIC Board — no alternates)</td>
+          <td class="priority-high">HIGH</td>
+          <td><span class="owner-tag">Varun / All Members</span></td>
+          <td>ASAP</td>
+          <td><span class="outcome-tag tag-supportive">Done — Varun</span></td>
+        </tr>
+        <tr>
+          <td>AI-02</td>
+          <td>Submit high-res headshot + short bio for Board representative (for website before press release)</td>
+          <td class="priority-high">HIGH</td>
+          <td><span class="owner-tag">Varun</span></td>
+          <td>ASAP</td>
+          <td><span class="outcome-tag tag-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td>AI-03</td>
+          <td>Provide invoicing contact name + email for initial AIC membership dues invoice</td>
+          <td class="priority-high">HIGH</td>
+          <td><span class="owner-tag">Varun / Finance</span></td>
+          <td>ASAP</td>
+          <td><span class="outcome-tag tag-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td>AI-04</td>
+          <td>Schedule follow-on meeting with FAA Administrator Bedford</td>
+          <td class="priority-med">MED</td>
+          <td><span class="owner-tag">Crossroads</span></td>
+          <td>TBD</td>
+          <td><span class="outcome-tag tag-pending">In Progress</span></td>
+        </tr>
+        <tr>
+          <td>AI-05</td>
+          <td>Schedule meeting with Secretary Duffy's Chief of Staff + Deputy Secretary (McCormack referral)</td>
+          <td class="priority-med">MED</td>
+          <td><span class="owner-tag">Crossroads</span></td>
+          <td>TBD</td>
+          <td><span class="outcome-tag tag-pending">In Progress</span></td>
+        </tr>
+        <tr>
+          <td>AI-06</td>
+          <td>Confirm remaining Board representatives from pending members (Keegan, Edge, McKnight, Mackey, Maxwell, Pinkerton, Metcalfe, Wehner)</td>
+          <td class="priority-med">MED</td>
+          <td><span class="owner-tag">Crossroads</span></td>
+          <td>TBD</td>
+          <td><span class="outcome-tag tag-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td>AI-07</td>
+          <td>Launch AIC website (after Board rep materials collected)</td>
+          <td class="priority-med">MED</td>
+          <td><span class="owner-tag">Crossroads</span></td>
+          <td>TBD</td>
+          <td><span class="outcome-tag tag-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td>AI-08</td>
+          <td>Issue inaugural AIC press release</td>
+          <td class="priority-med">MED</td>
+          <td><span class="owner-tag">Crossroads</span></td>
+          <td>TBD</td>
+          <td><span class="outcome-tag tag-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td>AI-09</td>
+          <td>Schedule inaugural Board meeting (quarterly cadence)</td>
+          <td class="priority-low">LOW</td>
+          <td><span class="owner-tag">Crossroads</span></td>
+          <td>TBD (Q2 2026)</td>
+          <td><span class="outcome-tag tag-pending">Pending</span></td>
+        </tr>
+        <tr>
+          <td>AI-10</td>
+          <td>Prepare ATC modernization best-practice / technology performance data package for follow-on meetings</td>
+          <td class="priority-low">LOW</td>
+          <td><span class="owner-tag">Varun / Changeis</span></td>
+          <td>Before DOT/FAA meeting</td>
+          <td><span class="outcome-tag tag-pending">Pending</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- DECISION LOG -->
+  <section id="decision-log">
+    <div class="section-heading">Decision Log</div>
+    <details class="decision-log" open>
+      <summary>Decision Log — append over time</summary>
+      <div class="decision-entry">
+        <div class="d-date">2026-04-14</div>
+        <div class="d-title">Phase 1 Outreach Complete — Proceed to Phase 2</div>
+        <div class="d-body">Following 6 successful Hill/DOT meetings, AIC leadership (Crossroads) declared Phase 1 complete. Decision: pursue FAA Administrator + DOT Deputy Secretary meetings as Phase 2. No dissent from founding members.</div>
+      </div>
+      <div class="decision-entry">
+        <div class="d-date">2026-04-14</div>
+        <div class="d-title">No Board Alternates Policy Adopted</div>
+        <div class="d-body">AIC Board structure confirmed: one named representative per member organization; no alternates permitted. Board meets quarterly or as needed.</div>
+      </div>
+      <div class="decision-entry">
+        <div class="d-date">2026-04-08</div>
+        <div class="d-title">Dues Collection Authorized — Coalition Now Fully Operational</div>
+        <div class="d-body">Crossroads announced AIC is now fully operational and ready to begin membership dues collections. Invoicing will proceed once contacts are provided by each member.</div>
+      </div>
+      <div class="decision-entry">
+        <div class="d-date">2026-03-31</div>
+        <div class="d-title">Founding Members Convened — First Hill Visit Scheduled</div>
+        <div class="d-body">AIC officially convened as an industry group. First Hill/DOT meetings scheduled for April 8, 2026 via Crossroads Strategies.</div>
+      </div>
+    </details>
+  </section>
+
+  <!-- CALENDAR -->
+  <section id="calendar">
+    <div class="section-heading">AIC Events Calendar</div>
+    <table class="calendar-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Event</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>2026-04-08</td>
+          <td>AIC Phase 1 Hill Meetings (Congress + DOT)</td>
+          <td><span class="evt-tag evt-meeting">Meeting</span></td>
+          <td>Completed</td>
+          <td>6 meetings; unanimous support</td>
+        </tr>
+        <tr>
+          <td>TBD — Q2 2026</td>
+          <td>Meeting: Secretary Duffy's Chief of Staff + Deputy Secretary</td>
+          <td><span class="evt-tag evt-meeting">Meeting</span></td>
+          <td>Scheduling</td>
+          <td>McCormack referral; Crossroads pursuing</td>
+        </tr>
+        <tr>
+          <td>TBD — Q2 2026</td>
+          <td>Meeting: FAA Administrator Bedford</td>
+          <td><span class="evt-tag evt-meeting">Meeting</span></td>
+          <td>Requested</td>
+          <td>Request submitted; pending confirmation</td>
+        </tr>
+        <tr>
+          <td>TBD — Q2 2026</td>
+          <td>AIC Website Launch</td>
+          <td><span class="evt-tag evt-event">Launch</span></td>
+          <td>Pending</td>
+          <td>Pending Board rep photos/bios from all members</td>
+        </tr>
+        <tr>
+          <td>TBD — Q2 2026</td>
+          <td>AIC Inaugural Press Release</td>
+          <td><span class="evt-tag evt-deadline">Deadline</span></td>
+          <td>Pending</td>
+          <td>Coordination with website launch</td>
+        </tr>
+        <tr>
+          <td>TBD — Q2/Q3 2026</td>
+          <td>AIC Inaugural Board Meeting</td>
+          <td><span class="evt-tag evt-meeting">Meeting</span></td>
+          <td>TBD</td>
+          <td>Quarterly cadence established</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- CONTEXT SLUG -->
+  <section id="context">
+    <details class="context-panel">
+      <summary>Session Context — MKT.AIC · [thread:mkt-aic]</summary>
+      <div class="context-body">
+        <strong>Approach:</strong> Pulled email 19df943036f376a4 (from varun@changeis.com) and downloaded attached PDF "AIC Hill Meetings Briefing April 8, 2026." Searched workspace for all prior AIC deliverables. Synthesized Scott Brenner's April 14 follow-on email (full thread body). Built full project tracker from PDF + email content.<br><br>
+        <strong>Key findings:</strong> Phase 1 Hill outreach complete (6 meetings, April 8, 2026). Unanimous bipartisan support. Three time-sensitive open items for Varun: Board rep bio/photo, invoicing contact. AIC is now fully operational with dues collection starting. DOT Under Secretary McCormack made key referral to Secretary Duffy's CoS and Deputy Secretary.<br><br>
+        <strong>Prior deliverables tagged:</strong> aic-hill-meetings-prep-2026-04-08.html, aic-hill-meetings-prep-2026-03-31.html, aic-founding-member-review-2026-03-31.html<br><br>
+        <strong>Thread tag:</strong> mkt-aic · <strong>Project code:</strong> MKT.AIC
+        <div class="cta-row">
+          <button class="cta-btn" onclick="navigator.clipboard.writeText('VM2 [thread:mkt-aic] — Update: ')">Copy Follow-Up Prompt</button>
+          <a class="cta-btn" href="mkt-aic-thread.html">View Thread Page</a>
+          <a class="cta-btn" href="portal.html">Back to Portal</a>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    MKT.AIC Aviation Innovation Coalition Tracker · VM2-Perplexity · 2026-05-05 · Changeis Confidential
+  </footer>
+
+</main>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const cur = html.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('vm2-theme', next);
+  }
+  (function() {
+    const saved = localStorage.getItem('vm2-theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+  })();
+</script>
+
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "MKT.AIC Aviation Innovation Coalition Tracker",
+  "project_code": "MKT.AIC",
+  "thread": "mkt-aic",
+  "date": "2026-05-05",
+  "owner": "Varun Malhotra",
+  "client": "Changeis / AIC",
+  "source_email_id": "19df943036f376a4",
+  "source_document": "AIC Hill Meetings Briefing April 8, 2026.pdf",
+  "prior_deliverables": [
+    "aic-hill-meetings-prep-2026-04-08.html",
+    "aic-hill-meetings-prep-2026-03-31.html",
+    "aic-founding-member-review-2026-03-31.html"
+  ],
+  "status": "active",
+  "cost_estimate": {
+    "model": "perplexity-default",
+    "input_tokens_est": 18000,
+    "output_tokens_est": 8000,
+    "search_calls": 0,
+    "subagent_calls": 1,
+    "cost_conservative": "$0.04",
+    "cost_ceiling": "$0.10",
+    "notes": "Single subagent session; PDF parse + HTML generation; no external search needed"
+  }
+}
+</script>
+
+</body>
+</html>
