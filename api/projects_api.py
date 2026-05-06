@@ -178,6 +178,41 @@ class MergeRequest(BaseModel):
     into_slug: str  # Project to merge INTO (kept)
 
 
+class SetSummaryRequest(BaseModel):
+    slug: str
+    text: str
+
+
+class RefreshSummaryRequest(BaseModel):
+    slug: str
+
+
+class SetMetadataRequest(BaseModel):
+    slug: str
+    category: Optional[str] = None  # bd | internal | personal | strategy | None
+    stage: Optional[str] = None
+    tags: Optional[list[str]] = None
+    identifier: Optional[str] = None
+    auto_summary: Optional[bool] = None
+
+
+class AddOpenItemRequest(BaseModel):
+    slug: str
+    text: str
+    due_date: Optional[str] = None  # YYYY-MM-DD
+
+
+class ToggleOpenItemRequest(BaseModel):
+    slug: str
+    index: int
+
+
+class AddKeyDateRequest(BaseModel):
+    slug: str
+    label: str
+    date: str
+
+
 class DeliverableInfo(BaseModel):
     file: str
     date: str
@@ -625,6 +660,107 @@ def merge(req: MergeRequest):
     )
     return APIResponse(ok=True, project_url=f"/{dst_path.name}", commit=commit,
                        message=f"Merged {req.from_slug} → {req.into_slug}.")
+
+
+@app.post("/api/projects/set-summary", response_model=APIResponse)
+def set_summary(req: SetSummaryRequest):
+    state = load_state(req.slug)
+    if not state:
+        raise HTTPException(404, f"Project '{req.slug}' not found.")
+    state["latest_summary"] = req.text
+    state["auto_summary"] = False  # User-edited
+    p = write_project(state)
+    commit = git_commit_and_push(f"Update summary: {req.slug}", [p.name])
+    return APIResponse(ok=True, project_url=f"/{p.name}", commit=commit, message="Summary updated.")
+
+
+@app.post("/api/projects/refresh-summary", response_model=APIResponse)
+def refresh_summary(req: RefreshSummaryRequest):
+    state = load_state(req.slug)
+    if not state:
+        raise HTTPException(404, f"Project '{req.slug}' not found.")
+    snapshots = [e for e in state.get("timeline", []) if e.get("kind", "snapshot") == "snapshot" and e.get("file")]
+    if not snapshots:
+        raise HTTPException(400, "No snapshots in timeline to extract from.")
+    snapshots.sort(key=lambda e: e.get("date", ""), reverse=True)
+    latest = REPO / snapshots[0]["file"]
+    if not latest.exists():
+        raise HTTPException(400, f"Latest snapshot file not found: {snapshots[0]['file']}")
+    extracted = _extract_summary_from_html(latest)
+    if not extracted:
+        raise HTTPException(500, "Could not extract a summary from the latest snapshot.")
+    state["latest_summary"] = extracted
+    state["auto_summary"] = True
+    p = write_project(state)
+    commit = git_commit_and_push(f"Refresh summary: {req.slug}", [p.name])
+    return APIResponse(ok=True, project_url=f"/{p.name}", commit=commit, message="Summary refreshed.")
+
+
+@app.post("/api/projects/set-metadata", response_model=APIResponse)
+def set_metadata(req: SetMetadataRequest):
+    state = load_state(req.slug)
+    if not state:
+        raise HTTPException(404, f"Project '{req.slug}' not found.")
+    if req.category is not None:
+        state["category"] = req.category.strip().lower()
+    if req.stage is not None:
+        state["stage"] = req.stage.strip()
+    if req.tags is not None:
+        state["tags"] = [t.strip() for t in req.tags if t.strip()]
+    if req.identifier is not None:
+        state["identifier"] = req.identifier.strip()
+    if req.auto_summary is not None:
+        state["auto_summary"] = req.auto_summary
+    p = write_project(state)
+    commit = git_commit_and_push(f"Set metadata: {req.slug}", [p.name])
+    return APIResponse(ok=True, project_url=f"/{p.name}", commit=commit, message="Metadata updated.")
+
+
+@app.post("/api/projects/add-open-item", response_model=APIResponse)
+def add_open_item(req: AddOpenItemRequest):
+    state = load_state(req.slug)
+    if not state:
+        raise HTTPException(404, f"Project '{req.slug}' not found.")
+    state.setdefault("open_items", []).append({
+        "text": req.text.strip(),
+        "done": False,
+        "due_date": (req.due_date or "").strip() or None,
+    })
+    p = write_project(state)
+    commit = git_commit_and_push(f"Add open item: {req.slug}", [p.name])
+    return APIResponse(ok=True, project_url=f"/{p.name}", commit=commit, message="Open item added.")
+
+
+@app.post("/api/projects/toggle-open-item", response_model=APIResponse)
+def toggle_open_item(req: ToggleOpenItemRequest):
+    state = load_state(req.slug)
+    if not state:
+        raise HTTPException(404, f"Project '{req.slug}' not found.")
+    items = state.get("open_items", [])
+    if req.index < 0 or req.index >= len(items):
+        raise HTTPException(400, f"Index {req.index} out of range.")
+    items[req.index]["done"] = not items[req.index].get("done", False)
+    if items[req.index]["done"]:
+        items[req.index]["done_date"] = today_iso()
+    else:
+        items[req.index].pop("done_date", None)
+    p = write_project(state)
+    commit = git_commit_and_push(f"Toggle open item: {req.slug}", [p.name])
+    return APIResponse(ok=True, project_url=f"/{p.name}", commit=commit, message="Item toggled.")
+
+
+@app.post("/api/projects/add-key-date", response_model=APIResponse)
+def add_key_date(req: AddKeyDateRequest):
+    state = load_state(req.slug)
+    if not state:
+        raise HTTPException(404, f"Project '{req.slug}' not found.")
+    state.setdefault("key_dates", []).append({
+        "label": req.label.strip(),
+        "date": req.date.strip(),
+    })
+    p = write_project(state)
+    commit = git_commit_and_push(f"Add key date: {req.slug}", [p.name])
+    return APIResponse(ok=True, project_url=f"/{p.name}", commit=commit, message="Key date added.")
 
 
 @app.post("/api/projects/set-status", response_model=APIResponse)
