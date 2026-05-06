@@ -90,8 +90,13 @@ def git(*args: str) -> str:
 
 
 def git_commit_and_push(message: str, files: list[str]) -> str:
-    """Add specific files, commit, push. Returns the new HEAD SHA."""
-    git("add", *files)
+    """Add specific files (handles deletions too), commit, push. Returns the new HEAD SHA."""
+    # Use 'git add -A <file>' for each path so deleted files are staged correctly
+    for f in files:
+        try:
+            git("add", "-A", "--", f)
+        except RuntimeError:
+            pass  # File may not exist (already deleted on disk and not tracked)
     # Skip if nothing changed
     diff = subprocess.run(
         ["git", "-C", str(REPO), "diff", "--cached", "--quiet"],
@@ -454,8 +459,6 @@ def rename(req: RenameRequest):
             write_project(s)
             touched.append(f"project-{other['slug']}.html")
 
-    # Stage deletion of old file
-    git("add", "-A", str(old_path.name))
     commit = git_commit_and_push(
         f"Rename project: {req.old_slug} → {req.new_slug}",
         list(set(touched)),
@@ -616,7 +619,6 @@ def merge(req: MergeRequest):
             other_path = write_project(s)
             touched.append(other_path.name)
 
-    git("add", "-A", str(src_path.name))
     commit = git_commit_and_push(
         f"Merge project {req.from_slug} into {req.into_slug}",
         list(set(touched)),
