@@ -1,6 +1,6 @@
 # VM2-P-Taskers — Disaster Recovery Runbook
 
-**Last updated**: 2026-05-05
+**Last updated**: 2026-05-06
 **Use this when**: production is broken, Railway is unreachable, the repo is corrupted, secrets are lost, or you need to rebuild from scratch.
 
 Read [ARCHITECTURE.md](./ARCHITECTURE.md) first if you haven't.
@@ -11,8 +11,9 @@ Read [ARCHITECTURE.md](./ARCHITECTURE.md) first if you haven't.
 
 | Symptom | Severity | Jump to |
 |---|---|---|
-| Browser shows 500/502 | P1 | §3 nginx down |
-| Promote button fails | P2 | §4 API down |
+| Browser shows 502 with body `<center>nginx</center>` | P1 | §3 nginx upstream unreachable |
+| Browser shows 502 with `Application failed to respond` | P1 | §3a nginx itself crashed |
+| Promote button fails / API endpoints 5xx | P2 | §4 API down |
 | `portal.html` shows raw `<li>` tags | P2 | §5 portal corruption |
 | Salt/password mismatch on a file | P3 | §6 (DEPRECATED — should never happen post-Railway) |
 | Lost the Railway dashboard | P1 | §7 rebuild from scratch |
@@ -49,7 +50,67 @@ If ④ fails → GitHub access lost or repo deleted.
 
 ---
 
-## 3. P1: nginx (Service A) is down
+## 3. P1: nginx 502 — upstream API unreachable
+
+**Symptom**: `/api/*` returns 502 with HTML body `<center>nginx/1.x.y</center>`. Static files (portal.html, deliverables) still work.
+
+**Root cause hierarchy** (most common first):
+
+### A. nginx resolver missing or wrong IP family
+
+**This is the most common cause and bit us during initial deployment.**
+Railway's `*.railway.internal` hostnames resolve only via the container's
+local IPv6 nameserver (e.g. `fd12::10`). Public DNS like `1.1.1.1` returns
+NXDOMAIN. nginx ALSO requires IPv6 resolver IPs to be wrapped in `[brackets]`
+or it parses colons as port separators.
+
+**Diagnostic**: Check `vm2-portal` Logs for `[emerg] invalid port in resolver`.
+
+**Fix**: `nginx.conf` uses `resolver __RESOLVER_PLACEHOLDER__ ipv6=on valid=30s;`
+and `entrypoint.sh` injects the actual nameserver from `/etc/resolv.conf`,
+wrapping IPv6 addresses in `[brackets]`. If this is broken, see commit
+`117971f` for the canonical fix.
+
+### B. API service name mismatch
+
+nginx hardcodes `vm2-projects-api.railway.internal:8000` as the upstream.
+If the Service B has a different name on Railway, the DNS lookup fails.
+
+**Fix**: Either rename the Railway service to exactly `vm2-projects-api`,
+OR set `VM2_PROJECTS_API_URL=http://<actual-name>.railway.internal:8000`
+on the `vm2-portal` service env vars.
+
+### C. API listening on wrong port
+
+nginx hardcodes `:8000`. If the API container is using `$PORT` from
+Railway (often 8080), the connection refuses.
+
+**Fix**: On `vm2-projects-api` service, set env var `PORT=8000`. Or
+update nginx.conf to match the API's actual port.
+
+---
+
+## 3a. P1: nginx itself crashed
+
+**Symptom**: `/api/*` returns Railway's 502 page with body `Application failed to respond`. Even static files may fail.
+
+This means the `vm2-portal` container itself crashed (won't accept any
+connections), not just an upstream issue.
+
+```bash
+# Railway dashboard → vm2-portal → Logs (Deploy Logs tab)
+# Look for the line above [emerg] in red:
+#   - "invalid port in resolver"     → see §3A above (resolver IPv6 brackets)
+#   - "unknown directive"            → typo or missing module in nginx.conf
+#   - "open() ... failed"            → missing file referenced in nginx.conf
+#   - "could not bind to 8080"       → port already in use; container will retry
+```
+
+**Fast rollback**: Railway dashboard → vm2-portal → Deployments → previous green → ⋯ → Redeploy.
+
+---
+
+## 3b. P1: nginx (Service A) is down (legacy)
 
 **Symptom**: portal.html and all deliverables return 5xx or hang.
 
@@ -295,3 +356,7 @@ If all 11 boxes are checked, the system is fully operational.
 | 2026-04-30 | portal.html corruption fix + lint guard added | Computer |
 | 2026-05-05 | Project Threads MVP shipped (helper, API, button, projects.html) | Computer |
 | 2026-05-05 | Architecture + DR runbook written | Computer |
+| 2026-05-05 | Service B (Projects API) deployed; nginx IPv6 resolver fix | Computer |
+| 2026-05-05 | Cross-page integration features (portal column, +New Project, Revise) | Computer |
+| 2026-05-06 | v3 redesign of projects.html and project pages | Computer |
+| 2026-05-06 | DR runbook updated with nginx-resolver root-cause section | Computer |

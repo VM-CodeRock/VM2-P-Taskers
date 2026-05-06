@@ -1,6 +1,6 @@
 # VM2-P-Taskers — System Architecture
 
-**Last updated**: 2026-05-05
+**Last updated**: 2026-05-06
 **Owner**: Varun Malhotra (varun@changeis.com)
 **Repo**: [vm-coderock/VM2-P-Taskers](https://github.com/vm-coderock/VM2-P-Taskers)
 **Live URL**: https://vm2-p-taskers-production.up.railway.app
@@ -66,7 +66,7 @@ This document is the authoritative reference for how the VM2 publishing system f
 | `portal.html` | Yes | `portal_add_entry.py` | Canonical index of all files (table view) |
 | `projects.html` | Yes (rendered) | `projects.html` itself + API | Project command center (cards / list / compact views, picker modal) |
 
-**Critical rule**: Never freeform-edit `portal.html` or `project-<slug>.html`. Always use the helper scripts. See `scripts/README.md`.
+**Critical rule**: Never freeform-edit `portal.html` or `project-<slug>.html`. Always use the helper scripts (or the Projects API). See `scripts/README.md`.
 
 ---
 
@@ -90,6 +90,12 @@ There are **two Railway services** in one Railway project:
   - `VM2_TODOIST_TOKEN` (for Todoist deep-dive proxy)
 - **Optional env vars**:
   - `VM2_PROJECTS_API_URL` — override the default `http://vm2-projects-api.railway.internal:8000`
+- **Critical config**: `nginx.conf` MUST include a `resolver` directive
+  with the container's actual nameserver from `/etc/resolv.conf`. Railway
+  internal DNS uses IPv6 (e.g. `fd12::10`) which must be wrapped in
+  `[brackets]`. `entrypoint.sh` injects this at boot via sed-replacing
+  `__RESOLVER_PLACEHOLDER__` in `nginx.conf`. Public DNS like 1.1.1.1
+  CANNOT resolve `*.railway.internal` hostnames.
 
 ### Service B: `vm2-projects-api` (FastAPI)
 
@@ -106,16 +112,25 @@ There are **two Railway services** in one Railway project:
   - `GITHUB_TOKEN` — PAT with `repo` scope
   - `GIT_USER_EMAIL=vm2@changeis.com`
   - `GIT_USER_NAME=VM2 Projects API`
-- **Endpoints** (see `api/README.md` for full Pydantic models):
-  - `GET /api/health` — liveness
-  - `GET /api/projects` — list all projects
-  - `GET /api/deliverables` — list all dated HTML files with project membership
-  - `POST /api/projects/promote` — create a new project
-  - `POST /api/projects/add-snapshot` — add a single deliverable to existing project
-  - `POST /api/projects/add-many` — bulk-add multiple deliverables atomically
-  - `POST /api/projects/append` — append an update note to a project's timeline
-  - `POST /api/projects/rename` — rename a project slug
-  - `POST /api/projects/set-status` — change project status
+- **Endpoints** (see `api/projects_api.py` for Pydantic models):
+  - **GET** `/api/health` — liveness
+  - **GET** `/api/projects` — list all projects with summary metadata
+  - **GET** `/api/deliverables` — list all dated HTML files with project membership
+  - **POST** `/api/projects/promote` — create a new project from a slug (pulls all matching files)
+  - **POST** `/api/projects/create-empty` — create a project with no deliverables yet
+  - **POST** `/api/projects/add-snapshot` — add a single deliverable to existing project
+  - **POST** `/api/projects/add-many` — bulk-add multiple deliverables atomically
+  - **POST** `/api/projects/move-snapshot` — reassign deliverable to different project (or detach)
+  - **POST** `/api/projects/append` — append a timestamped update note to timeline
+  - **POST** `/api/projects/merge` — fold one project into another, dedup, delete source
+  - **POST** `/api/projects/rename` — rename a project slug, update back-references
+  - **POST** `/api/projects/set-status` — change project status (active/watching/closed)
+  - **POST** `/api/projects/set-summary` — manually replace Latest Summary text
+  - **POST** `/api/projects/refresh-summary` — re-extract summary from latest snapshot
+  - **POST** `/api/projects/set-metadata` — category, stage, tags, identifier, auto_summary
+  - **POST** `/api/projects/add-open-item` — add open item with optional due_date
+  - **POST** `/api/projects/toggle-open-item` — flip done state, stamp done_date
+  - **POST** `/api/projects/add-key-date` — add a label+date entry to sidebar
 
 ### Communication
 
@@ -183,18 +198,30 @@ Each project page is **self-contained**: a styled HTML view of state, plus a JSO
 ```
 project-army-maps.html
 ├── <!DOCTYPE html>
-├── ... rendered Charter-serif page (status pill, summary, timeline, related)
+├── ... rendered v3 page (header, KPIs, summary, beat chart, timeline, sidebar)
 └── <!-- PROJECT_STATE_JSON_BEGIN
     {
       "slug": "army-maps",
       "title": "Army MAPS Recompete (W15P7T-26-R-A006)",
-      "status": "active",
+      "status": "active",                    // active | watching | closed
+      "category": "bd",                       // bd | internal | personal | strategy | ""
+      "stage": "Subcontractor track",          // free-text
+      "identifier": "W15P7T-26-R-A006",        // optional ID (RFP#, etc.)
       "owner": "Varun",
       "created": "2026-05-05",
-      "updated": "2026-05-05",
-      "latest_summary": "...",
-      "open_items": [{"text": "...", "done": false}],
-      "related": ["faa-clmrs", "..."],
+      "updated": "2026-05-06",
+      "latest_summary": "...",                 // 3-paragraph synthesis
+      "auto_summary": true,                    // false if user manually edited
+      "tags": ["recompete", "sub", "army"],
+      "key_dates": [
+        {"label": "Industry Day", "date": "2026-04-22"},
+        {"label": "Proposal due", "date": "2026-06-30"}
+      ],
+      "open_items": [
+        {"text": "Confirm teaming partner", "done": false, "due_date": "2026-05-15"},
+        {"text": "Industry Day registered", "done": true, "done_date": "2026-05-04"}
+      ],
+      "related": ["faa-clmrs", "eitss-2"],
       "timeline": [
         {"file": "...html", "date": "...", "title": "...", "kind": "snapshot", "body": ""},
         {"date": "...", "title": "...", "kind": "update", "body": "..."}
@@ -203,15 +230,27 @@ project-army-maps.html
     PROJECT_STATE_JSON_END -->
 ```
 
+### Category color coding
+
+| Category | Color | Use for |
+|---|---|---|
+| `bd` | `#c53a3a` (red) | Business development pursuits |
+| `internal` | `#1f4d78` (navy) | Internal Changeis ops |
+| `personal` | `#2d7d4a` (green) | Personal projects (golf, family) |
+| `strategy` | `#6b4c9a` (purple) | Strategic/exploratory |
+| `""` (none) | `#b9b6ad` (gray) | Uncategorized |
+
+Applied as colored left border on cards/headers and as filter pill dots.
+
 ### Components
 
 | File | Purpose |
 |---|---|
-| `scripts/project_helper.py` | CLI for managing projects (`promote`, `add-snapshot`, `append`, `link`, `rename`, `set-status`, `set-summary`, `list`) |
-| `scripts/project_template.py` | Charter-serif HTML template; imported by helper |
-| `scripts/promote_button.html` | Self-contained UI snippet — embed in every deliverable |
-| `api/projects_api.py` | FastAPI sidecar exposing `/api/projects/*` endpoints |
-| `projects.html` | Command-center view (cards/list/compact + picker modal) |
+| `scripts/project_helper.py` | CLI + render engine. Subcommands: `list`, `promote`, `add-snapshot`, `append`, `link`, `rename`, `set-status`, `set-summary`. Also provides `write_project()` used by API. Includes helpers for relative time, beat chart bucketing, grouped-timeline rendering, open-item badge logic. |
+| `scripts/project_template.py` | v3 redesigned Charter-serif template: two-column layout, KPI dashboard, beat chart, grouped collapsible timeline, due-date-aware open items, compose dock, sticky sidebar with metadata + key dates + related + quick actions. |
+| `scripts/promote_button.html` | Self-contained deliverable toolkit: 📌 Project link/picker + ✎ Revise dropdown (Quick note / Request rewrite tabs). |
+| `api/projects_api.py` | FastAPI sidecar exposing 18 endpoints. Imports `project_helper` directly (no subprocess). |
+| `projects.html` | v3 command center: sticky stats strip, category pills, status-grouped cards with KPI bands and 8-month sparklines, + New Project modal, attach-deliverables modal. |
 
 ### Workflow patterns
 
@@ -281,12 +320,14 @@ VM2 update army-maps: Booz Allen confirmed as prime
 ## 8. Critical invariants (DO NOT BREAK)
 
 1. **Plain HTML only.** No StaticCrypt. No client-side encryption. Auth is nginx basic-auth.
-2. **Use the helpers.** Never freeform-edit `portal.html` or `project-<slug>.html`. Use `portal_add_entry.py` and `project_helper.py`.
+2. **Use the helpers.** Never freeform-edit `portal.html` or `project-<slug>.html`. Use `portal_add_entry.py` and `project_helper.py` (or the API endpoints that wrap them).
 3. **Lint before push.** `portal_lint.py` must exit 0 after any change touching `portal.html`.
 4. **Slug naming.** Lowercase, hyphenated, alphanumeric only. Topic-first. No version numbers in slug.
 5. **Filename convention.** `<slug>-YYYY-MM-DD.html` for snapshots. `project-<slug>.html` for projects.
-6. **API has no auth of its own.** Always behind nginx basic-auth.
-7. **Concurrent commits.** API does pull-rebase before push; on conflict returns 409. Browser retries once.
+6. **API has no auth of its own.** Always behind nginx basic-auth. Never expose `vm2-projects-api` directly.
+7. **Concurrent commits.** API does `pull --rebase --autostash` before push; on conflict returns 409. Browser retries once.
+8. **nginx resolver for Railway internal DNS.** Public DNS cannot resolve `*.railway.internal`. Use container's `/etc/resolv.conf` resolver, wrapped in `[brackets]` for IPv6.
+9. **Cron task instructions must use the API or helper.** A cron freeform-editing `portal.html` was the root cause of multiple corruption incidents. The auto-cron `vm2-gmail-tasks` skill v3 documents the correct workflow.
 
 ---
 
@@ -295,33 +336,48 @@ VM2 update army-maps: Booz Allen confirmed as prime
 ```
 VM2-P-Taskers/
 ├── Dockerfile                  ← Service A (nginx static)
-├── nginx.conf                  ← Service A config
-├── entrypoint.sh               ← Service A boot
-├── portal.html                 ← Canonical index (table)
-├── projects.html               ← Project command center
-├── project-<slug>.html         ← One per project (3 today)
-├── <slug>-YYYY-MM-DD.html      ← 681 dated deliverables
+├── nginx.conf                  ← Service A config (uses __RESOLVER_PLACEHOLDER__)
+├── entrypoint.sh               ← Service A boot (resolver injection, port checks)
+├── portal.html                 ← Canonical index (table) with project decoration JS
+├── projects.html               ← v3 project command center
+├── project-<slug>.html         ← One per project (3 active)
+├── <slug>-YYYY-MM-DD.html      ← 689+ dated deliverables
 ├── api/
-│   ├── projects_api.py         ← Service B (FastAPI)
-│   ├── Dockerfile              ← Service B
-│   ├── entrypoint.sh           ← Service B boot
-│   ├── requirements.txt        ← Pinned deps
+│   ├── projects_api.py         ← FastAPI service (18 endpoints)
+│   ├── Dockerfile              ← Service B image
+│   ├── entrypoint.sh           ← Clones repo, configures git, exec uvicorn
+│   ├── requirements.txt        ← Pinned deps (FastAPI, uvicorn, pydantic)
 │   ├── railway.toml            ← Railway service config
 │   └── README.md               ← API operator notes
 ├── scripts/
-│   ├── portal_add_entry.py     ← Safe portal mutator
-│   ├── portal_lint.py          ← Integrity guard
-│   ├── project_helper.py       ← Project CLI
-│   ├── project_template.py     ← Project HTML template
-│   ├── promote_button.html     ← UI snippet for deliverables
+│   ├── portal_add_entry.py     ← Safe portal mutator (THE ONLY way to add rows)
+│   ├── portal_lint.py          ← Integrity guard (5/6 cell counts, no stray <li>, etc.)
+│   ├── project_helper.py       ← Project CLI + render engine
+│   ├── project_template.py     ← v3 project HTML template
+│   ├── promote_button.html     ← Deliverable toolkit (📌 Project + ✎ Revise)
 │   └── README.md               ← Helper guide
 ├── docs/
 │   ├── ARCHITECTURE.md         ← This file
-│   └── DR-RUNBOOK.md           ← Disaster recovery
+│   ├── DEPLOYMENT.md           ← 5-min Railway deployment checklist
+│   ├── DR-RUNBOOK.md           ← Disaster recovery (P0–P3)
+│   └── README.md               ← Doc index
 ├── _system/
-│   ├── deep-dive-button.js     ← Existing daily-brief button
+│   ├── deep-dive-button.js     ← Existing daily-brief button (legacy)
 │   ├── deep-dive-spec.md       ← Spec for that button
 │   └── ...
 ├── vm2-tests.sh                ← End-to-end tests
 └── .gitignore
 ```
+
+## 10. Recent change history
+
+| Date | What |
+|---|---|
+| 2026-03-25 | Migrated from GitHub Pages + StaticCrypt to Railway + nginx basic-auth |
+| 2026-04-30 | portal.html corruption fix; lint guard added |
+| 2026-05-05 | Project Threads MVP (helper, template, button, projects.html) |
+| 2026-05-05 | Architecture + DR docs created |
+| 2026-05-05 | Deployed Projects API service B on Railway |
+| 2026-05-05 | Fixed nginx IPv6 resolver for Railway internal DNS |
+| 2026-05-05 | Cross-page integration: portal Project column, projects.html +New Project, deliverable toolkit with Revise button, move-snapshot/create-empty/merge endpoints, auto-summary-on-add |
+| 2026-05-06 | v3 redesign shipped: stats strip, color categories, KPI dashboard, beat chart, month-grouped timeline, sidebar, due-date-aware open items, 6 new API endpoints (set-summary, refresh-summary, set-metadata, add-open-item, toggle-open-item, add-key-date) |
