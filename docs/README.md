@@ -1,10 +1,11 @@
 # VM2-P-Taskers — Documentation
 
-Three documents, in reading order:
+Documentation, in reading order:
 
 1. **[ARCHITECTURE.md](./ARCHITECTURE.md)** — How the system is put together. Read this first.
 2. **[DEPLOYMENT.md](./DEPLOYMENT.md)** — 5-minute checklist to deploy/redeploy.
 3. **[DR-RUNBOOK.md](./DR-RUNBOOK.md)** — What to do when things break.
+4. **[SHARE-LINKS.md](./SHARE-LINKS.md)** — Magic-link bypass keys for sharing without basic-auth.
 
 Plus operator references in adjacent folders:
 

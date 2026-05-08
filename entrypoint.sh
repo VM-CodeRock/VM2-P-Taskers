@@ -42,5 +42,46 @@ if [ -n "${VM2_PROJECTS_API_URL:-}" ]; then
   echo "Projects API upstream: ${VM2_PROJECTS_API_URL}"
 fi
 
+# Inject magic-link bypass keys into the nginx map directive.
+# VM2_PUBLIC_KEYS is comma-separated (with optional spaces).
+# When the ?key= query param (or vm2_key cookie) matches one of these,
+# nginx sets $auth_realm to "off" — skipping the basic-auth challenge.
+NGINX_CONF="/etc/nginx/conf.d/default.conf"
+if [ -n "${VM2_PUBLIC_KEYS:-}" ]; then
+  # Build a temporary file with the rendered map entries
+  KEYS_FILE=$(mktemp)
+  COUNT=0
+  echo "$VM2_PUBLIC_KEYS" | tr ',' '\n' | while IFS= read -r key; do
+    # Trim whitespace
+    key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    if [ -n "$key" ]; then
+      printf '    "%s"  "off";\n' "$key" >> "$KEYS_FILE"
+    fi
+  done
+  COUNT=$(wc -l < "$KEYS_FILE" | tr -d ' ')
+  if [ "$COUNT" -gt 0 ]; then
+    # Use awk to splice the rendered keys between the BEGIN/END markers
+    awk -v keys_file="$KEYS_FILE" '
+      /# __VM2_PUBLIC_KEYS_BEGIN__/ {
+        print;
+        while ((getline line < keys_file) > 0) print line;
+        close(keys_file);
+        in_block = 1;
+        next;
+      }
+      /# __VM2_PUBLIC_KEYS_END__/ {
+        in_block = 0;
+        print;
+        next;
+      }
+      !in_block { print }
+    ' "$NGINX_CONF" > "${NGINX_CONF}.new" && mv "${NGINX_CONF}.new" "$NGINX_CONF"
+    echo "Magic-link keys configured: ${COUNT} active key(s)"
+  fi
+  rm -f "$KEYS_FILE"
+else
+  echo "VM2_PUBLIC_KEYS not set — magic-link bypass disabled (basic-auth required for all requests)"
+fi
+
 # Start nginx
 exec nginx -g "daemon off;"

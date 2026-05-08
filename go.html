@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM2 Share Links · Magic-link bypass</title>
+<style>
+  :root {
+    --bg: #faf8f3;
+    --surface: #ffffff;
+    --text: #1f1f1f;
+    --text-dim: #6b6b6b;
+    --text-faint: #999;
+    --border: #ebe7df;
+    --border-strong: #b9b6ad;
+    --accent: #c53a3a;
+    --accent-soft: #fbecec;
+    --warning: #c97318;
+    --status-active: #2d7d4a;
+  }
+  [data-theme="dark"] {
+    --bg: #181816; --surface: #232323;
+    --text: #e8e6e0; --text-dim: #a8a8a8;
+    --text-faint: #6f6f6f; --border: #383634;
+    --border-strong: #555; --accent: #e85a5a;
+    --accent-soft: #3a2222;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Charter', 'Iowan Old Style', 'Georgia', serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.55; font-size: 16px;
+  }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .topbar-left {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+  }
+  .topbar-left .brand { color: var(--accent); }
+  .topbar-left .crumb { color: var(--text-dim); font-weight: 400; margin-left: 12px; }
+  .topbar-right { display: flex; gap: 8px; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 12.5px; font-weight: 500;
+    padding: 6px 12px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface); color: var(--text);
+    border-radius: 6px; cursor: pointer;
+    text-decoration: none; transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  main { max-width: 760px; margin: 0 auto; padding: 36px 28px 80px; }
+  h1 { font-size: 30px; font-weight: 700; margin-bottom: 6px; }
+  .lede {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; color: var(--text-dim);
+    margin-bottom: 28px;
+  }
+  .status-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .status-box.warn { border-left: 4px solid var(--warning); }
+  .status-box.ok { border-left: 4px solid var(--status-active); }
+  .status-box h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); margin-bottom: 8px;
+  }
+  .status-box p { font-size: 14.5px; }
+  section { margin-bottom: 36px; }
+  section h2 {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); margin-bottom: 12px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .key-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+  }
+  .key-card .key-row {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+    font-size: 13px;
+  }
+  .key-card .key-value {
+    flex: 1; padding: 6px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text); overflow-x: auto;
+    white-space: nowrap;
+  }
+  .key-card button {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; padding: 5px 11px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface); color: var(--text);
+    border-radius: 5px; cursor: pointer; flex-shrink: 0;
+  }
+  .key-card button:hover { border-color: var(--accent); color: var(--accent); }
+  .key-card button.copied { background: var(--status-active); color: #fff; border-color: var(--status-active); }
+  .key-card .url-row {
+    display: flex; gap: 12px; align-items: center;
+    margin-top: 10px;
+    font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+    font-size: 12px; color: var(--text-dim);
+  }
+  .key-card .url-value {
+    flex: 1; padding: 6px 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: 5px; color: var(--accent);
+    overflow-x: auto; white-space: nowrap;
+  }
+  .empty {
+    color: var(--text-faint); font-style: italic;
+    font-family: system-ui, sans-serif; font-size: 14px;
+  }
+  ol.guide {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; color: var(--text);
+    padding-left: 20px;
+  }
+  ol.guide li { margin-bottom: 10px; }
+  ol.guide code {
+    background: var(--accent-soft); color: var(--accent);
+    padding: 1px 6px; border-radius: 4px;
+    font-family: 'SF Mono', monospace; font-size: 13px;
+  }
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #2a2a2a; color: #fff;
+    padding: 10px 16px; border-radius: 6px;
+    font-family: system-ui, sans-serif; font-size: 13px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    z-index: 100;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="brand">VM2</span>
+    <span class="crumb">· Share Links</span>
+  </div>
+  <div class="topbar-right">
+    <a href="portal.html" class="btn">↗ Portal</a>
+    <a href="projects.html" class="btn">↗ Projects</a>
+    <button class="btn" onclick="toggleTheme()">◐</button>
+  </div>
+</div>
+
+<main>
+  <h1>Share Links</h1>
+  <p class="lede">Bypass the username/password prompt with a magic-link key. Anyone with a current key in the URL can read every page on this site without logging in. Treat keys like passwords.</p>
+
+  <div class="status-box" id="status-box">
+    <h3>Status</h3>
+    <p id="status-text">Detecting active keys…</p>
+  </div>
+
+  <section>
+    <h2>Active keys</h2>
+    <div id="keys-container"><p class="empty">Loading…</p></div>
+  </section>
+
+  <section>
+    <h2>How to share</h2>
+    <ol class="guide">
+      <li>Copy any URL above and send it to whoever needs access.</li>
+      <li>The recipient clicks the link → goes straight to the portal, no login.</li>
+      <li>Once they've clicked it, a cookie is set for 7 days. They can navigate to any subpage without keeping <code>?key=</code> in the URL.</li>
+      <li>If you ever want to cut access, remove that key from <code>VM2_PUBLIC_KEYS</code> on Railway → service redeploys → old links 401.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Rotate a key</h2>
+    <ol class="guide">
+      <li>Generate a strong key in your terminal: <code>openssl rand -base64 24 | tr -d '/+=' | cut -c1-24</code></li>
+      <li>Or use the button below to generate one client-side.</li>
+      <li>Open Railway → vm2-portal service → Variables tab.</li>
+      <li>Edit <code>VM2_PUBLIC_KEYS</code> — comma-separated list. Keep the previous key for a few days as a grace window, then drop it on the next rotation.</li>
+      <li>Railway redeploys in ~30s. New URL is live.</li>
+    </ol>
+    <div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;">
+      <button class="btn" onclick="generateKey()">⚡ Generate new key</button>
+      <input type="text" id="generated-key" readonly style="flex:1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; font-family: 'SF Mono', monospace; font-size: 13px; background: var(--bg); color: var(--text);">
+      <button class="btn" id="copy-gen-btn" onclick="copyGenerated()">Copy</button>
+    </div>
+    <p style="font-size: 12px; color: var(--text-faint); font-family: system-ui, sans-serif; margin-top: 6px;">⚠ This generates a key client-side for convenience. Add it to Railway env to activate.</p>
+  </section>
+</main>
+
+<script>
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('vm2-theme', next);
+}
+const saved = localStorage.getItem('vm2-theme');
+if (saved) document.documentElement.setAttribute('data-theme', saved);
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+
+// Read the embedded keys from the data attribute that entrypoint.sh injects.
+// (Fallback: detect via cookie or query param.)
+async function detectKeys() {
+  const container = document.getElementById('keys-container');
+  const statusBox = document.getElementById('status-box');
+  const statusText = document.getElementById('status-text');
+
+  // Test method: try a fetch with each key candidate. Only valid keys
+  // return 200 without prompting auth. Server side keys aren't readable
+  // from the client, so we present the flow without listing them all
+  // unless the user supplied them via URL or has them in localStorage.
+  const stored = JSON.parse(localStorage.getItem('vm2-known-keys') || '[]');
+  const fromUrl = new URLSearchParams(location.search).get('key');
+  const fromCookie = document.cookie.match(/vm2_key=([^;]+)/);
+  const candidates = new Set([
+    ...stored,
+    fromUrl,
+    fromCookie ? fromCookie[1] : null,
+  ].filter(Boolean));
+
+  if (candidates.size === 0) {
+    container.innerHTML = `<p class="empty">No active keys known to this browser yet.<br>
+      Add one by pasting it in the box below and clicking Save.</p>
+      <div style="margin-top:14px; display:flex; gap:10px;">
+        <input type="text" id="add-key" placeholder="Paste a key" style="flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:5px; font-family:'SF Mono',monospace; font-size:13px; background:var(--bg); color:var(--text);">
+        <button class="btn" onclick="saveKey()">Save</button>
+      </div>`;
+    statusBox.classList.add('warn');
+    statusText.textContent = 'No keys known. Save one to test, or set VM2_PUBLIC_KEYS on Railway and refresh.';
+    return;
+  }
+
+  // Render each candidate as a card with copy buttons
+  const baseUrl = location.origin;
+  let html = '';
+  let validCount = 0;
+  for (const k of candidates) {
+    const url = `${baseUrl}/portal.html?key=${encodeURIComponent(k)}`;
+    // Quick test: HEAD on portal with the key. If 200 → valid; if 401 → invalid.
+    let valid = null;
+    try {
+      const res = await fetch(`${baseUrl}/portal.html?key=${encodeURIComponent(k)}`, {
+        method: 'HEAD', credentials: 'omit', cache: 'no-store',
+      });
+      valid = res.status === 200;
+    } catch (e) { valid = null; }
+    if (valid) validCount++;
+    const badge = valid === true
+      ? '<span style="color:var(--status-active);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.6px;">● Active</span>'
+      : valid === false
+        ? '<span style="color:var(--accent);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.6px;">● Invalid (not in VM2_PUBLIC_KEYS)</span>'
+        : '<span style="color:var(--text-faint);font-size:11px;">Unknown</span>';
+    html += `
+      <div class="key-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-family:system-ui,sans-serif;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.7px;">
+          <span>Key</span>${badge}
+        </div>
+        <div class="key-row">
+          <span class="key-value">${escapeHtml(k)}</span>
+          <button onclick="copyText(this, '${escapeHtml(k)}')">Copy key</button>
+          <button onclick="forgetKey('${escapeHtml(k)}')" style="border-color:transparent;color:var(--text-faint);">Forget</button>
+        </div>
+        <div class="url-row">
+          <span class="url-value">${escapeHtml(url)}</span>
+          <button onclick="copyText(this, '${escapeHtml(url)}')">Copy URL</button>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+
+  if (validCount > 0) {
+    statusBox.classList.add('ok');
+    statusText.textContent = `${validCount} active key${validCount === 1 ? '' : 's'} configured. Anyone with a URL above can access the portal without logging in.`;
+  } else if (candidates.size > 0) {
+    statusBox.classList.add('warn');
+    statusText.textContent = `${candidates.size} key${candidates.size === 1 ? '' : 's'} known to this browser, but none currently active on Railway. Update VM2_PUBLIC_KEYS env var.`;
+  }
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const original = btn.textContent;
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+window.saveKey = function() {
+  const input = document.getElementById('add-key');
+  const k = input.value.trim();
+  if (!k) return;
+  const stored = JSON.parse(localStorage.getItem('vm2-known-keys') || '[]');
+  if (!stored.includes(k)) stored.push(k);
+  localStorage.setItem('vm2-known-keys', JSON.stringify(stored));
+  input.value = '';
+  toast('Saved');
+  detectKeys();
+};
+
+window.forgetKey = function(k) {
+  let stored = JSON.parse(localStorage.getItem('vm2-known-keys') || '[]');
+  stored = stored.filter(x => x !== k);
+  localStorage.setItem('vm2-known-keys', JSON.stringify(stored));
+  toast('Forgotten');
+  detectKeys();
+};
+
+window.generateKey = function() {
+  // 24-char URL-safe base62 using crypto.getRandomValues
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  const today = new Date();
+  const m = String(today.getMonth() + 1).padStart(2, '0');
+  const d = String(today.getDate()).padStart(2, '0');
+  const tag = `k-${today.getFullYear().toString().slice(2)}${m}${d}-`;
+  const key = tag + Array.from(bytes, b => charset[b % charset.length]).join('').slice(0, 24 - tag.length);
+  document.getElementById('generated-key').value = key;
+};
+
+window.copyGenerated = function() {
+  const v = document.getElementById('generated-key').value;
+  if (!v) { toast('Generate a key first'); return; }
+  copyText(document.getElementById('copy-gen-btn'), v);
+};
+
+detectKeys();
+</script>
+
+</body>
+</html>
