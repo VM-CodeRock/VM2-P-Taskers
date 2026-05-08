@@ -1,6 +1,6 @@
 # VM2-P-Taskers — Disaster Recovery Runbook
 
-**Last updated**: 2026-05-06
+**Last updated**: 2026-05-08
 **Use this when**: production is broken, Railway is unreachable, the repo is corrupted, secrets are lost, or you need to rebuild from scratch.
 
 Read [ARCHITECTURE.md](./ARCHITECTURE.md) first if you haven't.
@@ -13,6 +13,8 @@ Read [ARCHITECTURE.md](./ARCHITECTURE.md) first if you haven't.
 |---|---|---|
 | Browser shows 502 with body `<center>nginx</center>` | P1 | §3 nginx upstream unreachable |
 | Browser shows 502 with `Application failed to respond` | P1 | §3a nginx itself crashed |
+| Magic link returns 401 (basic-auth still works) | P2 | §3c magic-link bypass broken |
+| Magic link leaked / unauthorized access suspected | P1 | §3d magic-link compromise |
 | Promote button fails / API endpoints 5xx | P2 | §4 API down |
 | `portal.html` shows raw `<li>` tags | P2 | §5 portal corruption |
 | Salt/password mismatch on a file | P3 | §6 (DEPRECATED — should never happen post-Railway) |
@@ -100,13 +102,118 @@ connections), not just an upstream issue.
 ```bash
 # Railway dashboard → vm2-portal → Logs (Deploy Logs tab)
 # Look for the line above [emerg] in red:
-#   - "invalid port in resolver"     → see §3A above (resolver IPv6 brackets)
-#   - "unknown directive"            → typo or missing module in nginx.conf
-#   - "open() ... failed"            → missing file referenced in nginx.conf
-#   - "could not bind to 8080"       → port already in use; container will retry
+#   - "invalid port in resolver"        → see §3A above (resolver IPv6 brackets)
+#   - "unknown directive"               → typo or missing module in nginx.conf
+#   - "open() ... failed"               → missing file referenced in nginx.conf
+#   - "could not bind to 8080"          → port already in use; container will retry
+#   - "directive is not allowed here"   → placement bug in nginx.conf (e.g.
+#                                         add_header inside an `if` block at
+#                                         server level — must move to a map +
+#                                         unconditional add_header). 2026-05-08.
 ```
 
-**Fast rollback**: Railway dashboard → vm2-portal → Deployments → previous green → ⋯ → Redeploy.
+**Fast rollback**: Railway dashboard → vm2-portal → Deployments → previous green → ⋯ → Redeploy. This restores service immediately even if magic-link bypass goes back to disabled.
+
+**nginx config validation locally before pushing** (recommended after any
+`nginx.conf` change):
+
+```bash
+# Render the config with placeholders substituted, then test syntax
+cp nginx.conf /tmp/test.conf
+sed -i 's|__RESOLVER_PLACEHOLDER__|127.0.0.11|' /tmp/test.conf
+# Inject any sample magic-link key as entrypoint.sh would
+awk '/# __VM2_PUBLIC_KEYS_BEGIN__/ {print; print "    \"k-test-key\"  1;"; in_block=1; next}
+     /# __VM2_PUBLIC_KEYS_END__/ {in_block=0; print; next}
+     !in_block {print}' /tmp/test.conf > /tmp/test2.conf
+# Wrap in worker_processes/events/http and validate
+cat > /tmp/test-full.conf <<EOF
+worker_processes 1;
+events { worker_connections 64; }
+http {
+$(cat /tmp/test2.conf)
+}
+EOF
+nginx -t -c /tmp/test-full.conf
+# Expect: "syntax is ok" + "test is successful"
+```
+
+## 3c. P2: magic-link bypass returns 401 (basic-auth still works)
+
+**Symptom**: `https://<url>/portal.html?key=<key>` returns 401, but
+`curl -u vm2:97harry23! https://<url>/portal.html` returns 200. The
+container is healthy — only the bypass is broken.
+
+**Diagnostic flow**:
+
+```bash
+# ① Confirm the env var is set on Railway
+# Railway → vm2-portal → Variables → VM2_PUBLIC_KEYS should match the key
+# you're testing with (no quotes around the value, no leading/trailing spaces)
+
+# ② Check the boot log for the magic-key splice
+# Railway → vm2-portal → Logs → most recent deploy. Look for ONE of:
+#   "Magic-link keys configured: N active key(s)"   ← good, splice ran
+#   "VM2_PUBLIC_KEYS not set — magic-link bypass disabled"  ← env var missing
+
+# ③ If splice did NOT run, the env var didn't propagate. Try:
+#   • Re-save the variable on Railway (forces redeploy)
+#   • Or trigger redeploy via ⋯ → Redeploy on the latest deployment
+
+# ④ If splice DID run but key still 401, the active key list doesn't
+# match what you're sending. Inspect the rendered config inside the
+# container:
+#   railway run -s vm2-portal cat /etc/nginx/conf.d/default.conf | sed -n '/__VM2_PUBLIC_KEYS_BEGIN__/,/__VM2_PUBLIC_KEYS_END__/p'
+# Each active key should appear as a line: `    "k-..."  1;`
+
+# ⑤ Validate end-to-end with curl
+URL="https://vm2-p-taskers-production.up.railway.app"
+KEY="<the-key-from-railway-env>"
+curl -s -o /dev/null -w "no-auth=%{http_code}\n"     "$URL/portal.html"          # expect 401
+curl -s -o /dev/null -w "with-key=%{http_code}\n"    "$URL/portal.html?key=$KEY" # expect 200
+curl -s -o /dev/null -w "basic=%{http_code}\n" -u vm2:97harry23! "$URL/portal.html"  # expect 200
+curl -s -o /dev/null -w "bad-key=%{http_code}\n"     "$URL/portal.html?key=bogus" # expect 401 (fail-closed)
+```
+
+**Common root causes**:
+
+| Cause | Fix |
+|---|---|
+| `VM2_PUBLIC_KEYS` not set on Railway | Add the variable, save, wait for redeploy |
+| Variable value has surrounding quotes (`"k-..."`) | Remove quotes, save |
+| Trailing whitespace in the value | Trim, save |
+| Latest deploy is from old commit (no `$key_valid` map) | Verify HEAD is ≥ commit `8313752` (2026-05-08); push or redeploy |
+| `entrypoint.sh` writes `"off"` instead of `1` | Verify the printf line emits `"%s"  1;` — `"off"` was the original buggy approach |
+
+**Fail-safe**: even if the bypass is broken, basic-auth still works (`vm2 / 97harry23!`). The bypass is purely additive — nothing depends on it being functional.
+
+## 3d. P1: magic link leaked / unauthorized access suspected
+
+**Symptom**: someone has a working magic link who shouldn't, or a key was
+posted somewhere public.
+
+**Immediate revoke (under 60 seconds)**:
+
+```bash
+# Generate a fresh key
+bash scripts/generate_share_key.sh
+# Outputs: k-YYMMDD-22charsBase62
+
+# Railway → vm2-portal → Variables → VM2_PUBLIC_KEYS → paste new key, Save.
+# Container redeploys in ~30s. Old key is dead the moment the new deploy goes live.
+```
+
+**For a 24h grace-period rotation** (avoid breaking links you've shared):
+
+```bash
+# Set VM2_PUBLIC_KEYS to BOTH keys, comma-separated:
+#   k-260508-old,k-260510-new
+# Send the new key to all active recipients, then 24h later remove the old
+# entry from the variable.
+```
+
+Key rotation cadence and operator workflow are documented in
+[`SHARE-LINKS.md`](./SHARE-LINKS.md). Treat magic keys like passwords:
+never commit them, never post them in chat without expiring soon after.
 
 ---
 
@@ -323,6 +430,9 @@ Use this every time you change deployment, recover from disaster, or onboard a n
 
 ```
 ☐ portal.html loads at the public URL with basic-auth
+☐ portal.html loads with magic link `?key=<active-key>` (no auth prompt)
+☐ portal.html WITHOUT auth and WITHOUT key returns 401 (fail-closed)
+☐ /go.html requires basic-auth even with a valid magic key (fail-closed)
 ☐ At least one deliverable opens (e.g., /army-maps-bid-decision-2026-04-14.html)
 ☐ /api/health returns ok:true
 ☐ /api/projects returns ≥1 project
@@ -333,9 +443,10 @@ Use this every time you change deployment, recover from disaster, or onboard a n
 ☐ vm2-tests.sh passes (21 of 21)
 ☐ A new cron-generated deliverable from today is in the index
 ☐ Dropbox backup folder has a copy of today's deliverables
+☐ nginx -t passes locally on the rendered nginx.conf (see §3a)
 ```
 
-If all 11 boxes are checked, the system is fully operational.
+If all 15 boxes are checked, the system is fully operational.
 
 ---
 
@@ -360,3 +471,4 @@ If all 11 boxes are checked, the system is fully operational.
 | 2026-05-05 | Cross-page integration features (portal column, +New Project, Revise) | Computer |
 | 2026-05-06 | v3 redesign of projects.html and project pages | Computer |
 | 2026-05-06 | DR runbook updated with nginx-resolver root-cause section | Computer |
+| 2026-05-08 | Magic-link auth bypass shipped; runbook gained §3c (bypass-only failures) and §3d (key compromise rotation), validation checklist expanded to 15 items | Computer |

@@ -1,6 +1,6 @@
 # VM2-P-Taskers — System Architecture
 
-**Last updated**: 2026-05-06
+**Last updated**: 2026-05-08
 **Owner**: Varun Malhotra (varun@changeis.com)
 **Repo**: [vm-coderock/VM2-P-Taskers](https://github.com/vm-coderock/VM2-P-Taskers)
 **Live URL**: https://vm2-p-taskers-production.up.railway.app
@@ -79,9 +79,10 @@ There are **two Railway services** in one Railway project:
 - **Source**: top-level `Dockerfile` + `nginx.conf` + `entrypoint.sh`
 - **Image**: `nginx:alpine`
 - **Public URL**: `vm2-p-taskers-production.up.railway.app`
-- **Auth**: nginx basic-auth (username `vm2`, password from `VM2_AUTH_PASSWORD` env var)
+- **Auth**: nginx basic-auth (username `vm2`, password from `VM2_AUTH_PASSWORD` env var) **OR** magic-link bypass (see below)
 - **Routes**:
   - `/` → static files from the repo
+  - `/go` and `/go.html` → share-link helper page (basic-auth required, magic-link bypass disabled)
   - `/api/todoist/*` → proxies to Todoist API (with server-side bearer token)
   - `/api/projects`, `/api/deliverables`, `/api/health` → proxies to Service B
 - **Required env vars**:
@@ -90,6 +91,7 @@ There are **two Railway services** in one Railway project:
   - `VM2_TODOIST_TOKEN` (for Todoist deep-dive proxy)
 - **Optional env vars**:
   - `VM2_PROJECTS_API_URL` — override the default `http://vm2-projects-api.railway.internal:8000`
+  - `VM2_PUBLIC_KEYS` — comma-separated list of magic-link bypass keys (rotate manually). Empty/unset = bypass disabled (basic-auth required for everything). See `docs/SHARE-LINKS.md`.
 - **Critical config**: `nginx.conf` MUST include a `resolver` directive
   with the container's actual nameserver from `/etc/resolv.conf`. Railway
   internal DNS uses IPv6 (e.g. `fd12::10`) which must be wrapped in
@@ -131,6 +133,26 @@ There are **two Railway services** in one Railway project:
   - **POST** `/api/projects/add-open-item` — add open item with optional due_date
   - **POST** `/api/projects/toggle-open-item` — flip done state, stamp done_date
   - **POST** `/api/projects/add-key-date` — add a label+date entry to sidebar
+
+### Magic-link auth bypass (added 2026-05-08)
+
+A second authentication mode runs alongside basic-auth. When `VM2_PUBLIC_KEYS` is set, any of those keys passed as `?key=<value>` (or stored in the `vm2_key` cookie) lets the request through without a basic-auth challenge.
+
+Implementation in `nginx.conf`:
+
+1. **Two map directives**:
+   - `map $arg_key $effective_key` — query param wins, falls back to cookie
+   - `map $effective_key $key_valid` — `1` if key is in the active list, else `0`. The list is spliced in at boot by `entrypoint.sh` between `# __VM2_PUBLIC_KEYS_BEGIN__` / `# __VM2_PUBLIC_KEYS_END__` markers.
+2. **`satisfy any` + `auth_request /__noop`** at the server level. nginx accepts the request if EITHER basic-auth succeeds OR the `/__noop` sub-request returns 200. The internal `/__noop` location returns 200 when `$key_valid = 1`, else 401.
+3. **Cookie persistence** via a third map (`$arg_key → $vm2_set_cookie`) and an unconditional `add_header Set-Cookie $vm2_set_cookie always;`. We can't use `if ($arg_key) { add_header ... }` because nginx rejects `add_header` inside a server-level `if` block.
+4. **`/go` is fail-closed**: explicitly uses `satisfy all` so the share-link helper page itself always requires basic-auth, regardless of magic-link state.
+
+Known sharp edges (codified in nginx.conf comments):
+- `auth_basic` directive does NOT support variable values like `$auth_realm`. The directive is parsed at config-load time, not per-request. That's why we use `satisfy any` instead.
+- The `/__noop` location MUST set `auth_basic off;` and `auth_request off;` or nginx recurses into auth-checking its own auth-check sub-request.
+- `add_header` inside a server-level `if` block is rejected with `"add_header" directive is not allowed here`. Use a map + unconditional `add_header` instead.
+
+Key rotation is manual: edit `VM2_PUBLIC_KEYS` on Railway → vm2-portal → Variables. Container restarts automatically; old keys stop working as soon as the new deploy is live. See `docs/SHARE-LINKS.md` for the operator workflow.
 
 ### Communication
 
@@ -297,6 +319,7 @@ VM2 update army-maps: Booz Allen confirmed as prime
 | Where stored | What | Used by |
 |---|---|---|
 | Railway env (`vm2-portal`) | `VM2_AUTH_PASSWORD` | nginx basic-auth |
+| Railway env (`vm2-portal`) | `VM2_PUBLIC_KEYS` | nginx magic-link bypass (treat like passwords) |
 | Railway env (`vm2-portal`) | `VM2_TODOIST_TOKEN` | Todoist API proxy |
 | Railway env (`vm2-projects-api`) | `GITHUB_TOKEN` | git push from API |
 | Honcho Memory MCP | StaticCrypt password references (deprecated) | Historical only |
@@ -336,8 +359,9 @@ VM2 update army-maps: Booz Allen confirmed as prime
 ```
 VM2-P-Taskers/
 ├── Dockerfile                  ← Service A (nginx static)
-├── nginx.conf                  ← Service A config (uses __RESOLVER_PLACEHOLDER__)
-├── entrypoint.sh               ← Service A boot (resolver injection, port checks)
+├── nginx.conf                  ← Service A config (resolver, magic-link maps, basic-auth)
+├── entrypoint.sh               ← Service A boot (resolver, htpasswd, magic-key splice)
+├── go.html                     ← Share-link helper page (/go, basic-auth required)
 ├── portal.html                 ← Canonical index (table) with project decoration JS
 ├── projects.html               ← v3 project command center
 ├── project-<slug>.html         ← One per project (3 active)
@@ -355,11 +379,13 @@ VM2-P-Taskers/
 │   ├── project_helper.py       ← Project CLI + render engine
 │   ├── project_template.py     ← v3 project HTML template
 │   ├── promote_button.html     ← Deliverable toolkit (📌 Project + ✎ Revise)
+│   ├── generate_share_key.sh   ← Magic-link key generator (k-YYMMDD-22charsBase62)
 │   └── README.md               ← Helper guide
 ├── docs/
 │   ├── ARCHITECTURE.md         ← This file
 │   ├── DEPLOYMENT.md           ← 5-min Railway deployment checklist
 │   ├── DR-RUNBOOK.md           ← Disaster recovery (P0–P3)
+│   ├── SHARE-LINKS.md          ← Magic-link bypass operator guide
 │   └── README.md               ← Doc index
 ├── _system/
 │   ├── deep-dive-button.js     ← Existing daily-brief button (legacy)
@@ -381,3 +407,4 @@ VM2-P-Taskers/
 | 2026-05-05 | Fixed nginx IPv6 resolver for Railway internal DNS |
 | 2026-05-05 | Cross-page integration: portal Project column, projects.html +New Project, deliverable toolkit with Revise button, move-snapshot/create-empty/merge endpoints, auto-summary-on-add |
 | 2026-05-06 | v3 redesign shipped: stats strip, color categories, KPI dashboard, beat chart, month-grouped timeline, sidebar, due-date-aware open items, 6 new API endpoints (set-summary, refresh-summary, set-metadata, add-open-item, toggle-open-item, add-key-date) |
+| 2026-05-08 | Magic-link auth bypass shipped: `VM2_PUBLIC_KEYS` env var, `satisfy any` + `auth_request /__noop` pattern, `/go` share-link helper page, `generate_share_key.sh`, `SHARE-LINKS.md` operator guide |
