@@ -45,7 +45,8 @@ fi
 # Inject magic-link bypass keys into the nginx map directive.
 # VM2_PUBLIC_KEYS is comma-separated (with optional spaces).
 # When the ?key= query param (or vm2_key cookie) matches one of these,
-# nginx sets $auth_realm to "off" — skipping the basic-auth challenge.
+# nginx sets $key_valid=1, which makes the /__noop auth_request return 200.
+# Combined with 'satisfy any', that short-circuits past basic-auth.
 NGINX_CONF="/etc/nginx/conf.d/default.conf"
 if [ -n "${VM2_PUBLIC_KEYS:-}" ]; then
   # Build a temporary file with the rendered map entries
@@ -55,7 +56,7 @@ if [ -n "${VM2_PUBLIC_KEYS:-}" ]; then
     # Trim whitespace
     key=$(echo "$key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     if [ -n "$key" ]; then
-      printf '    "%s"  "off";\n' "$key" >> "$KEYS_FILE"
+      printf '    "%s"  1;\n' "$key" >> "$KEYS_FILE"
     fi
   done
   COUNT=$(wc -l < "$KEYS_FILE" | tr -d ' ')
