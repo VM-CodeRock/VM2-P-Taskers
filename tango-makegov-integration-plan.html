@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tango by MakeGov — Architecture &amp; Integration Plan</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --teal: #008B8B;
+    --green: #2D7D4A;
+    --orange: #D97D2A;
+    --purple: #6B4C9A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.2; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 36px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+  }
+  .section p { font-size: 15px; line-height: 1.65; margin-bottom: 10px; }
+  .section ul, .section ol { padding-left: 22px; margin-bottom: 10px; }
+  .section li { font-size: 15px; line-height: 1.6; margin-bottom: 5px; }
+  .section li strong { color: var(--text); }
+
+  h2.sub-heading {
+    font-family: system-ui, sans-serif;
+    font-size: 16px; font-weight: 700; color: var(--navy);
+    margin: 24px 0 10px;
+  }
+  [data-theme="dark"] h2.sub-heading { color: #cdd6e0; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  .callout {
+    background: #E8F4F8;
+    border-left: 4px solid var(--teal);
+    border-radius: 0;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-family: system-ui, sans-serif;
+    font-size: 14px; color: #1a1a1a;
+  }
+  [data-theme="dark"] .callout { background: #1a2530; border-color: var(--teal); color: var(--text); }
+  .callout strong { color: #002060; }
+  [data-theme="dark"] .callout strong { color: #7eb3e0; }
+
+  .callout-warn {
+    background: #FFF3E0;
+    border-left: 4px solid var(--orange);
+  }
+  [data-theme="dark"] .callout-warn { background: #2a1f10; }
+
+  .callout-green {
+    background: #EEF7F1;
+    border-left: 4px solid var(--green);
+  }
+  [data-theme="dark"] .callout-green { background: #0f1f15; }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px; margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    font-size: 14px; line-height: 1.5;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  .use-case-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    border-left: 4px solid var(--navy);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .use-case-card.priority-1 { border-left-color: var(--red); }
+  .use-case-card.priority-2 { border-left-color: var(--teal); }
+  .use-case-card.priority-3 { border-left-color: var(--purple); }
+  .use-case-card.defer { border-left-color: var(--text-faint); }
+
+  .uc-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
+  }
+  .uc-num {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red); min-width: 32px;
+  }
+  .uc-title {
+    font-family: system-ui, sans-serif;
+    font-size: 16px; font-weight: 700; color: var(--navy); flex: 1;
+  }
+  [data-theme="dark"] .uc-title { color: #cdd6e0; }
+  .uc-tag {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+    background: var(--surface-alt); color: var(--text-muted);
+  }
+  .uc-tag.build-first { background: #2D7D4A; color: #fff; }
+  .uc-tag.defer { background: var(--text-faint); color: #fff; }
+
+  .uc-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px 16px; margin-top: 8px;
+    font-family: system-ui, sans-serif; font-size: 13px;
+  }
+  @media (max-width: 600px) { .uc-grid { grid-template-columns: 1fr; } }
+  .uc-field label { color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 1px; }
+  .uc-field span { color: var(--text); }
+
+  pre.arch-diagram {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.6;
+    padding: 16px; overflow-x: auto;
+    color: var(--text);
+    margin: 12px 0 16px;
+    white-space: pre;
+  }
+
+  .phase-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--navy);
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--card-shadow);
+  }
+  .phase-block.active { border-top-color: var(--red); }
+  .phase-header {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; font-weight: 700; color: var(--navy);
+    margin-bottom: 6px;
+  }
+  [data-theme="dark"] .phase-header { color: #cdd6e0; }
+  .phase-meta {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+
+  .risk-row {
+    display: grid; grid-template-columns: 2fr 1fr 3fr;
+    gap: 12px; padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .risk-row:nth-child(even) { background: var(--table-alt); }
+  .risk-row:first-child {
+    background: var(--table-header-bg); color: var(--table-header-text);
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .severity-high { color: var(--red); font-weight: 700; font-family: system-ui, sans-serif; }
+  .severity-med { color: var(--orange); font-weight: 700; font-family: system-ui, sans-serif; }
+  .severity-low { color: var(--green); font-weight: 700; font-family: system-ui, sans-serif; }
+
+  .rec-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .rec-num {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 4px;
+  }
+  .rec-title {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700; color: var(--navy);
+    margin-bottom: 6px;
+  }
+  [data-theme="dark"] .rec-title { color: #cdd6e0; }
+
+  .badge-pill {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 600;
+    padding: 2px 9px; border-radius: 12px;
+    margin-right: 4px;
+  }
+  .pill-green { background: #EEF7F1; color: var(--green); border: 1px solid #c8e6d0; }
+  .pill-orange { background: #FFF3E0; color: var(--orange); border: 1px solid #ffe0b0; }
+  .pill-red { background: #FEF0F0; color: var(--red); border: 1px solid #f5c6c6; }
+  .pill-teal { background: #E0F4F4; color: var(--teal); border: 1px solid #b0dede; }
+  .pill-purple { background: #F0ECF8; color: var(--purple); border: 1px solid #d4c8ed; }
+
+  .open-q {
+    counter-reset: oq;
+    list-style: none; padding: 0;
+  }
+  .open-q li {
+    counter-increment: oq;
+    padding: 8px 12px 8px 42px;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+    font-size: 14.5px;
+  }
+  .open-q li::before {
+    content: "Q" counter(oq);
+    position: absolute; left: 10px; top: 9px;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700; color: var(--red);
+    background: #FEF0F0; padding: 1px 5px; border-radius: 3px;
+  }
+
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; transition: background 0.2s, opacity 0.2s;
+    text-decoration: none; display: inline-block;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.85; color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { opacity: 0.75; }
+
+  footer {
+    margin-top: 48px; padding: 18px 24px;
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .toc {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    margin-bottom: 30px;
+    font-family: system-ui, sans-serif;
+    font-size: 13.5px;
+  }
+  .toc-title {
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    font-size: 11px; color: var(--red); margin-bottom: 10px;
+  }
+  .toc ol { padding-left: 18px; margin: 0; }
+  .toc li { margin-bottom: 3px; }
+  .toc a { color: var(--text-muted); }
+  .toc a:hover { color: var(--red); }
+
+  .gap-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 7px; border-radius: 2px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .gap-new { background: #EEF7F1; color: var(--green); }
+  .gap-overlap { background: #FEF0F0; color: var(--red); }
+  .gap-enhanced { background: #E0F4F4; color: var(--teal); }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 24px; }
+    .risk-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">&#9679;</span>
+    VM2 &middot; Perplexity Computer
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">Architecture Plan</div>
+    <h1>Tango by MakeGov<br>Integration Architecture &amp; Use-Case Plan</h1>
+    <p class="hero-sub">Federal Procurement Intelligence Layer for Changeis BD Pipeline</p>
+    <p class="hero-date">Created: 2026-05-09 &nbsp;&middot;&nbsp; Task 6gRcFMGfHpGRpw5J (P1)</p>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      <li><a href="#s0">Executive Summary</a></li>
+      <li><a href="#s1">Tango API: Platform Overview &amp; Capabilities</a></li>
+      <li><a href="#s2">Gap Analysis vs. Current Changeis Stack</a></li>
+      <li><a href="#s3">Use Cases (7 Workflows)</a></li>
+      <li><a href="#s4">Architecture &amp; System Design</a></li>
+      <li><a href="#s5">Build Options: Perplexity Computer vs. Claude vs. Codex</a></li>
+      <li><a href="#s6">Implementation Plan (Phased)</a></li>
+      <li><a href="#s7">ROI Analysis &amp; Credit Cost Model</a></li>
+      <li><a href="#s8">Recommendations for Varun</a></li>
+      <li><a href="#s9">Risks &amp; Dependencies</a></li>
+      <li><a href="#s10">Open Questions</a></li>
+    </ol>
+  </div>
+
+  <!-- S0: EXECUTIVE SUMMARY -->
+  <div class="section" id="s0">
+    <div class="section-header">Executive Summary</div>
+
+    <div class="callout callout-green">
+      <strong>Bottom Line:</strong> Tango by MakeGov fills the most critical gap in the Changeis BD pipeline — <em>historical award intelligence and incumbent detection</em> — that raw SAM.gov cannot provide. The recommended path is a lightweight Railway microservice wrapping the Tango REST API, integrated into the existing SQLite/RAG stack. Build Phase 1-3 first; expect 3-6 week total effort at ~$25-100/month in Tango API credits depending on tier purchased.
+    </div>
+
+    <p>Varun has purchased Tango API credits. <a href="https://tango.makegov.com">Tango by MakeGov</a> is a unified REST API that normalizes data from FPDS, USAspending, SAM.gov, Grants.gov, and 11 federal agency procurement forecast feeds into a single, developer-friendly interface. Unlike raw SAM.gov or direct FPDS queries, Tango delivers cleaned, deduplicated contract awards with vendor entity profiles, historical spending metrics, subaward data, and procurement forecasts — all queryable via a single API key.</p>
+
+    <p>The existing Changeis pipeline (SAM.gov monitor with 2,726-opp SQLite, APFS/DHS monitor, Combined Daily Brief, and deep-dive VM2 skill) handles opportunity discovery well but lacks competitive intelligence depth. Tango unlocks <strong>7 high-value use cases</strong>, the top 3 to build first being: (1) Incumbent Intelligence Lookup, (2) Vendor Competitive Matrix for Capture Briefs, and (3) Procurement Forecast Early Warning.</p>
+  </div>
+
+  <!-- S1: TANGO PLATFORM OVERVIEW -->
+  <div class="section" id="s1">
+    <div class="section-header">1. Tango API — Platform Overview &amp; Capabilities</div>
+
+    <p><a href="https://tango.makegov.com/docs/" target="_blank">Tango's documentation</a> describes a unified API integrating authoritative federal sources. Key capabilities:</p>
+
+    <h2 class="sub-heading">Data Sources Unified</h2>
+    <table>
+      <thead><tr><th>Source</th><th>Data Type</th><th>Tango Value-Add</th></tr></thead>
+      <tbody>
+        <tr><td><strong>FPDS</strong></td><td>Contract awards, modifications, IDVs, OTAs</td><td>Cleaned, normalized; deduped from USAspending crosswalk</td></tr>
+        <tr><td><strong>USAspending</strong></td><td>Financial assistance, sub-awards</td><td>Sub-award drill-down; subaward → prime linkage</td></tr>
+        <tr><td><strong>SAM.gov</strong></td><td>Opportunities, entity registrations, business types</td><td>Opportunities refreshed every 20–60 min; properly modeled (award notices excluded)</td></tr>
+        <tr><td><strong>Grants.gov</strong></td><td>Federal grant opportunities (not awards)</td><td>Unified with contract opps in one API</td></tr>
+        <tr><td><strong>Agency Feeds (11+)</strong></td><td>Procurement forecasts pre-SAM</td><td>Normalized forecast endpoint; webhook alerts</td></tr>
+        <tr><td><strong>GSA eLibrary</strong></td><td>MAS/IDIQ SINs, schedule metadata</td><td>Matched to IDVs; <code>/api/gsa_elibrary_contracts/</code> endpoint</td></tr>
+        <tr><td><strong>GAO Protests</strong></td><td>Bid protest outcomes by docket</td><td>Protests endpoint: filter by outcome, agency</td></tr>
+      </tbody>
+    </table>
+
+    <h2 class="sub-heading">Endpoint Inventory</h2>
+    <p>Per the <a href="https://tango.makegov.com/docs/api-reference/" target="_blank">API Reference</a> and <a href="https://tango.makegov.com/docs/data-dictionary/" target="_blank">Data Dictionary</a>:</p>
+    <table>
+      <thead><tr><th>Category</th><th>Key Endpoints</th><th>Key Filters</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Opportunities</strong></td><td><code>/api/opportunities/</code>, <code>/api/notices/</code></td><td>agency, NAICS, PSC, set-aside, response deadline, keyword (full-text)</td></tr>
+        <tr><td><strong>Contracts (Awards)</strong></td><td><code>/api/contracts/</code></td><td>vendor UEI, agency, NAICS, PSC, dates, PIID, value range</td></tr>
+        <tr><td><strong>IDVs</strong></td><td><code>/api/idvs/</code></td><td>PIID, agency, NAICS, vendor</td></tr>
+        <tr><td><strong>Vehicles</strong></td><td><code>/api/vehicles/</code></td><td>Solicitation-grouped IDV clusters</td></tr>
+        <tr><td><strong>Entities</strong></td><td><code>/api/entities/</code></td><td>UEI, name, business type, NAICS, set-aside eligibility</td></tr>
+        <tr><td><strong>Forecasts</strong></td><td><code>/api/forecasts/</code></td><td>agency, NAICS, fiscal year</td></tr>
+        <tr><td><strong>Subawards</strong></td><td><code>/api/subawards/</code></td><td>prime PIID, prime vendor, sub vendor</td></tr>
+        <tr><td><strong>Metrics</strong></td><td><code>/api/metrics/</code></td><td>entity UEI, NAICS, PSC — time-series obligation totals</td></tr>
+        <tr><td><strong>Protests</strong></td><td><code>/api/protests/</code></td><td>outcome, agency, docket, date</td></tr>
+        <tr><td><strong>Organizations</strong></td><td><code>/api/organizations/</code></td><td>Unified federal hierarchy (dept → agency → office)</td></tr>
+        <tr><td><strong>CALC / MAS SINs</strong></td><td><code>/api/mas_sins/</code>, CALC lookups</td><td>Labor rate benchmarks via paid tiers</td></tr>
+      </tbody>
+    </table>
+
+    <h2 class="sub-heading">Key Technical Features</h2>
+    <ul>
+      <li><strong>Response Shaping:</strong> <code>shape=</code> parameter selects specific fields and expands nested objects (recipient, office, transactions) in a single request — reduces payload size for credit efficiency.</li>
+      <li><strong>Full-text search</strong> across opportunity titles and descriptions — semantic-adjacent keyword search beyond basic NAICS filtering.</li>
+      <li><strong>MCP Server</strong> at <code>https://govcon.dev/mcp</code> — 4 tools (<code>resolve</code>, <code>search</code>, <code>search_opportunities</code>, <code>get_details</code>) usable directly from Claude Desktop or Perplexity Computer via <code>X-Tango-API-Key</code> header.</li>
+      <li><strong>Webhooks:</strong> Near-real-time push notifications for new awards, opportunities, entities, grants, and forecasts. Up to 1 (Free) / 3 (Micro) / 5 (Small) / 10 (Medium) / 25 (Large) subscriptions.</li>
+      <li><strong>Attachment text extraction</strong> (Micro tier+): Solicitation PDF text extracted and indexed — enables RFI response research.</li>
+      <li><strong>Entity monitoring</strong> (Large tier+): Track specific vendor entities for changes.</li>
+      <li><strong>Python SDK</strong> (<code>tango</code>) and <strong>Node SDK</strong> (<code>@makegov/tango-node</code>) available.</li>
+      <li><strong>Data freshness:</strong> SAM.gov opportunities every 20–60 min; contracts/awards typically within 24 hours of source updates.</li>
+    </ul>
+
+    <h2 class="sub-heading">Pricing Tiers</h2>
+    <p>Per <a href="https://tango.makegov.com/subscriptions/pricing/" target="_blank">tango.makegov.com/subscriptions/pricing/</a>:</p>
+    <table>
+      <thead><tr><th>Tier</th><th>Daily Requests</th><th>Monthly Total</th><th>Rate Limit</th><th>Webhooks</th><th>Cost/Month</th><th>Key Addition</th></tr></thead>
+      <tbody>
+        <tr><td>Free</td><td>100</td><td>3,000</td><td>25/min</td><td>1</td><td>$0</td><td>Raw public data only</td></tr>
+        <tr><td><strong>Micro</strong></td><td>250</td><td>7,500</td><td>25/min</td><td>3</td><td>$25</td><td>Enriched fields, CALC lookups, attachment extraction</td></tr>
+        <tr><td>Small</td><td>1,500</td><td>45,000</td><td>100/min</td><td>5</td><td>$100</td><td>Priority email support</td></tr>
+        <tr><td>Medium</td><td>7,500</td><td>225,000</td><td>100/min</td><td>10</td><td>$250</td><td>Phone support, SLA</td></tr>
+        <tr><td>Large</td><td>25,000</td><td>750,000</td><td>100/min</td><td>25</td><td>$500</td><td>Entity monitoring, dedicated AM, 99.9% uptime SLA</td></tr>
+        <tr><td>Enterprise</td><td>Unlimited</td><td>Unlimited</td><td>Custom</td><td>25–100</td><td>Custom</td><td>Bulk exports, all entity monitoring</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-warn">
+      <strong>Note on "credits":</strong> Tango's pricing is request-volume-based (daily/monthly caps), not a classic per-credit spend model. Varun's purchased credits translate to a specific tier subscription. Assumed tier for planning: <strong>Small ($100/month, 45,000 req/month)</strong> unless confirmed otherwise. The Micro tier ($25) suffices for cron-based workflows with modest daily call volumes.
+    </div>
+  </div>
+
+  <!-- S2: GAP ANALYSIS -->
+  <div class="section" id="s2">
+    <div class="section-header">2. Gap Analysis vs. Current Changeis Stack</div>
+
+    <h2 class="sub-heading">Current Stack Capabilities</h2>
+    <table>
+      <thead><tr><th>Component</th><th>What It Does</th><th>Limitation</th></tr></thead>
+      <tbody>
+        <tr><td>SAM.gov API Monitor (cron 8f2a4ac1)</td><td>2,726-opp SQLite, daily NAICS-filtered opp pull, RAG scoring at Railway</td><td>No historical award data; no vendor intelligence; no incumbent detection; no forecast data</td></tr>
+        <tr><td>APFS DHS API Monitor (cron 8734a0c6)</td><td>223 DHS-specific NAICS records from APFS</td><td>DHS-only; no cross-agency; no contract history</td></tr>
+        <tr><td>Combined Daily Brief (cron 8516a029)</td><td>Merges SAM + APFS into scored brief</td><td>Scoring is capability-match only; no competitive context, no incumbent flag</td></tr>
+        <tr><td>Deep Dive (vm2-opp-deep-dive)</td><td>mailto-triggered full opp research</td><td>Manual trigger; web-scraped context only; no structured award history</td></tr>
+      </tbody>
+    </table>
+
+    <h2 class="sub-heading">What Tango Adds (Net-New vs. Overlapping)</h2>
+    <table>
+      <thead><tr><th>Capability</th><th>Status</th><th>Value for Changeis</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Historical contract awards by agency/NAICS</strong></td>
+          <td><span class="gap-badge gap-new">Net-New</span></td>
+          <td>Identify incumbent contractor, award amount, period of performance end date — critical for capture strategy</td>
+        </tr>
+        <tr>
+          <td><strong>Vendor entity profiles (UEI → contracts)</strong></td>
+          <td><span class="gap-badge gap-new">Net-New</span></td>
+          <td>Competitive matrix: who competes in this space, at what dollar values, with what set-aside vehicles</td>
+        </tr>
+        <tr>
+          <td><strong>IDV / vehicle intelligence</strong></td>
+          <td><span class="gap-badge gap-new">Net-New</span></td>
+          <td>OASIS, STARS III, SEWP membership lookup — is Changeis on the right vehicles to bid?</td>
+        </tr>
+        <tr>
+          <td><strong>Procurement forecasts (11 agencies pre-SAM)</strong></td>
+          <td><span class="gap-badge gap-new">Net-New</span></td>
+          <td>6–18 month runway before solicitation drops — enables proactive positioning and teaming</td>
+        </tr>
+        <tr>
+          <td><strong>Bid protest history</strong></td>
+          <td><span class="gap-badge gap-new">Net-New</span></td>
+          <td>CO behavior patterns; protest-prone agencies/vehicles flagged during capture</td></tr>
+        <tr>
+          <td><strong>Subaward data</strong></td>
+          <td><span class="gap-badge gap-new">Net-New</span></td>
+          <td>Who is Changeis best positioned to sub with? Which primes win DHS/VA contracts in NAICS 541611/541519?</td>
+        </tr>
+        <tr>
+          <td><strong>Attachment text extraction (Micro+)</strong></td>
+          <td><span class="gap-badge gap-new">Net-New</span></td>
+          <td>Index solicitation PDFs for deeper RAG matching — move beyond NAICS/title to full-text opp content</td>
+        </tr>
+        <tr>
+          <td><strong>CALC labor rate lookups (Micro+)</strong></td>
+          <td><span class="gap-badge gap-new">Net-New</span></td>
+          <td>Competitive labor rate benchmarking for proposal pricing</td>
+        </tr>
+        <tr>
+          <td><strong>SAM.gov opportunities (active solicitations)</strong></td>
+          <td><span class="gap-badge gap-overlap">Overlaps</span></td>
+          <td>Tango models opps better (excludes award notices), but existing SAM.gov monitor is already well-tuned</td>
+        </tr>
+        <tr>
+          <td><strong>NAICS-based opportunity filtering</strong></td>
+          <td><span class="gap-badge gap-overlap">Overlaps</span></td>
+          <td>Existing cron handles this; Tango's full-text search adds a complementary layer</td>
+        </tr>
+        <tr>
+          <td><strong>Agency/office lookup</strong></td>
+          <td><span class="gap-badge gap-enhanced">Enhanced</span></td>
+          <td>Tango's federal hierarchy tree unifies dept/agency/office in one endpoint; more structured than SAM API</td>
+        </tr>
+        <tr>
+          <td><strong>Federal IT investment data</strong></td>
+          <td><span class="gap-badge gap-new">Net-New</span></td>
+          <td>IT Dashboard risk ratings, funding, contract linkages — unique for IT-adjacent opportunities</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>Key Finding:</strong> Roughly 60% of Tango's value is net-new to the Changeis stack. The highest-value gap is <em>historical award + vendor intelligence</em>, which enables incumbent detection and competitive positioning — currently not available from direct SAM.gov or APFS.
+    </div>
+  </div>
+
+  <!-- S3: USE CASES -->
+  <div class="section" id="s3">
+    <div class="section-header">3. Use Cases — 7 Concrete Workflows</div>
+
+    <!-- UC1 -->
+    <div class="use-case-card priority-1">
+      <div class="uc-header">
+        <span class="uc-num">UC-1</span>
+        <span class="uc-title">Incumbent Intelligence Lookup</span>
+        <span class="uc-tag build-first">Build First</span>
+        <span class="badge-pill pill-red">Highest Value</span>
+      </div>
+      <p style="font-size:14.5px; margin-bottom:10px;">For any scored opportunity in the Daily Brief, automatically identify who holds the current contract (the incumbent), the award value, period of performance expiry, and set-aside type. This transforms a go/no-go decision from guesswork into data-driven capture strategy.</p>
+      <div class="uc-grid">
+        <div class="uc-field"><label>Business Value</label><span>Enables targeted capture; identifies if Changeis should compete head-on vs. find a teaming angle with the incumbent</span></div>
+        <div class="uc-field"><label>Data Needed</label><span>Opportunity PIID or description keyword → <code>/api/contracts/</code> (filter by agency + NAICS + PSC, order by period_end desc) → top match = incumbent entity</span></div>
+        <div class="uc-field"><label>Frequency</label><span>On-demand (triggered for STRONG-scored opps in Daily Brief) or daily batch for top-10 opps</span></div>
+        <div class="uc-field"><label>Integration</label><span>New VM2 skill: <code>vm2-tango-incumbent-lookup</code>; mailto button in Daily Brief for STRONG opps; output fed back to deep-dive skill</span></div>
+        <div class="uc-field"><label>Tango Endpoints</label><span><code>/api/contracts/</code>, <code>/api/entities/</code>, <code>/api/idvs/</code></span></div>
+        <div class="uc-field"><label>Credit Estimate</label><span>3–5 API calls per lookup; ~150 calls/month for 30 opps/day (top 5 scored) = well within Micro/Small tier</span></div>
+      </div>
+    </div>
+
+    <!-- UC2 -->
+    <div class="use-case-card priority-1">
+      <div class="uc-header">
+        <span class="uc-num">UC-2</span>
+        <span class="uc-title">Vendor Competitive Matrix for Capture Briefs</span>
+        <span class="uc-tag build-first">Build First</span>
+        <span class="badge-pill pill-red">Highest Value</span>
+      </div>
+      <p style="font-size:14.5px; margin-bottom:10px;">Generate a competitive landscape table for a target NAICS + agency combination: who has won contracts here, at what values, how frequently, and what set-aside vehicles they used. Used as Appendix A in capture briefs and shapes teaming strategy.</p>
+      <div class="uc-grid">
+        <div class="uc-field"><label>Business Value</label><span>Replaces 2–4 hours of manual GovWin/SAM research; builds credibility in proposals with data-backed competitive positioning</span></div>
+        <div class="uc-field"><label>Data Needed</label><span><code>/api/contracts/</code> (agency + NAICS + date range, grouped by recipient UEI) + <code>/api/entities/</code> enrichment + <code>/api/metrics/</code> time-series for each top vendor</span></div>
+        <div class="uc-field"><label>Frequency</label><span>On-demand; triggered via mailto from Daily Brief or Todoist task</span></div>
+        <div class="uc-field"><label>Integration</label><span>New VM2 skill: <code>vm2-tango-vendor-matrix</code>; produces HTML table embedded in capture brief deliverable</span></div>
+        <div class="uc-field"><label>Tango Endpoints</label><span><code>/api/contracts/</code>, <code>/api/entities/</code>, <code>/api/metrics/</code>, <code>/api/subawards/</code></span></div>
+        <div class="uc-field"><label>Credit Estimate</label><span>10–20 calls per matrix; ~200–400 calls/month for 20 capture briefs/month = Micro tier sufficient</span></div>
+      </div>
+    </div>
+
+    <!-- UC3 -->
+    <div class="use-case-card priority-2">
+      <div class="uc-header">
+        <span class="uc-num">UC-3</span>
+        <span class="uc-title">Procurement Forecast Early Warning</span>
+        <span class="uc-tag build-first">Build First</span>
+        <span class="badge-pill pill-teal">Strategic</span>
+      </div>
+      <p style="font-size:14.5px; margin-bottom:10px;">Monitor the Tango forecast feed (11 agencies pre-SAM) for Changeis target NAICS codes. Surface anticipated procurements 6–18 months before they appear on SAM.gov — enabling early positioning, teaming approach, and capability statement targeting.</p>
+      <div class="uc-grid">
+        <div class="uc-field"><label>Business Value</label><span>Shifts BD from reactive (SAM.gov monitoring) to proactive; allows Changeis to shape requirements via RFI responses before solicitation</span></div>
+        <div class="uc-field"><label>Data Needed</label><span><code>/api/forecasts/</code> filtered by target NAICS + agency list; webhook subscription for new forecast events</span></div>
+        <div class="uc-field"><label>Frequency</label><span>Daily cron (new forecasts) + immediate webhook push for high-priority NAICS</span></div>
+        <div class="uc-field"><label>Integration</label><span>Add forecast section to Combined Daily Brief (cron 8516a029); webhook triggers new Todoist task in BD pipeline</span></div>
+        <div class="uc-field"><label>Tango Endpoints</label><span><code>/api/forecasts/</code> + Tango webhook (forecast event type)</span></div>
+        <div class="uc-field"><label>Credit Estimate</label><span>1 call/day (paginated list) = ~30 calls/month; minimal. Webhook push doesn't consume request quota.</span></div>
+      </div>
+    </div>
+
+    <!-- UC4 -->
+    <div class="use-case-card priority-2">
+      <div class="uc-header">
+        <span class="uc-num">UC-4</span>
+        <span class="uc-title">Teaming Network Mapper (Sub-to-Prime Finder)</span>
+        <span class="uc-tag">Phase 2</span>
+        <span class="badge-pill pill-teal">Strategic</span>
+      </div>
+      <p style="font-size:14.5px; margin-bottom:10px;">Identify which large prime contractors win DHS, VA, and civilian agency contracts in Changeis's target NAICS codes, then pull subaward data to find which small businesses they already work with. Answers: "Who should Changeis team with as a sub, and who are they currently using?"</p>
+      <div class="uc-grid">
+        <div class="uc-field"><label>Business Value</label><span>Prioritizes teaming outreach; identifies gaps in prime's subcontractor bench in Changeis's capability areas</span></div>
+        <div class="uc-field"><label>Data Needed</label><span><code>/api/contracts/</code> (large business primes, target NAICS) + <code>/api/subawards/</code> (prime PIID filter) + <code>/api/entities/</code> for each sub</span></div>
+        <div class="uc-field"><label>Frequency</label><span>Monthly or quarterly; on-demand for specific capture pursuits</span></div>
+        <div class="uc-field"><label>Integration</label><span>New VM2 skill: <code>vm2-tango-teaming-map</code>; output to HTML deliverable in VM2-P-Taskers</span></div>
+        <div class="uc-field"><label>Tango Endpoints</label><span><code>/api/contracts/</code>, <code>/api/subawards/</code>, <code>/api/entities/</code></span></div>
+        <div class="uc-field"><label>Credit Estimate</label><span>20–50 calls per report (subaward pages); ~200 calls/month = Micro/Small tier fine</span></div>
+      </div>
+    </div>
+
+    <!-- UC5 -->
+    <div class="use-case-card priority-2">
+      <div class="uc-header">
+        <span class="uc-num">UC-5</span>
+        <span class="uc-title">Contracting Officer Behavior Analysis</span>
+        <span class="uc-tag">Phase 2</span>
+        <span class="badge-pill pill-purple">Intelligence</span>
+      </div>
+      <p style="font-size:14.5px; margin-bottom:10px;">For a target agency office, build a behavioral profile: modification velocity, small business set-aside rate, average contract duration, preferred PSC codes, protest history, and typical award timeline from solicitation to award. Used to calibrate proposal strategy and expected evaluation timeline.</p>
+      <div class="uc-grid">
+        <div class="uc-field"><label>Business Value</label><span>Reduces proposal effort on unlikely wins; helps Varun calibrate BD investment per agency</span></div>
+        <div class="uc-field"><label>Data Needed</label><span><code>/api/contracts/</code> (awarding office filter) + <code>/api/metrics/</code> + <code>/api/protests/</code> (agency filter)</span></div>
+        <div class="uc-field"><label>Frequency</label><span>On-demand; per capture review meeting</span></div>
+        <div class="uc-field"><label>Integration</label><span>Extend deep-dive skill to include CO behavior section when Tango data available</span></div>
+        <div class="uc-field"><label>Tango Endpoints</label><span><code>/api/contracts/</code>, <code>/api/organizations/</code>, <code>/api/metrics/</code>, <code>/api/protests/</code></span></div>
+        <div class="uc-field"><label>Credit Estimate</label><span>10–15 calls per office profile; ~150 calls/month for 10 profiles</span></div>
+      </div>
+    </div>
+
+    <!-- UC6 -->
+    <div class="use-case-card priority-3">
+      <div class="uc-header">
+        <span class="uc-num">UC-6</span>
+        <span class="uc-title">Semantic Opportunity Match (Paragraph-to-Opps)</span>
+        <span class="uc-tag">Phase 3</span>
+        <span class="badge-pill pill-purple">Innovation</span>
+      </div>
+      <p style="font-size:14.5px; margin-bottom:10px;">Take a capability statement paragraph or past performance description and return the most semantically relevant active opportunities using Tango's full-text search + Tango attachment extraction. Augments the existing RAG/match engine at Railway with richer document content beyond NAICS codes.</p>
+      <div class="uc-grid">
+        <div class="uc-field"><label>Business Value</label><span>Finds opps that raw NAICS filtering misses; particularly valuable for emerging tech work that crosses NAICS categories</span></div>
+        <div class="uc-field"><label>Data Needed</label><span><code>/api/opportunities/</code> (keyword full-text search) + <code>/api/notices/</code> (attachment text, Micro+ tier)</span></div>
+        <div class="uc-field"><label>Frequency</label><span>On-demand via Perplexity Computer chat or Todoist task trigger</span></div>
+        <div class="uc-field"><label>Integration</label><span>Extend existing RAG match endpoint to include Tango full-text results as a parallel retrieval path</span></div>
+        <div class="uc-field"><label>Tango Endpoints</label><span><code>/api/opportunities/</code> (q= param), <code>/api/notices/</code> with attachment expansion</span></div>
+        <div class="uc-field"><label>Credit Estimate</label><span>2–5 calls per search; moderate volume depending on usage</span></div>
+      </div>
+    </div>
+
+    <!-- UC7 -->
+    <div class="use-case-card priority-3">
+      <div class="uc-header">
+        <span class="uc-num">UC-7</span>
+        <span class="uc-title">Vehicle Eligibility &amp; Pipeline Check</span>
+        <span class="uc-tag">Phase 3</span>
+        <span class="badge-pill pill-orange">BD Operations</span>
+      </div>
+      <p style="font-size:14.5px; margin-bottom:10px;">For any opportunity that references a specific IDIQ vehicle (OASIS+, STARS III, SEWP VI, T4NG), instantly check: (a) Is Changeis or a teaming partner on the vehicle? (b) What's the vehicle's ceiling and remaining capacity? (c) Who are the other on-ramp holders competing in this NAICS under this vehicle?</p>
+      <div class="uc-grid">
+        <div class="uc-field"><label>Business Value</label><span>Prevent wasted proposal effort on vehicles Changeis isn't on; identify on-ramp partners; assess competitive density per vehicle</span></div>
+        <div class="uc-field"><label>Data Needed</label><span><code>/api/vehicles/</code>, <code>/api/idvs/</code> + GSA eLibrary enrichment (<code>/api/gsa_elibrary_contracts/</code>, <code>/api/mas_sins/</code>)</span></div>
+        <div class="uc-field"><label>Frequency</label><span>On-demand; triggered from Daily Brief when vehicle-restricted opp is flagged</span></div>
+        <div class="uc-field"><label>Integration</label><span>Vehicle flag detection in SAM.gov monitor; auto-enrichment via new <code>vm2-tango-vehicle-check</code> skill</span></div>
+        <div class="uc-field"><label>Tango Endpoints</label><span><code>/api/vehicles/</code>, <code>/api/idvs/</code>, <code>/api/gsa_elibrary_contracts/</code>, <code>/api/mas_sins/</code></span></div>
+        <div class="uc-field"><label>Credit Estimate</label><span>3–8 calls per vehicle check; ~100 calls/month for 15 vehicle-gated opps/month</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S4: ARCHITECTURE -->
+  <div class="section" id="s4">
+    <div class="section-header">4. Architecture &amp; System Design</div>
+
+    <h2 class="sub-heading">System Diagram: Tango Integration Layer</h2>
+    <pre class="arch-diagram">
+┌─────────────────────────────────────────────────────────────────────┐
+│                    EXTERNAL DATA SOURCES                            │
+│  SAM.gov API   FPDS/USAspending   Grants.gov   Agency Forecasts    │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │ (normalized, deduped, enriched)
+                           ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│               TANGO by MakeGov  (tango.makegov.com)                │
+│  REST API  │  Python SDK  │  Webhooks  │  MCP Server (govcon.dev)  │
+│  /api/contracts  /api/opportunities  /api/entities  /api/forecasts │
+│  /api/idvs  /api/vehicles  /api/subawards  /api/metrics            │
+└──────────────┬──────────────────────────────────────────┬──────────┘
+               │ REST (X-API-KEY header)                  │ Webhook push
+               ▼                                          ▼
+┌──────────────────────────────────────┐  ┌──────────────────────────┐
+│   TANGO WRAPPER SERVICE              │  │  WEBHOOK RECEIVER        │
+│   (Railway microservice or local)    │  │  (Railway endpoint or    │
+│                                      │  │   existing cron handler) │
+│  • Rate-limit guard (429 backoff)    │  │  • Forecast new events   │
+│  • Response cache (SQLite/Redis)     │  │  → auto-create Todoist   │
+│  • Credit burn tracker               │  │    BD task               │
+│  • Field normalizer (→ flat JSON)    │  └──────────────────────────┘
+│  • Dedup layer (PIID + date hash)    │
+└──────────────┬───────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│              CHANGEIS BD DATA LAYER                                  │
+│                                                                      │
+│  ┌───────────────────────────────┐  ┌───────────────────────────┐   │
+│  │  SAM.gov SQLite (2,726 opps)  │  │  Tango Cache SQLite        │   │
+│  │  (existing cron 8f2a4ac1)     │  │  (new: tango_awards.db)   │   │
+│  │  opp_id, title, naics,        │  │  contracts, entities,     │   │
+│  │  agency, due_date, score      │  │  forecasts, vehicles,     │   │
+│  └───────────────────────────────┘  │  incumbents, metrics      │   │
+│                                     └───────────────────────────┘   │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │  APFS/DHS Records (cron 8734a0c6, 223 records)                 │  │
+│  └────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│              PROCESSING &amp; INTELLIGENCE LAYER                         │
+│                                                                      │
+│  ┌─────────────────────────┐  ┌────────────────────────────────────┐ │
+│  │  RAG/Match Engine        │  │  VM2 Skills (Perplexity Computer) │ │
+│  │  (Railway RAG endpoint) │  │                                    │ │
+│  │  + Tango full-text      │  │  vm2-tango-incumbent-lookup       │ │
+│  │    attachment index     │  │  vm2-tango-vendor-matrix          │ │
+│  └─────────────────────────┘  │  vm2-tango-teaming-map            │ │
+│                                │  vm2-tango-vehicle-check          │ │
+│                                │  vm2-tango-co-profile             │ │
+│                                └────────────────────────────────────┘ │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│              OUTPUT / DELIVERY LAYER                                 │
+│                                                                      │
+│  Combined Daily Brief (cron 8516a029)                                │
+│    → Enriched with: incumbent name, vendor count, forecast flag     │
+│                                                                      │
+│  HTML Deliverables (VM2-P-Taskers portal)                            │
+│    → Capture briefs with competitive matrices                        │
+│    → Vendor landscape reports                                        │
+│    → Teaming network maps                                            │
+│                                                                      │
+│  Todoist BD Pipeline                                                 │
+│    → Auto-tasks from forecast webhooks                               │
+│    → Deep-dive requests from Daily Brief buttons                     │
+└──────────────────────────────────────────────────────────────────────┘
+    </pre>
+
+    <h2 class="sub-heading">Tango Cache Data Model (tango_awards.db)</h2>
+    <pre class="arch-diagram">
+-- Core award cache
+CREATE TABLE tango_contracts (
+  piid          TEXT PRIMARY KEY,
+  vendor_uei    TEXT NOT NULL,
+  vendor_name   TEXT,
+  agency_code   TEXT,
+  agency_name   TEXT,
+  office_name   TEXT,
+  naics         TEXT,
+  psc           TEXT,
+  award_amount  REAL,
+  period_start  DATE,
+  period_end    DATE,
+  set_aside     TEXT,
+  description   TEXT,
+  fetched_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Vendor entity cache
+CREATE TABLE tango_entities (
+  uei           TEXT PRIMARY KEY,
+  name          TEXT,
+  business_types TEXT,  -- JSON array
+  naics_primary  TEXT,
+  state          TEXT,
+  total_obligated REAL,
+  contract_count  INTEGER,
+  fetched_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Procurement forecast cache
+CREATE TABLE tango_forecasts (
+  forecast_id   TEXT PRIMARY KEY,
+  agency_code   TEXT,
+  agency_name   TEXT,
+  title         TEXT,
+  naics         TEXT,
+  estimated_value REAL,
+  anticipated_date DATE,
+  set_aside     TEXT,
+  description   TEXT,
+  fetched_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Dedup/credit tracking
+CREATE TABLE tango_api_calls (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  endpoint      TEXT,
+  params_hash   TEXT,
+  called_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  response_code INTEGER,
+  credits_used  INTEGER DEFAULT 1
+);
+
+-- Index for fast incumbent lookup
+CREATE INDEX idx_contracts_naics_agency ON tango_contracts(naics, agency_code);
+CREATE INDEX idx_contracts_period_end   ON tango_contracts(period_end);
+    </pre>
+
+    <h2 class="sub-heading">Key Design Decisions</h2>
+    <table>
+      <thead><tr><th>Decision</th><th>Choice</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Cache strategy</strong></td><td>SQLite with 7-day TTL on contract data; 24h on forecasts</td><td>Award data doesn't change often; caching avoids re-querying the same NAICS daily and conserves credits</td></tr>
+        <tr><td><strong>Dedup</strong></td><td>Hash PIID + period_end + vendor_uei; skip fetch if cached &lt; TTL</td><td>Prevents double-billing and keeps response times fast</td></tr>
+        <tr><td><strong>Rate limit handling</strong></td><td>Exponential backoff on 429; respect <code>X-RateLimit-Remaining</code> header; queue low-priority calls</td><td>Free/Micro tiers have 25/min; must not blow budget on burst calls</td></tr>
+        <tr><td><strong>Credit burn monitor</strong></td><td>Daily cap counter in SQLite; alert Varun via Todoist if &gt;80% of daily limit consumed</td><td>Prevents unexpected tier overages</td></tr>
+        <tr><td><strong>API key storage</strong></td><td><code>TANGO_API_KEY</code> env var in Railway; injected as <code>api_credentials=["tango"]</code> pattern for VM2 skills</td><td>Consistent with existing Changeis secret management</td></tr>
+        <tr><td><strong>Webhook receiver</strong></td><td>New Railway endpoint or extend existing daily-brief service</td><td>Tango webhooks push to a public HTTPS URL; Railway already handles this for the RAG service</td></tr>
+        <tr><td><strong>Response shaping</strong></td><td>Always use <code>shape=</code> param to request only needed fields</td><td>Reduces payload size; faster; more predictable JSON structure</td></tr>
+      </tbody>
+    </table>
+
+    <h2 class="sub-heading">New VM2 Skills Specification</h2>
+    <table>
+      <thead><tr><th>Skill Name</th><th>Trigger</th><th>Inputs</th><th>Outputs</th><th>Tango Calls</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>vm2-tango-incumbent-lookup</code></td>
+          <td>mailto from Daily Brief; Todoist task; VM2 chat</td>
+          <td>Opp title or PIID, NAICS, agency</td>
+          <td>Incumbent name, contract value, POP end, set-aside, UEI link</td>
+          <td><code>/api/contracts/</code> + <code>/api/entities/</code></td>
+        </tr>
+        <tr>
+          <td><code>vm2-tango-vendor-matrix</code></td>
+          <td>Todoist task; VM2 chat; capture brief workflow</td>
+          <td>NAICS code(s), agency code, date range</td>
+          <td>HTML table: top 10 vendors, award totals, set-aside types, vehicle memberships</td>
+          <td><code>/api/contracts/</code> (paginated) + <code>/api/entities/</code> + <code>/api/metrics/</code></td>
+        </tr>
+        <tr>
+          <td><code>vm2-tango-teaming-map</code></td>
+          <td>Monthly cron; on-demand Todoist</td>
+          <td>Target NAICS, Changeis UEI or size standard</td>
+          <td>List of primes with open sub slots; subaward gap analysis</td>
+          <td><code>/api/contracts/</code> + <code>/api/subawards/</code> + <code>/api/entities/</code></td>
+        </tr>
+        <tr>
+          <td><code>vm2-tango-vehicle-check</code></td>
+          <td>Auto-triggered when Daily Brief detects vehicle-restricted opp</td>
+          <td>Vehicle name / PIID fragment</td>
+          <td>Vehicle ceiling, NAICS holders, Changeis eligibility flag</td>
+          <td><code>/api/vehicles/</code> + <code>/api/idvs/</code> + <code>/api/gsa_elibrary_contracts/</code></td>
+        </tr>
+        <tr>
+          <td><code>vm2-tango-co-profile</code></td>
+          <td>On-demand; deep-dive skill extension</td>
+          <td>Agency + office code</td>
+          <td>Award patterns, small biz rate, modification velocity, protest history</td>
+          <td><code>/api/contracts/</code> + <code>/api/metrics/</code> + <code>/api/protests/</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="sub-heading">Failure Modes &amp; Circuit Breakers</h2>
+    <table>
+      <thead><tr><th>Failure Mode</th><th>Detection</th><th>Circuit Breaker</th></tr></thead>
+      <tbody>
+        <tr><td>Credits exhausted (daily limit hit)</td><td><code>X-RateLimit-Remaining: 0</code> or HTTP 429 with daily-limit message</td><td>Halt enrichment calls; serve cached data; create Todoist alert task; resume next day at midnight UTC</td></tr>
+        <tr><td>Tango API down (&gt;3 consecutive 5xx)</td><td>HTTP 502/503/504 response</td><td>Skip enrichment, mark daily brief opps as "unverified"; send single Todoist alert; retry after 2h</td></tr>
+        <tr><td>Output looks wrong (empty vendor name, zero contracts)</td><td>Validation: <code>len(contracts) == 0</code> or <code>vendor_name IS NULL</code> on expected non-null results</td><td>Log anomaly; serve "No Tango data available" gracefully; do not insert nulls into deliverable</td></tr>
+        <tr><td>API key revoked / 401</td><td>HTTP 401 response</td><td>Immediate halt; Todoist P1 alert to Varun; do not retry</td></tr>
+        <tr><td>Schema change (unexpected JSON fields)</td><td>Pydantic/schema validation on response</td><td>Log raw response to error file; serve cached previous data; alert but don't crash pipeline</td></tr>
+        <tr><td>Webhook delivery failure</td><td>Tango webhook retry logs; missing expected events over 24h</td><td>Fall back to daily polling cron; check Tango dashboard</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- S5: BUILD OPTIONS -->
+  <div class="section" id="s5">
+    <div class="section-header">5. Build Options: Perplexity Computer vs. Claude vs. Codex</div>
+
+    <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:14px; margin-top:10px;">
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--red); padding:16px;">
+        <div style="font-family:system-ui,sans-serif; font-size:11px; font-weight:700; color:var(--red); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Option A</div>
+        <div style="font-family:system-ui,sans-serif; font-size:15px; font-weight:700; color:var(--navy); margin-bottom:8px;">Perplexity Computer</div>
+        <div style="font-size:13px; margin-bottom:6px;"><strong>Pros:</strong>
+          <ul style="padding-left:16px; margin:4px 0;">
+            <li>VM2 skills already wired; no new infra</li>
+            <li>Existing cron, Todoist, Railway integration</li>
+            <li>HTML deliverable pipeline in place</li>
+            <li>Tango MCP server works natively in Claude-compatible clients</li>
+            <li>api_credentials pattern already exists for secrets</li>
+          </ul>
+        </div>
+        <div style="font-size:13px; margin-bottom:6px;"><strong>Cons:</strong>
+          <ul style="padding-left:16px; margin:4px 0;">
+            <li>Step budget limits complex multi-call workflows</li>
+            <li>No persistent Python process (cron must re-initialize)</li>
+            <li>Complex data transformations need pre-built scripts</li>
+          </ul>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:8px; padding-top:8px; border-top:1px solid var(--border);"><strong>Effort:</strong> Low (3–5 days) &nbsp;|&nbsp; <strong>Quality:</strong> High for skills/briefs, moderate for heavy ETL</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--teal); padding:16px;">
+        <div style="font-family:system-ui,sans-serif; font-size:11px; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Option B</div>
+        <div style="font-family:system-ui,sans-serif; font-size:15px; font-weight:700; color:var(--navy); margin-bottom:8px;">Claude (Anthropic API / Claude.ai)</div>
+        <div style="font-size:13px; margin-bottom:6px;"><strong>Pros:</strong>
+          <ul style="padding-left:16px; margin:4px 0;">
+            <li>Tango MCP server works natively with Claude Desktop</li>
+            <li>Natural language to complex multi-step queries</li>
+            <li>Excellent at synthesizing procurement data into prose</li>
+            <li>Claude Code can write and run Python wrapper scripts</li>
+          </ul>
+        </div>
+        <div style="font-size:13px; margin-bottom:6px;"><strong>Cons:</strong>
+          <ul style="padding-left:16px; margin:4px 0;">
+            <li>Separate context/cost from existing VM2 setup</li>
+            <li>No native Todoist/cron integration without additional wiring</li>
+            <li>API costs add up for frequent on-demand use</li>
+          </ul>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:8px; padding-top:8px; border-top:1px solid var(--border);"><strong>Effort:</strong> Medium (1–2 weeks) &nbsp;|&nbsp; <strong>Quality:</strong> Excellent for research synthesis; good for automation</div>
+      </div>
+
+      <div style="background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--purple); padding:16px;">
+        <div style="font-family:system-ui,sans-serif; font-size:11px; font-weight:700; color:var(--purple); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Option C</div>
+        <div style="font-family:system-ui,sans-serif; font-size:15px; font-weight:700; color:var(--navy); margin-bottom:8px;">Codex / OpenAI API</div>
+        <div style="font-size:13px; margin-bottom:6px;"><strong>Pros:</strong>
+          <ul style="padding-left:16px; margin:4px 0;">
+            <li>Codex/o3 excels at writing production Python code</li>
+            <li>Tango MCP works via OpenAI Responses API</li>
+            <li>Best for building standalone Railway microservice</li>
+            <li>Strong at structured data transformation + SQL</li>
+          </ul>
+        </div>
+        <div style="font-size:13px; margin-bottom:6px;"><strong>Cons:</strong>
+          <ul style="padding-left:16px; margin:4px 0;">
+            <li>Codex is primarily a code-generation tool, not an orchestrator</li>
+            <li>Requires more setup; no existing Changeis integration</li>
+            <li>Less natural for producing HTML deliverables</li>
+          </ul>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:8px; padding-top:8px; border-top:1px solid var(--border);"><strong>Effort:</strong> Medium-High (2–3 weeks) &nbsp;|&nbsp; <strong>Quality:</strong> Excellent for the Railway microservice; lower for skill/brief UX</div>
+      </div>
+    </div>
+
+    <div class="callout callout-green" style="margin-top:18px;">
+      <strong>Recommended Path:</strong> <strong>Perplexity Computer as orchestrator + Codex for the Railway wrapper microservice.</strong> Use VM2 skills for on-demand lookups (incumbent, vendor matrix) triggered from Daily Brief buttons and Todoist tasks. Use Codex to write and deploy the <code>tango-wrapper</code> Railway service that handles caching, rate limiting, and forecast webhooks. This hybrid approach leverages what already works while filling the gaps with purpose-built infrastructure.
+    </div>
+  </div>
+
+  <!-- S6: IMPLEMENTATION PLAN -->
+  <div class="section" id="s6">
+    <div class="section-header">6. Implementation Plan — Phased</div>
+
+    <div class="phase-block">
+      <div class="phase-header">Phase 0 — Discovery (THIS DELIVERABLE)</div>
+      <div class="phase-meta">Duration: 1 day &nbsp;|&nbsp; Status: COMPLETE</div>
+      <p style="font-size:14px;">Research Tango API, assess gaps vs. current stack, define use cases, architecture, and implementation plan. Varun reviews and approves scope before any build begins.</p>
+      <p style="font-size:13px; color:var(--text-muted);">Deliverable: This document at <a href="https://vm2-p-taskers-production.up.railway.app/tango-makegov-integration-plan.html">vm2-p-taskers-production.up.railway.app/tango-makegov-integration-plan.html</a></p>
+    </div>
+
+    <div class="phase-block active">
+      <div class="phase-header">Phase 1 — API Wrapper + Credentials Setup</div>
+      <div class="phase-meta">Duration: 2–3 days &nbsp;|&nbsp; Effort: ~4 hours dev time &nbsp;|&nbsp; Build Platform: Perplexity Computer + Codex</div>
+      <ul style="font-size:14px; padding-left:18px;">
+        <li>Create <code>TANGO_API_KEY</code> env var in Railway (existing changeis-bd-rag service or new service)</li>
+        <li>Write Python wrapper module: <code>tango_client.py</code> — handles auth, rate limits, caching, backoff</li>
+        <li>Initialize <code>tango_awards.db</code> SQLite with schema above</li>
+        <li>Test basic calls: <code>/api/contracts/</code> with DHS NAICS codes (541511, 541512, 541519, 541611)</li>
+        <li>Verify enriched fields available at purchased tier (CALC, attachment text)</li>
+        <li>Add <code>TANGO_API_KEY</code> to VM2 api_credentials registry</li>
+      </ul>
+    </div>
+
+    <div class="phase-block">
+      <div class="phase-header">Phase 2 — Data Integration with Existing SAM SQLite</div>
+      <div class="phase-meta">Duration: 3–4 days &nbsp;|&nbsp; Effort: ~6 hours dev time</div>
+      <ul style="font-size:14px; padding-left:18px;">
+        <li>Write <code>tango_enricher.py</code>: for each opp in SAM.gov SQLite with score &gt; threshold, query Tango for incumbent contract match</li>
+        <li>Store results in <code>tango_awards.db</code>; join back to SAM opp table via NAICS + agency + period_end</li>
+        <li>Add <code>incumbent_name</code>, <code>incumbent_uei</code>, <code>incumbent_value</code>, <code>period_end</code>, <code>tango_enriched</code> flag columns to SAM SQLite</li>
+        <li>Backfill top 50 most recent opps in SAM SQLite</li>
+        <li>Add forecast poll: daily cron call to <code>/api/forecasts/</code> for target NAICS; store in <code>tango_forecasts</code> table</li>
+      </ul>
+    </div>
+
+    <div class="phase-block">
+      <div class="phase-header">Phase 3 — First Skill MVP: Incumbent Lookup</div>
+      <div class="phase-meta">Duration: 2–3 days &nbsp;|&nbsp; Effort: ~4 hours dev time</div>
+      <ul style="font-size:14px; padding-left:18px;">
+        <li>Create VM2 skill: <code>vm2-tango-incumbent-lookup</code> per skill spec</li>
+        <li>Skill accepts: opp title or PIID + NAICS + agency; calls <code>tango_client.py</code>; returns formatted HTML block</li>
+        <li>Add "Incumbent Check" mailto button to Daily Brief for opps scored STRONG (same pattern as existing deep-dive button)</li>
+        <li>Test with 3–5 real opps from SAM SQLite; validate incumbent identification accuracy</li>
+      </ul>
+    </div>
+
+    <div class="phase-block">
+      <div class="phase-header">Phase 4 — Daily Brief Enrichment</div>
+      <div class="phase-meta">Duration: 2 days &nbsp;|&nbsp; Effort: ~3 hours dev time</div>
+      <ul style="font-size:14px; padding-left:18px;">
+        <li>Modify cron 8516a029 (Combined Daily Brief) to query <code>tango_awards.db</code> join for top 10 scored opps</li>
+        <li>Add Tango enrichment row to each opp card: Incumbent | Value | POP Expires | Set-Aside | Vendor Count</li>
+        <li>Add Forecast section to Daily Brief: new forecasts from past 24h for target NAICS</li>
+        <li>Ensure graceful degradation: if Tango data unavailable, brief renders normally without enrichment</li>
+      </ul>
+    </div>
+
+    <div class="phase-block">
+      <div class="phase-header">Phase 5 — Capture Brief Enhancement</div>
+      <div class="phase-meta">Duration: 3–4 days &nbsp;|&nbsp; Effort: ~6 hours dev time</div>
+      <ul style="font-size:14px; padding-left:18px;">
+        <li>Create <code>vm2-tango-vendor-matrix</code> skill: generates competitive landscape table for a NAICS + agency</li>
+        <li>Extend deep-dive skill to include Tango vendor matrix as "Competitive Landscape" section</li>
+        <li>Add CO Behavior Profile section using <code>/api/metrics/</code> + <code>/api/protests/</code></li>
+        <li>Test with 2–3 active capture targets</li>
+      </ul>
+    </div>
+
+    <div class="phase-block">
+      <div class="phase-header">Phase 6 — ROI Review &amp; Tier Decision</div>
+      <div class="phase-meta">Duration: 1 day &nbsp;|&nbsp; 30 days after Phase 4 goes live</div>
+      <ul style="font-size:14px; padding-left:18px;">
+        <li>Pull 30-day Tango API call log from <code>tango_api_calls</code> table</li>
+        <li>Calculate actual credit burn per use case</li>
+        <li>Assess: is current tier sufficient? Should Varun upgrade/downgrade?</li>
+        <li>Identify which use cases drove measurable BD decisions</li>
+        <li>Go/No-Go on Phase 3 remaining use cases (UC-4, UC-6, UC-7)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- S7: ROI -->
+  <div class="section" id="s7">
+    <div class="section-header">7. ROI Analysis &amp; Credit Cost Model</div>
+
+    <h2 class="sub-heading">Credit Consumption Estimate per Use Case (Monthly)</h2>
+    <table>
+      <thead><tr><th>Use Case</th><th>Calls/Event</th><th>Events/Month</th><th>Calls/Month</th><th>% of Small Tier (45K)</th></tr></thead>
+      <tbody>
+        <tr><td>UC-1: Incumbent Lookup (auto, top opps)</td><td>3–5</td><td>~30 opps/day × 2 STRONG</td><td>180–300</td><td>&lt;1%</td></tr>
+        <tr><td>UC-2: Vendor Matrix (on-demand captures)</td><td>10–20</td><td>~10 captures/month</td><td>100–200</td><td>&lt;1%</td></tr>
+        <tr><td>UC-3: Forecast Poll (daily cron)</td><td>1–2</td><td>30 days</td><td>30–60</td><td>&lt;1%</td></tr>
+        <tr><td>UC-4: Teaming Map (monthly)</td><td>20–50</td><td>2 reports/month</td><td>40–100</td><td>&lt;1%</td></tr>
+        <tr><td>UC-5: CO Behavior Profile</td><td>10–15</td><td>5 profiles/month</td><td>50–75</td><td>&lt;1%</td></tr>
+        <tr><td>UC-6: Semantic Opp Match (on-demand)</td><td>2–5</td><td>~20 searches/month</td><td>40–100</td><td>&lt;1%</td></tr>
+        <tr><td>UC-7: Vehicle Check (auto-triggered)</td><td>3–8</td><td>~15 vehicle opps/month</td><td>45–120</td><td>&lt;1%</td></tr>
+        <tr style="font-weight:700;"><td><strong>TOTAL (all UC active)</strong></td><td>—</td><td>—</td><td><strong>~485–955</strong></td><td><strong>~2%</strong> of Small</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-green">
+      <strong>Key Finding:</strong> Even with all 7 use cases active, total monthly API consumption is well under 1,000 calls — only ~2% of the Small tier's 45,000-call budget. The <strong>Micro tier ($25/month, 7,500 calls)</strong> is almost certainly sufficient for Phases 1–4. Upgrade to Small ($100) only if Varun adds high-frequency automated enrichment for all 2,726 SAM.gov opps daily.
+    </div>
+
+    <h2 class="sub-heading">Cost-Benefit vs. Competing Solutions</h2>
+    <table>
+      <thead><tr><th>Solution</th><th>Monthly Cost</th><th>Incumbent Detection</th><th>Vendor Intel</th><th>Forecasts</th><th>API Access</th><th>BD Integration</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Tango Micro</strong></td><td>$25</td><td>Yes (manual query)</td><td>Yes (FPDS)</td><td>Yes (11 agencies)</td><td>Full REST</td><td>Full (custom)</td></tr>
+        <tr><td><strong>Tango Small</strong></td><td>$100</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Full REST + faster rate</td><td>Full</td></tr>
+        <tr><td><strong>HigherGov Starter</strong></td><td>~$149–299</td><td>Yes (UI only)</td><td>Yes (UI only)</td><td>Limited</td><td>Yes (limited)</td><td>Minimal</td></tr>
+        <tr><td><strong>GovWin IQ</strong></td><td>~$500–2,000+</td><td>Yes (UI)</td><td>Yes (UI)</td><td>Yes</td><td>No (UI only)</td><td>Minimal</td></tr>
+        <tr><td><strong>GovTribe</strong></td><td>~$200–600</td><td>Limited</td><td>Yes (UI)</td><td>Limited</td><td>Limited</td><td>Minimal</td></tr>
+        <tr><td><strong>Raw SAM.gov API</strong></td><td>$0</td><td>No</td><td>No</td><td>No</td><td>Limited/fragile</td><td>Existing (full)</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Conclusion:</strong> At $25–100/month, Tango delivers 80% of GovWin/HigherGov's data value at 5–10% of the cost — with full API access enabling automation that SaaS UI tools cannot match. The differentiated value is programmable integration into the existing Changeis VM2 pipeline.</p>
+  </div>
+
+  <!-- S8: RECOMMENDATIONS -->
+  <div class="section" id="s8">
+    <div class="section-header">8. Recommendations for Varun</div>
+
+    <h2 class="sub-heading">Top 3 Use Cases to Build First</h2>
+
+    <div class="rec-block">
+      <div class="rec-num">Rec 1 — Build First</div>
+      <div class="rec-title">UC-1: Incumbent Intelligence Lookup</div>
+      <p style="font-size:14.5px;">This is the single highest-ROI integration. Every STRONG-scored opp in the Daily Brief should automatically show who holds the current contract, when it expires, and its value. This one feature transforms BD from blind cold-calling into targeted pursuit. Low credit cost; high decision value. Estimated build time: 3–4 hours.</p>
+    </div>
+
+    <div class="rec-block">
+      <div class="rec-num">Rec 2 — Build First</div>
+      <div class="rec-title">UC-3: Procurement Forecast Early Warning</div>
+      <p style="font-size:14.5px;">Forecasts from Tango's 11-agency pipeline give Changeis a 6–18 month advance window before solicitations appear on SAM.gov. A single daily cron call (~30 API calls/month) adds a new forecast section to the Daily Brief. Highest strategic value per credit consumed. Allows Varun to start teaming conversations months earlier. Build in Phase 1 alongside incumbent lookup.</p>
+    </div>
+
+    <div class="rec-block">
+      <div class="rec-num">Rec 3 — Build First</div>
+      <div class="rec-title">UC-2: Vendor Competitive Matrix for Capture Briefs</div>
+      <p style="font-size:14.5px;">The capture brief enhancement is the most visible deliverable improvement. A table showing who has won contracts in Changeis's target NAICS at target agencies — with dollar volumes and set-aside types — replaces hours of manual USAspending research and materially strengthens proposal narratives. Build as an on-demand VM2 skill triggered from Todoist or Daily Brief mailto button.</p>
+    </div>
+
+    <h2 class="sub-heading">Top 3 to Defer/Skip (Near-Term)</h2>
+
+    <div class="rec-block" style="border-left:3px solid var(--text-faint); opacity:0.85;">
+      <div class="rec-num" style="color:var(--text-faint);">Defer — Phase 3+</div>
+      <div class="rec-title">UC-6: Semantic Opportunity Match</div>
+      <p style="font-size:14.5px;">Valuable long-term, but the existing RAG/match engine already does NAICS-based matching. Tango's full-text search adds marginal improvement at this stage. Defer until Phase 3 after incumbent lookup and forecast workflows are stable.</p>
+    </div>
+
+    <div class="rec-block" style="border-left:3px solid var(--text-faint); opacity:0.85;">
+      <div class="rec-num" style="color:var(--text-faint);">Defer — Phase 3+</div>
+      <div class="rec-title">UC-7: Vehicle Eligibility Check</div>
+      <p style="font-size:14.5px;">Useful but requires knowing which vehicles Changeis is on. Build after internal vehicle inventory is confirmed. Defer to Phase 3 once core incumbent/forecast workflows are validated.</p>
+    </div>
+
+    <div class="rec-block" style="border-left:3px solid var(--text-faint); opacity:0.85;">
+      <div class="rec-num" style="color:var(--text-faint);">Defer — Phase 3+</div>
+      <div class="rec-title">CALC Labor Rate Integration</div>
+      <p style="font-size:14.5px;">High value for proposal pricing but requires a distinct proposal workflow integration. Not a daily-BD-pipeline use case; better addressed when Changeis is in active proposal mode for a specific contract. Defer until the proposal-prep workflow is defined.</p>
+    </div>
+
+    <h2 class="sub-heading">Recommended Build Platform</h2>
+    <div class="callout callout-green">
+      <strong>Use Perplexity Computer (VM2) for skill orchestration + Codex for the Railway wrapper service.</strong><br><br>
+      Rationale: The VM2 skill pattern (mailto-triggered, Todoist-integrated, HTML deliverable output) is already proven and operational. The Tango MCP server at <code>govcon.dev/mcp</code> works natively in Claude-compatible clients (which VM2 can invoke), enabling zero-infrastructure MCP access for on-demand queries. For the caching/ETL layer, use Codex to write a standalone <code>tango_client.py</code> module deployed to the existing Railway environment alongside the SAM.gov monitor. This avoids rebuilding what works while filling the infrastructure gaps.
+    </div>
+  </div>
+
+  <!-- S9: RISKS -->
+  <div class="section" id="s9">
+    <div class="section-header">9. Risks &amp; Dependencies</div>
+
+    <div class="risk-row"><div>Risk</div><div>Severity</div><div>Mitigation</div></div>
+    <div class="risk-row">
+      <div><strong>Tango tier purchased doesn't include enriched fields</strong> (Free tier only has raw data; CALC + attachment extraction require Micro+)</div>
+      <div><span class="severity-high">High</span></div>
+      <div>Confirm purchased tier immediately. If Free tier: upgrade to Micro ($25) to unlock enriched fields needed for UC-1 and UC-6.</div>
+    </div>
+    <div class="risk-row">
+      <div><strong>FPDS historical data depth</strong> — Tango's contract history may not go back far enough to find incumbents on long-running contracts (&gt;5 years old)</div>
+      <div><span class="severity-med">Medium</span></div>
+      <div>Test with known DHS contracts. Supplement with direct USAspending.gov query for very old awards if needed. Tango's FPDS coverage is extensive but confirm depth for Changeis target agencies.</div>
+    </div>
+    <div class="risk-row">
+      <div><strong>Tango is a startup-stage product</strong> — schema changes, endpoint deprecations, or pricing changes could break integrations</div>
+      <div><span class="severity-med">Medium</span></div>
+      <div>Use the <code>shape=</code> parameter to minimize dependency on full response schema. Pin to specific field sets. Monitor the <a href="https://tango.makegov.com/docs/" target="_blank">changelog</a>. Build with graceful fallback so pipeline never hard-fails.</div>
+    </div>
+    <div class="risk-row">
+      <div><strong>Incumbent match ambiguity</strong> — Multiple contractors may have held contracts in same NAICS at same agency; algorithm must identify the most likely current incumbent</div>
+      <div><span class="severity-med">Medium</span></div>
+      <div>Sort by <code>period_end</code> descending + filter for <code>period_end &gt; today - 180 days</code>. Flag "contested" when top 2 match on same agency/NAICS within 6 months.</div>
+    </div>
+    <div class="risk-row">
+      <div><strong>Railway environment variables</strong> — <code>TANGO_API_KEY</code> must be added without exposing to existing services</div>
+      <div><span class="severity-low">Low</span></div>
+      <div>Add as Railway service-level env var, not project-level. Follow existing pattern used for SAM.gov API key and APFS credentials.</div>
+    </div>
+    <div class="risk-row">
+      <div><strong>Webhook receiver URL must be public HTTPS</strong></div>
+      <div><span class="severity-low">Low</span></div>
+      <div>Railway deployments get auto-generated HTTPS URLs. Register Tango webhook to point at new Railway endpoint. Verify webhook secret signature validation.</div>
+    </div>
+    <div class="risk-row">
+      <div><strong>Daily Brief visual overload</strong> — Adding Tango enrichment to every opp may make the brief harder to read</div>
+      <div><span class="severity-low">Low</span></div>
+      <div>Show Tango data only for opps scored STRONG (top tier). Use collapsed/expandable section for detailed competitive data. Keep brief summary row compact.</div>
+    </div>
+  </div>
+
+  <!-- S10: OPEN QUESTIONS -->
+  <div class="section" id="s10">
+    <div class="section-header">10. Open Questions for Varun Before Phase 1</div>
+
+    <ol class="open-q">
+      <li><strong>Which Tango tier did you purchase?</strong> Free, Micro ($25), Small ($100), or other? This determines whether CALC lookups, attachment extraction, and enriched fields are available in Phase 1. <em>Action: Log into <a href="https://tango.makegov.com" target="_blank">tango.makegov.com</a> and check subscription level; share API key and tier with VM2.</em></li>
+      <li><strong>What are Changeis's 5 primary NAICS target codes?</strong> The DHS monitor uses a specific NAICS list. Confirm whether the same list applies to Tango enrichment, or whether it should be expanded for forecast and vendor matrix queries. <em>Assumed current: 541611, 541519, 541512, 541715 — confirm or update.</em></li>
+      <li><strong>Is Changeis on any IDV vehicles (OASIS, STARS III, SEWP, T4NG)?</strong> Required before UC-7 (vehicle eligibility check) can provide useful output. If not on any vehicles, the vehicle check skill identifies teaming targets instead.</li>
+      <li><strong>Should the forecast webhook create Todoist tasks automatically,</strong> or should forecasts appear only in the Daily Brief? The webhook path requires a new Railway endpoint and Todoist API integration (already exists in the VM2 pattern).</li>
+      <li><strong>Preferred build trigger for UC-2 (Vendor Matrix):</strong> Should it be an on-demand Todoist task, a mailto button in the Daily Brief, or both? This shapes which skill file and trigger pattern to build first.</li>
+      <li><strong>Are there agency-specific focus areas beyond DHS?</strong> The current APFS monitor is DHS-specific, but Tango covers all federal agencies. Confirm whether VA, HHS, DOD, or GSA civilian should be included in forecast and contract queries.</li>
+    </ol>
+  </div>
+
+  <!-- CONTEXT SLUG -->
+  <div class="context-section">
+    <button class="context-toggle" onclick="toggleContext(this)">
+      <span class="arrow">&#9658;</span> Session Context
+    </button>
+    <div class="context-body" id="contextBody">
+ORIGINAL INSTRUCTIONS:
+Task 6gRcFMGfHpGRpw5J (P1, due 2026-05-09)
+"I have bought API credits. Review everything to determine how we can use this to create another
+opportunity analysis skill and other use cases that would be relevant to me. Lay out use cases
+and full architecture and implementation plan that I can review, reduce, and then build in either
+perplexity computer or Claude or codex. Must be high quality and reliable application."
+Link: https://tango.makegov.com/subscriptions/pricing/
+
+APPROACH:
+1. Fetched Tango pricing, docs overview, data dictionary, API reference, MCP guide, and FAQ
+2. Searched for Tango feature announcements (forecasts, protests, CALC, attachment extraction, MCP)
+3. Assessed gaps vs. existing Changeis stack (SAM.gov SQLite cron, APFS DHS monitor, Daily Brief, deep-dive skill)
+4. Defined 7 concrete use cases with full spec (endpoints, credit cost, trigger, integration point)
+5. Designed system architecture with ASCII diagram, data model, failure modes
+6. Compared 3 build platforms (Perplexity Computer, Claude, Codex) with pros/cons
+7. Built phased 6-phase implementation plan
+8. Calculated ROI vs. GovWin/HigherGov; showed credit burn at &lt;2% of Small tier for all 7 UCs
+
+KEY FINDINGS:
+- Tango pricing is request-volume-based (daily/monthly caps), not per-credit; Micro ($25/mo) likely sufficient
+- Net-new capabilities vs. current stack: historical awards, vendor profiles, IDV/vehicle intel,
+  pre-SAM forecasts (11 agencies), bid protests, subawards, attachment text extraction, CALC rates
+- SAM.gov opportunity monitoring overlaps but Tango models it better (excludes award notices)
+- All 7 use cases combined consume &lt;1,000 API calls/month (&lt;2% of Small tier)
+- MCP server at govcon.dev/mcp enables zero-infra Tango access from Claude/VM2 clients
+- Highest-value feature: incumbent detection via /api/contracts/ filtered by NAICS + agency + period_end
+
+DEAD ENDS:
+- Tango Swagger at /api/ returned 404 in direct fetch; used docs pages instead
+- /docs/webhooks/ returned 404; webhook info gathered from MCP docs and pricing page
+
+ASSUMPTIONS:
+- Varun purchased at least Micro tier ($25) — enriched fields and CALC required for UC-1/UC-6
+- Primary NAICS targets: 541611, 541519, 541512, 541715 (from DHS monitor context)
+- Existing Railway deployment can host the tango_client.py wrapper without new service
+- API key pattern follows existing Changeis api_credentials= approach
+
+OPEN QUESTIONS:
+- Which Tango tier was actually purchased?
+- What are the 5 primary NAICS target codes for Tango queries?
+- Is Changeis on any IDV vehicles?
+- Should forecasts trigger Todoist tasks automatically?
+- Preferred trigger for Vendor Matrix skill?
+- Agency focus beyond DHS?
+
+DATA SOURCES:
+- https://tango.makegov.com/subscriptions/pricing/
+- https://tango.makegov.com/docs/
+- https://tango.makegov.com/docs/data-dictionary/
+- https://tango.makegov.com/docs/api-reference/
+- https://tango.makegov.com/docs/mcp/
+- https://www.makegov.com/faq
+- https://www.makegov.com/blog/
+- https://www.makegov.com/blog/gsa-elibrary-idv-sins
+
+NEXT STEPS:
+1. Varun: Confirm Tango tier, API key, NAICS list, vehicle membership (answer Open Questions)
+2. Phase 1: Add TANGO_API_KEY to Railway; build tango_client.py; test /api/contracts/ with DHS NAICS
+3. Phase 2: Integrate with SAM.gov SQLite; enrich top opps with incumbent data
+4. Phase 3: Deploy vm2-tango-incumbent-lookup skill; add mailto button to Daily Brief
+5. Phase 4: Add forecast section to Daily Brief via daily cron
+6. Phase 5: Build vm2-tango-vendor-matrix skill for capture briefs
+7. ROI review at 30 days post-Phase 4 launch
+    </div>
+  </div>
+
+  <script type="application/json" id="vm2-context-data">
+  {
+    "task_name": "Tango MakeGov Architecture Plan",
+    "task_id": "6gRcFMGfHpGRpw5J",
+    "task_date": "2026-05-09",
+    "deliverable_file": "tango-makegov-integration-plan.html",
+    "railway_url": "https://vm2-p-taskers-production.up.railway.app/tango-makegov-integration-plan.html",
+    "version": 1,
+    "prior_versions": [],
+    "created_date": "2026-05-09",
+    "revised_date": null,
+    "related_deliverables": [],
+    "original_instructions": "Review Tango by MakeGov API, define use cases and full architecture + implementation plan for integrating Tango API credits into Changeis BD pipeline. Must be high quality and reliable application.",
+    "approach": "Fetched Tango pricing, docs, API reference, MCP guide, FAQ, blog. Assessed gaps vs. current SAM.gov cron + APFS DHS monitor + Daily Brief. Defined 7 use cases. Designed architecture with ASCII diagram, data model, 5 new VM2 skills, 6 phase plan, ROI math.",
+    "key_findings": [
+      "Tango pricing is request-volume tiers, not per-credit spend; Micro ($25/mo, 7,500 calls) likely sufficient for all 7 UCs",
+      "All 7 use cases combined consume <1,000 API calls/month — <2% of Small tier",
+      "Net-new vs. current stack: historical awards, vendor profiles, IDV/vehicle intel, pre-SAM forecasts (11 agencies), bid protests, subawards, attachment text extraction",
+      "MCP server at govcon.dev/mcp enables native Tango access from Claude/VM2 without infrastructure",
+      "Highest-value feature: incumbent detection via /api/contracts/ — NAICS + agency + period_end lookup"
+    ],
+    "dead_ends": [
+      "Tango Swagger at /api/ returned 404; used docs pages instead",
+      "/docs/webhooks/ returned 404; webhook info gathered from MCP docs and pricing page"
+    ],
+    "assumptions": [
+      "Varun purchased at least Micro tier ($25) — enriched fields required for UC-1/UC-6",
+      "Primary NAICS: 541611, 541519, 541512, 541715",
+      "Existing Railway deployment can host tango_client.py without new service",
+      "API key follows existing Changeis api_credentials= pattern"
+    ],
+    "open_questions": [
+      "Which Tango tier was actually purchased?",
+      "What are the 5 primary NAICS target codes?",
+      "Is Changeis on any IDV vehicles (OASIS, STARS III)?",
+      "Should forecasts trigger Todoist tasks automatically?",
+      "Preferred trigger for Vendor Matrix skill?",
+      "Agency focus beyond DHS?"
+    ],
+    "data_sources": [
+      "https://tango.makegov.com/subscriptions/pricing/",
+      "https://tango.makegov.com/docs/",
+      "https://tango.makegov.com/docs/data-dictionary/",
+      "https://tango.makegov.com/docs/api-reference/",
+      "https://tango.makegov.com/docs/mcp/",
+      "https://www.makegov.com/faq",
+      "https://www.makegov.com/blog/",
+      "https://www.makegov.com/blog/gsa-elibrary-idv-sins"
+    ],
+    "next_steps": [
+      "Varun: Confirm Tango tier, API key, NAICS list, vehicle membership",
+      "Phase 1: Add TANGO_API_KEY to Railway; build tango_client.py",
+      "Phase 2: Integrate with SAM.gov SQLite; enrich top opps with incumbent data",
+      "Phase 3: Deploy vm2-tango-incumbent-lookup skill",
+      "Phase 4: Add forecast section to Daily Brief",
+      "Phase 5: Build vm2-tango-vendor-matrix skill",
+      "ROI review at 30 days post-Phase 4"
+    ],
+    "cost_estimate": {
+      "model": "claude-sonnet-4-6",
+      "model_pricing": "$3/$15 per 1M tokens",
+      "input_tokens_est": "~45,000",
+      "output_tokens_est": "~12,000",
+      "search_calls": 9,
+      "subagent_calls": 0,
+      "cost_conservative": "$0.32",
+      "cost_ceiling": "$0.60",
+      "notes": "Multiple web fetches of Tango docs + search queries for feature research + large HTML generation"
+    }
+  }
+  </script>
+
+  <!-- CONTINUE PANEL -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <p class="subtitle">Phase 1 next: Confirm Tango tier + API key, then build tango_client.py wrapper service.</p>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up%3A%20Tango%20MakeGov%20Integration&body=Deliverable%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Ftango-makegov-integration-plan.html%0A%0ANext%20step%3A%20Phase%201%20-%20Confirm%20Tango%20tier%20and%20API%20key%2C%20build%20tango_client.py%20wrapper.">Email to VM2</a>
+      <button class="btn btn-secondary" onclick="createTodoistTask()">Create Todoist Follow-Up</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Changeis Confidential &middot; Tango MakeGov Integration Plan &middot; May 2026 &middot; VM2 Deliverable
+</footer>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+
+function toggleContext(btn) {
+  btn.classList.toggle('open');
+  document.getElementById('contextBody').classList.toggle('open');
+}
+
+function copyFollowUp() {
+  const url = 'https://vm2-p-taskers-production.up.railway.app/tango-makegov-integration-plan.html';
+  const prompt = `Continue work on Tango MakeGov integration. Deliverable: ${url}\n\nPhase 1 tasks:\n1. Confirm Tango API tier and store TANGO_API_KEY in Railway env vars\n2. Build tango_client.py wrapper module with rate-limit handling, SQLite caching (tango_awards.db), and backoff\n3. Test /api/contracts/ endpoint with DHS target NAICS codes\n4. Verify enriched fields available at purchased tier\n\nContext: See Session Context slug in deliverable for full background.`;
+  navigator.clipboard.writeText(prompt).then(() => alert('Prompt copied to clipboard'));
+}
+
+function createTodoistTask() {
+  const url = 'https://todoist.com/add?content=Phase%201%3A%20Tango%20API%20wrapper%20%2B%20credentials%20setup&description=Build%20tango_client.py%2C%20add%20TANGO_API_KEY%20to%20Railway%2C%20test%20%2Fapi%2Fcontracts%2F%20with%20DHS%20NAICS.%20Ref%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Ftango-makegov-integration-plan.html&priority=2';
+  window.open(url, '_blank');
+}
+</script>
+
+</body>
+</html>
