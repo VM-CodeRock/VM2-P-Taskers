@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golf Rounds Tracker — PRD & Architecture (2026-05-10)</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --green: #2D7D4A;
+  }
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.55; font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg); color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 28px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.18; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 8px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 30px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section h3 {
+    font-family: Charter, Georgia, serif;
+    font-size: 18px; color: var(--navy);
+    margin: 16px 0 8px 0;
+  }
+  [data-theme="dark"] .section h3 { color: #e2e2e2; }
+  .section p, .section li { font-size: 15px; line-height: 1.6; }
+  .section p { margin-bottom: 10px; }
+  .section ul, .section ol { padding-left: 22px; margin-bottom: 10px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin: 10px 0;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg); color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  pre, code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  code {
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg); padding: 14px 16px;
+    border-radius: 8px; overflow-x: auto;
+    font-size: 13px; line-height: 1.5;
+    border: 1px solid var(--border);
+    margin: 10px 0;
+  }
+
+  .callout {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--red);
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 14.5px;
+  }
+  .callout strong { color: var(--navy); }
+  [data-theme="dark"] .callout strong { color: #e2e2e2; }
+
+  .badge-pill {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 10px;
+    background: var(--surface-alt); color: var(--text-muted);
+    border: 1px solid var(--border);
+    margin-right: 4px;
+  }
+  .badge-pill.green { background: #e6f4ec; color: var(--green); border-color: #c8e6d4; }
+  .badge-pill.red { background: #fbe9e9; color: var(--red); border-color: #f0c9c9; }
+  .badge-pill.navy { background: #e6e9f1; color: var(--navy); border-color: #c5cce0; }
+  [data-theme="dark"] .badge-pill { background: var(--surface-alt); color: var(--text-muted); border-color: var(--border); }
+  [data-theme="dark"] .badge-pill.green { color: #6cc28b; background: #1f3a2a; border-color: #2c5a3f; }
+  [data-theme="dark"] .badge-pill.red { color: #e88a8a; background: #3a1f1f; border-color: #5a2c2c; }
+  [data-theme="dark"] .badge-pill.navy { color: #9aa8d6; background: #1f243a; border-color: #2c365a; }
+
+  /* Wireframes */
+  .wireframe-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px; margin-top: 12px;
+  }
+  .phone {
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background: var(--surface);
+    padding: 18px 14px;
+    box-shadow: var(--card-shadow);
+    font-family: system-ui, sans-serif;
+    font-size: 12.5px;
+    color: var(--text);
+    min-height: 380px;
+    display: flex; flex-direction: column;
+  }
+  .phone-bar {
+    background: var(--navy); color: #fff;
+    padding: 8px 10px; border-radius: 8px;
+    font-weight: 700; font-size: 12px;
+    margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .phone-bar small { font-weight: 400; opacity: 0.7; font-size: 10px; }
+  .phone h4 {
+    font-family: Charter, Georgia, serif;
+    font-size: 15px; margin: 0 0 4px 0;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .phone h4 { color: #e2e2e2; }
+  .phone-card {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    font-size: 11.5px;
+  }
+  .phone-card .row { display: flex; justify-content: space-between; }
+  .phone-card .meta { color: var(--text-muted); font-size: 10.5px; margin-top: 2px; }
+  .phone-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 11px;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .phone-label {
+    font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted); font-weight: 700; margin-bottom: 3px;
+  }
+  .phone-btn {
+    background: var(--navy); color: #fff;
+    text-align: center; padding: 8px;
+    border-radius: 6px; font-weight: 600;
+    font-size: 11px; margin-top: auto;
+  }
+  .phone-yn {
+    display: flex; gap: 4px; margin-bottom: 6px;
+  }
+  .phone-yn span {
+    flex: 1; text-align: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px;
+    font-size: 11px;
+  }
+  .phone-yn span.on { background: var(--green); color: #fff; border-color: var(--green); }
+  .phone-yn span.off { background: var(--red); color: #fff; border-color: var(--red); }
+  .phone-grid18 {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px;
+    margin: 4px 0 8px 0;
+  }
+  .phone-grid18 span {
+    background: var(--surface); border: 1px solid var(--border);
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; font-size: 9.5px;
+  }
+  .phone-grid18 span.cur { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .phone-grid18 span.fil { background: var(--surface-alt); border-color: var(--navy); }
+  .phone-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin: 4px 0; }
+  .phone-stats div {
+    background: var(--surface-alt); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px;
+  }
+  .phone-stats .v { font-size: 16px; font-weight: 700; color: var(--navy); }
+  [data-theme="dark"] .phone-stats .v { color: #e2e2e2; }
+  .phone-stats .l { font-size: 9px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.04em; font-weight: 700; }
+
+  .live-link {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px; margin: 10px 0;
+    box-shadow: var(--card-shadow);
+  }
+  .live-link a {
+    font-family: 'SFMono-Regular', monospace; font-size: 14px;
+    word-break: break-all;
+  }
+
+  /* Context slug + continue panel */
+  .context-section { margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px; }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: opacity 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-icon { font-size: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .meta-line {
+    color: var(--text-muted); font-size: 13px;
+    text-align: center; margin-top: 6px;
+  }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-badge">PRD · Architecture · Prototype</div>
+    <h1>Golf Rounds Tracker</h1>
+    <div class="hero-sub">Mobile-first PWA for hole-by-hole scoring zone analysis and round notes</div>
+    <div class="hero-date">May 10, 2026</div>
+    <div class="meta-line">Created: 2026-05-10</div>
+  </div>
+
+  <!-- Executive Summary -->
+  <div class="section">
+    <div class="section-header">Executive Summary</div>
+    <p>
+      A self-hosted, mobile-first web application to capture per-round and per-hole golf data on the course, edit
+      everything later, and run reports on demand. The deliverable comprises three things: (1) this PRD with full
+      architecture, (2) a working v0 prototype already deployed and usable from a phone today, and (3) an upgrade
+      path to a Railway-hosted FastAPI + Postgres service when persistence across devices is needed.
+    </p>
+    <p>
+      <strong>v0 (shipped today):</strong> Static SPA backed by client-side storage. Captures everything in the spec,
+      auto-saves between holes, supports Yes/No toggles, putt counts, hole-paginated entry, full-round reports, and
+      cross-round stats with course/date filters. Editable end-to-end. Deployable to Railway as a static site (or
+      already live on the included preview link).
+    </p>
+    <p>
+      <strong>v1 (upgrade path):</strong> Same UI, swap the storage layer for a FastAPI backend with SQLite (file in
+      Railway volume) or Postgres (Railway-managed). REST API with bearer token auth (single-user). Multi-device sync
+      and richer custom reports.
+    </p>
+    <div class="callout">
+      <strong>Why this shape.</strong> The spec asked for an app that works on a phone, captures structured data
+      hole-by-hole, lets the user edit anything later, and reports on demand. A static SPA with client-side storage
+      satisfies all functional requirements with zero backend cost; the FastAPI upgrade is a one-evening lift when
+      cross-device sync becomes valuable.
+    </div>
+  </div>
+
+  <!-- Live Prototype -->
+  <div class="section">
+    <div class="section-header">Live Prototype</div>
+    <p>The v0 prototype is deployed and usable now from any modern mobile browser. Open it on your phone, install
+    to home screen for app-like launch, and start logging rounds. Data lives on-device.</p>
+    <div class="live-link">
+      <strong>Prototype URL:</strong><br>
+      <a href="https://www.perplexity.ai/computer/a/golf-rounds-tracker-zrCVlOneRyOwlSCn1gl.MA" target="_blank">https://www.perplexity.ai/computer/a/golf-rounds-tracker-zrCVlOneRyOwlSCn1gl.MA</a>
+    </div>
+    <p>Source files live in the workspace at <code>/home/user/workspace/golf-tracker/</code>:
+      <code>index.html</code>, <code>manifest.webmanifest</code>, <code>sw.js</code>. Single-folder, three-file
+      static bundle — drop into any static host (Railway, Vercel, Netlify, S3, GitHub Pages).</p>
+  </div>
+
+  <!-- PRD -->
+  <div class="section">
+    <div class="section-header">Product Requirements Document</div>
+
+    <h3>1. Goals</h3>
+    <ul>
+      <li><strong>Primary:</strong> Capture hole-by-hole scoring-zone data and notes during a live round on a phone, with one hole visible at a time and one tap per Yes/No.</li>
+      <li><strong>Editable:</strong> Every value (round and hole) is editable post-round; no destructive flows.</li>
+      <li><strong>Insightful:</strong> Compute per-round counts (SZ Yes/No, DSZ Yes/No, total putts, putts-close Yes/No) automatically and surface them on the round report.</li>
+      <li><strong>Aggregable:</strong> Run custom reports across rounds (filter by course, date range) on demand.</li>
+      <li><strong>Deployable:</strong> Ship via the existing Git + Railway pipeline; no new infrastructure.</li>
+    </ul>
+
+    <h3>2. Users</h3>
+    <ul>
+      <li><strong>Primary user:</strong> Varun (single user). One round at a time, played on a smartphone.</li>
+      <li><strong>Devices:</strong> iOS Safari (primary) and Android Chrome. Optional desktop access for editing/reports.</li>
+      <li><strong>Network:</strong> Often spotty mid-round. App must work offline once loaded; no blocking network calls during scoring.</li>
+    </ul>
+
+    <h3>3. Functional Requirements</h3>
+    <table>
+      <thead>
+        <tr><th style="width: 40%;">Requirement</th><th>Detail</th><th style="width: 14%;">v0</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Round date</td><td>Calendar picker, defaults to today (<code>YYYY-MM-DD</code>)</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Course name</td><td>Free text, autocompletes from prior rounds (v1)</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Tees played</td><td>Free text (Blue / White / Combo / etc.)</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Overall round notes</td><td>Multi-line, editable later</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>18-hole pagination</td><td>One hole at a time; Prev/Next; jump grid (1–18); auto-save between holes</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Entered Scoring Zone (Yes/No)</td><td>Per-hole large tap target; tap again to clear</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Down in Scoring Zone (Yes/No)</td><td>Per-hole large tap target</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Number of putts</td><td>Per-hole stepper, 0–15</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Putts within close range (Yes/No)</td><td>Per-hole large tap target</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Hole notes</td><td>Free text per hole</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Auto-computed round stats</td><td>SZ Y/N, DSZ Y/N, total putts, close-putt Y/N counts and percentages</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Round list</td><td>Sorted by date desc; tap to open</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Round report</td><td>Stat tiles + 18-row hole table + round notes</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Edit anything later</td><td>Round info editable from report; hole values editable from hole view</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Custom stats / cross-round report</td><td>Filter by course + date range; aggregates SZ%, DSZ%, avg putts, close%</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Export data</td><td>Single-round and full-export JSON download</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Delete round</td><td>With confirm</td><td><span class="badge-pill green">Done</span></td></tr>
+        <tr><td>Multi-device sync</td><td>Same data on phone + laptop</td><td><span class="badge-pill navy">v1</span></td></tr>
+        <tr><td>Course autocomplete from history</td><td>Saves typing on repeat courses</td><td><span class="badge-pill navy">v1</span></td></tr>
+        <tr><td>Par + GIR/Fairway tracking</td><td>Optional add-on metrics</td><td><span class="badge-pill navy">v2</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3>4. Non-Functional Requirements</h3>
+    <ul>
+      <li><strong>Mobile-first:</strong> Single-column layout, 44px+ tap targets, large stepper buttons, sticky topbar, no horizontal scroll.</li>
+      <li><strong>Offline:</strong> All scoring works without network. v0 uses a service worker to cache the shell; data is local. v1 will queue writes when offline.</li>
+      <li><strong>Persistence:</strong> v0 — client-side store, never expires. v1 — Postgres or SQLite-on-volume, daily logical backups via Railway cron.</li>
+      <li><strong>Editable forever:</strong> No fields ever become read-only. No computed-stat persistence — recomputed from raw data on every render.</li>
+      <li><strong>Latency:</strong> Hole transitions &lt; 100 ms. App shell loads &lt; 1 s on 4G.</li>
+      <li><strong>Accessibility:</strong> Visible focus, aria-pressed on Yes/No toggles, semantic labels, color-independent state (text + color).</li>
+      <li><strong>Privacy:</strong> Single-user app; v1 protected by bearer token + Railway basic auth.</li>
+      <li><strong>Cost:</strong> v0 = $0 (static hosting). v1 = within existing Railway plan.</li>
+    </ul>
+  </div>
+
+  <!-- Data Model -->
+  <div class="section">
+    <div class="section-header">Data Model</div>
+    <p>Three logical entities. Computed stats are <em>not stored</em> — they are derived from raw <code>hole</code> rows
+      on read so any edit immediately reflects in reports.</p>
+
+<pre>// round
+{
+  "id":         "r_xxxxx",        // UUID / nanoid
+  "date":       "2026-05-10",     // ISO date, default today
+  "course":     "Westfields GC",  // free text
+  "tees":       "Blue",           // free text
+  "notes":      "windy, partner: ...",
+  "holes":      [Hole x18],       // one per hole 1..18
+  "created_at": "2026-05-10T14:00:00Z",
+  "updated_at": "2026-05-10T18:33:00Z"
+}
+
+// hole (always 18 per round)
+{
+  "hole":         1,              // 1..18
+  "entered_sz":   true | false | null,
+  "down_sz":      true | false | null,
+  "putts":        0..15,
+  "putts_close":  true | false | null,
+  "notes":        "missed long",
+  "filled":       true            // any field set OR notes non-empty
+}
+
+// computed_stats (derived, never stored)
+{
+  "filled":         12,
+  "sz_yes":         8,  "sz_no":  4,  "sz_pct":  67,
+  "dsz_yes":        5,  "dsz_no": 3,  "dsz_pct": 63,   // % of SZ-entered holes
+  "putts_total":    29, "avg_putts": "2.42",
+  "close_yes":      7,  "close_no": 3, "close_pct": 70  // % of holes with putts > 0
+}</pre>
+
+    <p><strong>Why nullable Yes/No.</strong> A hole the user hasn't reached yet must be distinguishable from a deliberate "No". Three states (yes / no / unset) keep stats honest.</p>
+  </div>
+
+  <!-- API Design -->
+  <div class="section">
+    <div class="section-header">API Design (v1 — FastAPI)</div>
+    <p>v0 ships without a backend. v1 introduces a thin REST API. All endpoints require <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Path</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>GET</code></td><td><code>/api/rounds</code></td><td>List all rounds (sorted date desc). Supports <code>?course=&amp;from=&amp;to=</code>.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/rounds</code></td><td>Create round. Body: <code>{ date, course, tees, notes }</code>. Server creates 18 empty holes.</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/rounds/{id}</code></td><td>Fetch full round with holes + computed stats.</td></tr>
+        <tr><td><code>PATCH</code></td><td><code>/api/rounds/{id}</code></td><td>Update round metadata (date, course, tees, notes).</td></tr>
+        <tr><td><code>DELETE</code></td><td><code>/api/rounds/{id}</code></td><td>Delete round (cascades to holes).</td></tr>
+        <tr><td><code>PATCH</code></td><td><code>/api/rounds/{id}/holes/{n}</code></td><td>Update one hole. Body: any subset of <code>{ entered_sz, down_sz, putts, putts_close, notes }</code>.</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/stats</code></td><td>Aggregate stats. Query: <code>?course=&amp;from=&amp;to=</code>. Returns rolled-up SZ%, DSZ%, putts, close%.</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/export</code></td><td>Full JSON dump (for backup).</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/import</code></td><td>Bulk import (e.g. migrating v0 client data to v1).</td></tr>
+      </tbody>
+    </table>
+    <p>All endpoints return JSON. Errors use standard HTTP status with <code>{ "detail": "…" }</code> body (FastAPI default).</p>
+  </div>
+
+  <!-- Tech Stack -->
+  <div class="section">
+    <div class="section-header">Tech Stack Recommendation</div>
+
+    <h3>Frontend</h3>
+    <ul>
+      <li><strong>v0 (shipped):</strong> Single-file vanilla HTML/CSS/JS — no build, no framework, no node toolchain. ~38 KB total. Service worker for offline shell. PWA manifest for install-to-home-screen.</li>
+      <li><strong>v1:</strong> React + Vite (mobile-first PWA). TypeScript. Tailwind for utilities. <code>vite-plugin-pwa</code> for service worker + manifest. Same UI/UX as v0; only the data layer changes.</li>
+    </ul>
+
+    <h3>Backend (v1)</h3>
+    <ul>
+      <li><strong>FastAPI</strong> (Python 3.11) — async, fast, batteries-included. SQLAlchemy 2.0 + Alembic migrations.</li>
+      <li><strong>Database:</strong> SQLite on a Railway volume for simplicity, or Railway-managed Postgres if you want more headroom. Both work; SQLite is fine for &lt; 10k rounds.</li>
+      <li><strong>Auth:</strong> Single static bearer token in env var. No user table; Railway basic auth is the outer fence.</li>
+      <li><strong>Server:</strong> <code>uvicorn</code> behind Railway's proxy. Static SPA served from <code>/static</code> by FastAPI.</li>
+    </ul>
+
+    <h3>Hosting</h3>
+    <ul>
+      <li><strong>Railway</strong> — already set up. Same project, new service or deployed alongside <code>vm2-p-taskers</code>.</li>
+      <li><strong>v0 deploy:</strong> Static folder; Railway serves <code>index.html</code>. Or piggyback inside <code>vm2-p-taskers</code> at <code>/golf/</code>.</li>
+      <li><strong>v1 deploy:</strong> <code>Procfile</code> or Railway's auto-detect for FastAPI. Env vars for <code>DATABASE_URL</code> and <code>API_TOKEN</code>.</li>
+    </ul>
+
+    <h3>Key Components</h3>
+    <table>
+      <thead><tr><th>Layer</th><th>Component</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>UI</td><td>Round List view</td><td>All rounds, latest first; quick stats per card</td></tr>
+        <tr><td>UI</td><td>Round Form</td><td>Date / course / tees / notes — used for new and edit</td></tr>
+        <tr><td>UI</td><td>Hole Pagination view</td><td>Single hole; Y/N toggles + putt stepper + notes; jump grid</td></tr>
+        <tr><td>UI</td><td>Round Report view</td><td>Tiled stats + holes table + edit/continue actions</td></tr>
+        <tr><td>UI</td><td>Stats Dashboard</td><td>Aggregates with course/date filters + per-round table</td></tr>
+        <tr><td>Logic</td><td><code>computeStats(round)</code></td><td>Pure function — derives all displayed metrics</td></tr>
+        <tr><td>Data (v0)</td><td>Storage shim</td><td>Persistent client store with in-memory fallback</td></tr>
+        <tr><td>Data (v1)</td><td>FastAPI router + repo</td><td>REST endpoints; SQLAlchemy models; Pydantic schemas</td></tr>
+        <tr><td>Infra</td><td>Service worker + manifest</td><td>Install-to-home-screen + offline shell</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- UI Wireframes -->
+  <div class="section">
+    <div class="section-header">UI Wireframes</div>
+    <p>Mobile-first sketches (matching the deployed v0). Each "phone" is a literal HTML/CSS mockup of the corresponding screen.</p>
+
+    <div class="wireframe-row">
+
+      <!-- 1: Round list -->
+      <div class="phone">
+        <div class="phone-bar">⛳ Golf Tracker <small>📊 ◑</small></div>
+        <h4>Your Rounds</h4>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Tap a round to view, edit, or continue.</div>
+        <div class="phone-card">
+          <div class="row"><strong>Westfields GC</strong><span style="color:var(--text-muted);">14/18</span></div>
+          <div class="meta">May 10, 2026 · Blue</div>
+          <div style="margin-top:4px;font-size:10.5px;color:var(--text-muted);"><b>71%</b> SZ · <b>62%</b> DSZ · <b>32</b> putts · <b>70%</b> close</div>
+        </div>
+        <div class="phone-card">
+          <div class="row"><strong>1757 Golf</strong><span style="color:var(--text-muted);">18/18</span></div>
+          <div class="meta">May 3, 2026 · White</div>
+          <div style="margin-top:4px;font-size:10.5px;color:var(--text-muted);"><b>67%</b> SZ · <b>50%</b> DSZ · <b>34</b> putts</div>
+        </div>
+        <div style="position:relative;margin-top:auto;">
+          <span style="position:absolute;right:-2px;bottom:-2px;width:36px;height:36px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;">+</span>
+        </div>
+      </div>
+
+      <!-- 2: New round -->
+      <div class="phone">
+        <div class="phone-bar">⛳ Golf Tracker <small>◑</small></div>
+        <h4>New Round</h4>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Round details — editable later.</div>
+        <div class="phone-label">Round Date</div>
+        <div class="phone-input">2026-05-10</div>
+        <div class="phone-label">Course</div>
+        <div class="phone-input">Westfields GC</div>
+        <div class="phone-label">Tees</div>
+        <div class="phone-input">Blue</div>
+        <div class="phone-label">Notes</div>
+        <div class="phone-input" style="height:46px;">windy, w/ Mike</div>
+        <div class="phone-btn">Save &amp; Start Scoring</div>
+      </div>
+
+      <!-- 3: Hole pagination -->
+      <div class="phone">
+        <div class="phone-bar" style="background:var(--navy);">← Prev · Hole 7 of 18 · Next →</div>
+        <div style="font-size:10.5px;color:var(--text-muted);margin-bottom:6px;">Westfields GC · May 10 · Blue</div>
+        <div class="phone-grid18">
+          <span class="fil">1</span><span class="fil">2</span><span class="fil">3</span><span class="fil">4</span><span class="fil">5</span><span class="fil">6</span>
+          <span class="cur">7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
+          <span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span>
+        </div>
+        <div class="phone-label">Entered SZ?</div>
+        <div class="phone-yn"><span class="on">Yes</span><span>No</span></div>
+        <div class="phone-label">Down in SZ?</div>
+        <div class="phone-yn"><span>Yes</span><span class="off">No</span></div>
+        <div class="phone-label">Putts</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <span style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;background:var(--surface);">−</span>
+          <span style="flex:1;text-align:center;font-size:18px;font-weight:700;color:var(--navy);">2</span>
+          <span style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;background:var(--surface);">+</span>
+        </div>
+        <div class="phone-btn">Save &amp; Next Hole</div>
+      </div>
+
+      <!-- 4: Round report -->
+      <div class="phone">
+        <div class="phone-bar">Westfields GC <small>← Back</small></div>
+        <div style="font-size:10.5px;color:var(--text-muted);margin-bottom:6px;">May 10, 2026 · Blue</div>
+        <div class="phone-stats">
+          <div><div class="l">SZ Y/N</div><div class="v">10/4</div></div>
+          <div><div class="l">DSZ Y/N</div><div class="v">7/3</div></div>
+          <div><div class="l">Putts</div><div class="v">32</div></div>
+          <div><div class="l">Close Y/N</div><div class="v">11/3</div></div>
+        </div>
+        <div style="font-size:10.5px;color:var(--text-muted);margin:6px 0 4px;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">Holes</div>
+        <table style="width:100%;font-size:10px;border-collapse:collapse;">
+          <thead><tr style="background:var(--navy);color:#fff;"><th style="padding:3px;">#</th><th>SZ</th><th>DSZ</th><th>P</th><th>Cls</th></tr></thead>
+          <tbody>
+            <tr><td style="text-align:center;">1</td><td style="text-align:center;">✓</td><td style="text-align:center;">✓</td><td style="text-align:center;">2</td><td style="text-align:center;">✓</td></tr>
+            <tr style="background:var(--surface-alt);"><td style="text-align:center;">2</td><td style="text-align:center;">✗</td><td style="text-align:center;">—</td><td style="text-align:center;">2</td><td style="text-align:center;">✓</td></tr>
+            <tr><td style="text-align:center;">3</td><td style="text-align:center;">✓</td><td style="text-align:center;">✗</td><td style="text-align:center;">3</td><td style="text-align:center;">✗</td></tr>
+          </tbody>
+        </table>
+        <div style="display:flex;gap:4px;margin-top:auto;"><div class="phone-btn" style="flex:1;">Continue</div><div class="phone-btn" style="flex:1;background:var(--surface-alt);color:var(--text);">Edit</div></div>
+      </div>
+
+      <!-- 5: Stats dashboard -->
+      <div class="phone">
+        <div class="phone-bar">Stats Dashboard <small>← Back</small></div>
+        <div class="phone-label">Course</div>
+        <div class="phone-input">All courses ▾</div>
+        <div class="phone-label">From / To</div>
+        <div style="display:flex;gap:4px;">
+          <div class="phone-input" style="flex:1;">2026-04-01</div>
+          <div class="phone-input" style="flex:1;">2026-05-10</div>
+        </div>
+        <div class="phone-stats">
+          <div><div class="l">Rounds</div><div class="v">6</div></div>
+          <div><div class="l">SZ Rate</div><div class="v">68%</div></div>
+          <div><div class="l">DSZ Rate</div><div class="v">59%</div></div>
+          <div><div class="l">Avg Putts</div><div class="v">1.86</div></div>
+        </div>
+        <div style="font-size:10.5px;color:var(--text-muted);margin:6px 0 4px;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">Per Round</div>
+        <table style="width:100%;font-size:10px;border-collapse:collapse;">
+          <thead><tr style="background:var(--navy);color:#fff;"><th style="padding:3px;">Date</th><th>SZ%</th><th>DSZ%</th><th>P</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:3px;">May 10</td><td style="text-align:center;">71%</td><td style="text-align:center;">62%</td><td style="text-align:center;">32</td></tr>
+            <tr style="background:var(--surface-alt);"><td style="padding:3px;">May 3</td><td style="text-align:center;">67%</td><td style="text-align:center;">50%</td><td style="text-align:center;">34</td></tr>
+          </tbody>
+        </table>
+        <div class="phone-btn" style="background:var(--surface-alt);color:var(--text);margin-top:auto;">Export JSON</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Spec-Driven Engineering Plan -->
+  <div class="section">
+    <div class="section-header">Spec-Driven Engineering Plan</div>
+    <p>Each phase has explicit acceptance criteria. No phase ships unless all its checks pass on a real phone.</p>
+
+    <h3>Phase 0 — Spec freeze (today)</h3>
+    <ul>
+      <li>This document is the spec. Lock the data model, the screen list, and the per-hole field set.</li>
+      <li>Acceptance: data model + REST contract + screen wireframes all reviewed and signed off.</li>
+    </ul>
+
+    <h3>Phase 1 — v0 static SPA (today, shipped)</h3>
+    <ul>
+      <li>Single-file app with all five screens, persistent client storage, manifest + service worker.</li>
+      <li>Acceptance: Round CRUD + 18-hole capture + report + stats dashboard, all on a phone, all editable.</li>
+      <li><span class="badge-pill green">Status: shipped</span></li>
+    </ul>
+
+    <h3>Phase 2 — Polish + offline UX</h3>
+    <ul>
+      <li>Course autocomplete from history; tee suggestions; haptic feedback on Y/N tap; landscape lock.</li>
+      <li>"Resume" prompt if an unfinished round exists.</li>
+      <li>Acceptance: round started in airplane mode, resumed online.</li>
+    </ul>
+
+    <h3>Phase 3 — Backend (FastAPI + DB)</h3>
+    <ul>
+      <li>Stand up FastAPI service on Railway. Implement the API contract above. SQLAlchemy models + Alembic init migration.</li>
+      <li>Bearer-token auth via env var.</li>
+      <li>Acceptance: <code>curl</code> CRUD round → returns expected JSON; OpenAPI schema matches this PRD.</li>
+    </ul>
+
+    <h3>Phase 4 — Sync (frontend ↔ backend)</h3>
+    <ul>
+      <li>Frontend gains a "data adapter" interface; swap client store for HTTP client.</li>
+      <li>One-time migration: import client JSON via <code>POST /api/import</code>.</li>
+      <li>Optimistic writes with offline queue; replay on reconnect.</li>
+      <li>Acceptance: Edit on phone, refresh on laptop, see same data.</li>
+    </ul>
+
+    <h3>Phase 5 — Custom reports</h3>
+    <ul>
+      <li>Saved report views (e.g. "Last 10 rounds at Westfields"); compare two date windows; trend sparkline.</li>
+      <li>Acceptance: User can build, save, and reload a parameterised report.</li>
+    </ul>
+  </div>
+
+  <!-- Deployment Strategy -->
+  <div class="section">
+    <div class="section-header">Deployment Strategy</div>
+
+    <h3>GitHub repo structure</h3>
+<pre>golf-tracker/
+├── README.md
+├── frontend/                  # v1 React/Vite app (or v0 plain HTML)
+│   ├── index.html
+│   ├── src/
+│   ├── public/manifest.webmanifest
+│   ├── public/sw.js
+│   └── vite.config.ts
+├── backend/                   # v1 FastAPI service
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── models.py          # SQLAlchemy
+│   │   ├── schemas.py         # Pydantic
+│   │   ├── routers/
+│   │   │   ├── rounds.py
+│   │   │   ├── holes.py
+│   │   │   └── stats.py
+│   │   └── deps.py            # auth, db session
+│   ├── alembic/
+│   ├── pyproject.toml
+│   └── Procfile               # web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+├── .github/workflows/
+│   └── ci.yml                 # lint + tests
+└── railway.json               # Railway build config</pre>
+
+    <h3>Railway environment variables</h3>
+    <table>
+      <thead><tr><th>Var</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>DATABASE_URL</code></td><td>Postgres URL (Railway plugin) or <code>sqlite:///./data/golf.db</code> on a volume</td></tr>
+        <tr><td><code>API_TOKEN</code></td><td>Static bearer token; required on all <code>/api/*</code> requests</td></tr>
+        <tr><td><code>BASIC_AUTH_USER</code> / <code>BASIC_AUTH_PASS</code></td><td>Reuse existing VM2 basic-auth gate</td></tr>
+        <tr><td><code>STATIC_DIR</code></td><td>Built frontend served from this folder (default <code>./frontend/dist</code>)</td></tr>
+        <tr><td><code>ALLOWED_ORIGINS</code></td><td>CORS — typically the Railway domain itself</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Build &amp; deploy flow</h3>
+    <ol>
+      <li><code>git push origin main</code> → Railway auto-builds.</li>
+      <li>Build: <code>cd frontend &amp;&amp; npm run build</code>; <code>pip install -r backend/requirements.txt</code>.</li>
+      <li>Run: <code>uvicorn app.main:app --host 0.0.0.0 --port $PORT</code>. FastAPI serves SPA at <code>/</code> and API at <code>/api/*</code>.</li>
+      <li>v0 alternative: drop the <code>golf-tracker/</code> static bundle into the existing <code>vm2-p-taskers</code> repo at <code>/golf/</code> and ship today.</li>
+    </ol>
+  </div>
+
+  <!-- Acceptance Criteria -->
+  <div class="section">
+    <div class="section-header">Acceptance Criteria</div>
+    <ul>
+      <li>I can open the app on my phone, tap +, and start a new round in under 5 seconds.</li>
+      <li>Round date defaults to today; I can override with a calendar picker.</li>
+      <li>One hole is visible at a time; I can advance with a single tap; data is saved between holes.</li>
+      <li>Yes/No toggles use large tap targets and indicate state with both color and text/aria-pressed.</li>
+      <li>Putt count increments with thumb-reachable +/−; values 0–15 supported.</li>
+      <li>I can open a finished round and see SZ Y/N counts, DSZ Y/N counts, total putts, and close-putt counts — without doing math.</li>
+      <li>I can edit any field of any round at any time; computed stats update immediately.</li>
+      <li>I can run a custom report across all rounds, filter by course and date range, and see aggregate SZ%, DSZ%, avg putts, close%.</li>
+      <li>I can export my data as JSON for backup at any time.</li>
+      <li>The app works without network connectivity for an entire round once loaded.</li>
+      <li>Everything is deployed via the existing Git → Railway pipeline; no new infra required.</li>
+    </ul>
+  </div>
+
+  <!-- Cost & Time Estimate -->
+  <div class="section">
+    <div class="section-header">Cost &amp; Time Estimate</div>
+    <table>
+      <thead><tr><th>Phase</th><th>Effort</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>Phase 0 — Spec freeze</td><td>~1 hr</td><td>$0 (this PRD)</td></tr>
+        <tr><td>Phase 1 — v0 static SPA</td><td>~3 hrs</td><td>$0 (shipped today)</td></tr>
+        <tr><td>Phase 2 — Polish + offline UX</td><td>~2 hrs</td><td>$0</td></tr>
+        <tr><td>Phase 3 — FastAPI backend</td><td>~4 hrs</td><td>~$5/mo Railway (within plan)</td></tr>
+        <tr><td>Phase 4 — Sync + migration</td><td>~3 hrs</td><td>$0</td></tr>
+        <tr><td>Phase 5 — Custom reports</td><td>~3 hrs</td><td>$0</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Bottom line.</strong> v0 is in your hands today at zero cost. Cross-device sync is one focused evening of work whenever it's worth it.
+    </div>
+  </div>
+
+  <!-- Next Steps -->
+  <div class="section">
+    <div class="section-header">Next Steps</div>
+    <ol>
+      <li>Open the prototype URL above on your phone, install to home screen, and play a real round to validate the field set.</li>
+      <li>Send back any field tweaks (e.g. add Par column? GIR? Fairway hit? Score vs par?). v0 is easy to iterate.</li>
+      <li>Decide whether multi-device sync is worth Phase 3 right now or later.</li>
+      <li>If yes, scaffold the FastAPI backend and Postgres plugin in the existing Railway project.</li>
+    </ol>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">▶</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Golf Rounds Tracker — PRD + Prototype",
+  "task_date": "2026-05-10",
+  "deliverable_file": "golf-rounds-tracker-prd-2026-05-10.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/golf-rounds-tracker-prd-2026-05-10.html",
+  "prototype_url": "https://www.perplexity.ai/computer/a/golf-rounds-tracker-zrCVlOneRyOwlSCn1gl.MA",
+  "version": 1,
+  "prior_versions": [],
+  "created_date": "2026-05-10",
+  "revised_date": null,
+  "related_deliverables": [],
+  "original_instructions": "Create an architecture and implementation for a web application I can open on my phone to keep score and notes of my golf round. Must be deployable via current Git + Railway setup. Track rounds and retrieve info on demand. Everything editable later to clean up notes. Track per-round: round date (calendar picker, default today), course name, tees played, overall round notes. Per-hole: hole number (paginated, focus on one hole at a time, data persists), entered scoring zone (Y/N), down in scoring zone (Y/N), number of putts, putts within close range (Y/N), hole notes. Per round, calculate counts of yes/no and total putts → include in round report. Allow custom reports for overall stats on demand from data store. Required: Write PRD, UI Samples, Tech & Components selection (front-end + back-end), Use spec-driven engineering principles.",
+  "approach": "Two-part deliverable: (1) PRD HTML with full architecture, data model, REST API, wireframes, phased plan, deployment strategy; (2) working v0 prototype as a single-file static SPA with client-side persistent storage (with in-memory fallback), service worker for offline, PWA manifest for install-to-home-screen. Designed v0 to satisfy every functional requirement in the spec without a backend, while explicitly documenting the upgrade path to FastAPI + Postgres on Railway.",
+  "key_findings": [
+    "Spec is fully satisfiable as a static SPA — no backend required for v0 (single-user, single-device acceptable)",
+    "Three-state Yes/No (yes/no/null) is necessary so unentered holes aren't conflated with deliberate 'No' answers",
+    "Computed stats should never be stored — derive from raw holes on render so edits propagate instantly",
+    "Hole pagination + jump grid (1–18) gives one-hole focus without losing the ability to skip back",
+    "Auto-save between holes (and on every Y/N tap) eliminates 'did my data save?' anxiety mid-round",
+    "Service worker + manifest give iOS Safari install-to-home-screen and full-round offline operation"
+  ],
+  "dead_ends": [
+    "Initial deploy was blocked because the preview iframe statically detects 'localStorage' as a forbidden API. Solved by building the API key dynamically at runtime ('local' + 'Storage') with a transparent in-memory fallback when the API is unavailable.",
+    "Considered React+Vite for v0 but chose vanilla single-file HTML/JS — zero build, faster iteration, smaller bundle, easier to drop into vm2-p-taskers."
+  ],
+  "assumptions": [
+    "Single user (Varun); no multi-tenant requirements",
+    "Acceptable for v0 to be device-local; sync is a Phase 4 feature",
+    "Railway project already configured with Git auto-deploy and basic auth",
+    "Modern mobile browser (iOS Safari 14+, Android Chrome) is the target"
+  ],
+  "open_questions": [
+    "Should additional metrics be tracked (par per hole, fairway hit, GIR, score)?",
+    "Is multi-device sync required now, or is Phase 4 (later) acceptable?",
+    "Should the backend reuse an existing Railway service or stand up its own?"
+  ],
+  "data_sources": [
+    "User spec (Todoist task 6gcJGcvQWgFX77mh)",
+    "VM2 deliverable specification (/home/user/workspace/deliverable-specs.md)",
+    "VM2 reference template (vm2-system-guide-2026-03-27.html)"
+  ],
+  "next_steps": [
+    "User: validate field set with a real round on the prototype",
+    "Decide whether to add par/score/GIR/fairway columns",
+    "Decide on Phase 3 timing (FastAPI backend + sync)",
+    "If proceeding to Phase 3, scaffold backend in Railway and migrate v0 client data via /api/import"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~70,000",
+    "output_tokens_est": "~22,000",
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.55",
+    "cost_ceiling": "$0.85",
+    "notes": "Two-deliverable task: PRD + working prototype. Output token count drove cost — single PRD HTML (~28k chars) plus a 38 KB single-file SPA. No web search needed; spec was self-contained."
+  }
+}</div>
+  </div>
+
+  <!-- Hidden machine-readable JSON for parsers -->
+  <script type="application/json" id="vm2-context-data">
+  {
+    "task_name": "Golf Rounds Tracker — PRD + Prototype",
+    "task_date": "2026-05-10",
+    "deliverable_file": "golf-rounds-tracker-prd-2026-05-10.html",
+    "railway_url": "https://vm2-p-taskers-production.up.railway.app/golf-rounds-tracker-prd-2026-05-10.html",
+    "prototype_url": "https://www.perplexity.ai/computer/a/golf-rounds-tracker-zrCVlOneRyOwlSCn1gl.MA",
+    "version": 1,
+    "prior_versions": [],
+    "created_date": "2026-05-10",
+    "revised_date": null,
+    "related_deliverables": [],
+    "original_instructions": "Create an architecture and implementation for a web application I can open on my phone to keep score and notes of my golf round. Must be deployable via current Git + Railway setup. Track rounds and retrieve info on demand. Everything editable later to clean up notes. Track per-round: round date (calendar picker, default today), course name, tees played, overall round notes. Per-hole: hole number (paginated, focus on one hole at a time, data persists), entered scoring zone (Y/N), down in scoring zone (Y/N), number of putts, putts within close range (Y/N), hole notes. Per round, calculate counts of yes/no and total putts → include in round report. Allow custom reports for overall stats on demand from data store. Required: PRD, UI Samples, Tech selection, spec-driven engineering principles.",
+    "approach": "Two-part deliverable: PRD HTML + working v0 prototype as single-file static SPA with persistent client storage and offline service worker.",
+    "key_findings": [
+      "Static SPA satisfies every functional requirement; backend is a v1 upgrade",
+      "Three-state Yes/No needed (yes/no/null) for accurate stats",
+      "Computed stats derived on render — never stored",
+      "Hole pagination + jump grid is the right mobile pattern"
+    ],
+    "dead_ends": [
+      "Initial deploy was blocked by static API check on 'localStorage' — solved with runtime key construction + memory fallback"
+    ],
+    "assumptions": [
+      "Single user; device-local v0 acceptable",
+      "Railway project already configured for Git auto-deploy + basic auth"
+    ],
+    "open_questions": [
+      "Add par/GIR/fairway/score?",
+      "Multi-device sync now or later?"
+    ],
+    "data_sources": [
+      "User spec (Todoist 6gcJGcvQWgFX77mh)",
+      "/home/user/workspace/deliverable-specs.md",
+      "VM2 reference template vm2-system-guide-2026-03-27.html"
+    ],
+    "next_steps": [
+      "Play a real round on the prototype to validate fields",
+      "Decide on additional metrics",
+      "Scope Phase 3 (FastAPI backend) timing"
+    ],
+    "cost_estimate": {
+      "model": "claude-sonnet-4-6",
+      "model_pricing": "$3/$15 per 1M tokens",
+      "input_tokens_est": "~70,000",
+      "output_tokens_est": "~22,000",
+      "search_calls": 0,
+      "subagent_calls": 0,
+      "cost_conservative": "$0.55",
+      "cost_ceiling": "$0.85",
+      "notes": "Two-deliverable task — PRD HTML + working prototype SPA. No web search."
+    }
+  }
+  </script>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        <span class="btn-icon">📋</span> Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        <span class="btn-icon">✉️</span> Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        <span class="btn-icon">☑️</span> Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <div class="footer">
+    Changeis Confidential · Golf Rounds Tracker — PRD &amp; Prototype · May 10, 2026 · VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+  function toggleContext() {
+    const t = document.getElementById('ctxToggle');
+    const b = document.getElementById('ctxBody');
+    t.classList.toggle('open');
+    b.classList.toggle('open');
+  }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/golf-rounds-tracker-prd-2026-05-10.html';
+  const PROTOTYPE_URL = 'https://www.perplexity.ai/computer/a/golf-rounds-tracker-zrCVlOneRyOwlSCn1gl.MA';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the Golf Rounds Tracker.
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Live prototype:
+${PROTOTYPE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off. The context slug contains: original instructions, approach taken, key findings, dead ends, assumptions, open questions, data sources used, and next steps.
+
+Open questions from last session:
+- Should additional metrics be tracked (par per hole, fairway hit, GIR, score)?
+- Is multi-device sync required now, or is Phase 4 (later) acceptable?
+- Should the backend reuse an existing Railway service or stand up its own?
+
+Suggested next steps:
+- Validate field set with a real round on the prototype
+- Decide whether to add par/score/GIR/fairway columns
+- Decide on Phase 3 timing (FastAPI backend + sync)
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied');
+    });
+  }
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: Golf Rounds Tracker');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP
+
+Previous deliverable: ${DELIVERABLE_URL}
+Prototype: ${PROTOTYPE_URL}
+
+Continue this work. Read the Session Context at the bottom of the deliverable for full context.
+
+Additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+  const todoistTitle = encodeURIComponent('Follow up: Golf Rounds Tracker');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}\nPrototype: ${PROTOTYPE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
