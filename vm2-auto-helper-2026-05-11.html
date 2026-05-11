@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM2 Auto-Helper — May 11, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --muted: #5a5a5a;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --muted: #8a8e96;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 44px 0 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .hero-label {
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--red); margin-bottom: 10px;
+  }
+  .hero h1 {
+    font-family: Charter, Georgia, serif;
+    font-size: 28px; font-weight: 700;
+    color: var(--navy); letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  [data-theme="dark"] .hero h1 { color: #d8d8d8; }
+  .hero-date {
+    margin-top: 8px; font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--muted);
+  }
+
+  .stats-bar {
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    margin-bottom: 32px; padding: 16px 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; box-shadow: var(--card-shadow);
+  }
+  .stat { text-align: center; flex: 1; min-width: 90px; }
+  .stat-val {
+    font-family: system-ui, sans-serif; font-size: 22px; font-weight: 700;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .stat-val { color: #7eb3e0; }
+  .stat-lbl {
+    font-family: system-ui, sans-serif; font-size: 11px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.07em; margin-top: 2px;
+  }
+
+  .section-heading {
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--red);
+    margin-bottom: 16px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--red);
+  }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px 22px;
+    box-shadow: var(--card-shadow); margin-bottom: 16px;
+    transition: box-shadow 0.15s;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+  .card-header {
+    display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px;
+  }
+  .card-num {
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    color: var(--text-faint); min-width: 28px; padding-top: 3px;
+  }
+  .card-title-block { flex: 1; }
+  .card-title {
+    font-family: Charter, Georgia, serif; font-size: 17px; font-weight: 700;
+    color: var(--link); text-decoration: none; line-height: 1.3;
+    display: block; margin-bottom: 6px;
+  }
+  .card-title:hover { text-decoration: underline; }
+  .card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+  .btn-vm2 {
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600;
+    background: var(--btn-bg); color: var(--btn-text);
+    padding: 7px 14px; border-radius: 6px; text-decoration: none;
+    white-space: nowrap; flex-shrink: 0; letter-spacing: 0.01em;
+    transition: opacity 0.15s;
+  }
+  .btn-vm2:hover { opacity: 0.85; }
+
+  .card-why {
+    font-size: 14px; color: var(--text-muted); margin-bottom: 10px;
+    padding-left: 42px; line-height: 1.55;
+    font-family: Charter, Georgia, serif;
+  }
+  .card-why strong { color: var(--text); }
+
+  .card-approach {
+    font-size: 14px; padding-left: 42px;
+    font-family: Charter, Georgia, serif;
+  }
+  .card-approach strong { color: var(--text); }
+  .card-approach ul {
+    margin-top: 6px; padding-left: 18px; color: var(--text-muted);
+    line-height: 1.65;
+  }
+  .card-approach ul li { margin-bottom: 3px; }
+
+  /* Context / Continue panels */
+  .panel {
+    background: var(--panel-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px 22px; margin-bottom: 20px;
+  }
+  .panel summary {
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; color: var(--text); letter-spacing: 0.01em;
+  }
+  .panel summary::-webkit-details-marker { color: var(--red); }
+  .panel-body { margin-top: 14px; }
+  .panel-body h4 {
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--red);
+    margin-top: 14px; margin-bottom: 4px;
+  }
+  .panel-body h4:first-child { margin-top: 0; }
+  .panel-body p, .panel-body li {
+    font-size: 13px; color: var(--text-muted); line-height: 1.6;
+    font-family: system-ui, sans-serif;
+  }
+  .panel-body ul { padding-left: 18px; }
+  .panel-body li { margin-bottom: 3px; }
+  .panel-body pre {
+    background: var(--code-bg); border-radius: 4px; padding: 12px;
+    font-size: 11px; overflow-x: auto; margin-top: 6px;
+    font-family: 'SF Mono', Consolas, monospace; color: var(--text-muted);
+    white-space: pre-wrap; word-break: break-word;
+  }
+
+  .continue-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px 22px; margin-bottom: 20px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--red);
+    margin-bottom: 12px;
+  }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn {
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;
+    padding: 9px 16px; border-radius: 6px; text-decoration: none;
+    cursor: pointer; border: none; transition: opacity 0.15s;
+    display: inline-block;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn:hover { opacity: 0.85; }
+
+  .footer {
+    text-align: center; padding: 24px 0 32px;
+    font-family: system-ui, sans-serif; font-size: 12px; color: var(--text-faint);
+    border-top: 1px solid var(--border); margin-top: 40px;
+  }
+
+  @media (max-width: 600px) {
+    .card-header { flex-direction: column; }
+    .btn-vm2 { align-self: flex-start; }
+    .card-why, .card-approach { padding-left: 0; }
+    .stats-bar { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">◐ Toggle Theme</button>
+</div>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-label">Auto-Helper · May 11, 2026</div>
+    <h1>Todoist AI Suggestions</h1>
+    <div class="hero-date">
+      Created: 2026-05-11 &nbsp;·&nbsp;
+      Tasks analyzed: 704 &nbsp;·&nbsp; Candidates surfaced: 17
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-val">704</div>
+      <div class="stat-lbl">Total Tasks</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">27</div>
+      <div class="stat-lbl">VM2-Labeled</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">677</div>
+      <div class="stat-lbl">Non-VM2</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">17</div>
+      <div class="stat-lbl">AI Candidates</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">4</div>
+      <div class="stat-lbl">Due Today</div>
+    </div>
+  </div>
+
+  <div class="section-heading">Top AI-Assistable Tasks — Ranked by Priority & ROI</div>
+
+
+    <div class="card" id="card-1">
+      <div class="card-header">
+        <div class="card-num">01</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6gX8vMPP4mMpWr35" target="_blank" rel="noopener">FAA APEX Industry Day — Analysis & Next Steps</a>
+          <div class="card-meta">
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P1</span>
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">⏰ May 12, 2026</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E2-Important & Not urgent</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20FAA%20APEX%20Industry%20Day%20%E2%80%94%20Analysis%20%26%20Next%20Steps&body=VM2%20TASK%3A%20FAA%20APEX%20Industry%20Day%20%E2%80%94%20Analysis%20%26%20Next%20Steps%0A%0ATask%20ID%3A%206gX8vMPP4mMpWr35%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0APriority%3A%20P1%0ADue%3A%20May%2012%2C%202026%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Research%20FAA%20APEX%20program%20history%2C%20scope%2C%20and%20recent%20announcements%20to%20build%20context%0A%E2%80%A2%20Draft%20a%20structured%20post-Industry%20Day%20memo%3A%20key%20takeaways%2C%20open%20items%2C%20capture%20actions%2C%20teaming%20leads%0A%E2%80%A2%20Identify%20incumbent%20contractors%20and%20potential%20teaming%20partners%3B%20assess%20Changeis%20positioning%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6gX8vMPP4mMpWr35">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> This requires synthesizing a government industry day briefing, competitive positioning, and identifying teaming/capture actions. Perplexity Computer can research FAA APEX program details, draft a structured next-steps memo, and analyze competitive landscape.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Research FAA APEX program history, scope, and recent announcements to build context</li>
+<li>Draft a structured post-Industry Day memo: key takeaways, open items, capture actions, teaming leads</li>
+<li>Identify incumbent contractors and potential teaming partners; assess Changeis positioning</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-2">
+      <div class="card-header">
+        <div class="card-num">02</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6g5c3Jrp2Vxqgwg5" target="_blank" rel="noopener">Process Consulting Agreement — Changeis / Kinnetek</a>
+          <div class="card-meta">
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P2</span>
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">⚡ May 11, 2026 (TODAY)</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E2-Important & Not urgent</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Process%20Consulting%20Agreement%20%E2%80%94%20Changeis%20%2F%20Kinnetek&body=VM2%20TASK%3A%20Process%20Consulting%20Agreement%20%E2%80%94%20Changeis%20%2F%20Kinnetek%0A%0ATask%20ID%3A%206g5c3Jrp2Vxqgwg5%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0APriority%3A%20P2%0ADue%3A%20May%2011%2C%202026%20%28TODAY%29%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Review%20the%20DOCX%20for%20non-standard%20indemnification%2C%20IP%20ownership%2C%20termination%2C%20and%20non-compete%20clauses%0A%E2%80%A2%20Benchmark%20against%20standard%20consulting%20agreement%20terms%3B%20flag%20high-risk%20provisions%20with%20suggested%20edits%0A%E2%80%A2%20Draft%20a%20one-page%20redline%20summary%20memo%20for%20legal%2Fexecutive%20review%20before%20signature%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6g5c3Jrp2Vxqgwg5">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Reviewing and redlining a consulting agreement draft requires legal analysis, standard clause benchmarking, and risk identification. Perplexity Computer can analyze the agreement for standard/non-standard terms and draft a redline summary.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Review the DOCX for non-standard indemnification, IP ownership, termination, and non-compete clauses</li>
+<li>Benchmark against standard consulting agreement terms; flag high-risk provisions with suggested edits</li>
+<li>Draft a one-page redline summary memo for legal/executive review before signature</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-3">
+      <div class="card-header">
+        <div class="card-num">03</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6gH3q49FwFhfCVcX" target="_blank" rel="noopener">Pavan Pidugu Award Follow-up — WashingtonExec</a>
+          <div class="card-meta">
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P2</span>
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">⚡ May 11, 2026 (TODAY)</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E2-Important & Not urgent</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Pavan%20Pidugu%20Award%20Follow-up%20%E2%80%94%20WashingtonExec&body=VM2%20TASK%3A%20Pavan%20Pidugu%20Award%20Follow-up%20%E2%80%94%20WashingtonExec%0A%0ATask%20ID%3A%206gH3q49FwFhfCVcX%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0APriority%3A%20P2%0ADue%3A%20May%2011%2C%202026%20%28TODAY%29%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Research%20WashingtonExec%20recognition%20program%20requirements%20and%20past%20award%20examples%0A%E2%80%A2%20Draft%20a%20nomination%2Ffollow-up%20letter%20highlighting%20Pavan%20Pidugu%27s%20accomplishments%20and%20impact%0A%E2%80%A2%20Suggest%20supporting%20data%20points%20%28project%20outcomes%2C%20leadership%20metrics%29%20to%20strengthen%20the%20submission%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6gH3q49FwFhfCVcX">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Drafting a compelling award nomination or recognition follow-up letter to WashingtonExec requires polished professional writing and knowledge of awards criteria. Perplexity Computer can draft the full communication for review.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Research WashingtonExec recognition program requirements and past award examples</li>
+<li>Draft a nomination/follow-up letter highlighting Pavan Pidugu's accomplishments and impact</li>
+<li>Suggest supporting data points (project outcomes, leadership metrics) to strengthen the submission</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-4">
+      <div class="card-header">
+        <div class="card-num">04</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6V437X3jM3QPcxfX" target="_blank" rel="noopener">VM Spring '24 OKR Actions Review</a>
+          <div class="card-meta">
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P1</span>
+            <span style="background:var(--surface-alt);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">Every 2 days (recurring)</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E2-Important & Not urgent</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20VM%20Spring%20%2724%20OKR%20Actions%20Review&body=VM2%20TASK%3A%20VM%20Spring%20%2724%20OKR%20Actions%20Review%0A%0ATask%20ID%3A%206V437X3jM3QPcxfX%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0APriority%3A%20P1%0ADue%3A%20Every%202%20days%20%28recurring%29%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Structure%20current%20OKR%20status%20into%20a%20red%2Fyellow%2Fgreen%20dashboard%20format%0A%E2%80%A2%20Identify%20top%203%20lagging%20key%20results%20and%20draft%20specific%20action%20plans%20for%20each%0A%E2%80%A2%20Create%20a%20weekly%20OKR%20cadence%20template%20and%20suggested%20metrics%20to%20track%20progress%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6V437X3jM3QPcxfX">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> OKR tracking and action planning benefits enormously from structured analysis. Perplexity Computer can summarize OKR status, identify lagging key results, and draft action plans for each objective.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Structure current OKR status into a red/yellow/green dashboard format</li>
+<li>Identify top 3 lagging key results and draft specific action plans for each</li>
+<li>Create a weekly OKR cadence template and suggested metrics to track progress</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-5">
+      <div class="card-header">
+        <div class="card-num">05</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6gP5mHg795FQmV2X" target="_blank" rel="noopener">OFAM FO Administrative Support — Capture Strategy</a>
+          <div class="card-meta">
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P1</span>
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">⏰ May 12, 2026</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E3-Urgent & Unimportant</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20OFAM%20FO%20Administrative%20Support%20%E2%80%94%20Capture%20Strategy&body=VM2%20TASK%3A%20OFAM%20FO%20Administrative%20Support%20%E2%80%94%20Capture%20Strategy%0A%0ATask%20ID%3A%206gP5mHg795FQmV2X%0AProject%3A%20E3-Urgent%20%26%20Unimportant%0APriority%3A%20P1%0ADue%3A%20May%2012%2C%202026%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Fetch%20and%20analyze%20the%20APFS%20procurement%20record%20for%20OFAM%20FO%20Administrative%20Support%20%28Record%2073307%29%0A%E2%80%A2%20Research%20incumbent%2C%20scope%2C%20contract%20value%2C%20period%20of%20performance%2C%20and%20evaluation%20criteria%0A%E2%80%A2%20Draft%20a%201-page%20capture%20brief%20with%20Changeis%20fit%20assessment%20and%20recommended%20pursuit%2Fno-pursuit%20recommendation%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6gP5mHg795FQmV2X">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Federal capture work requires researching the opportunity, mapping the competitive landscape, and building a PWS/capability summary. Perplexity Computer can analyze the DHS OFAM procurement record and draft a capture brief.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Fetch and analyze the APFS procurement record for OFAM FO Administrative Support (Record 73307)</li>
+<li>Research incumbent, scope, contract value, period of performance, and evaluation criteria</li>
+<li>Draft a 1-page capture brief with Changeis fit assessment and recommended pursuit/no-pursuit recommendation</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-6">
+      <div class="card-header">
+        <div class="card-num">06</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6C6wRxH8m3xR2VXJ" target="_blank" rel="noopener">Business Development Pipeline Review — VM</a>
+          <div class="card-meta">
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P1</span>
+            <span style="background:var(--surface-alt);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">Every Friday</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">BD</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Business%20Development%20Pipeline%20Review%20%E2%80%94%20VM&body=VM2%20TASK%3A%20Business%20Development%20Pipeline%20Review%20%E2%80%94%20VM%0A%0ATask%20ID%3A%206C6wRxH8m3xR2VXJ%0AProject%3A%20BD%0APriority%3A%20P1%0ADue%3A%20Every%20Friday%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Build%20a%20structured%20BD%20pipeline%20review%20template%20%28opportunity%2C%20stage%2C%20value%2C%20probability%2C%20next%20action%2C%20owner%29%0A%E2%80%A2%20Draft%20a%20weekly%20pipeline%20review%20report%20format%20with%20red%2Fyellow%2Fgreen%20pursuit%20health%20indicators%0A%E2%80%A2%20Identify%20research%20questions%20for%20top%205%20active%20pursuits%20%28market%20intelligence%2C%20competitor%20analysis%29%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6C6wRxH8m3xR2VXJ">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Pipeline reviews require data aggregation, status summarization, and win probability analysis. Perplexity Computer can build a structured pipeline review template, analyze pursuit stages, and draft a weekly BD report.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Build a structured BD pipeline review template (opportunity, stage, value, probability, next action, owner)</li>
+<li>Draft a weekly pipeline review report format with red/yellow/green pursuit health indicators</li>
+<li>Identify research questions for top 5 active pursuits (market intelligence, competitor analysis)</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-7">
+      <div class="card-header">
+        <div class="card-num">07</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6gX9Rv5g3PVRpGVX" target="_blank" rel="noopener">OFAM Issue Resolution</a>
+          <div class="card-meta">
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P1</span>
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">⏰ May 12, 2026</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E1-Urgent & Important</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20OFAM%20Issue%20Resolution&body=VM2%20TASK%3A%20OFAM%20Issue%20Resolution%0A%0ATask%20ID%3A%206gX9Rv5g3PVRpGVX%0AProject%3A%20E1-Urgent%20%26%20Important%0APriority%3A%20P1%0ADue%3A%20May%2012%2C%202026%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Draft%20an%20issue%20resolution%20brief%3A%20problem%20statement%2C%20root%20cause%2C%20impact%2C%20proposed%20resolution%2C%20timeline%0A%E2%80%A2%20Build%20a%20stakeholder%20communication%20template%20for%20escalation%20to%20OFAM%20program%20managers%0A%E2%80%A2%20Research%20FAA%2FDHS%20contract%20dispute%20resolution%20procedures%20and%20applicable%20FAR%20clauses%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6gX9Rv5g3PVRpGVX">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Resolving a complex federal contract issue requires structured problem analysis, stakeholder mapping, and drafting formal communications. Perplexity Computer can help structure the issue resolution memo and draft client-facing documentation.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Draft an issue resolution brief: problem statement, root cause, impact, proposed resolution, timeline</li>
+<li>Build a stakeholder communication template for escalation to OFAM program managers</li>
+<li>Research FAA/DHS contract dispute resolution procedures and applicable FAR clauses</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-8">
+      <div class="card-header">
+        <div class="card-num">08</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=67gRmFhq4RPf4fr5" target="_blank" rel="noopener">Publish Strategic Plan — Define OKR Next Steps</a>
+          <div class="card-meta">
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P2</span>
+            <span style="background:var(--surface-alt);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">No due date</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E2-Important & Not urgent</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Publish%20Strategic%20Plan%20%E2%80%94%20Define%20OKR%20Next%20Steps&body=VM2%20TASK%3A%20Publish%20Strategic%20Plan%20%E2%80%94%20Define%20OKR%20Next%20Steps%0A%0ATask%20ID%3A%2067gRmFhq4RPf4fr5%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0APriority%3A%20P2%0ADue%3A%20No%20due%20date%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Draft%20a%20strategic%20plan%20communication%20cascade%3A%20exec%20summary%20%E2%86%92%20all-hands%20deck%20%E2%86%92%20team-level%20one-pagers%0A%E2%80%A2%20Create%20a%20rollout%20timeline%20with%20milestones%2C%20feedback%20loops%2C%20and%20Q%26A%20session%20format%0A%E2%80%A2%20Build%20an%20OKR%20alignment%20matrix%20showing%20how%20each%20team%27s%20goals%20map%20to%20company-level%20objectives%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D67gRmFhq4RPf4fr5">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Strategic plan communication requires careful structuring, audience segmentation, and change management planning. Perplexity Computer can draft the internal rollout plan and create employee-facing communication materials.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Draft a strategic plan communication cascade: exec summary → all-hands deck → team-level one-pagers</li>
+<li>Create a rollout timeline with milestones, feedback loops, and Q&A session format</li>
+<li>Build an OKR alignment matrix showing how each team's goals map to company-level objectives</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-9">
+      <div class="card-header">
+        <div class="card-num">09</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6gX96q9h3cXCMPm5" target="_blank" rel="noopener">YDC Membership Chair — Next Steps</a>
+          <div class="card-meta">
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P2</span>
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">⏰ May 12, 2026</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E2-Important & Not urgent</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20YDC%20Membership%20Chair%20%E2%80%94%20Next%20Steps&body=VM2%20TASK%3A%20YDC%20Membership%20Chair%20%E2%80%94%20Next%20Steps%0A%0ATask%20ID%3A%206gX96q9h3cXCMPm5%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0APriority%3A%20P2%0ADue%3A%20May%2012%2C%202026%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Research%20YDC%20%28Young%20Defense%20Contractors%20or%20similar%29%20membership%20chair%20role%20best%20practices%0A%E2%80%A2%20Draft%20a%2090-day%20membership%20engagement%20and%20recruitment%20action%20plan%20with%20specific%20tactics%0A%E2%80%A2%20Create%20outreach%20email%20templates%20for%20new%20member%20recruitment%20and%20lapsed%20member%20re-engagement%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6gX96q9h3cXCMPm5">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Planning membership chair activities requires outreach strategy, event planning, and member engagement frameworks. Perplexity Computer can research best practices and draft a 90-day membership growth plan.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Research YDC (Young Defense Contractors or similar) membership chair role best practices</li>
+<li>Draft a 90-day membership engagement and recruitment action plan with specific tactics</li>
+<li>Create outreach email templates for new member recruitment and lapsed member re-engagement</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-10">
+      <div class="card-header">
+        <div class="card-num">10</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6gJf5M8hhwqRX8Rr" target="_blank" rel="noopener">OASIS Forms — Volpe Submission</a>
+          <div class="card-meta">
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P2</span>
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">⚡ May 11, 2026 (TODAY)</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E2-Important & Not urgent</span>
+            <span style="background:#e8f4f8;color:#1B2A4A;padding:2px 7px;border-radius:3px;font-size:11px;font-family:system-ui,sans-serif;margin-right:4px;">VMCC-OASIS-Plus-Phase2</span>
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20OASIS%20Forms%20%E2%80%94%20Volpe%20Submission&body=VM2%20TASK%3A%20OASIS%20Forms%20%E2%80%94%20Volpe%20Submission%0A%0ATask%20ID%3A%206gJf5M8hhwqRX8Rr%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0APriority%3A%20P2%0ADue%3A%20May%2011%2C%202026%20%28TODAY%29%0ALabels%3A%20VMCC-OASIS-Plus-Phase2%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Research%20GSA%20OASIS%2B%20Phase%202%20current%20submission%20status%2C%20timelines%2C%20and%20required%20forms%20for%20Volpe%2FDOT%0A%E2%80%A2%20Draft%20a%20submission%20cover%20letter%20and%20populate%20a%20compliance%20checklist%20for%20all%20required%20OASIS%20documentation%0A%E2%80%A2%20Identify%20any%20recent%20GSA%20amendments%20or%20clarifications%20affecting%20the%20Volpe%20task%20order%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6gJf5M8hhwqRX8Rr">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> OASIS+ Phase 2 submissions require precise documentation and compliance with GSA requirements. Perplexity Computer can research current OASIS+ Phase 2 requirements and draft a submission checklist and cover letter.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Research GSA OASIS+ Phase 2 current submission status, timelines, and required forms for Volpe/DOT</li>
+<li>Draft a submission cover letter and populate a compliance checklist for all required OASIS documentation</li>
+<li>Identify any recent GSA amendments or clarifications affecting the Volpe task order</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-11">
+      <div class="card-header">
+        <div class="card-num">11</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6g8cvMhFc6M4v7WX" target="_blank" rel="noopener">DHS/ICE SEVP IT PMO — Recompete Strategy</a>
+          <div class="card-meta">
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P1</span>
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">⏰ May 12, 2026</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E1-Urgent & Important</span>
+            <span style="background:#e8f4f8;color:#1B2A4A;padding:2px 7px;border-radius:3px;font-size:11px;font-family:system-ui,sans-serif;margin-right:4px;">VMCC-DHS-SEVP</span>
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20DHS%2FICE%20SEVP%20IT%20PMO%20%E2%80%94%20Recompete%20Strategy&body=VM2%20TASK%3A%20DHS%2FICE%20SEVP%20IT%20PMO%20%E2%80%94%20Recompete%20Strategy%0A%0ATask%20ID%3A%206g8cvMhFc6M4v7WX%0AProject%3A%20E1-Urgent%20%26%20Important%0APriority%3A%20P1%0ADue%3A%20May%2012%2C%202026%0ALabels%3A%20VMCC-DHS-SEVP%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Research%20DHS%2FICE%20SEVP%20IT%20PMO%20contract%20%28current%20incumbent%2C%20vehicle%2C%20period%20of%20performance%2C%20estimated%20value%29%0A%E2%80%A2%20Draft%20a%20recompete%20capture%20brief%3A%20opportunity%20assessment%2C%20competitive%20landscape%2C%20Changeis%20differentiators%0A%E2%80%A2%20Build%20a%20scheduling%2Faction%20checklist%20for%20the%20recompete%20pursuit%3A%20kickoff%2C%20RFI%20response%2C%20teaming%20outreach%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6g8cvMhFc6M4v7WX">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> A federal recompete requires deep opportunity research, incumbent analysis, and win-theme development. Perplexity Computer can research the SEVP IT PMO contract history and draft a capture planning brief.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Research DHS/ICE SEVP IT PMO contract (current incumbent, vehicle, period of performance, estimated value)</li>
+<li>Draft a recompete capture brief: opportunity assessment, competitive landscape, Changeis differentiators</li>
+<li>Build a scheduling/action checklist for the recompete pursuit: kickoff, RFI response, teaming outreach</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-12">
+      <div class="card-header">
+        <div class="card-num">12</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6V6G9RQ2VpQj3MV5" target="_blank" rel="noopener">VM Communications Plan — Project Accelerator</a>
+          <div class="card-meta">
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P2</span>
+            <span style="background:var(--surface-alt);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">No due date</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E2-Important & Not urgent</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20VM%20Communications%20Plan%20%E2%80%94%20Project%20Accelerator&body=VM2%20TASK%3A%20VM%20Communications%20Plan%20%E2%80%94%20Project%20Accelerator%0A%0ATask%20ID%3A%206V6G9RQ2VpQj3MV5%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0APriority%3A%20P2%0ADue%3A%20No%20due%20date%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Draft%20a%20VM%20Communications%20Plan%20structure%3A%20audiences%2C%20key%20messages%2C%20channels%2C%20frequency%2C%20owners%0A%E2%80%A2%20Research%20best-practice%20communications%20plans%20for%20government%20consulting%20accelerator%20programs%0A%E2%80%A2%20Create%20a%2090-day%20content%20calendar%20template%20with%20themes%2C%20formats%2C%20and%20distribution%20channels%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6V6G9RQ2VpQj3MV5">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Building a communications plan for an accelerator program requires audience analysis, channel strategy, and content calendar development. Perplexity Computer can research accelerator communication frameworks and draft the full plan.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Draft a VM Communications Plan structure: audiences, key messages, channels, frequency, owners</li>
+<li>Research best-practice communications plans for government consulting accelerator programs</li>
+<li>Create a 90-day content calendar template with themes, formats, and distribution channels</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-13">
+      <div class="card-header">
+        <div class="card-num">13</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6gPxpHCmWVV3C27r" target="_blank" rel="noopener">Jeff Baker — iLab Pitch Preparation</a>
+          <div class="card-meta">
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P1</span>
+            <span style="background:var(--surface-alt);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">May 16, 2026</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">Inbox</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Jeff%20Baker%20%E2%80%94%20iLab%20Pitch%20Preparation&body=VM2%20TASK%3A%20Jeff%20Baker%20%E2%80%94%20iLab%20Pitch%20Preparation%0A%0ATask%20ID%3A%206gPxpHCmWVV3C27r%0AProject%3A%20Inbox%0APriority%3A%20P1%0ADue%3A%20May%2016%2C%202026%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Research%20iLab%20pitch%20requirements%2C%20format%2C%20and%20scoring%20criteria%3B%20identify%20what%20judges%20prioritize%0A%E2%80%A2%20Draft%20a%20pitch%20narrative%20outline%3A%20problem%2C%20solution%2C%20market%20opportunity%2C%20team%2C%20ask%0A%E2%80%A2%20Build%20a%20set%20of%20data-backed%20slides%20with%20statistics%20that%20strengthen%20the%20pitch%27s%20value%20proposition%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6gPxpHCmWVV3C27r">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Preparing a pitch for an innovation lab requires competitive research, narrative structure, and compelling story development. Perplexity Computer can research iLab programs and draft the pitch deck outline and talking points.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Research iLab pitch requirements, format, and scoring criteria; identify what judges prioritize</li>
+<li>Draft a pitch narrative outline: problem, solution, market opportunity, team, ask</li>
+<li>Build a set of data-backed slides with statistics that strengthen the pitch's value proposition</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-14">
+      <div class="card-header">
+        <div class="card-num">14</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6gXPvccrGvpGMfHf" target="_blank" rel="noopener">FAAMA Managing the Skies — Ad Decision & Draft</a>
+          <div class="card-meta">
+            <span style="background:#2D7D4A;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P3</span>
+            <span style="background:#c53a3a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">⚡ May 11, 2026 (TODAY)</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E3-Urgent & Unimportant</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20FAAMA%20Managing%20the%20Skies%20%E2%80%94%20Ad%20Decision%20%26%20Draft&body=VM2%20TASK%3A%20FAAMA%20Managing%20the%20Skies%20%E2%80%94%20Ad%20Decision%20%26%20Draft%0A%0ATask%20ID%3A%206gXPvccrGvpGMfHf%0AProject%3A%20E3-Urgent%20%26%20Unimportant%0APriority%3A%20P3%0ADue%3A%20May%2011%2C%202026%20%28TODAY%29%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Research%20FAAMA%20%28Federal%20Aviation%20Administration%20Managers%20Association%29%20and%20%27Managing%20the%20Skies%27%20publication%20reach%20and%20demographics%0A%E2%80%A2%20Evaluate%20ad%20ROI%3A%20estimated%20audience%2C%20cost-per-impression%2C%20Changeis%20alignment%20with%20FAA%20market%0A%E2%80%A2%20Draft%20two%20versions%20of%20Changeis%20ad%20copy%20%28full-page%20and%20half-page%29%20for%20the%20periodical%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6gXPvccrGvpGMfHf">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Evaluating a periodical advertising opportunity and drafting ad copy requires ROI analysis and creative content work. Perplexity Computer can research FAAMA's audience, assess the ad value, and draft Changeis ad copy.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Research FAAMA (Federal Aviation Administration Managers Association) and 'Managing the Skies' publication reach and demographics</li>
+<li>Evaluate ad ROI: estimated audience, cost-per-impression, Changeis alignment with FAA market</li>
+<li>Draft two versions of Changeis ad copy (full-page and half-page) for the periodical</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-15">
+      <div class="card-header">
+        <div class="card-num">15</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6VRjrqRF4Vx58MHf" target="_blank" rel="noopener">OKR Playbook — Integrated Communications Support</a>
+          <div class="card-meta">
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P2</span>
+            <span style="background:var(--surface-alt);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">No due date</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E3-Urgent & Unimportant</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20OKR%20Playbook%20%E2%80%94%20Integrated%20Communications%20Support&body=VM2%20TASK%3A%20OKR%20Playbook%20%E2%80%94%20Integrated%20Communications%20Support%0A%0ATask%20ID%3A%206VRjrqRF4Vx58MHf%0AProject%3A%20E3-Urgent%20%26%20Unimportant%0APriority%3A%20P2%0ADue%3A%20No%20due%20date%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Research%20OKR%20frameworks%20specifically%20for%20government%20consulting%20communications%20functions%0A%E2%80%A2%20Draft%20the%20full%20OKR%20Playbook%3A%20purpose%2C%20OKR%20structure%2C%20example%20O%2BKRs%2C%20measurement%20cadence%2C%20templates%0A%E2%80%A2%20Create%20a%20set%20of%20sample%20OKRs%20for%20Integrated%20Communications%20Support%20aligned%20to%20Changeis%20strategic%20goals%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6VRjrqRF4Vx58MHf">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Creating an OKR playbook for a communications support function is a structured writing and framework development task. Perplexity Computer can research OKR best practices for professional services and draft the full playbook.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Research OKR frameworks specifically for government consulting communications functions</li>
+<li>Draft the full OKR Playbook: purpose, OKR structure, example O+KRs, measurement cadence, templates</li>
+<li>Create a set of sample OKRs for Integrated Communications Support aligned to Changeis strategic goals</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-16">
+      <div class="card-header">
+        <div class="card-num">16</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6c5cgJcF943248FX" target="_blank" rel="noopener">Onboard / Set Up Tye White</a>
+          <div class="card-meta">
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P2</span>
+            <span style="background:var(--surface-alt);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">May 16, 2026</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E1-Urgent & Important</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Onboard%20%2F%20Set%20Up%20Tye%20White&body=VM2%20TASK%3A%20Onboard%20%2F%20Set%20Up%20Tye%20White%0A%0ATask%20ID%3A%206c5cgJcF943248FX%0AProject%3A%20E1-Urgent%20%26%20Important%0APriority%3A%20P2%0ADue%3A%20May%2016%2C%202026%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Draft%20a%20new%20hire%20onboarding%20checklist%3A%20IT%20access%2C%20HR%20paperwork%2C%20system%20credentials%2C%20introductions%0A%E2%80%A2%20Create%20a%2030-60-90%20day%20onboarding%20plan%20tailored%20to%20a%20government%20consulting%2FBD%20role%0A%E2%80%A2%20Draft%20a%20first-week%20schedule%20with%20structured%20touchpoints%2C%20training%20sessions%2C%20and%20key%20stakeholder%20meetings%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6c5cgJcF943248FX">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Setting up a new team member requires an onboarding checklist, access provisioning list, and orientation materials. Perplexity Computer can draft a comprehensive onboarding plan and first-week schedule for Tye White.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Draft a new hire onboarding checklist: IT access, HR paperwork, system credentials, introductions</li>
+<li>Create a 30-60-90 day onboarding plan tailored to a government consulting/BD role</li>
+<li>Draft a first-week schedule with structured touchpoints, training sessions, and key stakeholder meetings</li></ul>
+      </div>
+    </div>
+    <div class="card" id="card-17">
+      <div class="card-header">
+        <div class="card-num">17</div>
+        <div class="card-title-block">
+          <a class="card-title" href="https://todoist.com/showTask?id=6fMHQQJjf9cWQ8QJ" target="_blank" rel="noopener">VM Notes Weekly — AI-Assisted Synthesis</a>
+          <div class="card-meta">
+            <span style="background:#d97d2a;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;font-weight:600;">P2</span>
+            <span style="background:var(--surface-alt);color:var(--text-muted);padding:2px 8px;border-radius:4px;font-size:12px;font-family:system-ui,sans-serif;">Every Tuesday</span>
+            <span style="color:var(--text-muted);font-size:12px;font-family:system-ui,sans-serif;margin-left:4px;">E2-Important & Not urgent</span>
+            
+          </div>
+        </div>
+        <a class="btn-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20VM%20Notes%20Weekly%20%E2%80%94%20AI-Assisted%20Synthesis&body=VM2%20TASK%3A%20VM%20Notes%20Weekly%20%E2%80%94%20AI-Assisted%20Synthesis%0A%0ATask%20ID%3A%206fMHQQJjf9cWQ8QJ%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0APriority%3A%20P2%0ADue%3A%20Every%20Tuesday%0ALabels%3A%20None%0A%0ASuggested%20Approach%3A%0A%E2%80%A2%20Build%20a%20structured%20VM%20Weekly%20Notes%20template%3A%20wins%2C%20challenges%2C%20BD%20updates%2C%20ops%20actions%2C%20follow-ups%0A%E2%80%A2%20Draft%20this%20week%27s%20notes%20summary%20based%20on%20active%20projects%20%28FAA%20APEX%2C%20OFAM%2C%20SEVP%2C%20OASIS%2B%20Phase%202%29%0A%E2%80%A2%20Create%20a%20standing%20agenda%20for%20weekly%20VM%20note%20review%20with%20time-boxed%20sections%20and%20action%20item%20capture%0A%0AOriginal%20Todoist%20task%3A%20https%3A%2F%2Ftodoist.com%2FshowTask%3Fid%3D6fMHQQJjf9cWQ8QJ">✉ Task VM2</a>
+      </div>
+      <div class="card-why">
+        <strong>Why AI can help:</strong> Weekly notes synthesis benefits from AI-assisted summarization, action item extraction, and trend identification. Perplexity Computer can create a structured weekly notes template and summarize key themes from recent meetings.
+      </div>
+      <div class="card-approach">
+        <strong>Suggested approach:</strong>
+        <ul><li>Build a structured VM Weekly Notes template: wins, challenges, BD updates, ops actions, follow-ups</li>
+<li>Draft this week's notes summary based on active projects (FAA APEX, OFAM, SEVP, OASIS+ Phase 2)</li>
+<li>Create a standing agenda for weekly VM note review with time-boxed sections and action item capture</li></ul>
+      </div>
+    </div>
+
+  <!-- Session Context -->
+  <details class="panel" style="margin-top: 40px;">
+    <summary>Session Context &amp; Methodology</summary>
+    <div class="panel-body">
+      <h4>Original Instructions</h4>
+      <p>Run the Todoist Auto-Helper for 2026-05-11. Fetch all non-VM2 Todoist tasks via direct REST API (token: [REDACTED]). Analyze remaining tasks for AI-assistable work (research, writing, analysis, data, planning, scheduling, drafting, comparison, summary). Skip purely personal/physical tasks. Pick top 15–20 best candidates ranked by priority, due date proximity, and Perplexity Computer ROI.</p>
+
+      <h4>Approach</h4>
+      <p>Fetched 704 total tasks via Todoist REST API v1 with cursor pagination (4 pages). Fetched 106 projects for ID→name mapping. Filtered out 27 tasks labeled VM2, vm2-done, or vm2-recurring. Scored remaining 677 tasks on: (1) Todoist priority level, (2) due date urgency (overdue/today/upcoming), (3) AI-keyword presence in content/description, (4) project category relevance. Selected top 17 by composite score, removing ritual/daily/personal tasks.</p>
+
+      <h4>Key Findings</h4>
+      <ul>
+        <li>704 total tasks across 106 projects; 27 filtered as VM2-labeled</li>
+        <li>4 tasks due TODAY: Consulting Agreement, Pavan Pidugu award, OASIS forms, FAAMA ad decision</li>
+        <li>Highest-ROI task: FAA APEX Industry Day Analysis (P1, due May 12) — research + memo + competitive positioning</li>
+        <li>Strong BD/capture cluster: OFAM capture, SEVP recompete, Jeff Baker iLab pitch</li>
+        <li>Strategy/OKR cluster: OKR Actions, Strategic Plan rollout, OKR Playbook, VM Communications Plan</li>
+      </ul>
+
+      <h4>Dead Ends</h4>
+      <ul>
+        <li>Todoist connector disconnected since 5/6 — used direct REST API instead (token-based)</li>
+        <li>Some tasks had full URLs as content field (LinkedIn, Google Sheets) — cleaned display names extracted</li>
+        <li>Several high-scoring tasks were daily rituals (Om Tat Sat, GTD-Email) — excluded as habit items</li>
+      </ul>
+
+      <h4>Assumptions</h4>
+      <ul>
+        <li>Todoist API priority: 4=P1 (urgent), 3=P2, 2=P3, 1=P4 (normal) — adjusted scoring accordingly</li>
+        <li>Personal/ritual projects deprioritized as low AI-ROI unless AI keywords present in content</li>
+        <li>Recurring tasks scored lower unless they represent strategic work (e.g., BD pipeline review)</li>
+      </ul>
+
+      <h4>Open Questions</h4>
+      <ul>
+        <li>Does "VM Spring '24 OKR Actions" refer to Varun Mehta (VM) or a program code?</li>
+        <li>What is the specific scope of the Jeff Baker iLab pitch — Changeis corporate or personal?</li>
+        <li>Is "Set up Tye White" a new hire onboarding or a technical system setup?</li>
+      </ul>
+
+      <h4>Data Sources</h4>
+      <ul>
+        <li><a href="https://api.todoist.com/api/v1/tasks" target="_blank">Todoist REST API v1 — Tasks endpoint</a></li>
+        <li><a href="https://api.todoist.com/api/v1/projects" target="_blank">Todoist REST API v1 — Projects endpoint</a></li>
+        <li><a href="https://apfs-cloud.dhs.gov/record/73307/public-print/" target="_blank">DHS APFS Procurement Record 73307 — OFAM FO Administrative Support</a></li>
+      </ul>
+
+      <h4>Next Steps</h4>
+      <ul>
+        <li>Click "✉ Task VM2" on any card to send a pre-filled task email to vm2.viru@gmail.com</li>
+        <li>Highest urgency: Consulting Agreement review and OASIS forms (both due TODAY)</li>
+        <li>FAA APEX analysis is the highest-ROI first task — P1, due May 12, requires research + memo + competitive work</li>
+        <li>Re-run this auto-helper daily via the VM2 cron to keep the list fresh</li>
+      </ul>
+
+      <h4>Cost Estimate</h4>
+      <pre>Model: claude-sonnet-4-5 ($3/$15 per 1M tokens)
+Input tokens est: ~60,000
+Output tokens est: ~12,000
+Search calls: 0
+Subagent calls: 1
+Cost conservative: $0.36
+Cost ceiling: $0.55
+Notes: Costs driven by 704-task fetch + analysis loop + HTML generation.</pre>
+    </div>
+  </details>
+
+  <!-- Hidden JSON -->
+  <script type="application/json" id="vm2-context-data">
+{
+  "task_name": "VM2 Auto-Helper \u2014 Suggested Tasks",
+  "task_date": "2026-05-11",
+  "deliverable_file": "vm2-auto-helper-2026-05-11.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-11.html",
+  "version": 1,
+  "prior_versions": [],
+  "created_date": "2026-05-11",
+  "revised_date": null,
+  "related_deliverables": [],
+  "original_instructions": "Run the Todoist Auto-Helper for 2026-05-11. Fetch all non-VM2 Todoist tasks via direct REST API, analyze for AI-assistable work, and generate a living HTML page with suggestions and one-click Task VM2 mailto buttons.",
+  "approach": "Fetched 704 total tasks via Todoist REST API v1 with cursor pagination. Fetched 106 projects for name mapping. Filtered out 27 tasks with VM2/vm2-done/vm2-recurring labels. Scored remaining 677 tasks on priority, due date proximity, AI keyword match, and project context. Selected top 17 candidates with highest AI ROI potential.",
+  "key_findings": [
+    "704 total tasks fetched across 106 projects; 27 filtered as VM2-labeled",
+    "677 non-VM2 tasks remain; 17 selected as top AI-assistable candidates",
+    "4 tasks due TODAY (May 11): Consulting Agreement, Pavan Pidugu award, OASIS forms, FAAMA ad decision",
+    "Top categories: Federal capture (FAA APEX, OFAM, SEVP recompete), OKR/strategy, BD pipeline, communications",
+    "Highest-value task: FAA APEX Industry Day post-analysis (P1, due May 12) \u2014 research + memo + competitive analysis"
+  ],
+  "dead_ends": [
+    "Todoist connector is disconnected since 5/6 \u2014 used direct REST API instead",
+    "Some tasks had full URLs as their 'content' field (e.g., LinkedIn posts, Google Sheets links) \u2014 cleaned display names extracted",
+    "Priority scoring note: Todoist API returns priority 4=P1 (urgent), 1=P4 (normal) \u2014 adjusted scoring accordingly"
+  ],
+  "assumptions": [
+    "Priority 4 in API = P1 (highest urgency) per Todoist's internal scale",
+    "Tasks in personal/ritual projects (0-Ritual, Personal, Kids, Shopping, etc.) were deprioritized as low AI-ROI",
+    "Recurring daily tasks (GTD-Email, Om Tat Sat, etc.) were excluded as they are habit/ritual items",
+    "Top 17 selected based on combined score of priority + due date urgency + AI keyword match + project context"
+  ],
+  "open_questions": [
+    "Does 'VM Spring '24 OKR Actions' refer to Varun Mehta or 'VM' as a program label?",
+    "What is the specific scope of the Jeff Baker iLab pitch \u2014 is it a Changeis pitch or personal?",
+    "Is 'Set up Tye White' a new hire or a system/tool setup task?",
+    "MOTUS Go-Live check-in \u2014 is this an internal system or a client deliverable?"
+  ],
+  "data_sources": [
+    {
+      "name": "Todoist REST API v1",
+      "url": "https://api.todoist.com/api/v1/tasks"
+    },
+    {
+      "name": "Todoist Projects API",
+      "url": "https://api.todoist.com/api/v1/projects"
+    },
+    {
+      "name": "DHS APFS Procurement Record",
+      "url": "https://apfs-cloud.dhs.gov/record/73307/public-print/"
+    }
+  ],
+  "next_steps": [
+    "Click 'Task VM2' on any card to open a pre-filled email to vm2.viru@gmail.com",
+    "High priority: Process the consulting agreement (due TODAY), send OASIS forms to Volpe (TODAY)",
+    "FAA APEX analysis should be the first AI task \u2014 highest research + writing ROI",
+    "Re-run this auto-helper daily or as-needed by triggering the VM2 Auto-Helper cron"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-5",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~60,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 0,
+    "subagent_calls": 1,
+    "cost_conservative": "$0.36",
+    "cost_ceiling": "$0.55",
+    "notes": "Costs driven by 704-task fetch + analysis loop + HTML generation. No external search calls needed."
+  }
+}
+  </script>
+
+  <!-- Continue This Work -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="copyFollowUp()">📋 Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=VM2%20Auto-Helper%20Follow-Up%20%E2%80%94%202026-05-11&body=Following%20up%20on%20VM2%20Auto-Helper%202026-05-11.%0A%0ADeliverable%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fvm2-auto-helper-2026-05-11.html%0A%0APlease%20execute%20the%20following%20task%20from%20the%20helper%20page%3A%0A%0A%5BPASTE%20TASK%20NAME%20AND%20ID%20HERE%5D">✉ Email to VM2</a>
+      <a class="btn btn-secondary" href="https://todoist.com/add?content=VM2+Auto-Helper+Follow-Up+2026-05-11" target="_blank">+ Create Todoist Follow-Up</a>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<div class="footer">
+  Changeis Confidential &nbsp;·&nbsp; VM2 Auto-Helper — Suggested Tasks &nbsp;·&nbsp; May 11, 2026 &nbsp;·&nbsp; VM2 Deliverable
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+
+function copyFollowUp() {
+  const url = 'https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-11.html';
+  const prompt = `Continue VM2 Auto-Helper work from: ${url}\n\nContext: 704 tasks analyzed, 17 AI candidates surfaced for 2026-05-11.\nTop candidates:\n1. FAA APEX Industry Day — Analysis & Next Steps (P1, due May 12)\n2. Process Consulting Agreement — Changeis/Kinnetek (P2, due TODAY)\n3. Pavan Pidugu Award Follow-up to WashingtonExec (P2, due TODAY)\n\nPlease execute task: [SPECIFY TASK NAME AND ID FROM THE PAGE]`;
+  navigator.clipboard.writeText(prompt).then(() => {
+    const btn = document.querySelector('.btn-primary');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+</script>
+
+</body>
+</html>
