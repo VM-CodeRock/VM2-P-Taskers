@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Agent — Use Cases Analysis | VM2 · Changeis · 2026-05-11</title>
+<style>
+  /* ===== BASE / VARIABLES ===== */
+  :root {
+    --navy: #1B2A4A;
+    --deep-navy: #002060;
+    --section-blue: #1F4D78;
+    --dark-gray: #333333;
+    --teal: #008B8B;
+    --green: #2D7D4A;
+    --orange: #D97D2A;
+    --purple: #6B4C9A;
+    --callout-bg: #E8F4F8;
+    --row-alt: #F2F6FA;
+    --white: #FFFFFF;
+    --body-text: #222222;
+    --font-body: Georgia, 'Times New Roman', serif;
+    --font-ui: Calibri, 'Segoe UI', Arial, sans-serif;
+    --topbar-h: 56px;
+    --sidebar-w: 260px;
+  }
+
+  /* DARK MODE */
+  [data-theme="dark"] {
+    --bg: #0f1420;
+    --surface: #1a2235;
+    --surface2: #212d44;
+    --border: #2e3d5a;
+    --body-text: #d8e0ee;
+    --callout-bg: #162237;
+    --row-alt: #1d2d45;
+    --muted: #7a8fac;
+  }
+  [data-theme="light"] {
+    --bg: #f4f7fb;
+    --surface: #ffffff;
+    --surface2: #f0f4fa;
+    --border: #d0dae8;
+    --body-text: #222222;
+    --callout-bg: #E8F4F8;
+    --row-alt: #F2F6FA;
+    --muted: #666666;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--body-text);
+    background: var(--bg);
+    transition: background 0.25s, color 0.25s;
+    padding-top: var(--topbar-h);
+  }
+
+  /* ===== TOPBAR ===== */
+  #topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--topbar-h);
+    background: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  }
+  #topbar .brand {
+    display: flex; align-items: center; gap: 14px;
+  }
+  #topbar .logo-mark {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal) 0%, #005f6b 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-ui); font-weight: 900; font-size: 16px;
+    color: white; letter-spacing: -0.5px;
+    flex-shrink: 0;
+  }
+  #topbar .brand-text {
+    font-family: var(--font-ui); color: white;
+  }
+  #topbar .brand-text .main { font-size: 15px; font-weight: 700; }
+  #topbar .brand-text .sub { font-size: 10.5px; opacity: 0.7; letter-spacing: 0.04em; }
+  #topbar .topbar-meta {
+    display: flex; align-items: center; gap: 16px;
+  }
+  #topbar .doc-date {
+    font-family: var(--font-ui); font-size: 11px; color: rgba(255,255,255,0.65);
+  }
+  #toggle-theme {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 5px 14px;
+    color: white;
+    font-family: var(--font-ui);
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  #toggle-theme:hover { background: rgba(255,255,255,0.2); }
+
+  /* ===== LAYOUT ===== */
+  .layout { display: flex; min-height: calc(100vh - var(--topbar-h)); }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: var(--topbar-h);
+    height: calc(100vh - var(--topbar-h));
+    overflow-y: auto;
+    padding: 20px 0 40px;
+    transition: background 0.25s, border-color 0.25s;
+  }
+  #sidebar h4 {
+    font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--teal); padding: 0 18px 8px;
+    margin-top: 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  #sidebar h4:first-child { margin-top: 0; }
+  #sidebar a {
+    display: block; padding: 7px 18px;
+    font-family: var(--font-ui); font-size: 12px;
+    color: var(--body-text); text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+  }
+  #sidebar a:hover, #sidebar a.active {
+    background: var(--row-alt);
+    color: var(--teal);
+    border-left-color: var(--teal);
+  }
+
+  /* MAIN CONTENT */
+  #content {
+    flex: 1;
+    padding: 36px 44px 80px;
+    max-width: 980px;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, #162040 60%, #0d3347 100%);
+    border-radius: 12px;
+    padding: 36px 40px;
+    margin-bottom: 36px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,139,139,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: rgba(0,139,139,0.3);
+    border: 1px solid rgba(0,139,139,0.5);
+    color: #5ddada;
+    font-family: var(--font-ui); font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.09em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 4px;
+    margin-bottom: 12px;
+  }
+  .hero h1 {
+    font-family: var(--font-ui); font-size: 26px; font-weight: 800;
+    color: white; margin-bottom: 8px; line-height: 1.2;
+  }
+  .hero p {
+    font-size: 13.5px; opacity: 0.82; max-width: 680px; line-height: 1.6;
+  }
+  .hero .hero-stats {
+    display: flex; gap: 28px; margin-top: 22px; flex-wrap: wrap;
+  }
+  .hero .stat { text-align: center; }
+  .hero .stat .num {
+    font-family: var(--font-ui); font-size: 24px; font-weight: 800;
+    color: #5ddada; line-height: 1;
+  }
+  .hero .stat .lbl {
+    font-family: var(--font-ui); font-size: 10px; opacity: 0.7;
+    text-transform: uppercase; letter-spacing: 0.07em;
+  }
+
+  /* ===== SECTIONS ===== */
+  .section { margin-bottom: 52px; }
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 18px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--navy); color: white;
+    font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  h2 {
+    font-family: var(--font-ui); font-size: 18px; font-weight: 700;
+    color: var(--deep-navy);
+  }
+  [data-theme="dark"] h2 { color: #a0c0e0; }
+  h3 {
+    font-family: var(--font-ui); font-size: 14px; font-weight: 700;
+    color: var(--section-blue); margin: 20px 0 8px;
+  }
+  [data-theme="dark"] h3 { color: #7aaed8; }
+  p { margin-bottom: 10px; }
+
+  /* ===== CALLOUT ===== */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 4px solid var(--teal);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  .callout strong { color: var(--teal); }
+  [data-theme="dark"] .callout { background: #162237; }
+
+  /* ===== FEATURE GRID ===== */
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px; margin: 16px 0;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    transition: box-shadow 0.2s;
+  }
+  .feature-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .feature-card .icon { font-size: 20px; margin-bottom: 6px; }
+  .feature-card .title {
+    font-family: var(--font-ui); font-size: 11.5px; font-weight: 700;
+    color: var(--section-blue); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .feature-card .title { color: #7aaed8; }
+  .feature-card p { font-size: 11.5px; margin: 0; color: var(--muted); }
+
+  /* ===== TABLES ===== */
+  .tbl-wrap { overflow-x: auto; margin: 16px 0; }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--font-ui); font-size: 12px;
+    background: var(--surface);
+    border-radius: 8px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  th {
+    background: var(--navy); color: white;
+    padding: 9px 12px; text-align: left;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    white-space: nowrap;
+  }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: var(--row-alt); }
+  [data-theme="dark"] tr:nth-child(even) td { background: var(--surface2); }
+  [data-theme="dark"] tr:nth-child(odd) td { background: var(--surface); }
+
+  /* ===== BADGES ===== */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .badge-hermes { background: rgba(45,125,74,0.15); color: #1a5c33; border: 1px solid rgba(45,125,74,0.3); }
+  [data-theme="dark"] .badge-hermes { background: rgba(45,125,74,0.25); color: #5dcf8a; }
+  .badge-claude { background: rgba(107,76,154,0.12); color: #4a2f7a; border: 1px solid rgba(107,76,154,0.25); }
+  [data-theme="dark"] .badge-claude { background: rgba(107,76,154,0.25); color: #b09ad8; }
+  .badge-perplexity { background: rgba(0,139,139,0.12); color: #005f6b; border: 1px solid rgba(0,139,139,0.25); }
+  [data-theme="dark"] .badge-perplexity { background: rgba(0,139,139,0.25); color: #5ddada; }
+  .badge-all { background: rgba(217,125,42,0.12); color: #7a4000; border: 1px solid rgba(217,125,42,0.25); }
+  [data-theme="dark"] .badge-all { background: rgba(217,125,42,0.25); color: #f0a855; }
+
+  /* FEASIBILITY/EFFORT BADGES */
+  .feas { display: inline-block; font-family: var(--font-ui); font-size: 11px; font-weight: 600; }
+  .feas-5 { color: #1a8a1a; }
+  .feas-4 { color: #4ca64c; }
+  .feas-3 { color: #d97d2a; }
+  .feas-2 { color: #c04040; }
+  .feas-1 { color: #8b0000; }
+  .effort-low { color: #2D7D4A; font-weight: 700; }
+  .effort-med { color: #D97D2A; font-weight: 700; }
+  .effort-high { color: #b03030; font-weight: 700; }
+
+  /* STARS */
+  .stars { color: #f0a855; font-size: 12px; letter-spacing: -1px; }
+
+  /* ===== CATEGORY SECTION ===== */
+  .cat-group { margin-bottom: 28px; }
+  .cat-header {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2);
+    border-radius: 6px; padding: 10px 14px;
+    margin-bottom: 10px; cursor: pointer;
+    border: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .cat-header:hover { background: var(--row-alt); }
+  .cat-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--font-ui); font-size: 12px; font-weight: 700;
+    color: var(--navy); flex: 1;
+  }
+  [data-theme="dark"] .cat-pill { color: #a0c0e0; }
+  .cat-count {
+    background: var(--navy); color: white;
+    font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+    padding: 1px 7px; border-radius: 10px;
+  }
+  .cat-toggle { font-family: var(--font-ui); font-size: 12px; color: var(--muted); }
+
+  .story-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .story-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px; padding: 12px 14px;
+    font-size: 12px;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .story-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.1); border-color: var(--teal); }
+  .story-card .story-title {
+    font-family: var(--font-ui); font-size: 12px; font-weight: 600;
+    color: var(--section-blue); margin-bottom: 5px; line-height: 1.4;
+  }
+  [data-theme="dark"] .story-card .story-title { color: #7aaed8; }
+  .story-card .story-quote {
+    font-size: 11.5px; color: var(--muted); line-height: 1.5;
+    margin-bottom: 6px; font-style: italic;
+  }
+  .story-card .story-meta {
+    font-family: var(--font-ui); font-size: 10px; color: var(--muted);
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .src-chip {
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 3px;
+    font-size: 10px; font-family: var(--font-ui);
+  }
+
+  /* ===== PLATFORM CARDS ===== */
+  .platform-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 12px 0; }
+  @media (max-width: 700px) { .platform-grid { grid-template-columns: 1fr; } }
+  .platform-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px;
+    font-size: 12px;
+  }
+  .platform-card .plat-name {
+    font-family: var(--font-ui); font-size: 11.5px; font-weight: 700;
+    margin-bottom: 8px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .plat-pros { color: #2D7D4A; margin-bottom: 4px; }
+  .plat-cons { color: #b03030; }
+  [data-theme="dark"] .plat-pros { color: #5dcf8a; }
+  [data-theme="dark"] .plat-cons { color: #e08080; }
+  .plat-item { display: flex; gap: 5px; margin-bottom: 3px; font-size: 11.5px; }
+  .plat-icon { flex-shrink: 0; font-size: 10px; margin-top: 2px; }
+
+  /* ===== DEEP DIVE BUTTONS ===== */
+  .dive-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px; margin: 16px 0;
+  }
+  .dive-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .dive-card .rank {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--navy); color: white;
+    font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .dive-card .dive-title {
+    font-family: var(--font-ui); font-size: 13px; font-weight: 700;
+    color: var(--section-blue); display: flex; align-items: center; gap: 8px;
+  }
+  [data-theme="dark"] .dive-card .dive-title { color: #7aaed8; }
+  .dive-card .dive-desc { font-size: 12.5px; color: var(--body-text); line-height: 1.55; }
+  .dive-card .dive-footer {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+
+  .btn-dive {
+    display: inline-block;
+    background: var(--navy);
+    color: white;
+    font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+    padding: 7px 14px; border-radius: 5px;
+    text-decoration: none; letter-spacing: 0.04em;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn-dive:hover { background: var(--teal); transform: translateY(-1px); }
+  .btn-dive.hermes { background: #1a5c33; }
+  .btn-dive.hermes:hover { background: #2D7D4A; }
+  .btn-dive.claude { background: #4a2f7a; }
+  .btn-dive.claude:hover { background: #6B4C9A; }
+  .btn-dive.perplexity { background: #005f6b; }
+  .btn-dive.perplexity:hover { background: var(--teal); }
+
+  /* ===== TOP 5 CARDS ===== */
+  .top5-grid { display: flex; flex-direction: column; gap: 14px; margin: 16px 0; }
+  .top5-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px;
+    display: flex; gap: 16px;
+    transition: box-shadow 0.2s;
+  }
+  .top5-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+  .top5-card .rank-badge {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-ui); font-size: 18px; font-weight: 900;
+    color: white; flex-shrink: 0;
+  }
+  .rank-1 { background: linear-gradient(135deg, #D97D2A, #f0a040); }
+  .rank-2 { background: linear-gradient(135deg, #6B4C9A, #9a70c8); }
+  .rank-3 { background: linear-gradient(135deg, #1F4D78, #3070a0); }
+  .rank-4 { background: linear-gradient(135deg, #2D7D4A, #42b06a); }
+  .rank-5 { background: linear-gradient(135deg, #008B8B, #00a8a8); }
+  .top5-card .body .title {
+    font-family: var(--font-ui); font-size: 14px; font-weight: 700;
+    color: var(--deep-navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .top5-card .body .title { color: #a0c0e0; }
+  .top5-card .body .cat { font-size: 11px; color: var(--teal); font-family: var(--font-ui); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .top5-card .body .rationale { font-size: 12.5px; color: var(--body-text); line-height: 1.55; }
+  .top5-card .body .rec-plat { margin-top: 8px; }
+
+  /* ===== SOURCES ===== */
+  .sources-list { list-style: none; }
+  .sources-list li {
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .sources-list a { color: var(--teal); text-decoration: none; }
+  .sources-list a:hover { text-decoration: underline; }
+
+  /* ===== FOOTER ===== */
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 16px 44px;
+    font-family: var(--font-ui); font-size: 10.5px;
+    color: var(--muted); font-style: italic;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 840px) {
+    #sidebar { display: none; }
+    #content { padding: 20px 18px 60px; }
+    .platform-grid { grid-template-columns: 1fr; }
+    .story-grid { grid-template-columns: 1fr; }
+    .dive-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Collapse toggle */
+  .collapsed .story-grid, .collapsed .tbl-wrap, .collapsed .platform-grid { display: none; }
+
+  /* COST ESTIMATE */
+  .cost-slug {
+    background: var(--callout-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 14px;
+    font-family: var(--font-ui); font-size: 11.5px;
+    margin-bottom: 20px;
+    display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .cost-slug .item { display: flex; flex-direction: column; gap: 2px; }
+  .cost-slug .item .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .cost-slug .item .val { font-weight: 700; color: var(--body-text); }
+  [data-theme="dark"] .cost-slug { background: #162237; }
+
+  /* Use case row expand */
+  .uc-row-detail { display: none; background: var(--surface2); }
+  .uc-row-detail td { padding: 10px 16px; }
+  .uc-row-detail.open { display: table-row; }
+  tr.uc-trigger:hover td { background: rgba(0,139,139,0.06); cursor: pointer; }
+
+  /* Progress pill */
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .pill-green { background: rgba(45,125,74,0.15); color: #2D7D4A; }
+  .pill-orange { background: rgba(217,125,42,0.15); color: #D97D2A; }
+  .pill-blue { background: rgba(31,77,120,0.12); color: #1F4D78; }
+  [data-theme="dark"] .pill-green { background: rgba(45,125,74,0.3); color: #5dcf8a; }
+  [data-theme="dark"] .pill-orange { background: rgba(217,125,42,0.3); color: #f0a855; }
+  [data-theme="dark"] .pill-blue { background: rgba(31,77,120,0.25); color: #7aaed8; }
+</style>
+</head>
+<body data-theme="light">
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="brand">
+    <div class="logo-mark">C</div>
+    <div class="brand-text">
+      <div class="main">Changeis · VM2</div>
+      <div class="sub">AGENT PLATFORMS INTELLIGENCE</div>
+    </div>
+  </div>
+  <div class="topbar-meta">
+    <span class="doc-date">2026-05-11 · Hermes Agent Use Cases Analysis</span>
+    <button id="toggle-theme" onclick="toggleTheme()">🌙 Dark</button>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <h4>Navigation</h4>
+  <a href="#sec1">1. Executive Summary</a>
+  <a href="#sec2">2. Capability Summary</a>
+  <a href="#sec3">3. Use Cases Catalogued</a>
+  <a href="#sec4">4. Categorization</a>
+  <a href="#sec5">5. Validity Matrix</a>
+  <a href="#sec6">6. Implementation Options</a>
+  <a href="#sec7">7. Deep Dive Buttons</a>
+  <a href="#sec8">8. Top 5 for Changeis</a>
+  <a href="#sec9">9. Sources</a>
+  <h4>Categories</h4>
+  <a href="#cat-dev">Dev Workflow (34)</a>
+  <a href="#cat-pa">Personal Assistant (27)</a>
+  <a href="#cat-creative">Creative (10)</a>
+  <a href="#cat-biz">Business Ops (7)</a>
+  <a href="#cat-integrations">Integrations (9)</a>
+  <a href="#cat-research">Research (6)</a>
+  <a href="#cat-cost">Cost Optimization (6)</a>
+  <a href="#cat-enterprise">Enterprise (4)</a>
+  <a href="#cat-content">Content Creation (4)</a>
+  <a href="#cat-messaging">Messaging (4)</a>
+  <a href="#cat-privacy">Privacy & Self-Hosted (3)</a>
+  <a href="#cat-trading">Trading & Markets (2)</a>
+  <a href="#cat-marketing">Marketing (2)</a>
+  <a href="#cat-meta">Meta & Ecosystem (7)</a>
+  <a href="#cat-general">General (2)</a>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main id="content">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">VM2 Research · Agent Platforms</div>
+    <h1>Hermes Agent — Use Cases Analysis</h1>
+    <p>Comprehensive analysis of 127 real-world use cases from the Hermes Agent community. Validity assessment, implementation options across Hermes / Claude / Perplexity Computer, and deep-dive action buttons for top candidates.</p>
+    <div class="hero-stats">
+      <div class="stat"><div class="num">127</div><div class="lbl">Stories Analysed</div></div>
+      <div class="stat"><div class="num">15</div><div class="lbl">Categories</div></div>
+      <div class="stat"><div class="num">3</div><div class="lbl">Platforms Compared</div></div>
+      <div class="stat"><div class="num">#1</div><div class="lbl">OpenRouter Daily Rank</div></div>
+      <div class="stat"><div class="num">224B</div><div class="lbl">Daily Tokens</div></div>
+    </div>
+  </div>
+
+  <!-- COST / CONTEXT SLUG -->
+  <div class="cost-slug">
+    <div class="item"><div class="lbl">Context Slug</div><div class="val">vm2-hermes-use-cases-2026-05-11</div></div>
+    <div class="item"><div class="lbl">Estimated Cost</div><div class="val">~$0.18–0.25</div></div>
+    <div class="item"><div class="lbl">Source</div><div class="val">hermes-agent.nousresearch.com/docs/user-stories</div></div>
+    <div class="item"><div class="lbl">Generated</div><div class="val">2026-05-11</div></div>
+    <div class="item"><div class="lbl">Model</div><div class="val">claude-sonnet-4-5 via Perplexity Computer</div></div>
+  </div>
+
+  <!-- ===== SECTION 1: EXECUTIVE SUMMARY ===== -->
+  <div class="section" id="sec1">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Executive Summary</h2>
+    </div>
+
+    <p><strong>Hermes Agent</strong> is an open-source autonomous AI agent built by <strong>Nous Research</strong> (MIT License), launched February 2026. As of May 10, 2026, it holds the <strong>#1 position on OpenRouter's global daily app rankings</strong> with 224 billion daily tokens — surpassing OpenClaw (186B). It has accumulated 114,000+ GitHub stars and 295 contributors across 13 major releases in its first 90 days.</p>
+
+    <div class="callout">
+      <strong>Core Differentiation:</strong> Unlike chatbot wrappers or IDE-tethered coding copilots, Hermes runs as a persistent server process that <em>improves itself</em> over time through a "do → learn → improve" loop. It autonomously generates reusable skill files after completing tasks, maintains a 3-layer memory system, and operates across 20 messaging platforms simultaneously.
+    </div>
+
+    <h3>Positioning vs Claude &amp; Perplexity Computer</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Hermes Agent</th>
+            <th>Claude (Anthropic)</th>
+            <th>Perplexity Computer</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Nature</strong></td>
+            <td>Self-hosted autonomous agent</td>
+            <td>Cloud LLM API + coding assistant</td>
+            <td>Research + tool-calling cloud platform</td>
+          </tr>
+          <tr>
+            <td><strong>Deployment</strong></td>
+            <td>VPS / local / serverless (Modal/Daytona)</td>
+            <td>API only (Anthropic cloud)</td>
+            <td>Cloud-only SaaS</td>
+          </tr>
+          <tr>
+            <td><strong>Memory</strong></td>
+            <td>Persistent 3-layer (SQLite FTS5 + identity + skills)</td>
+            <td>Context window only (no cross-session)</td>
+            <td>Space-based context; limited cross-session</td>
+          </tr>
+          <tr>
+            <td><strong>Self-improvement</strong></td>
+            <td>Yes — auto-generates skills from experience</td>
+            <td>No</td>
+            <td>Limited (cron + recurring tasks)</td>
+          </tr>
+          <tr>
+            <td><strong>Model flexibility</strong></td>
+            <td>200+ models via OpenRouter + local Ollama + AWS Bedrock</td>
+            <td>Claude models only</td>
+            <td>Claude/Sonar behind Perplexity API</td>
+          </tr>
+          <tr>
+            <td><strong>Messaging platforms</strong></td>
+            <td>20 (Telegram, Discord, Slack, WhatsApp, iMessage, Signal…)</td>
+            <td>None native</td>
+            <td>None native</td>
+          </tr>
+          <tr>
+            <td><strong>Scheduling / Cron</strong></td>
+            <td>Built-in natural language cron</td>
+            <td>No</td>
+            <td>Yes (Computer cron tasks)</td>
+          </tr>
+          <tr>
+            <td><strong>Privacy</strong></td>
+            <td>Fully self-hostable; air-gapped capable</td>
+            <td>Data processed by Anthropic</td>
+            <td>Data processed by Perplexity</td>
+          </tr>
+          <tr>
+            <td><strong>Cost model</strong></td>
+            <td>Pay only model tokens; as low as $10–20/mo</td>
+            <td>Per-token API billing; ~$15–80/mo typical</td>
+            <td>Subscription + API; ~$20–50/mo</td>
+          </tr>
+          <tr>
+            <td><strong>Best for</strong></td>
+            <td>Long-running workflows, data privacy, cross-session memory, multi-platform ops</td>
+            <td>Long-context reasoning, code review, document analysis, writing</td>
+            <td>Real-time research, web grounding, integrations, recurring briefs</td>
+          </tr>
+          <tr>
+            <td><strong>License</strong></td>
+            <td>MIT (open source)</td>
+            <td>Proprietary</td>
+            <td>Proprietary SaaS</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>Changeis Relevance:</strong> As a federal consulting and change management firm, Changeis stands to benefit most from Hermes's persistent memory for BD pipelines, its self-hosted privacy for sensitive data, its multi-platform messaging for internal comms automation, and its cost efficiency for 24/7 operational workflows. Claude remains best for document-heavy analytical work. Perplexity Computer excels at real-time research and recurring intelligence briefs.
+    </div>
+  </div>
+
+  <!-- ===== SECTION 2: CAPABILITY SUMMARY ===== -->
+  <div class="section" id="sec2">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Hermes Agent Capability Summary</h2>
+    </div>
+
+    <p>Built by Nous Research — the lab behind Hermes, Nomos, and Psyche models — Hermes Agent is the first open-source agent to achieve #1 on OpenRouter's global daily rankings. Current release: <strong>v0.13.0 "Tenacity"</strong> (May 7, 2026).</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">🧠</div>
+        <div class="title">3-Layer Memory</div>
+        <p>Persistent identity snapshot + SQLite FTS5 session history + auto-generated procedural skill files. Never forgets.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔄</div>
+        <div class="title">Self-Improving Loop</div>
+        <p>"Do → Learn → Improve" — agent analyzes its own performance post-task and writes reusable markdown skill files autonomously.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">⏰</div>
+        <div class="title">Natural Language Cron</div>
+        <p>Schedule tasks in plain English: "every weekday at 9am, summarize my inbox and post to Slack." Runs unattended.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">💬</div>
+        <div class="title">20 Messaging Platforms</div>
+        <p>Telegram, Discord, Slack, WhatsApp, Signal, iMessage, WeChat, Teams, Google Chat, Matrix, Email, SMS + more.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🏗️</div>
+        <div class="title">6 Execution Backends</div>
+        <p>Local, Docker, SSH, Daytona, Modal (serverless), Singularity. Runs on $5 VPS, GPU cluster, or your laptop.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔧</div>
+        <div class="title">70+ Built-in Tools</div>
+        <p>Web search, browser automation, vision, image gen, TTS, file management, code execution, MCP integration.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🤖</div>
+        <div class="title">Sub-agent Delegation</div>
+        <p>Spawns isolated subagents for parallel workstreams. v0.13.0 adds Kanban multi-agent board with zombie detection.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔌</div>
+        <div class="title">MCP Integration</div>
+        <p>Connect to any MCP server. Composio, Firecrawl, Hindsight Cloud, jMunch, and hundreds of community servers.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🎙️</div>
+        <div class="title">Voice Mode</div>
+        <p>Real-time voice interaction in CLI, Telegram, Discord, and Discord voice channels.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔒</div>
+        <div class="title">Security-First</div>
+        <p>Command approval gates, container isolation, namespace sandboxing, guild-scoped allowlists. v0.13.0: 8 P0 security fixes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📦</div>
+        <div class="title">200+ Model Support</div>
+        <p>OpenRouter, OpenAI, Anthropic, AWS Bedrock, NVIDIA NIM, Ollama (local), Vercel ai-gateway. Any endpoint.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🎯</div>
+        <div class="title">/goal Command</div>
+        <p>v0.13.0: Lock the agent on a target across multiple conversation turns. Persistent goal tracking via Checkpoints v2.</p>
+      </div>
+    </div>
+
+    <h3>Model &amp; Deployment Architecture</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>Component</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Main model</strong></td><td>Any supported model — GPT-5.5, Claude Opus 4.7, DeepSeek V4, Qwen3.5 27B, Gemini, Mistral, local Ollama models</td></tr>
+          <tr><td><strong>Auxiliary models</strong></td><td>Separate slots for context compression, vision, web summarization, session search, approval scoring, MCP routing, skill search</td></tr>
+          <tr><td><strong>Skill system</strong></td><td>Compatible with agentskills.io standard; autonomous Curator agent grades/prunes skills (v0.12.0)</td></tr>
+          <tr><td><strong>Memory layers</strong></td><td>MEMORY.md (durable facts), USER.md (user model), SQLite FTS5 (full session recall), skill files (procedural)</td></tr>
+          <tr><td><strong>Gateway</strong></td><td>Persistent messaging gateway auto-resumes after restart (v0.13.0)</td></tr>
+          <tr><td><strong>Research features</strong></td><td>Batch processing, trajectory export, RL training with Atropos (for researchers)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 3: USE CASES CATALOGUED ===== -->
+  <div class="section" id="sec3">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>Use Cases Catalogued</h2>
+    </div>
+    <p>127 real use cases extracted from the Hermes Agent community page (X/Twitter, Discord, GitHub, Reddit, LinkedIn, Hacker News, YouTube, blogs, podcasts). Each represents a real person's actual deployment. The full page lists 237; the 127 below are fully documented.</p>
+    <div class="callout">
+      <strong>Source validity:</strong> These are <em>organic community use cases</em> — not marketing copy. Every tile links to a real post, GitHub issue, video, or gist. High validity signal: the diversity, specificity, and working-code nature of submissions indicates genuine adoption.
+    </div>
+
+    <!-- All stories searchable table -->
+    <div class="tbl-wrap">
+      <table id="storiesTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Source</th>
+            <th>Author</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>'Every weekday at 9am, summarize my inbox and post to Slack'</td><td>Personal Assistant</td><td>Blog</td><td>Anthony Maio (Substack)</td></tr>
+          <tr><td>2</td><td>Self-hosted Google Drive replacement with Nextcloud + LibreOffice</td><td>Personal Assistant</td><td>Discord</td><td>@salma.1492</td></tr>
+          <tr><td>3</td><td>Iterating on a local-first cognition layer for Hermes</td><td>Dev Workflow</td><td>Discord</td><td>@hackafterdark</td></tr>
+          <tr><td>4</td><td>Hindsight Cloud memory, connected</td><td>Integrations</td><td>LinkedIn</td><td>Vectorize.io</td></tr>
+          <tr><td>5</td><td>Told it to Google me and ship a landing page to my VPS</td><td>Personal Assistant</td><td>X · Twitter</td><td>@emmagine79</td></tr>
+          <tr><td>6</td><td>Built a Turkish locale skill pack: market data, news, briefing cards</td><td>Content Creation</td><td>Discord</td><td>@erhnysr</td></tr>
+          <tr><td>7</td><td>$100 → $216 in 48h with a self-learning weather trading bot</td><td>Trading &amp; Markets</td><td>X · Twitter</td><td>@DeRonin_</td></tr>
+          <tr><td>8</td><td>Hermes skill pack on top of Meta's CLI for ads</td><td>Marketing</td><td>Discord</td><td>@masonjames</td></tr>
+          <tr><td>9</td><td>Sharing a local SearXNG container across Hermes agents</td><td>Privacy &amp; Self-Hosted</td><td>Discord</td><td>@flensbo</td></tr>
+          <tr><td>10</td><td>Codex watches my agent-to-agent workflows live</td><td>Dev Workflow</td><td>X · Twitter</td><td>@gkisokay</td></tr>
+          <tr><td>11</td><td>Voice from the terminal as accessibility feature</td><td>General</td><td>Discord</td><td>@timmmie.</td></tr>
+          <tr><td>12</td><td>Built converse mode so agent thinks before it acts</td><td>Dev Workflow</td><td>Discord</td><td>@ibrandis</td></tr>
+          <tr><td>13</td><td>73% of every API call is fixed overhead (measured it)</td><td>Dev Workflow</td><td>GitHub</td><td>@Bichev</td></tr>
+          <tr><td>14</td><td>Hermes for team — repos, onchain debug, protocol docs</td><td>Business Ops</td><td>Discord</td><td>@megabyte0x</td></tr>
+          <tr><td>15</td><td>Hermes + Browser Harness on a Hostinger VPS</td><td>Integrations</td><td>GitHub Gist</td><td>davidondrej</td></tr>
+          <tr><td>16</td><td>Weekly cron: top 3 trending AI tools for my next video</td><td>Content Creation</td><td>YouTube</td><td>Metics Media</td></tr>
+          <tr><td>17</td><td>jMunch MCP: 52 tools via tree-sitter for code intelligence</td><td>Integrations</td><td>GitHub</td><td>@jgravelle</td></tr>
+          <tr><td>18</td><td>Hermes agent on a hackathon bender</td><td>Dev Workflow</td><td>Discord</td><td>@0xchauncy</td></tr>
+          <tr><td>19</td><td>Google Tasks integration for personal productivity</td><td>Personal Assistant</td><td>GitHub</td><td>@oangelo</td></tr>
+          <tr><td>20</td><td>hermes-for-win: one-click Windows installer</td><td>Meta &amp; Ecosystem</td><td>GitHub</td><td>@EdwardWason</td></tr>
+          <tr><td>21</td><td>Bedtime stories for my daughter (persistent protagonist)</td><td>Personal Assistant</td><td>GitHub</td><td>@kovern</td></tr>
+          <tr><td>22</td><td>Daily journaling into Obsidian with open-source models</td><td>Personal Assistant</td><td>Discord</td><td>@jezza2463</td></tr>
+          <tr><td>23</td><td>QQ Bot adapter for China's 95M+ MAU platform</td><td>Messaging</td><td>GitHub</td><td>@2024fatwolf55</td></tr>
+          <tr><td>24</td><td>Hermes Agent has won. Here's why. (podcast)</td><td>Meta &amp; Ecosystem</td><td>Podcast</td><td>Tool Use — AI Conversations</td></tr>
+          <tr><td>25</td><td>LaTeX math renders properly in the TUI</td><td>Research</td><td>GitHub</td><td>@austinpickett</td></tr>
+          <tr><td>26</td><td>DM-based approval gate for kid-facing Discord bots</td><td>Messaging</td><td>GitHub</td><td>@iacker</td></tr>
+          <tr><td>27</td><td>Switching between Hermes and OpenClaw on primeclaws.com</td><td>Cost Optimization</td><td>Reddit</td><td>u/sickleRunner</td></tr>
+          <tr><td>28</td><td>TUI dashboard that watches my agent think</td><td>Meta &amp; Ecosystem</td><td>Discord</td><td>@synextco</td></tr>
+          <tr><td>29</td><td>Hadn't coded in 20 years — Hermes brought it back</td><td>Dev Workflow</td><td>Discord</td><td>@petllama</td></tr>
+          <tr><td>30</td><td>Got tired of paying Perplexity, built my own research stack</td><td>Research</td><td>Discord</td><td>@dre108</td></tr>
+          <tr><td>31</td><td>Spent 200–400 hours writing a memory kernel for Hermes</td><td>Dev Workflow</td><td>Discord</td><td>@lauratom</td></tr>
+          <tr><td>32</td><td>Hermes on k8s cluster for daily cybersec + AI briefing</td><td>Enterprise</td><td>Discord</td><td>@m05tr0</td></tr>
+          <tr><td>33</td><td>Raspberry Pi 5 running Hermes 24/7</td><td>Personal Assistant</td><td>Discord</td><td>@winterwarrior</td></tr>
+          <tr><td>34</td><td>LINE adapter for 95M+ users in Japan and SE Asia</td><td>Messaging</td><td>GitHub</td><td>@yuga-hashimoto</td></tr>
+          <tr><td>35</td><td>Generative visuals in TouchDesigner, via Hermes skill</td><td>Creative</td><td>GitHub</td><td>@SHL0MS</td></tr>
+          <tr><td>36</td><td>Hermes manages tasks across Obsidian, Apple Calendar, Signal</td><td>Personal Assistant</td><td>Discord</td><td>@kouff</td></tr>
+          <tr><td>37</td><td>Vertex AI support for GCP-standardized enterprises</td><td>Enterprise</td><td>GitHub</td><td>@prasadus92</td></tr>
+          <tr><td>38</td><td>Claude for chat, Hermes 24/7 on mini PC for real-world tasks</td><td>Personal Assistant</td><td>Discord</td><td>@monty_13277</td></tr>
+          <tr><td>39</td><td>B1 battle droid skin for May the 4th</td><td>Creative</td><td>Discord</td><td>@tzep123</td></tr>
+          <tr><td>40</td><td>UGC ad studio — paste product URL → Hermes does the rest</td><td>Marketing</td><td>X · Twitter</td><td>@codewithimanshu</td></tr>
+          <tr><td>41</td><td>Built hermes-mcp-server so Claude Desktop can use Hermes tools</td><td>Dev Workflow</td><td>Discord</td><td>@buray</td></tr>
+          <tr><td>42</td><td>Roofing lead-gen app for a remodeling company</td><td>Business Ops</td><td>Discord</td><td>@cyberfarmacist</td></tr>
+          <tr><td>43</td><td>12 Hermes instances in parallel to build Hermes itself</td><td>Dev Workflow</td><td>X · Twitter</td><td>@Teknium</td></tr>
+          <tr><td>44</td><td>Two-tier email pipeline so LLM only fires when needed</td><td>Personal Assistant</td><td>Discord</td><td>@mayuronx</td></tr>
+          <tr><td>45</td><td>Sometimes Hermes Agent melts my heart</td><td>Personal Assistant</td><td>X · Twitter</td><td>@pfanis</td></tr>
+          <tr><td>46</td><td>Hermes designed X-to-NotebookLM podcast workflow autonomously</td><td>Creative</td><td>X · Twitter</td><td>@HeyYanvi</td></tr>
+          <tr><td>47</td><td>Vercel Sandbox as a Hermes terminal backend</td><td>Integrations</td><td>GitHub</td><td>@scotttrinh</td></tr>
+          <tr><td>48</td><td>Give Hermes hands inside Feishu (Lark) full ecosystem</td><td>Messaging</td><td>GitHub</td><td>@haoqimeng1992</td></tr>
+          <tr><td>49</td><td>Show HN: independent install guide</td><td>Meta &amp; Ecosystem</td><td>Hacker News</td><td>ethanjamescolez</td></tr>
+          <tr><td>50</td><td>Hooks that swap in better tools every time agent runs</td><td>Dev Workflow</td><td>Discord</td><td>@stefan171</td></tr>
+          <tr><td>51</td><td>Audited 129 of my own sessions across 23 days</td><td>Dev Workflow</td><td>GitHub</td><td>@tcollins024</td></tr>
+          <tr><td>52</td><td>CCD multi-agent pod on M2 Ultra with Mem0 + Qdrant</td><td>Dev Workflow</td><td>GitHub</td><td>@autholykos</td></tr>
+          <tr><td>53</td><td>I built a custom kernel — the LLM never touches the disk</td><td>Dev Workflow</td><td>Discord</td><td>@lauratom</td></tr>
+          <tr><td>54</td><td>EU AI Act compliance via Ombre audit layer</td><td>Enterprise</td><td>GitHub</td><td>@pypl0</td></tr>
+          <tr><td>55</td><td>Built mapsOS because "rate your mood 1-10" didn't fit my brain</td><td>Dev Workflow</td><td>Discord</td><td>@modest.maoist</td></tr>
+          <tr><td>56</td><td>My Hermes keeps editing its own internals (security concern)</td><td>Dev Workflow</td><td>Discord</td><td>@brennerspear</td></tr>
+          <tr><td>57</td><td>Built my own stack, then converged on Hermes architecture</td><td>Dev Workflow</td><td>X · Twitter</td><td>@danfiru</td></tr>
+          <tr><td>58</td><td>24/7 assistant with Supabase CRM, built in a demo</td><td>Business Ops</td><td>YouTube</td><td>Derek Cheung</td></tr>
+          <tr><td>59</td><td>Hermes running on Pi 4 as home server / central brain</td><td>Personal Assistant</td><td>GitHub</td><td>@manojmukkamala</td></tr>
+          <tr><td>60</td><td>100% human guide: what I use Hermes for and how I keep it cheap</td><td>Cost Optimization</td><td>X · Twitter</td><td>@vmiss33</td></tr>
+          <tr><td>61</td><td>Hermes + Qwen3.5:4b on a 5060Ti — all I need</td><td>Personal Assistant</td><td>Reddit</td><td>u/Birdinhandandbush</td></tr>
+          <tr><td>62</td><td>Hermes + Discord with GPT-5.5 / DeepSeek v4 has been life changing</td><td>Personal Assistant</td><td>X · Twitter</td><td>@emmagine79</td></tr>
+          <tr><td>63</td><td>Backup Hermes config and DB to GitHub nightly</td><td>Dev Workflow</td><td>Discord</td><td>@mayuronx</td></tr>
+          <tr><td>64</td><td>Daily research brief across Discord, Slack, Notion &amp; Obsidian</td><td>Research</td><td>X · Twitter</td><td>@gkisokay</td></tr>
+          <tr><td>65</td><td>hermes-lab bookkeeper for running experiments autonomously</td><td>Research</td><td>Discord</td><td>@ereid7</td></tr>
+          <tr><td>66</td><td>Skill-audit skill that improves itself on a cron job</td><td>Dev Workflow</td><td>Discord</td><td>@.salt555</td></tr>
+          <tr><td>67</td><td>An AI employee for my hardest tasks (ChatGPT 5.5 combo)</td><td>General</td><td>X · Twitter</td><td>@AlexFinn</td></tr>
+          <tr><td>68</td><td>Hermes lives on a VPS, talks home over Tailscale</td><td>Dev Workflow</td><td>Discord</td><td>@sammcf</td></tr>
+          <tr><td>69</td><td>Built ZeroID to fix sub-agent scope delegation and context costs</td><td>Cost Optimization</td><td>Discord</td><td>@justin_albrethsen</td></tr>
+          <tr><td>70</td><td>Chess blunder finder to test what Hermes can/can't do</td><td>Creative</td><td>Discord</td><td>@fahdad_</td></tr>
+          <tr><td>71</td><td>Voice-first fitness coach that learns my body over time</td><td>Personal Assistant</td><td>Discord</td><td>@muschi2396</td></tr>
+          <tr><td>72</td><td>Meal planner for people who hate logging ingredients</td><td>Personal Assistant</td><td>Discord</td><td>@sergiparpal</td></tr>
+          <tr><td>73</td><td>Day 10: agent knows my codebase better than I do</td><td>Dev Workflow</td><td>X · Twitter</td><td>@techNmak</td></tr>
+          <tr><td>74</td><td>Built a 22k-line memory kernel underneath Hermes</td><td>Dev Workflow</td><td>Discord</td><td>@lauratom</td></tr>
+          <tr><td>75</td><td>Ported entire Python weather stack to Rust for Hermes plugins</td><td>Research</td><td>Discord</td><td>@drewsni</td></tr>
+          <tr><td>76</td><td>X roast poster — no $100 API fee needed</td><td>Content Creation</td><td>Discord</td><td>@yodaaa</td></tr>
+          <tr><td>77</td><td>Local Kanban so agents see what's going on (network-based)</td><td>Dev Workflow</td><td>Discord</td><td>@purkkaviritys</td></tr>
+          <tr><td>78</td><td>Self-improving LLM Wiki second brain on Hetzner VPS</td><td>Research</td><td>Blog</td><td>Jsong (Medium)</td></tr>
+          <tr><td>79</td><td>Dashboard so Hermes config and management is easier</td><td>Meta &amp; Ecosystem</td><td>Discord</td><td>@kysiv</td></tr>
+          <tr><td>80</td><td>Polymarket trading — 4 layers at once (order book, on-chain)</td><td>Trading &amp; Markets</td><td>X · Twitter</td><td>@adiix_official</td></tr>
+          <tr><td>81</td><td>Apple Health, Threads analytics, Gmail, Calendar in one CLI</td><td>Personal Assistant</td><td>Blog</td><td>Keith Rumjahn (Substack)</td></tr>
+          <tr><td>82</td><td>Horse-racing Telegram community bot</td><td>Personal Assistant</td><td>GitHub</td><td>@Chrisr6records</td></tr>
+          <tr><td>83</td><td>File change detection → auto-act on it</td><td>Dev Workflow</td><td>X · Twitter</td><td>@OnlyTerp</td></tr>
+          <tr><td>84</td><td>Legal-domain work on edge GPU (4B Gemma, no cloud APIs)</td><td>Privacy &amp; Self-Hosted</td><td>GitHub</td><td>@arkka</td></tr>
+          <tr><td>85</td><td>Built Cartographer (knowledge graph) and agent IRC with Hermes</td><td>Dev Workflow</td><td>Discord</td><td>@modest.maoist</td></tr>
+          <tr><td>86</td><td>Agent dreams at night for $0.014 — 5 REM cycles</td><td>Creative</td><td>Discord</td><td>@ajaylakhani</td></tr>
+          <tr><td>87</td><td>Multi-agent auto-build: plan → code → QA → ship</td><td>Dev Workflow</td><td>X · Twitter</td><td>@gkisokay</td></tr>
+          <tr><td>88</td><td>shadcn finance dashboard + Manim explainer videos</td><td>Creative</td><td>YouTube</td><td>WorldofAI</td></tr>
+          <tr><td>89</td><td>Azure-compliant prompt patch for enterprise deployments</td><td>Enterprise</td><td>GitHub Gist</td><td>olafgeibig</td></tr>
+          <tr><td>90</td><td>Run agents within a sandbox — same applies to all agents</td><td>Privacy &amp; Self-Hosted</td><td>Hacker News</td><td>Flere-Imsaho</td></tr>
+          <tr><td>91</td><td>5 apps built and launched in a single day</td><td>Dev Workflow</td><td>LinkedIn</td><td>Andrew W. Gordon</td></tr>
+          <tr><td>92</td><td>Firecrawl for scrape/search/browse integration</td><td>Integrations</td><td>LinkedIn</td><td>Firecrawl</td></tr>
+          <tr><td>93</td><td>Every tool call logged into SQLite with Grafana dashboards</td><td>Meta &amp; Ecosystem</td><td>Discord</td><td>@bert_71849</td></tr>
+          <tr><td>94</td><td>How I use Hermes memory: durable facts, session search, skills</td><td>Personal Assistant</td><td>Discord</td><td>@tonywhelan</td></tr>
+          <tr><td>95</td><td>'Every morning at 9am, check HN for AI news and DM me on Telegram'</td><td>Personal Assistant</td><td>Blog</td><td>arshtechpro</td></tr>
+          <tr><td>96</td><td>Onchain identity and proof-of-work for Hermes agents</td><td>Integrations</td><td>Discord</td><td>@.zmaxx</td></tr>
+          <tr><td>97</td><td>Matrix-inspired custom skin for the TUI</td><td>Creative</td><td>Discord</td><td>@.omarlittle</td></tr>
+          <tr><td>98</td><td>90% token spend cut — runs on cheap Android via Termux</td><td>Cost Optimization</td><td>Podcast</td><td>Greg Isenberg &amp; Imran Muthuvappa</td></tr>
+          <tr><td>99</td><td>Hermes triages and works tickets in PM software (Plane.so)</td><td>Business Ops</td><td>Discord</td><td>@dalekc72</td></tr>
+          <tr><td>100</td><td>Proactive check-ins ("anything you want me to watch?")</td><td>Personal Assistant</td><td>GitHub</td><td>@alexferrari88</td></tr>
+          <tr><td>101</td><td>Gave Hermes hands — ships micro-apps via Vals</td><td>Dev Workflow</td><td>Discord</td><td>@alpaca1712</td></tr>
+          <tr><td>102</td><td>Hunter.io email-finding for sales outreach (Composio MCP)</td><td>Business Ops</td><td>GitHub</td><td>@isakcarlson5-del</td></tr>
+          <tr><td>103</td><td>Accumulates knowledge about my codebase over time</td><td>Dev Workflow</td><td>Blog</td><td>Kristopher Dunham</td></tr>
+          <tr><td>104</td><td>5 things Hermes does that ChatGPT will never do</td><td>Personal Assistant</td><td>Reddit</td><td>u/ninjapapi</td></tr>
+          <tr><td>105</td><td>Recall: inspectable memory layer that isn't a black box</td><td>Dev Workflow</td><td>Discord</td><td>@nour_h</td></tr>
+          <tr><td>106</td><td>Obsidian as the long-term memory backbone for Hermes (794 upvotes)</td><td>Personal Assistant</td><td>Reddit</td><td>u/Jonathan_Rivera</td></tr>
+          <tr><td>107</td><td>Fat agent → thin tool provider via hermes-mcp-serve</td><td>Integrations</td><td>GitHub Gist</td><td>nazt</td></tr>
+          <tr><td>108</td><td>I don't know how to code — Codex built me a VPN service</td><td>Dev Workflow</td><td>Discord</td><td>@_atomlib_</td></tr>
+          <tr><td>109</td><td>Asked Hermes to write a skill that auto-plays Minecraft</td><td>Creative</td><td>Discord</td><td>@absolutegamer2337</td></tr>
+          <tr><td>110</td><td>One month with Hermes: don't build the whole machine on day one</td><td>Meta &amp; Ecosystem</td><td>Reddit</td><td>u/itsdodobitch</td></tr>
+          <tr><td>111</td><td>Under $20/mo total — no Mac Mini, no Opus</td><td>Cost Optimization</td><td>Blog</td><td>Alex P. (Medium)</td></tr>
+          <tr><td>112</td><td>Create and edit Google Slides decks</td><td>Business Ops</td><td>GitHub</td><td>@zednik-max</td></tr>
+          <tr><td>113</td><td>Free GPT-4.1 via Copilot — Hermes delegates coding to OpenCode</td><td>Cost Optimization</td><td>Discord</td><td>@mulkproject</td></tr>
+          <tr><td>114</td><td>Hermes very good as personal agent on Qwen3.5 27B</td><td>Personal Assistant</td><td>Reddit</td><td>u/Suitable_Currency440</td></tr>
+          <tr><td>115</td><td>Local Gitea fork + watchtower auto-restarts Hermes in 10 min</td><td>Dev Workflow</td><td>Discord</td><td>@malaiwah</td></tr>
+          <tr><td>116</td><td>AdGuard plugin for faster, ad-free web browsing</td><td>Integrations</td><td>Discord</td><td>@anibal3608</td></tr>
+          <tr><td>117</td><td>Webchat: custom themed browser UI on MEMORY.md</td><td>Integrations</td><td>GitHub</td><td>@declan2010</td></tr>
+          <tr><td>118</td><td>Memory kernel that compiles thoughts, not vectors</td><td>Dev Workflow</td><td>Discord</td><td>@lauratom</td></tr>
+          <tr><td>119</td><td>Hermes Inc.: Telegram-native startup simulation game</td><td>Creative</td><td>X · Twitter</td><td>@brucexu_eth</td></tr>
+          <tr><td>120</td><td>Turned personal site's webdev style into a reusable skill</td><td>Creative</td><td>Discord</td><td>@arm64be</td></tr>
+          <tr><td>121</td><td>Semantic knowledge substrate for my brain (Obsidian + Hermes)</td><td>Personal Assistant</td><td>Discord</td><td>@modest.maoist</td></tr>
+          <tr><td>122</td><td>Monica that writes in my voice (content creator assistant)</td><td>Content Creation</td><td>X · Twitter</td><td>@Saboo_Shubham_</td></tr>
+          <tr><td>123</td><td>Cronjobs nudging me on Discord and Signal for executive function</td><td>Personal Assistant</td><td>Discord</td><td>@o_o__o_o000</td></tr>
+          <tr><td>124</td><td>Day 297 streak: $100K of client work automated</td><td>Business Ops</td><td>X · Twitter</td><td>@NathanWilbanks_</td></tr>
+          <tr><td>125</td><td>Side-by-side: Hermes more stable, troubleshoots OpenClaw</td><td>Dev Workflow</td><td>Reddit</td><td>u/Delicious_Ease2595</td></tr>
+          <tr><td>126</td><td>Native Mac app (SwiftUI) connecting to Hermes over SSH</td><td>Dev Workflow</td><td>Discord</td><td>@itsdodo21</td></tr>
+          <tr><td>127</td><td>Compression plugin for sessions that go on forever</td><td>Dev Workflow</td><td>Discord</td><td>@reyartage</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 4: CATEGORIZATION ===== -->
+  <div class="section" id="sec4">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Use Case Categorization</h2>
+    </div>
+    <p>127 stories grouped into Changeis-relevant categories. Native Hermes categories mapped to business function buckets.</p>
+
+    <!-- DEV WORKFLOW -->
+    <div class="cat-group" id="cat-dev">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">⚙️ Dev Workflow <span class="cat-count">34</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">Local-first cognition layer</div><div class="story-quote">"I've been iterating on a local-first memory/cognition layer for Hermes."</div><div class="story-meta"><span class="src-chip">Discord</span> @hackafterdark</div></div>
+        <div class="story-card"><div class="story-title">Built converse mode — think before acting</div><div class="story-quote">"My Hermes agent used to start executing the moment I hit enter... so I built a converse mode."</div><div class="story-meta"><span class="src-chip">Discord</span> @ibrandis</div></div>
+        <div class="story-card"><div class="story-title">Token overhead profiling dashboard</div><div class="story-quote">"73% of every API call is fixed overhead — I built a monitoring dashboard to prove it."</div><div class="story-meta"><span class="src-chip">GitHub</span> @Bichev</div></div>
+        <div class="story-card"><div class="story-title">Multi-agent auto-build (plan→code→QA→ship)</div><div class="story-quote">"Main agent breaks a plan into phases, coder agent builds each phase, QA agent runs tests."</div><div class="story-meta"><span class="src-chip">X</span> @gkisokay</div></div>
+        <div class="story-card"><div class="story-title">12 instances in parallel — building Hermes itself</div><div class="story-quote">"I literally run 12 hermes agent instances every day in parallel to build Hermes."</div><div class="story-meta"><span class="src-chip">X</span> @Teknium</div></div>
+        <div class="story-card"><div class="story-title">Codebase accumulation — knows it better than I do</div><div class="story-quote">"A long-running instance accumulates knowledge about your codebase, deployment quirks..."</div><div class="story-meta"><span class="src-chip">Blog</span> Kristopher Dunham</div></div>
+        <div class="story-card"><div class="story-title">Skill-audit skill that self-improves on a cron</div><div class="story-quote">"I have a skill audit skill that runs through another skill in a sandboxed env then uses those test runs."</div><div class="story-meta"><span class="src-chip">Discord</span> @.salt555</div></div>
+        <div class="story-card"><div class="story-title">Nightly backup to GitHub on every config change</div><div class="story-quote">"Backup your Hermes to GitHub on a nightly basis, backup on every change of your config."</div><div class="story-meta"><span class="src-chip">Discord</span> @mayuronx</div></div>
+        <div class="story-card"><div class="story-title">Session compression plugin</div><div class="story-quote">"Hermes Operational Checkpoint Plugin for sessions that go on long enough that normal context management fails."</div><div class="story-meta"><span class="src-chip">Discord</span> @reyartage</div></div>
+      </div>
+    </div>
+
+    <!-- PERSONAL ASSISTANT -->
+    <div class="cat-group" id="cat-pa">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">🧑 Personal Assistant <span class="cat-count">27</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">Daily inbox summary → Slack (natural language cron)</div><div class="story-quote">"Every weekday at 9am, summarize my inbox and post to Slack."</div><div class="story-meta"><span class="src-chip">Blog</span> Anthony Maio</div></div>
+        <div class="story-card"><div class="story-title">Obsidian + Apple Calendar + Signal task manager</div><div class="story-quote">"Use obsidian to manage my tasks and cross-check with my apple calendar and signal."</div><div class="story-meta"><span class="src-chip">Discord</span> @kouff</div></div>
+        <div class="story-card"><div class="story-title">Apple Health + Threads + Gmail + Calendar CLI</div><div class="story-quote">"Hermes wrote Python on the fly and found my sleep avg was 7.59 hrs."</div><div class="story-meta"><span class="src-chip">Blog</span> Keith Rumjahn</div></div>
+        <div class="story-card"><div class="story-title">Cronjobs for executive function support</div><div class="story-quote">"For executive function — I can't rely on me being the one to prompt it. Hermes nudges me on Discord and Signal."</div><div class="story-meta"><span class="src-chip">Discord</span> @o_o__o_o000</div></div>
+        <div class="story-card"><div class="story-title">Two-tier email pipeline (dumb filter → LLM only when needed)</div><div class="story-quote">"Tier 1: Pure Python, no LLM. Detects new email, pre-filters. Tier 2: LLM. Only fires for real."</div><div class="story-meta"><span class="src-chip">Discord</span> @mayuronx</div></div>
+        <div class="story-card"><div class="story-title">Daily HN AI news → DM on Telegram at 9am</div><div class="story-quote">"Every morning at 9am, check HN for AI news and DM me on Telegram."</div><div class="story-meta"><span class="src-chip">Blog</span> arshtechpro</div></div>
+        <div class="story-card"><div class="story-title">Voice-first fitness coach that learns your body</div><div class="story-quote">"I built an AI agent that actually learns your body over time."</div><div class="story-meta"><span class="src-chip">Discord</span> @muschi2396</div></div>
+      </div>
+    </div>
+
+    <!-- BUSINESS OPS -->
+    <div class="cat-group" id="cat-biz">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">💼 Business Ops <span class="cat-count">7</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">24/7 assistant with Supabase CRM</div><div class="story-quote">"Less than a single ChatGPT Plus subscription for a 24/7 assistant with real data management."</div><div class="story-meta"><span class="src-chip">YouTube</span> Derek Cheung</div></div>
+        <div class="story-card"><div class="story-title">Ticket triage in PM software (Plane.so)</div><div class="story-quote">"Hermes triages and assigns tickets... starts to work on implementation immediately."</div><div class="story-meta"><span class="src-chip">Discord</span> @dalekc72</div></div>
+        <div class="story-card"><div class="story-title">$100K client work automated (Day 297 streak)</div><div class="story-quote">"900,000+ seconds of compute time automated, $100,000+ in client work value automated."</div><div class="story-meta"><span class="src-chip">X</span> @NathanWilbanks_</div></div>
+        <div class="story-card"><div class="story-title">Roofing lead-gen app for remodeling company</div><div class="story-quote">"Hermes agent building a roofing lead-gen app for my friend who owns a remodeling company."</div><div class="story-meta"><span class="src-chip">Discord</span> @cyberfarmacist</div></div>
+        <div class="story-card"><div class="story-title">Hunter.io sales outreach email-finding</div><div class="story-quote">"Surface Hunter.io via Composio MCP for sales outreach workflows."</div><div class="story-meta"><span class="src-chip">GitHub</span> @isakcarlson5-del</div></div>
+        <div class="story-card"><div class="story-title">Google Slides creation + editing</div><div class="story-quote">"Extending google-workspace skill to Google Slides so Hermes can create and edit presentations."</div><div class="story-meta"><span class="src-chip">GitHub</span> @zednik-max</div></div>
+        <div class="story-card"><div class="story-title">Team repos + onchain debug + protocol docs</div><div class="story-quote">"Integrated with SourceDev, Tenderly MCP, LLM-Wiki of our Litepaper."</div><div class="story-meta"><span class="src-chip">Discord</span> @megabyte0x</div></div>
+      </div>
+    </div>
+
+    <!-- RESEARCH -->
+    <div class="cat-group" id="cat-research">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">🔬 Research <span class="cat-count">6</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">Daily AI/agent research brief (Discord, Slack, Notion)</div><div class="story-quote">"Mine watches the AI/agent space, picks out useful signals, writes briefs, suggests next actions."</div><div class="story-meta"><span class="src-chip">X</span> @gkisokay</div></div>
+        <div class="story-card"><div class="story-title">Self-improving LLM Wiki second brain</div><div class="story-quote">"Built a personal knowledge base that compounds over time — maintained by an LLM, not by me."</div><div class="story-meta"><span class="src-chip">Blog</span> Jsong (Medium)</div></div>
+        <div class="story-card"><div class="story-title">hermes-lab autonomous experiment runner</div><div class="story-quote">"You give it a search space and a way to evaluate results, it handles scheduling, tracking, and storing."</div><div class="story-meta"><span class="src-chip">Discord</span> @ereid7</div></div>
+        <div class="story-card"><div class="story-title">Built own research stack — got tired of paying Perplexity</div><div class="story-quote">"~$10 every few days instead of $10 per pop for Perplexity API synthesis calls."</div><div class="story-meta"><span class="src-chip">Discord</span> @dre108</div></div>
+        <div class="story-card"><div class="story-title">Rust weather stack for Hermes plugins</div><div class="story-quote">"I've been porting the entire Python weather stack to Rust — MetPy, Herbie, cfgrib, WRF-Python."</div><div class="story-meta"><span class="src-chip">Discord</span> @drewsni</div></div>
+        <div class="story-card"><div class="story-title">LaTeX math rendering in TUI for ML work</div><div class="story-quote">"Adds LaTeX-to-Unicode rendering for math in the TUI markdown pipeline."</div><div class="story-meta"><span class="src-chip">GitHub</span> @austinpickett</div></div>
+      </div>
+    </div>
+
+    <!-- ENTERPRISE -->
+    <div class="cat-group" id="cat-enterprise">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">🏢 Enterprise <span class="cat-count">4</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">k8s cluster — daily cybersec + AI briefing</div><div class="story-quote">"Running Hermes on my local k8s cluster for a scheduled daily briefing with cybersecurity and AI signals."</div><div class="story-meta"><span class="src-chip">Discord</span> @m05tr0</div></div>
+        <div class="story-card"><div class="story-title">EU AI Act compliance via Ombre audit layer</div><div class="story-quote">"Tamper-proof audit, prompt-injection blocking, memory encryption at rest, hallucination detection."</div><div class="story-meta"><span class="src-chip">GitHub</span> @pypl0</div></div>
+        <div class="story-card"><div class="story-title">Vertex AI for GCP-standardized enterprises</div><div class="story-quote">"Requesting native Vertex AI provider support for enterprise users who standardize on Google Cloud."</div><div class="story-meta"><span class="src-chip">GitHub</span> @prasadus92</div></div>
+        <div class="story-card"><div class="story-title">Azure-compliant prompt patch (safety filter)</div><div class="story-quote">"Patch Hermes prompts so Azure safety filter does not kick in, letting enterprise deployments avoid content-filter trips."</div><div class="story-meta"><span class="src-chip">GitHub Gist</span> olafgeibig</div></div>
+      </div>
+    </div>
+
+    <!-- Other categories shown inline -->
+    <div class="cat-group" id="cat-integrations">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">🔌 Integrations <span class="cat-count">9</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">Hindsight Cloud memory connected</div><div class="story-quote">"Connect Hermes to Hindsight Cloud, the best-performing AI Agent memory."</div><div class="story-meta"><span class="src-chip">LinkedIn</span> Vectorize.io</div></div>
+        <div class="story-card"><div class="story-title">Firecrawl for web scrape/search/browse</div><div class="story-quote">"Hermes can now scrape, search, and interact with the web using Firecrawl."</div><div class="story-meta"><span class="src-chip">LinkedIn</span> Firecrawl</div></div>
+        <div class="story-card"><div class="story-title">jMunch MCP: 52 tools via tree-sitter</div><div class="story-quote">"Token-efficient code intelligence, documentation retrieval, and test generation."</div><div class="story-meta"><span class="src-chip">GitHub</span> @jgravelle</div></div>
+        <div class="story-card"><div class="story-title">Webchat browser UI on MEMORY.md</div><div class="story-quote">"A beautiful web interface for Hermes Agent with dark/light theme, persistent memory."</div><div class="story-meta"><span class="src-chip">GitHub</span> @declan2010</div></div>
+        <div class="story-card"><div class="story-title">Vercel Sandbox as terminal backend</div><div class="story-quote">"Adds Vercel Sandbox as a supported terminal backend alongside Local/Docker/Modal/SSH."</div><div class="story-meta"><span class="src-chip">GitHub</span> @scotttrinh</div></div>
+        <div class="story-card"><div class="story-title">AdGuard plugin for ad-free browsing</div><div class="story-quote">"Plugin for AdGuard Home to browse faster without ads on the web."</div><div class="story-meta"><span class="src-chip">Discord</span> @anibal3608</div></div>
+        <div class="story-card"><div class="story-title">Onchain identity via Ethereum Attestation Service</div><div class="story-quote">"The agent autonomously creates onchain identity and proof-of-work for completed tasks."</div><div class="story-meta"><span class="src-chip">Discord</span> @.zmaxx</div></div>
+        <div class="story-card"><div class="story-title">hermes mcp serve — thin tool provider</div><div class="story-quote">"Turns Hermes from a monolithic agent into a composable capability layer for any MCP client."</div><div class="story-meta"><span class="src-chip">GitHub Gist</span> nazt</div></div>
+        <div class="story-card"><div class="story-title">Browser Harness on Hostinger VPS</div><div class="story-quote">"Register Browser Harness as a Hermes skill via symlink."</div><div class="story-meta"><span class="src-chip">GitHub Gist</span> davidondrej</div></div>
+      </div>
+    </div>
+
+    <div class="cat-group" id="cat-content">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">✍️ Content Creation <span class="cat-count">4</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">Turkish locale skill pack (market data, news, briefings)</div><div class="story-quote">"Real-time market data in TRY, Turkish news sources, daily PNG briefing cards, Telegram cron."</div><div class="story-meta"><span class="src-chip">Discord</span> @erhnysr</div></div>
+        <div class="story-card"><div class="story-title">Weekly cron: top 3 trending AI tools for video</div><div class="story-quote">"Research the top trending AI tools right now and come back with the top three for a tutorial video."</div><div class="story-meta"><span class="src-chip">YouTube</span> Metics Media</div></div>
+        <div class="story-card"><div class="story-title">Monica that writes in my voice</div><div class="story-quote">"Monica had written a procedure for reading my published articles and replicating my style."</div><div class="story-meta"><span class="src-chip">X</span> @Saboo_Shubham_</div></div>
+        <div class="story-card"><div class="story-title">X roast poster — no $100 API needed</div><div class="story-quote">"Use Hermes to dance around the $100 monthly fee and drop roast posts."</div><div class="story-meta"><span class="src-chip">Discord</span> @yodaaa</div></div>
+      </div>
+    </div>
+
+    <div class="cat-group" id="cat-cost">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">💰 Cost Optimization <span class="cat-count">6</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">90% token spend cut — runs on cheap Android</div><div class="story-quote">"Switching to Hermes cut token spend ~90% — from ~$130 per 5 days to ~$10 per 5 days."</div><div class="story-meta"><span class="src-chip">Podcast</span> Greg Isenberg</div></div>
+        <div class="story-card"><div class="story-title">Under $20/mo total — no Mac Mini, no Opus</div><div class="story-quote">"OpenClaw: Mac Mini M4 + Opus = $80–150/mo. Hermes on VPS: under $20/mo using Minimax."</div><div class="story-meta"><span class="src-chip">Blog</span> Alex P.</div></div>
+        <div class="story-card"><div class="story-title">Free GPT-4.1 via Copilot, coding delegated to OpenCode</div><div class="story-quote">"Using Copilot $10/mo subscription for free model access."</div><div class="story-meta"><span class="src-chip">Discord</span> @mulkproject</div></div>
+        <div class="story-card"><div class="story-title">ZeroID: fix sub-agent scope delegation + context costs</div><div class="story-quote">"High cost when context windows fill up — built ZeroID to manage sub-agent permissions."</div><div class="story-meta"><span class="src-chip">Discord</span> @justin_albrethsen</div></div>
+        <div class="story-card"><div class="story-title">Switching between Hermes and OpenClaw on primeclaws.com</div><div class="story-quote">"Nice that you can switch between hermes and openclaw and get AI models for free."</div><div class="story-meta"><span class="src-chip">Reddit</span> u/sickleRunner</div></div>
+        <div class="story-card"><div class="story-title">What I use Hermes for + how I keep it cheap</div><div class="story-quote">"100% human generated guide covering models/pricing that keep total cost minimal."</div><div class="story-meta"><span class="src-chip">X</span> @vmiss33</div></div>
+      </div>
+    </div>
+
+    <div class="cat-group" id="cat-messaging">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">💬 Messaging <span class="cat-count">4</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">QQ Bot adapter (China — 95M+ MAU)</div><div class="story-quote">"Fully implemented and tested QQ Bot adapter (822 lines of code)."</div><div class="story-meta"><span class="src-chip">GitHub</span> @2024fatwolf55</div></div>
+        <div class="story-card"><div class="story-title">DM-based approval gate for Discord bots</div><div class="story-quote">"For multi-user servers, every outbound reply goes through a DM approval gate."</div><div class="story-meta"><span class="src-chip">GitHub</span> @iacker</div></div>
+        <div class="story-card"><div class="story-title">LINE adapter for Japan/SE Asia (95M+ MAU)</div><div class="story-quote">"LINE is the dominant platform in Japan — no way to use Hermes from LINE today."</div><div class="story-meta"><span class="src-chip">GitHub</span> @yuga-hashimoto</div></div>
+        <div class="story-card"><div class="story-title">Feishu (Lark) full ecosystem — give Hermes hands</div><div class="story-quote">"Feishu Documents, Sheets, Bitable, Calendar, Tasks, Wiki, Contacts, Drive, Email."</div><div class="story-meta"><span class="src-chip">GitHub</span> @haoqimeng1992</div></div>
+      </div>
+    </div>
+
+    <div class="cat-group" id="cat-privacy">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">🔒 Privacy &amp; Self-Hosted <span class="cat-count">3</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">Local SearXNG container shared across agents</div><div class="story-quote">"Local SearXNG in a container that my Hermes agents share."</div><div class="story-meta"><span class="src-chip">Discord</span> @flensbo</div></div>
+        <div class="story-card"><div class="story-title">Legal-domain work on edge GPU (no cloud APIs)</div><div class="story-quote">"I work with legal-domain material and internal systems I cannot ship to third-party APIs."</div><div class="story-meta"><span class="src-chip">GitHub</span> @arkka</div></div>
+        <div class="story-card"><div class="story-title">Always run agents in a sandbox</div><div class="story-quote">"Don't give it free reign over all your stuff. Run it within a sandbox."</div><div class="story-meta"><span class="src-chip">HN</span> Flere-Imsaho</div></div>
+      </div>
+    </div>
+
+    <div class="cat-group" id="cat-creative">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">🎨 Creative <span class="cat-count">10</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">Generative visuals in TouchDesigner</div><div class="story-quote">"Expands touchdesigner-mcp skill with extensive reference docs so Hermes can build generative media."</div><div class="story-meta"><span class="src-chip">GitHub</span> @SHL0MS</div></div>
+        <div class="story-card"><div class="story-title">X-to-NotebookLM podcast workflow (autonomously suggested)</div><div class="story-quote">"Hermes started autonomously suggesting entire workflows I never would have designed myself."</div><div class="story-meta"><span class="src-chip">X</span> @HeyYanvi</div></div>
+        <div class="story-card"><div class="story-title">Agent dreams at night — 5 REM cycles for $0.014</div><div class="story-quote">"5 REM cycles, 23:00–06:00, zero cron jobs. By morning it's written 9 dream thoughts."</div><div class="story-meta"><span class="src-chip">Discord</span> @ajaylakhani</div></div>
+        <div class="story-card"><div class="story-title">shadcn finance dashboard + Manim explainer videos</div><div class="story-quote">"Used /browse to add Obsidian as a skill, then built a finance dashboard using shadcn/ui."</div><div class="story-meta"><span class="src-chip">YouTube</span> WorldofAI</div></div>
+        <div class="story-card"><div class="story-title">Hermes Inc. — Telegram-native startup sim game</div><div class="story-quote">"A Telegram-native startup simulation game powered by Hermes Agent."</div><div class="story-meta"><span class="src-chip">X</span> @brucexu_eth</div></div>
+        <div class="story-card"><div class="story-title">Chess blunder finder (repo stress-test)</div><div class="story-quote">"The real purpose was to see how much I can torture a repo with hermes."</div><div class="story-meta"><span class="src-chip">Discord</span> @fahdad_</div></div>
+      </div>
+    </div>
+
+    <div class="cat-group" id="cat-trading">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">📈 Trading &amp; Markets <span class="cat-count">2</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">$100 → $216 in 48h weather trading bot</div><div class="story-quote">"Scans weather markets every 60 mins, compares 3 forecast sources, buys undervalued temperature contracts."</div><div class="story-meta"><span class="src-chip">X</span> @DeRonin_</div></div>
+        <div class="story-card"><div class="story-title">Polymarket trading — 4 layers in parallel</div><div class="story-quote">"Read 4 layers at once — order book, on-chain addresses, Reddit sentiment, news."</div><div class="story-meta"><span class="src-chip">X</span> @adiix_official</div></div>
+      </div>
+    </div>
+
+    <div class="cat-group" id="cat-marketing">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">📣 Marketing <span class="cat-count">2</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">Hermes skill pack on Meta's CLI for ads</div><div class="story-quote">"Yesterday Meta released their official CLI & MCP so I built a Hermes skill pack."</div><div class="story-meta"><span class="src-chip">Discord</span> @masonjames</div></div>
+        <div class="story-card"><div class="story-title">UGC ad studio — paste product URL, Hermes does the rest</div><div class="story-quote">"Paste product URL → Hermes scrapes the landing page, pulls winning hooks, generates UGC scripts."</div><div class="story-meta"><span class="src-chip">X</span> @codewithimanshu</div></div>
+      </div>
+    </div>
+
+    <div class="cat-group" id="cat-meta">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">🔭 Meta &amp; Ecosystem <span class="cat-count">7</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">hermes-for-win: one-click Windows installer</div><div class="story-quote">"A one-click installation and deployment tool for Windows users."</div><div class="story-meta"><span class="src-chip">GitHub</span> @EdwardWason</div></div>
+        <div class="story-card"><div class="story-title">TUI dashboard that watches agent think</div><div class="story-quote">"Reads from agent's memory, tracks skills, sessions, corrections, projects, cron tasks."</div><div class="story-meta"><span class="src-chip">Discord</span> @synextco</div></div>
+        <div class="story-card"><div class="story-title">SQLite tool-call logger + Grafana dashboards</div><div class="story-quote">"Records every tool call and LLM API call into local SQLite with five read-only Grafana dashboards."</div><div class="story-meta"><span class="src-chip">Discord</span> @bert_71849</div></div>
+        <div class="story-card"><div class="story-title">Independent install guide (Show HN)</div><div class="story-quote">"An independent Hermes Agent install guide for the part that usually gets skipped."</div><div class="story-meta"><span class="src-chip">HN</span> ethanjamescolez</div></div>
+        <div class="story-card"><div class="story-title">Dashboard for easier Hermes config and management</div><div class="story-quote">"Browser-based terminal with real PTY, file explorer + inline editor, agent management."</div><div class="story-meta"><span class="src-chip">Discord</span> @kysiv</div></div>
+        <div class="story-card"><div class="story-title">One month with Hermes — lessons learned</div><div class="story-quote">"Don't build the whole machine on day one."</div><div class="story-meta"><span class="src-chip">Reddit</span> u/itsdodobitch</div></div>
+        <div class="story-card"><div class="story-title">Hermes Agent has won — why (podcast)</div><div class="story-quote">"Self-improving skills, three-layer memory, 20 platforms."</div><div class="story-meta"><span class="src-chip">Podcast</span> Tool Use</div></div>
+      </div>
+    </div>
+
+    <div class="cat-group" id="cat-general">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-pill">🌐 General <span class="cat-count">2</span></span>
+        <span class="cat-toggle">▼ show</span>
+      </div>
+      <div class="story-grid" style="display:none">
+        <div class="story-card"><div class="story-title">Voice from terminal as accessibility feature</div><div class="story-quote">"I can't type too well so being able to use voice from terminal is huge for me."</div><div class="story-meta"><span class="src-chip">Discord</span> @timmmie.</div></div>
+        <div class="story-card"><div class="story-title">AI employee for my hardest tasks</div><div class="story-quote">"Hermes Agent with ChatGPT 5.5 is literally magic. Thrown my hardest tasks and it handles EVERYTHING."</div><div class="story-meta"><span class="src-chip">X</span> @AlexFinn</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 5: VALIDITY ASSESSMENT MATRIX ===== -->
+  <div class="section" id="sec5">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Validity Assessment Matrix</h2>
+    </div>
+    <p>Rating criteria: <strong>Feasibility Today</strong> (1–5, can be implemented now with available tools), <strong>Changeis Fit</strong> (1–5, relevance to federal consulting / change management), <strong>Implementation Effort</strong> (Low / Med / High), <strong>Recommended Platform</strong>.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Use Case</th>
+            <th>Changeis Category</th>
+            <th>Feasibility Today</th>
+            <th>Changeis Fit</th>
+            <th>Effort</th>
+            <th>Recommended Platform</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Daily inbox summary → Slack cron</strong></td>
+            <td>Ops / Comms</td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="effort-low">Low</span></td>
+            <td><span class="badge badge-all">Hermes / Perplexity</span></td>
+          </tr>
+          <tr>
+            <td><strong>Daily research brief (AI signals → Slack/Notion)</strong></td>
+            <td>Research / BD</td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="effort-low">Low</span></td>
+            <td><span class="badge badge-perplexity">Perplexity Computer</span></td>
+          </tr>
+          <tr>
+            <td><strong>Ticket triage in PM software (Jira, Plane)</strong></td>
+            <td>Operations</td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="effort-med">Medium</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Obsidian + Calendar + Signal task manager</strong></td>
+            <td>Personal Productivity</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="effort-low">Low</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Two-tier email pipeline (filter → LLM only when needed)</strong></td>
+            <td>Operations / Comms</td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="effort-med">Medium</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Legal-domain work on self-hosted GPU (no cloud)</strong></td>
+            <td>Legal / Compliance</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="effort-high">High</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>EU AI Act / compliance audit trail via Ombre</strong></td>
+            <td>Compliance / Enterprise</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="effort-high">High</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>24/7 assistant with CRM (Supabase / existing CRM)</strong></td>
+            <td>BD / Client Management</td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="effort-med">Medium</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Sales outreach — Hunter.io email-finding</strong></td>
+            <td>BD / Sales</td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="effort-low">Low</span></td>
+            <td><span class="badge badge-all">Hermes / Perplexity</span></td>
+          </tr>
+          <tr>
+            <td><strong>Google Slides / deck creation from briefs</strong></td>
+            <td>Deliverables / Proposals</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="effort-med">Medium</span></td>
+            <td><span class="badge badge-claude">Claude</span></td>
+          </tr>
+          <tr>
+            <td><strong>Content creator — writing in client's voice</strong></td>
+            <td>Comms / Proposals</td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="effort-low">Low</span></td>
+            <td><span class="badge badge-claude">Claude</span></td>
+          </tr>
+          <tr>
+            <td><strong>UGC ad studio / marketing automation</strong></td>
+            <td>Marketing / BD</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-3">3/5 ★★★☆☆</span></td>
+            <td><span class="effort-med">Medium</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Self-improving LLM Wiki / second brain</strong></td>
+            <td>Knowledge Management</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="effort-med">Medium</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Multi-agent auto-build workflow</strong></td>
+            <td>Automation / Dev</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-3">3/5 ★★★☆☆</span></td>
+            <td><span class="effort-high">High</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>$100K client work automation (recurring workflow)</strong></td>
+            <td>Operations / Service Delivery</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="effort-high">High</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>k8s cluster daily cybersec + AI briefing</strong></td>
+            <td>Enterprise / Security</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-3">3/5 ★★★☆☆</span></td>
+            <td><span class="effort-high">High</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Weekly trending AI tools → content/video brief</strong></td>
+            <td>Research / Content</td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="effort-low">Low</span></td>
+            <td><span class="badge badge-perplexity">Perplexity Computer</span></td>
+          </tr>
+          <tr>
+            <td><strong>Proactive check-ins / agent-initiated comms</strong></td>
+            <td>Client Comms</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="effort-med">Medium</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Obsidian long-term memory backbone</strong></td>
+            <td>Knowledge Management</td>
+            <td><span class="feas feas-5">5/5 ★★★★★</span></td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="effort-low">Low</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Vertex AI / Azure enterprise deployment</strong></td>
+            <td>Enterprise IT</td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="feas feas-4">4/5 ★★★★☆</span></td>
+            <td><span class="effort-high">High</span></td>
+            <td><span class="badge badge-hermes">Hermes</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 6: IMPLEMENTATION OPTIONS ===== -->
+  <div class="section" id="sec6">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>Implementation Options per Use Case</h2>
+    </div>
+    <p>For each top use case, three platform options with pros/cons. <strong>Hermes</strong> = self-improving open-source agent. <strong>Claude</strong> = Anthropic's long-context API. <strong>Perplexity Computer</strong> = research + tool-calling SaaS with cron.</p>
+
+    <!-- UC 1 -->
+    <h3>1. Daily Inbox Summary → Slack / Teams (Natural Language Cron)</h3>
+    <div class="platform-grid">
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-hermes">Hermes Agent</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Native cron scheduling in plain English</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Direct Slack/Teams/Discord integration</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Runs 24/7 on $5 VPS, unattended</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Email access via IMAP tools</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Requires VPS / server setup</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Initial config takes 30–60 min</div>
+      </div>
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-claude">Claude (Anthropic)</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Superior email parsing / reasoning quality</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Long-context for large inboxes</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>No native cron — needs wrapper (n8n, Zapier)</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>No direct email/Slack access — needs connectors</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Higher per-call cost</div>
+      </div>
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-perplexity">Perplexity Computer</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Built-in cron scheduling</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Connected tools (Gmail, Slack integrations)</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Zero server setup</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Less control over prompt logic</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Data leaves your control</div>
+      </div>
+    </div>
+
+    <!-- UC 2 -->
+    <h3>2. Self-Improving Knowledge Wiki / Second Brain</h3>
+    <div class="platform-grid">
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-hermes">Hermes Agent</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Native auto-skill generation = built-in learning</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>SQLite FTS5 session recall across all time</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Self-curating Curator agent (v0.12.0)</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Obsidian-native markdown write-back</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Requires persistent server</div>
+      </div>
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-claude">Claude</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Excellent at synthesis and structured writing</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>200K token context for large doc sets</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>No persistent memory across sessions</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>No self-improvement loop</div>
+      </div>
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-perplexity">Perplexity Computer</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Real-time web grounding for fresh inputs</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>File-based spaces for accumulation</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Limited self-improvement capability</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>No Obsidian write-back</div>
+      </div>
+    </div>
+
+    <!-- UC 3 -->
+    <h3>3. 24/7 BD Assistant with CRM Integration</h3>
+    <div class="platform-grid">
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-hermes">Hermes Agent</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Persistent 24/7 server process</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Direct DB access via execute_code (Supabase, Postgres)</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Multi-platform comms (Teams, Slack, Telegram)</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Under $20/mo cost</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>CRM integration needs MCP/skill build-out</div>
+      </div>
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-claude">Claude</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Best-in-class reasoning for complex BD analysis</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Excellent proposal/RFP writing</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Not 24/7 — stateless per call</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>No CRM access without heavy engineering</div>
+      </div>
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-perplexity">Perplexity Computer</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Web search for prospect research</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Cron for daily BD briefings</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>No direct CRM write-back</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Not truly 24/7 background</div>
+      </div>
+    </div>
+
+    <!-- UC 4 -->
+    <h3>4. Ticket / Task Triage Automation (Jira, Plane.so)</h3>
+    <div class="platform-grid">
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-hermes">Hermes Agent</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Kanban multi-agent board (v0.13.0)</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Jira/Plane MCP integration available</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Assigns, starts, and works tickets continuously</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Requires MCP setup for Jira connectivity</div>
+      </div>
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-claude">Claude</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Best reasoning for complex ticket classification</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Excellent at writing ticket summaries/responses</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>No persistent watching — needs trigger</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>No native Jira access</div>
+      </div>
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-perplexity">Perplexity Computer</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Jira MCP connector available</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Good for scheduled daily triage runs</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Less suited for continuous watching</div>
+      </div>
+    </div>
+
+    <!-- UC 5 -->
+    <h3>5. Proposal / Document Drafting in Client Voice</h3>
+    <div class="platform-grid">
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-hermes">Hermes Agent</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Builds style skill from past docs over time</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Access to Drive/SharePoint via MCP</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Writing quality depends on model choice</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Weaker than Claude on nuanced long-form</div>
+      </div>
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-claude">Claude</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Best-in-class long-form writing quality</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Excellent voice/style adaptation</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Strong RFP/proposal structuring</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>No persistent style memory cross-session without setup</div>
+      </div>
+      <div class="platform-card">
+        <div class="plat-name"><span class="badge badge-perplexity">Perplexity Computer</span></div>
+        <div class="plat-pros">✅ Pros</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>Good for research-grounded drafts</div>
+        <div class="plat-item plat-pros"><span class="plat-icon">+</span>File upload for style matching</div>
+        <div class="plat-cons">❌ Cons</div>
+        <div class="plat-item plat-cons"><span class="plat-icon">-</span>Writing depth below Claude</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 7: DEEP DIVE BUTTONS ===== -->
+  <div class="section" id="sec7">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Deep Dive — Top 10 Candidates</h2>
+    </div>
+    <p>Click any button to open a pre-drafted email to vm2.viru@gmail.com with the use case summary and your platform preference. Pick the platform option that aligns with your implementation intent.</p>
+
+    <div class="dive-grid">
+
+      <!-- CARD 1 -->
+      <div class="dive-card">
+        <div class="dive-title"><div class="rank">1</div>Daily Inbox Summary → Slack/Teams Cron</div>
+        <div class="dive-desc">Natural language scheduler that summarizes your inbox every weekday at 9am and posts a digest to Slack or Teams. Proven by dozens of community members. Lowest effort, highest ROI for communications workflows.</div>
+        <div class="dive-footer">
+          <a class="btn-dive hermes" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Daily%20Inbox%20Summary%20%E2%86%92%20Slack%2FTeams%20Cron&body=Use%20Case%3A%20Daily%20Inbox%20Summary%20%E2%86%92%20Slack%2FTeams%20Cron%0A%0ADescription%3A%20Natural%20language%20scheduler%20that%20summarizes%20inbox%20every%20weekday%20at%209am%20and%20posts%20a%20digest%20to%20Slack%20or%20Teams.%20%0A%0AChosen%20Platform%3A%20Hermes%20Agent%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Hermes</a>
+          <a class="btn-dive claude" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Daily%20Inbox%20Summary%20%E2%86%92%20Slack%2FTeams%20Cron&body=Use%20Case%3A%20Daily%20Inbox%20Summary%20%E2%86%92%20Slack%2FTeams%20Cron%0A%0ADescription%3A%20Natural%20language%20scheduler%20that%20summarizes%20inbox%20every%20weekday%20at%209am%20and%20posts%20a%20digest%20to%20Slack%20or%20Teams.%20%0A%0AChosen%20Platform%3A%20Claude%20%2B%20n8n%2FZapier%20wrapper%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Claude</a>
+          <a class="btn-dive perplexity" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Daily%20Inbox%20Summary%20%E2%86%92%20Slack%2FTeams%20Cron&body=Use%20Case%3A%20Daily%20Inbox%20Summary%20%E2%86%92%20Slack%2FTeams%20Cron%0A%0ADescription%3A%20Natural%20language%20scheduler%20that%20summarizes%20inbox%20every%20weekday%20at%209am%20and%20posts%20digest%20to%20Slack%20or%20Teams.%20%0A%0AChosen%20Platform%3A%20Perplexity%20Computer%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Perplexity</a>
+        </div>
+      </div>
+
+      <!-- CARD 2 -->
+      <div class="dive-card">
+        <div class="dive-title"><div class="rank">2</div>24/7 BD Assistant with CRM Integration</div>
+        <div class="dive-desc">A persistent agent running on a VPS or server that monitors BD pipeline, logs interactions to CRM (Supabase / HubSpot / Salesforce), sends proactive alerts, and triages opportunities — under $20/mo.</div>
+        <div class="dive-footer">
+          <a class="btn-dive hermes" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%2024%2F7%20BD%20Assistant%20with%20CRM%20Integration&body=Use%20Case%3A%2024%2F7%20BD%20Assistant%20with%20CRM%20Integration%0A%0ADescription%3A%20Persistent%20agent%20monitoring%20BD%20pipeline%2C%20logging%20to%20CRM%2C%20sending%20proactive%20alerts%2C%20triaging%20opportunities.%20Under%20%2420%2Fmo.%0A%0AChosen%20Platform%3A%20Hermes%20Agent%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Hermes</a>
+          <a class="btn-dive claude" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%2024%2F7%20BD%20Assistant%20with%20CRM%20Integration&body=Use%20Case%3A%2024%2F7%20BD%20Assistant%20with%20CRM%20Integration%0A%0ADescription%3A%20Persistent%20BD%20assistant%20with%20CRM%20integration%20for%20opportunity%20tracking.%0A%0AChosen%20Platform%3A%20Claude%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Claude</a>
+          <a class="btn-dive perplexity" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%2024%2F7%20BD%20Assistant%20with%20CRM%20Integration&body=Use%20Case%3A%2024%2F7%20BD%20Assistant%20with%20CRM%20Integration%0A%0AChosen%20Platform%3A%20Perplexity%20Computer%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Perplexity</a>
+        </div>
+      </div>
+
+      <!-- CARD 3 -->
+      <div class="dive-card">
+        <div class="dive-title"><div class="rank">3</div>Self-Improving Knowledge Wiki / Institutional Memory</div>
+        <div class="dive-desc">An LLM-maintained second brain that compounds over time. Hermes writes structured markdown notes to Obsidian after every session, building a growing graph of project knowledge, client details, and lessons learned.</div>
+        <div class="dive-footer">
+          <a class="btn-dive hermes" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Self-Improving%20Knowledge%20Wiki&body=Use%20Case%3A%20Self-Improving%20Knowledge%20Wiki%20%2F%20Institutional%20Memory%0A%0ADescription%3A%20LLM-maintained%20second%20brain%20that%20compounds%20over%20time.%20Writes%20structured%20markdown%20notes%20to%20Obsidian%20after%20every%20session.%0A%0AChosen%20Platform%3A%20Hermes%20Agent%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Hermes</a>
+          <a class="btn-dive claude" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Self-Improving%20Knowledge%20Wiki&body=Use%20Case%3A%20Self-Improving%20Knowledge%20Wiki%0A%0AChosen%20Platform%3A%20Claude%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Claude</a>
+          <a class="btn-dive perplexity" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Self-Improving%20Knowledge%20Wiki&body=Use%20Case%3A%20Self-Improving%20Knowledge%20Wiki%0A%0AChosen%20Platform%3A%20Perplexity%20Computer%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Perplexity</a>
+        </div>
+      </div>
+
+      <!-- CARD 4 -->
+      <div class="dive-card">
+        <div class="dive-title"><div class="rank">4</div>Legal / Compliance Document Work (Self-Hosted)</div>
+        <div class="dive-desc">Run Hermes on a self-hosted GPU or private VPS with a local model (Gemma, Qwen, Mistral) to process sensitive legal, compliance, or federal contract documents — zero data leaving your environment.</div>
+        <div class="dive-footer">
+          <a class="btn-dive hermes" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Legal%20%2F%20Compliance%20Document%20Work%20(Self-Hosted)&body=Use%20Case%3A%20Legal%20%2F%20Compliance%20Document%20Work%20(Self-Hosted)%0A%0ADescription%3A%20Hermes%20on%20self-hosted%20GPU%20with%20local%20model%20to%20process%20sensitive%20legal%2C%20compliance%2C%20or%20federal%20contract%20docs%20%E2%80%94%20zero%20data%20leaves%20environment.%0A%0AChosen%20Platform%3A%20Hermes%20Agent%20(Self-Hosted)%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Hermes</a>
+          <a class="btn-dive claude" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Legal%20%2F%20Compliance%20Document%20Work&body=Use%20Case%3A%20Legal%20%2F%20Compliance%20Document%20Work%0A%0AChosen%20Platform%3A%20Claude%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Claude</a>
+          <a class="btn-dive perplexity" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Legal%20%2F%20Compliance%20Document%20Work&body=Use%20Case%3A%20Legal%20%2F%20Compliance%20Document%20Work%0A%0AChosen%20Platform%3A%20Perplexity%20Computer%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Perplexity</a>
+        </div>
+      </div>
+
+      <!-- CARD 5 -->
+      <div class="dive-card">
+        <div class="dive-title"><div class="rank">5</div>Ticket Triage in PM Software (Jira, Plane.so)</div>
+        <div class="dive-desc">Hermes monitors incoming tickets, triages by priority/type, assigns to team members, and begins initial implementation steps — continuously, not just on demand. Proven real-world use case by multiple users.</div>
+        <div class="dive-footer">
+          <a class="btn-dive hermes" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Ticket%20Triage%20in%20PM%20Software&body=Use%20Case%3A%20Ticket%20Triage%20in%20PM%20Software%20(Jira%2C%20Plane.so)%0A%0ADescription%3A%20Hermes%20monitors%20incoming%20tickets%2C%20triages%20by%20priority%2C%20assigns%20to%20team%20members%2C%20begins%20initial%20implementation%20steps.%0A%0AChosen%20Platform%3A%20Hermes%20Agent%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Hermes</a>
+          <a class="btn-dive claude" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Ticket%20Triage%20in%20PM%20Software&body=Use%20Case%3A%20Ticket%20Triage%20in%20PM%20Software%0A%0AChosen%20Platform%3A%20Claude%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Claude</a>
+          <a class="btn-dive perplexity" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Ticket%20Triage%20in%20PM%20Software&body=Use%20Case%3A%20Ticket%20Triage%20in%20PM%20Software%0A%0AChosen%20Platform%3A%20Perplexity%20Computer%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Perplexity</a>
+        </div>
+      </div>
+
+      <!-- CARD 6 -->
+      <div class="dive-card">
+        <div class="dive-title"><div class="rank">6</div>Proposal Drafting in Client/Firm Voice</div>
+        <div class="dive-desc">Build a style-learning skill from past Changeis proposals and deliverables. Agent writes first drafts, executive summaries, and RFP responses in established Changeis voice — continuously improving with each document.</div>
+        <div class="dive-footer">
+          <a class="btn-dive hermes" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Proposal%20Drafting%20in%20Client%20Voice&body=Use%20Case%3A%20Proposal%20Drafting%20in%20Client%20%2F%20Firm%20Voice%0A%0ADescription%3A%20Style-learning%20skill%20from%20past%20proposals.%20Writes%20first%20drafts%2C%20executive%20summaries%2C%20RFP%20responses%20in%20Changeis%20voice.%0A%0AChosen%20Platform%3A%20Hermes%20Agent%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Hermes</a>
+          <a class="btn-dive claude" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Proposal%20Drafting%20in%20Client%20Voice&body=Use%20Case%3A%20Proposal%20Drafting%20in%20Client%20%2F%20Firm%20Voice%0A%0AChosen%20Platform%3A%20Claude%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Claude</a>
+          <a class="btn-dive perplexity" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Proposal%20Drafting%20in%20Client%20Voice&body=Use%20Case%3A%20Proposal%20Drafting%20in%20Client%20%2F%20Firm%20Voice%0A%0AChosen%20Platform%3A%20Perplexity%20Computer%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Perplexity</a>
+        </div>
+      </div>
+
+      <!-- CARD 7 -->
+      <div class="dive-card">
+        <div class="dive-title"><div class="rank">7</div>Daily Research Brief (AI Signals → Slack/Notion)</div>
+        <div class="dive-desc">A scheduled agent that watches AI/gov-tech/federal market signals, writes briefs, suggests actions, and delivers to Slack, Notion, or email every morning. Grounded in real-time sources.</div>
+        <div class="dive-footer">
+          <a class="btn-dive hermes" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Daily%20Research%20Brief&body=Use%20Case%3A%20Daily%20Research%20Brief%20(AI%20Signals%20%E2%86%92%20Slack%2FNotion)%0A%0ADescription%3A%20Scheduled%20agent%20watches%20AI%2Fgov-tech%2Ffederal%20market%20signals%2C%20writes%20briefs%2C%20suggests%20actions%2C%20delivers%20to%20Slack%2FNotion%20every%20morning.%0A%0AChosen%20Platform%3A%20Hermes%20Agent%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Hermes</a>
+          <a class="btn-dive claude" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Daily%20Research%20Brief&body=Use%20Case%3A%20Daily%20Research%20Brief%0A%0AChosen%20Platform%3A%20Claude%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Claude</a>
+          <a class="btn-dive perplexity" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Daily%20Research%20Brief&body=Use%20Case%3A%20Daily%20Research%20Brief%0A%0AChosen%20Platform%3A%20Perplexity%20Computer%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Perplexity</a>
+        </div>
+      </div>
+
+      <!-- CARD 8 -->
+      <div class="dive-card">
+        <div class="dive-title"><div class="rank">8</div>Google Slides / Deck Creation Automation</div>
+        <div class="dive-desc">Agent ingests a brief or data source and outputs a structured Google Slides or PowerPoint deck. Useful for client deliverable acceleration, briefing decks, and proposal slide generation.</div>
+        <div class="dive-footer">
+          <a class="btn-dive hermes" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Google%20Slides%20Deck%20Creation%20Automation&body=Use%20Case%3A%20Google%20Slides%20%2F%20Deck%20Creation%20Automation%0A%0ADescription%3A%20Agent%20ingests%20a%20brief%20or%20data%20source%20and%20outputs%20a%20structured%20Google%20Slides%20or%20PowerPoint%20deck.%0A%0AChosen%20Platform%3A%20Hermes%20Agent%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Hermes</a>
+          <a class="btn-dive claude" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Google%20Slides%20Deck%20Creation%20Automation&body=Use%20Case%3A%20Google%20Slides%20%2F%20Deck%20Creation%0A%0AChosen%20Platform%3A%20Claude%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Claude</a>
+          <a class="btn-dive perplexity" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Google%20Slides%20Deck%20Creation%20Automation&body=Use%20Case%3A%20Google%20Slides%20%2F%20Deck%20Creation%0A%0AChosen%20Platform%3A%20Perplexity%20Computer%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Perplexity</a>
+        </div>
+      </div>
+
+      <!-- CARD 9 -->
+      <div class="dive-card">
+        <div class="dive-title"><div class="rank">9</div>Client Work Automation — Recurring Service Delivery</div>
+        <div class="dive-desc">Automating repeatable client deliverables: status reports, weekly summaries, data pulls, document packaging. One user reports $100K+ of automated work value on Day 297 of continuous operation.</div>
+        <div class="dive-footer">
+          <a class="btn-dive hermes" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Client%20Work%20Automation&body=Use%20Case%3A%20Client%20Work%20Automation%20%E2%80%94%20Recurring%20Service%20Delivery%0A%0ADescription%3A%20Automating%20repeatable%20client%20deliverables%3A%20status%20reports%2C%20weekly%20summaries%2C%20data%20pulls%2C%20document%20packaging.%20One%20user%20reports%20%24100K%2B%20of%20automated%20work.%0A%0AChosen%20Platform%3A%20Hermes%20Agent%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Hermes</a>
+          <a class="btn-dive claude" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Client%20Work%20Automation&body=Use%20Case%3A%20Client%20Work%20Automation%0A%0AChosen%20Platform%3A%20Claude%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Claude</a>
+          <a class="btn-dive perplexity" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Client%20Work%20Automation&body=Use%20Case%3A%20Client%20Work%20Automation%0A%0AChosen%20Platform%3A%20Perplexity%20Computer%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Perplexity</a>
+        </div>
+      </div>
+
+      <!-- CARD 10 -->
+      <div class="dive-card">
+        <div class="dive-title"><div class="rank">10</div>EU AI Act / FedRAMP Compliance Audit Trail</div>
+        <div class="dive-desc">Overlay Ombre or equivalent audit layer on Hermes deployments for tamper-proof logs, prompt-injection blocking, memory encryption, and hallucination detection — meeting EU AI Act or federal AI compliance requirements.</div>
+        <div class="dive-footer">
+          <a class="btn-dive hermes" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20EU%20AI%20Act%20%2F%20FedRAMP%20Compliance%20Audit%20Trail&body=Use%20Case%3A%20EU%20AI%20Act%20%2F%20FedRAMP%20Compliance%20Audit%20Trail%0A%0ADescription%3A%20Overlay%20compliance%20audit%20layer%20on%20Hermes%20for%20tamper-proof%20logs%2C%20prompt-injection%20blocking%2C%20memory%20encryption%2C%20hallucination%20detection.%0A%0AChosen%20Platform%3A%20Hermes%20Agent%20%2B%20Ombre%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Hermes</a>
+          <a class="btn-dive claude" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Compliance%20Audit%20Trail&body=Use%20Case%3A%20Compliance%20Audit%20Trail%0A%0AChosen%20Platform%3A%20Claude%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Claude</a>
+          <a class="btn-dive perplexity" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%20-%20Hermes%20Use%20Case%3A%20Compliance%20Audit%20Trail&body=Use%20Case%3A%20Compliance%20Audit%20Trail%0A%0AChosen%20Platform%3A%20Perplexity%20Computer%0A%0ASource%3A%20https%3A%2F%2Fhermes-agent.nousresearch.com%2Fdocs%2Fuser-stories%0A%0ANotes%3A">Perplexity</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== SECTION 8: TOP 5 FOR CHANGEIS ===== -->
+  <div class="section" id="sec8">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>Top 5 Recommended for Changeis</h2>
+    </div>
+    <p>Rank-ordered by combined Changeis Fit score, implementation feasibility, and strategic value to a federal consulting firm specializing in change management, IT modernization, and organizational development.</p>
+
+    <div class="top5-grid">
+
+      <div class="top5-card">
+        <div class="rank-badge rank-1">1</div>
+        <div class="body">
+          <div class="title">24/7 BD Assistant with CRM Integration</div>
+          <div class="cat">Business Ops · Changeis Fit: 5/5</div>
+          <div class="rationale">A persistent Hermes agent running on a VPS monitors BD pipeline, logs client touchpoints to CRM, sends Telegram/Slack alerts when proposals need action, and triages opportunities — for under $20/mo. This directly automates the highest-value recurring activity at a consulting firm: business development tracking. Multiple community users report this running successfully with Supabase, and the cost case versus a full-time BD coordinator is overwhelming. <strong>Recommended platform: Hermes Agent</strong> — only Hermes offers genuine 24/7 persistence + CRM write-back + multi-channel alerting in a single self-hosted deployment.</div>
+          <div class="rec-plat"><span class="badge badge-hermes">Hermes Agent</span></div>
+        </div>
+      </div>
+
+      <div class="top5-card">
+        <div class="rank-badge rank-2">2</div>
+        <div class="body">
+          <div class="title">Self-Improving Institutional Knowledge Wiki</div>
+          <div class="cat">Knowledge Management · Changeis Fit: 5/5</div>
+          <div class="rationale">Changeis's core value is expertise accumulated across client engagements. A Hermes agent that writes structured markdown lessons to Obsidian after every client session, builds skill files for repeatable patterns, and provides cross-session recall means institutional memory survives personnel changes, scales without overhead, and surfaces insights on demand. The "794-upvote" Reddit post on Obsidian as backbone confirms strong community validation. <strong>Recommended platform: Hermes Agent</strong> — the 3-layer memory + auto-skill-generation loop is the only system that improves passively without manual curation.</div>
+          <div class="rec-plat"><span class="badge badge-hermes">Hermes Agent</span></div>
+        </div>
+      </div>
+
+      <div class="top5-card">
+        <div class="rank-badge rank-3">3</div>
+        <div class="body">
+          <div class="title">Daily Inbox Summary + Research Brief (Cron)</div>
+          <div class="cat">Operations / Comms · Changeis Fit: 5/5</div>
+          <div class="rationale">The most universally validated use case on the platform (first story, multiple variations). A 9am daily brief combining inbox triage + federal market signals (SAM.gov, GovWin, industry news) delivered to Slack or Teams is a high-leverage, low-effort starting point. It requires zero custom development and is up within 2 hours. <strong>Recommended platform: Perplexity Computer</strong> for web-grounded research component; <strong>Hermes</strong> for persistent inbox access + multi-platform delivery. A hybrid is ideal: Perplexity for research synthesis, Hermes for email access and Slack delivery.</div>
+          <div class="rec-plat"><span class="badge badge-perplexity">Perplexity Computer</span> <span class="badge badge-hermes">+ Hermes</span></div>
+        </div>
+      </div>
+
+      <div class="top5-card">
+        <div class="rank-badge rank-4">4</div>
+        <div class="body">
+          <div class="title">Proposal &amp; Deliverable Drafting in Changeis Voice</div>
+          <div class="cat">Deliverables / BD · Changeis Fit: 5/5</div>
+          <div class="rationale">A style-learning skill built from past proposals and deliverables enables first-draft acceleration for RFP responses, executive summaries, and client reports. Multiple community users confirm reliable voice-matching after 5–10 example documents. The time savings on a 40-page proposal draft alone justify the setup. <strong>Recommended platform: Claude</strong> — Opus 4.x provides superior long-form writing quality and style fidelity. Hermes can wrap Claude as the execution layer while maintaining persistent project context and file management.</div>
+          <div class="rec-plat"><span class="badge badge-claude">Claude (primary)</span> <span class="badge badge-hermes">+ Hermes (context)</span></div>
+        </div>
+      </div>
+
+      <div class="top5-card">
+        <div class="rank-badge rank-5">5</div>
+        <div class="body">
+          <div class="title">Compliance &amp; Audit Trail for AI-Assisted Work</div>
+          <div class="cat">Compliance / Enterprise · Changeis Fit: 5/5</div>
+          <div class="rationale">Federal consulting firms face growing AI compliance requirements — from client AI policies to emerging FedRAMP AI guidelines. The Ombre + Hermes pattern creates tamper-proof logs of every AI-assisted action, prompt-injection protection, and audit trails suitable for compliance review. This positions Changeis as a responsible AI user to federal clients while enabling internal AI acceleration. <strong>Recommended platform: Hermes Agent + Ombre overlay</strong> — only Hermes provides the granular tool-call logging and self-hosted deployment needed for a credible compliance story.</div>
+          <div class="rec-plat"><span class="badge badge-hermes">Hermes + Ombre</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== SECTION 9: SOURCES ===== -->
+  <div class="section" id="sec9">
+    <div class="section-header">
+      <div class="section-num">9</div>
+      <h2>Sources</h2>
+    </div>
+    <ul class="sources-list">
+      <li><strong>Primary:</strong> <a href="https://hermes-agent.nousresearch.com/docs/user-stories" target="_blank">Hermes Agent User Stories &amp; Use Cases — nousresearch.com</a></li>
+      <li><strong>Documentation:</strong> <a href="https://hermes-agent.nousresearch.com/docs" target="_blank">Hermes Agent Documentation — hermes-agent.nousresearch.com/docs</a></li>
+      <li><strong>Main site:</strong> <a href="https://hermes-agent.nousresearch.com" target="_blank">Hermes Agent — The Agent That Grows With You — nousresearch.com</a></li>
+      <li><strong>Competitive analysis:</strong> <a href="https://www.marktechpost.com/2026/05/10/openclaw-vs-hermes-agent-why-nous-researchs-self-improving-agent-now-leads-openrouters-global-rankings/" target="_blank">OpenClaw vs Hermes Agent — MarkTechPost, May 10, 2026</a></li>
+      <li><strong>Alternatives comparison:</strong> <a href="https://www.vellum.ai/blog/best-hermes-agent-alternatives" target="_blank">10 Best Hermes Agent Alternatives — Vellum.ai, April 2026</a></li>
+      <li><strong>Platform comparison:</strong> <a href="https://aiblewmymind.substack.com/p/perplexity-computer-vs-claude-code-cowork-manus-comparison" target="_blank">Perplexity Computer vs Claude Code vs Cowork vs Manus — AI blew my mind, March 2026</a></li>
+      <li><strong>Race to personal agents:</strong> <a href="https://creatoreconomy.so/p/the-race-to-build-a-personal-ai-agent-openclaw-hermes-claude-codex-gemini" target="_blank">The Race to Build a Personal AI Agent — Behind the Craft, May 2026</a></li>
+      <li><strong>Model guide:</strong> <a href="https://hermes-agent.nousresearch.com/docs/user-guide/configuring-models" target="_blank">Configuring Models — Hermes Agent Docs</a></li>
+      <li><strong>Nous Research portal:</strong> <a href="https://portal.nousresearch.com/models" target="_blank">Nous Research Portal — 332 models supported</a></li>
+    </ul>
+  </div>
+
+</main>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span>Changeis Confidential — Agent Platforms Research — May 2026</span>
+  <span>Generated by Perplexity Computer · VM2 · Context: vm2-hermes-use-cases-2026-05-11 · Est. cost: ~$0.18–0.25</span>
+</footer>
+
+<script>
+  function toggleTheme() {
+    const body = document.body;
+    const btn = document.getElementById('toggle-theme');
+    if (body.getAttribute('data-theme') === 'light') {
+      body.setAttribute('data-theme', 'dark');
+      btn.textContent = '☀️ Light';
+    } else {
+      body.setAttribute('data-theme', 'light');
+      btn.textContent = '🌙 Dark';
+    }
+  }
+
+  function toggleCat(header) {
+    const grid = header.nextElementSibling;
+    const toggle = header.querySelector('.cat-toggle');
+    if (grid.style.display === 'none' || !grid.style.display) {
+      grid.style.display = 'grid';
+      toggle.textContent = '▲ hide';
+    } else {
+      grid.style.display = 'none';
+      toggle.textContent = '▼ show';
+    }
+  }
+
+  // Sidebar active tracking
+  const sections = document.querySelectorAll('.section[id]');
+  const navLinks = document.querySelectorAll('#sidebar a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(sec => {
+      const top = sec.offsetTop - 80;
+      if (window.scrollY >= top) current = sec.id;
+    });
+    navLinks.forEach(link => {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
