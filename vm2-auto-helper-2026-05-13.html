@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM2 Auto-Helper — 2026-05-13</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 36px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 18px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+  .meta-line {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    margin-top: 6px;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li {
+    font-size: 15px; line-height: 1.6;
+  }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  /* Summary stats */
+  .stats-row {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    flex: 1; min-width: 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .stat-num {
+    font-family: system-ui, sans-serif;
+    font-size: 32px; font-weight: 800;
+    color: var(--navy); line-height: 1;
+    margin-bottom: 6px;
+  }
+  [data-theme="dark"] .stat-num { color: #e2e2e2; }
+  .stat-label {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+
+  /* Candidate cards */
+  .candidate-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--card-shadow);
+    border-left: 4px solid var(--navy);
+  }
+  .candidate-card:hover { border-left-color: var(--red); }
+  .card-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 17px; font-weight: 700;
+    color: var(--navy); line-height: 1.3; flex: 1;
+  }
+  [data-theme="dark"] .card-title { color: #e2e2e2; }
+  .card-meta {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .card-meta-item {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .card-meta-label {
+    font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; font-size: 10px;
+    color: var(--text-muted);
+  }
+  .due-badge {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    background: var(--red); color: #fff;
+    padding: 2px 8px; border-radius: 3px;
+    letter-spacing: 0.03em;
+  }
+  .due-badge.no-due {
+    background: var(--surface-alt); color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .card-body { font-size: 14.5px; line-height: 1.6; }
+  .card-field {
+    margin-bottom: 10px;
+  }
+  .card-field-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--red); margin-bottom: 3px;
+  }
+  .card-field-text {
+    font-size: 14.5px; color: var(--text); line-height: 1.55;
+  }
+  .card-actions {
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; color: var(--btn-text); text-decoration: none; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); text-decoration: none; }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px; background: var(--code-bg);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  .candidate-num {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 6px;
+  }
+
+  @media (max-width: 600px) {
+    .stats-row { flex-direction: column; }
+    .hero h1 { font-size: 26px; }
+    .candidate-card { padding: 14px 16px; }
+  }
+
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">&#9679;</span> VM2 <span style="font-weight:400;opacity:0.7;">&nbsp;&#xB7; Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">&#9680; Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Auto-Helper</div>
+    <h1>VM2 Auto-Helper</h1>
+    <div class="hero-sub">Todoist AI Candidate Scan</div>
+    <div class="hero-date">May 13, 2026</div>
+    <div class="meta-line">Created: 2026-05-13</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num">708</div>
+      <div class="stat-label">Total Tasks</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">682</div>
+      <div class="stat-label">Scanned (non-VM2)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">26</div>
+      <div class="stat-label">VM2-Filtered</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--red);">15</div>
+      <div class="stat-label">AI Candidates</div>
+    </div>
+  </div>
+
+  <!-- Intro -->
+  <div class="section">
+    <div class="section-header">About This Report</div>
+    <p>682 non-VM2 Todoist tasks were scanned on 2026-05-13. Tasks bearing the <code>VM2</code> or <code>vm2-done</code> labels (26 tasks) were excluded as they are handled by the VM2 Task Execution cron. The remaining tasks were analyzed for AI-assistable work: research, writing, federal capture, BD analysis, strategy, recruiting, and content production. 15 strong candidates are surfaced below, each with a one-click "Task VM2" button to delegate immediately.</p>
+  </div>
+
+  <!-- Candidates -->
+  <div class="section">
+    <div class="section-header">15 AI Candidates Surfaced</div>
+
+
+    <!-- Card 1 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 01</div>
+      <div class="card-title">Deep Dive: F2026072550 — Policy Execution, Analytics, &amp; Automation Support</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;Inbox</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge no-due">No due date</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">This is a federal opportunity requiring deep research into DHS HQ/PLCY mission, NAICS 541611 market landscape, incumbent analysis, and past award history — all ideal for AI-driven capture research and brief generation.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Research DHS PLCY office priorities and budget, pull SAM.gov award history for NAICS 541611, identify likely incumbents, and draft a capture brief with Changeis differentiators and recommended teaming partners.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%3A%20F2026072550%20%E2%80%94%20Policy%20Execution%2C%20Analytics%2C%20%26%20Automation%20Support&body=VM2%20TASK%3A%20Deep%20Dive%3A%20F2026072550%20%E2%80%94%20Policy%20Execution%2C%20Analytics%2C%20%26%20Automation%20Support%0A%0AContext%3A%20Inbox%20%2F%20DHS%20HQ%2FPLCY%0ADue%3A%20None%0ADescription%3A%20Organization%3A%20DHS%20HQ%2FPLCY%20%7C%20NAICS%3A%20541611%20-%20Administrative%20Management%20and%20General%20Management%20Consulting%0A%0ASuggested%20approach%3A%20Research%20DHS%20PLCY%20office%20priorities%20and%20budget%2C%20pull%20SAM.gov%20award%20history%20for%20NAICS%20541611%2C%20identify%20likely%20incumbents%2C%20and%20draft%20a%20capture%20brief%20with%20Changeis%20differentiators%20and%20recommended%20teaming%20partners." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 2 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 02</div>
+      <div class="card-title">Strategic Communications &amp; Support Services — F2023063249 (DHS HQ/CIS)</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;Inbox</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge no-due">No due date</span></div>
+        <div class="card-meta-item"><span class="card-meta-label">Labels</span>&nbsp;vm2-opp</div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Opportunity deep-dive for a DHS strategic communications contract requires agency mission research, incumbent contractor identification, scope analysis, and Changeis positioning — highly suitable for AI-driven capture analysis.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Pull the APFS record for F2023063249, research USCIS communications history and incumbent, draft a deep-dive brief covering scope, competition landscape, and Changeis positioning strategy with win themes.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Strategic%20Communications%20%26%20Support%20Services%20%E2%80%94%20F2023063249&body=VM2%20TASK%3A%20Strategic%20Communications%20%26%20Support%20Services%20%E2%80%94%20F2023063249%0A%0AContext%3A%20Inbox%20%2F%20DHS%20HQ%2FCIS%20%7C%20Source%3A%20APFS%0ADue%3A%20None%0ADescription%3A%20Deep%20Dive%20requested%20for%20DHS%20HQ%2FCIS%20Strategic%20Communications%20opportunity.%20Source%3A%20APFS.%0A%0ASuggested%20approach%3A%20Pull%20the%20APFS%20record%20for%20F2023063249%2C%20research%20USCIS%20communications%20history%20and%20incumbent%2C%20draft%20a%20deep-dive%20brief%20covering%20scope%2C%20competition%20landscape%2C%20and%20Changeis%20positioning%20strategy." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 3 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 03 &mdash; Due Today</div>
+      <div class="card-title">OFAM FO Administrative Support Capture</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;E3-Urgent &amp; Unimportant</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge">2026-05-13</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Time-sensitive capture task due today — AI can quickly fetch and synthesize the APFS forecast record, research OFAM's mission and prior contracts, and produce a go/no-go recommendation before the window closes.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Fetch APFS record 73307, research DHS OFAM mission and historical administrative support awards, assess Changeis fit vs. NAICS and past performance requirements, and output a concise capture brief with go/no-go rationale.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20OFAM%20FO%20Administrative%20Support%20Capture&body=VM2%20TASK%3A%20OFAM%20FO%20Administrative%20Support%20Capture%0A%0AContext%3A%20E3-Urgent%20%26%20Unimportant%0ADue%3A%202026-05-13%20(TODAY)%0ADescription%3A%20Forecast%20Record%3A%20https%3A%2F%2Fapfs-cloud.dhs.gov%2Frecord%2F73307%0A%0ASuggested%20approach%3A%20Fetch%20APFS%20record%2073307%2C%20research%20DHS%20OFAM%20mission%20and%20historical%20administrative%20support%20awards%2C%20assess%20Changeis%20fit%20vs.%20NAICS%20and%20past%20performance%2C%20output%20concise%20capture%20brief%20with%20go%2Fno-go%20rationale." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 4 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 04</div>
+      <div class="card-title">ATCA AWS Marketing — Wash100 and Changeis</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;Inbox</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge">2026-05-17</span></div>
+        <div class="card-meta-item"><span class="card-meta-label">Labels</span>&nbsp;VMCC-AWS-Partnership</div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Requires researching Wash100 award context and drafting marketing content connecting Changeis to the AWS partnership narrative — a research-plus-writing task AI can complete end-to-end with high quality output.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Research 2026 Wash100 winners and AWS GovCloud relevance to ATCA, draft a short-form marketing brief positioning Changeis + AWS for the ATCA audience, and produce LinkedIn and press-ready copy variants.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20ATCA%20AWS%20Marketing%20%E2%80%94%20Wash100%20and%20Changeis&body=VM2%20TASK%3A%20ATCA%20AWS%20Marketing%20%E2%80%94%20Wash100%20and%20Changeis%0A%0AContext%3A%20Inbox%20%7C%20Labels%3A%20VMCC-AWS-Partnership%0ADue%3A%202026-05-17%0ADescription%3A%20ATCA%20AWS%20Marketing%20%E2%80%94%20Wash100%20and%20Changeis%20%E2%80%94%20needs%20marketing%20content%20connecting%20Changeis%20to%20Wash100%20and%20AWS%20partnership.%0A%0ASuggested%20approach%3A%20Research%202026%20Wash100%20winners%20and%20AWS%20GovCloud%20relevance%20to%20ATCA%2C%20draft%20marketing%20brief%20positioning%20Changeis%20%2B%20AWS%2C%20and%20produce%20LinkedIn%20and%20press-ready%20copy." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 5 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 05</div>
+      <div class="card-title">Review BD Pipeline — VM</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;BD</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge">2026-05-15</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">BD pipeline reviews benefit from AI-assisted opportunity scoring, competitive intelligence, gap analysis, and structured review frameworks — AI can compile and tier the pipeline in a fraction of the time.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Compile all BD project tasks from Todoist, score each opportunity by fit, competition level, and award size, and produce a structured pipeline review memo with tiered priorities and recommended next actions for leadership.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20BD%20Pipeline%20%E2%80%94%20VM&body=VM2%20TASK%3A%20Review%20BD%20Pipeline%20%E2%80%94%20VM%0A%0AContext%3A%20BD%20Project%0ADue%3A%202026-05-15%0ADescription%3A%20Review%20the%20full%20Changeis%20BD%20pipeline%20across%20all%20active%20capture%20opportunities.%0A%0ASuggested%20approach%3A%20Compile%20all%20BD%20project%20tasks%20from%20Todoist%2C%20score%20each%20opportunity%20by%20fit%2C%20competition%20level%2C%20and%20award%20size%2C%20and%20produce%20a%20structured%20pipeline%20review%20memo%20with%20tiered%20priorities%20and%20recommended%20next%20actions." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 6 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 06</div>
+      <div class="card-title">Fed100 Nomination for Kim Coplen</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;Strategy</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge no-due">No due date</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Fed100 nominations require researching the nominee's career, quantifying agency impacts, and drafting a compelling narrative aligned to Fed100 selection criteria — a research-intensive writing task ideally suited to AI.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Research Kim Coplen's federal career and leadership contributions, identify quantifiable program impacts and innovation milestones, then draft a complete Fed100 nomination narrative with supporting evidence and compelling win themes.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Fed100%20Nomination%20for%20Kim%20Coplen&body=VM2%20TASK%3A%20Fed100%20Nomination%20for%20Kim%20Coplen%0A%0AContext%3A%20Strategy%0ADue%3A%20None%0ADescription%3A%20Prepare%20a%20Fed100%20award%20nomination%20for%20Kim%20Coplen.%0A%0ASuggested%20approach%3A%20Research%20Kim%20Coplen%27s%20federal%20career%20and%20leadership%20contributions%2C%20identify%20quantifiable%20program%20impacts%2C%20draft%20a%20complete%20Fed100%20nomination%20narrative%20with%20supporting%20evidence." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 7 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 07</div>
+      <div class="card-title">Find FSI Resource</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;Recruiting</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge no-due">No due date</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Identifying FSI-qualified resources requires profiling the required skill set, researching recruiting channels, and surfacing candidate sources or specific profiles — all AI-accelerable research and sourcing tasks.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Clarify FSI context (Foreign Service Institute or Financial Services), research top recruiting channels and talent pools for the required profile, and produce a sourcing brief with specific platforms, search criteria, and candidate profile examples.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Find%20FSI%20Resource&body=VM2%20TASK%3A%20Find%20FSI%20Resource%0A%0AContext%3A%20Recruiting%0ADue%3A%20None%0ADescription%3A%20Identify%20and%20source%20an%20FSI%20(Foreign%20Service%20Institute)%20qualified%20resource%20for%20Changeis.%0A%0ASuggested%20approach%3A%20Clarify%20FSI%20context%2C%20research%20top%20recruiting%20channels%20and%20talent%20pools%2C%20produce%20a%20sourcing%20brief%20with%20specific%20platforms%2C%20search%20criteria%2C%20and%20candidate%20profile%20examples." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 8 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 08</div>
+      <div class="card-title">Operations Research Project</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;Innovation</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge no-due">No due date</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Operations research involves literature reviews, methodology selection, quantitative modeling, and findings synthesis — multiple phases where AI can compress weeks of analysis into a structured project framing document.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Clarify the OR scope and business question, conduct a structured literature review of relevant methods (queuing, optimization, simulation), and produce a project framing document with recommended approach, toolset, and deliverable structure.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Operations%20Research%20Project&body=VM2%20TASK%3A%20Operations%20Research%20Project%0A%0AContext%3A%20Innovation%0ADue%3A%20None%0ADescription%3A%20Define%20and%20frame%20an%20operations%20research%20project%20for%20Changeis.%0A%0ASuggested%20approach%3A%20Clarify%20OR%20scope%20and%20business%20question%2C%20conduct%20structured%20literature%20review%20of%20relevant%20methods%20(queuing%2C%20optimization%2C%20simulation)%2C%20produce%20a%20project%20framing%20document%20with%20recommended%20approach%20and%20toolset." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 9 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 09</div>
+      <div class="card-title">ITIPSS — Information Technology Innovative Procurement for Strategic Sourcing</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;E4-Unimportant &amp; Not urgent</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge">2026-05-24</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">ITIPSS is a federal IT procurement vehicle requiring research into scope, eligibility, on-ramp timeline, and Changeis NAICS alignment — AI can pull the GovTribe record and produce a rapid fit assessment before the May 24 window.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Fetch the GovTribe ITIPSS record, research vehicle scope and current on-ramp status, assess Changeis NAICS and past performance alignment, and produce a go/no-go brief with recommended next steps if pursuing.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20ITIPSS%20Procurement%20Vehicle%20Assessment&body=VM2%20TASK%3A%20ITIPSS%20%E2%80%94%20Information%20Technology%20Innovative%20Procurement%20for%20Strategic%20Sourcing%0A%0AContext%3A%20E4-Unimportant%20%26%20Not%20urgent%0ADue%3A%202026-05-24%0ADescription%3A%20Research%20ITIPSS%20procurement%20vehicle%20eligibility%20and%20on-ramp%20timeline%20for%20Changeis.%0A%0ASuggested%20approach%3A%20Fetch%20GovTribe%20ITIPSS%20record%2C%20research%20vehicle%20scope%20and%20on-ramp%20status%2C%20assess%20Changeis%20NAICS%20and%20past%20performance%20alignment%2C%20produce%20go%2Fno-go%20brief%20with%20recommended%20next%20steps." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 10 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 10</div>
+      <div class="card-title">Marketing — Amplify AWS Partner Content Through Changeis Channels</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;E4-Unimportant &amp; Not urgent</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge no-due">No due date</span></div>
+        <div class="card-meta-item"><span class="card-meta-label">Labels</span>&nbsp;VMCC-AWS-Partnership</div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Content amplification strategy development benefits from competitive benchmarking, channel analysis, and structured campaign brief drafting — AI can research AWS co-marketing best practices and produce a ready-to-execute plan.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Research AWS partner co-marketing programs and Changeis's existing content footprint, benchmark against peer AWS partners, then draft a 90-day content amplification plan with channel-specific tactics, content calendar, and KPIs.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20AWS%20Partner%20Content%20Amplification%20Plan&body=VM2%20TASK%3A%20Marketing%20%E2%80%94%20Amplify%20AWS%20Partner%20Content%20Through%20Changeis%20Channels%0A%0AContext%3A%20E4-Unimportant%20%26%20Not%20urgent%20%7C%20Labels%3A%20VMCC-AWS-Partnership%0ADue%3A%20None%0ADescription%3A%20Develop%20a%20strategy%20to%20amplify%20AWS%20partner%20content%20through%20Changeis%20marketing%20channels.%0A%0ASuggested%20approach%3A%20Research%20AWS%20co-marketing%20best%20practices%2C%20benchmark%20against%20peer%20partners%2C%20draft%2090-day%20content%20amplification%20plan%20with%20channel-specific%20tactics%20and%20KPIs." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 11 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 11</div>
+      <div class="card-title">Create Strategy Circle for Performance Management System (PMS)</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;Changeis Performance Management System</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge no-due">No due date</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Designing a strategy circle for a PMS requires synthesizing frameworks (OKRs, Balanced Scorecard, V2MOM) and adapting them to Changeis's operating model — a framework design and documentation task AI can accelerate significantly.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Research best-practice strategy circles and governance structures across comparable professional services firms, map to Changeis PMS goals, and produce a draft Strategy Circle document defining roles, meeting cadence, KPI ownership, and escalation paths.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Create%20Strategy%20Circle%20for%20PMS&body=VM2%20TASK%3A%20Create%20Strategy%20Circle%20for%20Performance%20Management%20System%20(PMS)%0A%0AContext%3A%20Changeis%20Performance%20Management%20System%0ADue%3A%20None%0ADescription%3A%20Design%20a%20Strategy%20Circle%20for%20the%20Changeis%20PMS.%0A%0ASuggested%20approach%3A%20Research%20best-practice%20strategy%20circles%20and%20governance%20structures%2C%20map%20to%20Changeis%20PMS%20goals%2C%20produce%20draft%20Strategy%20Circle%20document%20with%20roles%2C%20cadence%2C%20KPI%20ownership%2C%20and%20escalation%20paths." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 12 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 12</div>
+      <div class="card-title">Set Up Meetings with Ashley Newmeyer</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;Inbox</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge">2026-05-17</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Meeting preparation is dramatically improved with AI-generated research briefs on the contact's background, organization, and likely agenda topics — enabling more productive BD or partnership conversations.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Research Ashley Newmeyer's professional background, current organization, and areas of expertise, identify likely mutual interests and BD talking points, then draft a pre-meeting briefing note with suggested agenda and key questions.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Meeting%20Prep%3A%20Ashley%20Newmeyer&body=VM2%20TASK%3A%20Set%20Up%20Meetings%20with%20Ashley%20Newmeyer%0A%0AContext%3A%20Inbox%0ADue%3A%202026-05-17%0ADescription%3A%20Research%20and%20prep%20for%20meetings%20with%20Ashley%20Newmeyer.%0A%0ASuggested%20approach%3A%20Research%20Ashley%20Newmeyer%27s%20professional%20background%2C%20organization%2C%20and%20areas%20of%20expertise%3B%20identify%20mutual%20interests%20and%20BD%20talking%20points%3B%20draft%20pre-meeting%20briefing%20note%20with%20suggested%20agenda%20and%20key%20questions." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 13 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 13</div>
+      <div class="card-title">GLC Chicago — Registration &amp; $1,500 Reimbursement Review</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;E3-Urgent &amp; Unimportant</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge">2026-05-17</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Researching the Government Leadership Conference agenda, speakers, and networking targets to maximize ROI on attendance — AI can pull the full agenda and produce a curated attendance brief optimized for Changeis BD goals.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Pull current GLC Chicago 2026 agenda and speaker list, identify top sessions relevant to Changeis strategy and BD goals, draft an attendance brief with recommended sessions, networking targets, and a reimbursement justification memo.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20GLC%20Chicago%20Attendance%20Brief%20%26%20Reimbursement&body=VM2%20TASK%3A%20GLC%20Chicago%20%E2%80%94%20Registration%20%26%20%241%2C500%20Reimbursement%20Review%0A%0AContext%3A%20E3-Urgent%20%26%20Unimportant%0ADue%3A%202026-05-17%0ADescription%3A%20Review%20GLC%20Chicago%20registration%20and%20process%20%241%2C500%20reimbursement.%0A%0ASuggested%20approach%3A%20Pull%20GLC%20Chicago%202026%20agenda%20and%20speaker%20list%2C%20identify%20top%20sessions%20for%20Changeis%20BD%2C%20draft%20attendance%20brief%20with%20recommended%20sessions%2C%20networking%20targets%2C%20and%20reimbursement%20justification%20memo." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 14 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 14</div>
+      <div class="card-title">GitHub Marketing Skills Repo — CRO, Copywriting &amp; AI Agent Skills for Changeis</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;Inbox</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge">2026-05-17</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Evaluating and adopting AI marketing skill libraries requires a structured assessment of repo capabilities against Changeis's current marketing gaps — exactly the kind of technology evaluation AI can perform with high accuracy and speed.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Review the coreyhaines31/marketingskills GitHub repo, map each CRO and copywriting skill to Changeis's identified marketing gaps, and produce an adoption recommendation brief with specific use cases, implementation priority, and estimated impact.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Marketing%20Skills%20Repo%20Assessment%20for%20Changeis&body=VM2%20TASK%3A%20GitHub%20Marketing%20Skills%20Repo%20%E2%80%94%20CRO%2C%20Copywriting%20%26%20AI%20Agent%20Skills%0A%0AContext%3A%20Inbox%0ADue%3A%202026-05-17%0ADescription%3A%20Evaluate%20coreyhaines31%2Fmarketingskills%20repo%20for%20Changeis%20adoption.%0AURL%3A%20https%3A%2F%2Fgithub.com%2Fcoreyhaines31%2Fmarketingskills%0A%0ASuggested%20approach%3A%20Review%20the%20repo%20contents%2C%20map%20CRO%20and%20copywriting%20skills%20to%20Changeis%20marketing%20gaps%2C%20produce%20adoption%20recommendation%20with%20specific%20use%20cases%20and%20implementation%20priority." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+    <!-- Card 15 -->
+    <div class="candidate-card">
+      <div class="candidate-num">Candidate 15</div>
+      <div class="card-title">Federal Register RFI — OST Research and Technology</div>
+      <div class="card-meta">
+        <div class="card-meta-item"><span class="card-meta-label">Project</span>&nbsp;Inbox</div>
+        <div class="card-meta-item"><span class="card-meta-label">Due</span>&nbsp;<span class="due-badge no-due">No due date</span></div>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <div class="card-field-label">Why AI Could Help</div>
+          <div class="card-field-text">Responding to a Federal Register RFI requires understanding the agency's research priorities, drafting aligned capability statements, and formatting a compliant response document — all tasks AI can complete end-to-end at high quality.</div>
+        </div>
+        <div class="card-field">
+          <div class="card-field-label">Suggested Approach</div>
+          <div class="card-field-text">Fetch the Federal Register RFI notice, identify key questions and submission requirements, map Changeis capabilities and past performance to the RFI themes, and draft a complete, compliant RFI response ready for final review.</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <a class="btn btn-primary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Federal%20Register%20RFI%20Response%20%E2%80%94%20OST%20Research%20%26%20Technology&body=VM2%20TASK%3A%20Federal%20Register%20RFI%20%E2%80%94%20OST%20Research%20and%20Technology%0A%0AContext%3A%20Inbox%0ADue%3A%20None%0ADescription%3A%20Federal%20Register%20%E2%80%94%20Office%20of%20the%20Assistant%20Secretary%20for%20Research%20and%20Technology%20Request%20for%20Information.%0A%0ASuggested%20approach%3A%20Fetch%20the%20Federal%20Register%20RFI%20notice%2C%20identify%20key%20questions%20and%20submission%20requirements%2C%20map%20Changeis%20capabilities%20to%20RFI%20themes%2C%20draft%20a%20complete%20compliant%20RFI%20response." style="display:inline-block;padding:8px 14px;background:#1e3a5f;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;">Task VM2</a>
+      </div>
+    </div>
+
+
+  </div><!-- /section candidates -->
+
+
+  <!-- Context Section -->
+  <div class="context-section">
+    <button class="context-toggle" onclick="toggleContext(this)" id="ctxToggle">
+      <span class="arrow">&#9654;</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">Original Instructions:
+Todoist Auto-Helper cron 27d43c4a for 2026-05-13. Fetch all Todoist tasks via REST API, filter VM2/vm2-done labeled tasks, analyze remaining tasks for AI-assistable work (research, writing, analysis, scheduling, summarization, data lookup, BD prep, briefing, etc.), skip purely personal/manual tasks, and produce this HTML deliverable with candidate cards each containing a "Task VM2" mailto button.
+
+Approach:
+1. Fetched 708 total Todoist tasks via REST API (https://api.todoist.com/api/v1/tasks)
+2. Fetched 106 projects via REST API to resolve project names
+3. Filtered 26 tasks bearing VM2 or vm2-done labels — leaving 682 tasks for analysis
+4. Scored remaining tasks by AI-suitability keywords (research, analysis, BD, capture, strategy, writing, compliance, marketing, etc.) and project category (federal BD projects, Strategy, Marketing, Recruiting, Innovation, etc.)
+5. Manually curated top 15 candidates from 84 high-score matches, prioritizing those with clear AI value-add, concrete deliverables, and near-term due dates
+
+Key Findings:
+- 3 time-sensitive candidates due within 5 days: OFAM capture (today), BD Pipeline review (May 15), 4 tasks due May 17
+- Federal capture opportunities dominate high-value candidates: DHS PLCY F2026072550, DHS CIS F2023063249, OFAM, ITIPSS
+- VMCC-AWS-Partnership label appears on multiple inbox items — AWS co-marketing content amplification is a recurring theme
+- Recruiting and strategy tasks (FSI resource, Fed100 nomination) are well-suited to AI research and writing workflows
+- Innovation project (operations research) is underspecified and needs AI-assisted framing before execution
+
+Dead Ends:
+- Todoist Pipedream connector is DISCONNECTED — used REST API directly as per architecture v4.4
+- 26 VM2-labeled tasks excluded as they are handled by the VM2 Task Execution cron
+
+Assumptions:
+- "FSI" interpreted as Foreign Service Institute (federal context) rather than financial services
+- Scoring threshold of 3+ (keyword + project category) used to surface candidates; top 15 selected from 84 matches
+- Tasks in Utilities project containing URL bookmarks were excluded as they are reference links, not actionable work items
+
+Open Questions:
+- What is the specific scope and timeline for the OST Federal Register RFI?
+- Is the FSI resource needed for a specific contract or internal capability?
+- What is the current status of the ITIPSS on-ramp?
+
+Data Sources:
+- Todoist REST API: https://api.todoist.com/api/v1/tasks
+- Todoist Projects API: https://api.todoist.com/api/v1/projects
+- deliverable-specs.md: /home/user/workspace/deliverable-specs.md
+
+Next Steps:
+- Task VM2 with highest-priority candidates (OFAM today, BD pipeline by May 15)
+- Review Federal Register RFI notice and assess if Changeis should respond
+- Clarify FSI resource requirements before tasking
+- Consider creating recurring Auto-Helper to run weekly for pipeline hygiene</div>
+  </div>
+
+  <!-- Hidden JSON Context -->
+  <script type="application/json" id="vm2-context-data">
+{
+  "task_name": "VM2 Auto-Helper 2026-05-13",
+  "task_date": "2026-05-13",
+  "deliverable_file": "vm2-auto-helper-2026-05-13.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-13.html",
+  "version": 1,
+  "created_date": "2026-05-13",
+  "revised_date": null,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Todoist Auto-Helper cron 27d43c4a for 2026-05-13. Fetch all tasks via REST API, filter VM2/vm2-done labels, analyze for AI-assistable work, generate HTML with candidate cards and Task VM2 mailto buttons.",
+  "approach": "Fetched 708 tasks via Todoist REST API, resolved project names from 106 projects, filtered 26 VM2-labeled tasks, scored 682 remaining by AI-suitability and project category, curated top 15 candidates from 84 high-score matches.",
+  "key_findings": [
+    "708 total Todoist tasks; 682 non-VM2 scanned after filtering 26 VM2/vm2-done labeled tasks",
+    "3 time-sensitive candidates due within 5 days (OFAM today, BD pipeline May 15, four more May 17)",
+    "Federal capture dominates high-value candidates: DHS PLCY, DHS CIS, OFAM, ITIPSS",
+    "VMCC-AWS-Partnership label on multiple inbox items — recurring co-marketing theme",
+    "15 strong AI candidates across capture, BD, strategy, recruiting, and marketing"
+  ],
+  "dead_ends": [
+    "Todoist Pipedream connector DISCONNECTED — used REST API directly per architecture v4.4"
+  ],
+  "assumptions": [
+    "FSI interpreted as Foreign Service Institute in federal context",
+    "Scoring threshold of 3+ keyword+project points; top 15 of 84 matches selected",
+    "URL-only bookmark tasks in Utilities project excluded as non-actionable"
+  ],
+  "open_questions": [
+    "Scope and submission deadline for OST Federal Register RFI",
+    "Specific FSI resource requirements (contract vs. internal capability)",
+    "Current ITIPSS on-ramp status and Changeis eligibility"
+  ],
+  "data_sources": [
+    {"name": "Todoist REST API", "url": "https://api.todoist.com/api/v1/tasks"},
+    {"name": "Todoist Projects API", "url": "https://api.todoist.com/api/v1/projects"}
+  ],
+  "next_steps": [
+    "Task VM2 with OFAM capture (due today)",
+    "Task VM2 with BD Pipeline review (due May 15)",
+    "Review Federal Register RFI notice for OST Research and Technology",
+    "Clarify FSI resource requirements before sourcing"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~45,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.29",
+    "cost_ceiling": "$0.55",
+    "notes": "Primary cost: processing 708 Todoist tasks JSON and generating large HTML deliverable. No external search calls required — all data from Todoist REST API."
+  }
+}
+  </script>
+
+  <!-- Continue This Work -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up where this run left off or delegate a candidate to VM2.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=VM2%20Auto-Helper%202026-05-13%20Follow-Up&body=Regarding%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fvm2-auto-helper-2026-05-13.html%0A%0AFollow-up%20request%3A%20">Email to VM2</a>
+      <a class="btn btn-secondary" href="https://todoist.com/add?content=VM2%20Auto-Helper%20follow-up%202026-05-13&description=Review%20candidates%20at%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fvm2-auto-helper-2026-05-13.html" target="_blank">Create Todoist Follow-Up</a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential &nbsp;&middot;&nbsp; VM2 Auto-Helper &nbsp;&middot;&nbsp; May 13, 2026 &nbsp;&middot;&nbsp; VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const btn = document.getElementById('themeBtn');
+  if (html.getAttribute('data-theme') === 'light') {
+    html.setAttribute('data-theme', 'dark');
+    btn.textContent = '\u25D0 Light';
+  } else {
+    html.setAttribute('data-theme', 'light');
+    btn.textContent = '\u25D0 Dark';
+  }
+}
+
+function toggleContext(btn) {
+  const body = document.getElementById('ctxBody');
+  btn.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function copyFollowUp() {
+  const prompt = "VM2 follow-up on Auto-Helper 2026-05-13:\nDeliverable: https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-13.html\n\n15 AI candidates were surfaced from 682 non-VM2 Todoist tasks. Top priorities:\n1. OFAM FO Administrative Support Capture (due today)\n2. BD Pipeline Review (due May 15)\n3. DHS Policy Execution deep-dive (F2026072550)\n\nPlease proceed with [specify candidate or action].";
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(prompt).then(() => showToast('Follow-up prompt copied'));
+  } else {
+    showToast('Copy not available in this browser');
+  }
+}
+</script>
+
+</body>
+</html>
