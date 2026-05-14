@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM2 Auto-Helper — 2026-05-14</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+  }
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+    margin-top: 8px;
+  }
+  .section { margin-bottom: 36px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 18px;
+  }
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 600px) { .summary-grid { grid-template-columns: 1fr; } }
+  .summary-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 16px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .summary-stat .stat-num {
+    font-size: 36px; font-weight: 700;
+    color: var(--navy); line-height: 1;
+    margin-bottom: 4px;
+  }
+  [data-theme="dark"] .summary-stat .stat-num { color: #7eb3e0; }
+  .summary-stat .stat-label {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    box-shadow: var(--card-shadow);
+    transition: box-shadow 0.15s;
+  }
+  .task-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.1); }
+  .task-card-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 8px;
+  }
+  .task-rank {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    color: var(--red); text-transform: uppercase;
+    letter-spacing: 0.08em;
+    min-width: 28px;
+  }
+  .task-meta {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .task-project {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    background: var(--surface-alt);
+    color: var(--navy);
+    padding: 2px 8px; border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+  [data-theme="dark"] .task-project { color: #7eb3e0; }
+  .task-due {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    padding: 2px 0;
+  }
+  .task-title {
+    font-size: 16px; font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+  [data-theme="dark"] .task-title { color: #e2e2e2; }
+  .task-section-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--text-faint);
+    margin-bottom: 3px;
+    margin-top: 10px;
+  }
+  .task-body {
+    font-size: 14.5px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin-bottom: 2px;
+  }
+  .task-actions {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-task-vm2 {
+    display: inline-block;
+    padding: 8px 14px;
+    background: #1e3a5f;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    transition: background 0.15s;
+  }
+  .btn-task-vm2:hover { background: #c53a3a; color: #fff; }
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+  .context-section {
+    margin: 32px 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .context-toggle {
+    width: 100%;
+    background: var(--surface-alt);
+    border: none;
+    padding: 12px 18px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    color: var(--text-muted);
+    text-align: left;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .context-toggle .arrow { transition: transform 0.2s; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none;
+    background: var(--slug-bg);
+    border-top: 1px solid var(--border);
+    padding: 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+  .context-body.open { display: block; }
+  .slug-panel {
+    background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin: 28px 0;
+  }
+  .slug-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .slug-panel table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+  }
+  .slug-panel td {
+    padding: 4px 8px; vertical-align: top;
+    border-bottom: 1px solid var(--border);
+  }
+  .slug-panel td:first-child {
+    font-weight: 600; font-family: system-ui, sans-serif;
+    color: var(--text-muted);
+    white-space: nowrap;
+    width: 140px;
+  }
+  .continue-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 22px;
+    margin: 32px 0;
+    text-align: center;
+  }
+  .continue-panel h3 {
+    font-size: 18px; font-weight: 700;
+    color: var(--navy); margin-bottom: 6px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-muted);
+    margin-bottom: 18px;
+  }
+  .continue-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .footer {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    text-align: center;
+    padding: 24px 0 32px;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+  }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: #fff;
+    padding: 10px 20px; border-radius: 6px;
+    font-family: system-ui, sans-serif; font-size: 13px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">&#9632;</span>
+    <span>VM2 &middot; Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">&#9680; Dark</button>
+</div>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-badge">Auto-Helper</div>
+    <h1>VM2 Auto-Helper &mdash; 2026-05-14</h1>
+    <div class="hero-sub">AI-ready Todoist task candidates surfaced for one-click delegation</div>
+    <div class="hero-date">Created: 2026-05-14</div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="section">
+    <div class="section-header">Summary</div>
+    <div class="summary-grid">
+      <div class="summary-stat">
+        <div class="stat-num">710</div>
+        <div class="stat-label">Total Tasks Fetched</div>
+      </div>
+      <div class="summary-stat">
+        <div class="stat-num">684</div>
+        <div class="stat-label">Non-VM2 Tasks Scanned</div>
+      </div>
+      <div class="summary-stat">
+        <div class="stat-num">15</div>
+        <div class="stat-label">AI Candidates Surfaced</div>
+      </div>
+    </div>
+    <p style="font-size:14px; color:var(--text-muted); font-family:system-ui,sans-serif; line-height:1.6;">
+      Tasks carrying the <strong>VM2</strong> or <strong>vm2-done</strong> label (26 tasks) are handled by the VM2 Task Execution cron and excluded here.
+      The remaining 684 tasks were scored for AI suitability across research, writing, BD/capture, analysis, scheduling,
+      recruiting, and summarization dimensions. The 15 candidates below represent the highest-value opportunities for
+      Perplexity Computer assistance, ordered by strategic impact. Click <strong>Task VM2</strong> on any card to open a pre-filled email
+      delegating the task to vm2.viru@gmail.com.
+    </p>
+  </div>
+
+  <!-- Candidates -->
+  <div class="section">
+    <div class="section-header">AI Candidates (15)</div>
+    
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#1</div>
+        <div class="task-meta">
+          <span class="task-project">Strategy</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">Fed100 for Kim Coplen</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">Research and drafting nomination/recognition content for Kim Coplen for the Fed100 award requires synthesis of public records, career history, and impact narrative.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Research Kim Coplen's federal IT leadership career, draft nomination narrative, identify key achievements and award criteria alignment.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Fed100%20for%20Kim%20Coplen&body=VM2%20TASK%3A%20Fed100%20for%20Kim%20Coplen%0A%0AContext%3A%20Strategy%0ADue%3A%20No%20due%20date%0ADescription%3A%20%28none%29%0A%0ASuggested%20approach%3A%20Research%20Kim%20Coplen%27s%20federal%20IT%20leadership%20career%2C%20draft%20nomination%20narrative%2C%20identify%20key%20achievements%20and%20award%20criteria%20alignment.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#2</div>
+        <div class="task-meta">
+          <span class="task-project">Recruiting</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">Find FSI Resource</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">Identifying Federal Systems Integration (FSI) talent requires sourcing research, market mapping, and candidate profiling — all well-suited for AI-assisted people search.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Search LinkedIn/federal contractor databases for FSI-experienced professionals; generate a shortlist with profiles and outreach templates.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Find%20FSI%20Resource&body=VM2%20TASK%3A%20Find%20FSI%20Resource%0A%0AContext%3A%20Recruiting%0ADue%3A%20No%20due%20date%0ADescription%3A%20%28none%29%0A%0ASuggested%20approach%3A%20Search%20LinkedIn%2Ffederal%20contractor%20databases%20for%20FSI-experienced%20professionals%3B%20generate%20a%20shortlist%20with%20profiles%20and%20outreach%20templates.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#3</div>
+        <div class="task-meta">
+          <span class="task-project">BD</span>
+          <span class="task-due">2026-05-15</span>
+        </div>
+      </div>
+      <div class="task-title">Review Pipeline - VM</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">AI can rapidly cross-reference BD pipeline entries against SAM.gov, USASpending, and GovWin data to surface status updates, incumbent information, and decision timelines.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Pull pipeline list, cross-reference each opportunity against public procurement databases, generate a structured pipeline review report with action flags.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20Pipeline%20-%20VM&body=VM2%20TASK%3A%20Review%20Pipeline%20-%20VM%0A%0AContext%3A%20BD%0ADue%3A%202026-05-15%0ADescription%3A%20Review%20BD%20pipeline%20items%20due%20or%20upcoming%0A%0ASuggested%20approach%3A%20Pull%20pipeline%20list%2C%20cross-reference%20each%20opportunity%20against%20public%20procurement%20databases%2C%20generate%20a%20structured%20pipeline%20review%20report%20with%20action%20flags.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#4</div>
+        <div class="task-meta">
+          <span class="task-project">E3-Urgent & Unimportant</span>
+          <span class="task-due">2026-05-13</span>
+        </div>
+      </div>
+      <div class="task-title">OFAM FO Administrative Support Capture</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">Capture planning requires competitor research, incumbent analysis, teaming recommendations, and win theme development — high AI leverage.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Research the OFAM FO Admin Support solicitation on SAM.gov; identify incumbent, key requirements, and competitors; draft capture plan outline and win themes.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20OFAM%20FO%20Administrative%20Support%20Capture&body=VM2%20TASK%3A%20OFAM%20FO%20Administrative%20Support%20Capture%0A%0AContext%3A%20E3-Urgent%20%26%20Unimportant%0ADue%3A%202026-05-13%0ADescription%3A%20Capture%20planning%20for%20OFAM%20FO%20Administrative%20Support%20opportunity%0A%0ASuggested%20approach%3A%20Research%20the%20OFAM%20FO%20Admin%20Support%20solicitation%20on%20SAM.gov%3B%20identify%20incumbent%2C%20key%20requirements%2C%20and%20competitors%3B%20draft%20capture%20plan%20outline%20and%20win%20themes.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#5</div>
+        <div class="task-meta">
+          <span class="task-project">Inbox</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">Deep Dive: F2026072550 — Policy Execution, Analytics, & Automation Support</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">Opportunity research for a federal IT contract: AI can pull solicitation details, analyze PWS requirements, benchmark competitors, and draft a positioning brief.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Search SAM.gov for solicitation F2026072550; analyze scope, NAICS, set-aside, and incumbent; produce a 1-page opportunity brief with go/no-go recommendation.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%3A%20F2026072550%20%E2%80%94%20Policy%20Execution%2C%20Analytics%2C%20%26%20Automation%20Support&body=VM2%20TASK%3A%20Deep%20Dive%3A%20F2026072550%20%E2%80%94%20Policy%20Execution%2C%20Analytics%2C%20%26%20Automation%20Support%0A%0AContext%3A%20Inbox%0ADue%3A%20No%20due%20date%0ADescription%3A%20Deep%20dive%20research%20on%20solicitation%20F2026072550%20for%20Policy%20Execution%2C%20Analytics%20%26%20Automation%20Support%0A%0ASuggested%20approach%3A%20Search%20SAM.gov%20for%20solicitation%20F2026072550%3B%20analyze%20scope%2C%20NAICS%2C%20set-aside%2C%20and%20incumbent%3B%20produce%20a%201-page%20opportunity%20brief%20with%20go%2Fno-go%20recommendation.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#6</div>
+        <div class="task-meta">
+          <span class="task-project">Inbox</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">Find and research this opportunity</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">Open-ended opportunity research is core AI territory — can search SAM.gov, GovWin, and agency procurement forecasts to surface and qualify leads.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Request opportunity identifier or agency from user; then execute SAM.gov/GovWin research, produce a formatted opportunity brief with competitive landscape.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Find%20and%20research%20this%20opportunity&body=VM2%20TASK%3A%20Find%20and%20research%20this%20opportunity%0A%0AContext%3A%20Inbox%0ADue%3A%20No%20due%20date%0ADescription%3A%20Research%20unspecified%20federal%20opportunity%0A%0ASuggested%20approach%3A%20Request%20opportunity%20identifier%20or%20agency%20from%20user%3B%20then%20execute%20SAM.gov%2FGovWin%20research%2C%20produce%20a%20formatted%20opportunity%20brief%20with%20competitive%20landscape.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#7</div>
+        <div class="task-meta">
+          <span class="task-project">Marketing and PR</span>
+          <span class="task-due">2026-08-15</span>
+        </div>
+      </div>
+      <div class="task-title">Any additions to the Holiday Card List for 2020 - ev 15th</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">AI can help enrich a contact list with current titles, organizations, and relationship context from LinkedIn and public sources to build a quality outreach list.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Pull existing contact list; research current roles/titles for key contacts; suggest additions from Changeis BD network; output enriched CSV with personalization notes.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Any%20additions%20to%20the%20Holiday%20Card%20List%20for%202020%20-%20ev%2015th&body=VM2%20TASK%3A%20Any%20additions%20to%20the%20Holiday%20Card%20List%20for%202020%20-%20ev%2015th%0A%0AContext%3A%20Marketing%20and%20PR%0ADue%3A%202026-08-15%0ADescription%3A%20Update%20and%20expand%20the%20holiday%20card%2Foutreach%20list%0A%0ASuggested%20approach%3A%20Pull%20existing%20contact%20list%3B%20research%20current%20roles%2Ftitles%20for%20key%20contacts%3B%20suggest%20additions%20from%20Changeis%20BD%20network%3B%20output%20enriched%20CSV%20with%20personalization%20notes.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#8</div>
+        <div class="task-meta">
+          <span class="task-project">E4-Unimportant & Not urgent</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">Stanford AI brainstorming Jen AI capstone project internal newsletter for the co</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">Brainstorming AI capstone ideas and drafting newsletter content are both high-leverage AI writing/ideation tasks requiring current knowledge of AI trends.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Generate 8-10 AI capstone project ideas relevant to federal consulting; draft a 300-word internal newsletter article framing Changeis AI strategy.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Stanford%20AI%20brainstorming%20Jen%20AI%20capstone%20project%20internal%20newsletter%20for%20the%20co&body=VM2%20TASK%3A%20Stanford%20AI%20brainstorming%20Jen%20AI%20capstone%20project%20internal%20newsletter%20for%20the%20co%0A%0AContext%3A%20E4-Unimportant%20%26%20Not%20urgent%0ADue%3A%20No%20due%20date%0ADescription%3A%20Help%20brainstorm%20AI%20capstone%20project%20ideas%20for%20Jen%27s%20Stanford%20program%3B%20draft%20internal%20newsletter%20content%0A%0ASuggested%20approach%3A%20Generate%208-10%20AI%20capstone%20project%20ideas%20relevant%20to%20federal%20consulting%3B%20draft%20a%20300-word%20internal%20newsletter%20article%20framing%20Changeis%20AI%20strategy.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#9</div>
+        <div class="task-meta">
+          <span class="task-project">Reading List</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">Review Women Owned Small Business (WOSB) Prime Spending Analysis</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">Summarizing spending analysis reports and extracting strategic implications for a WOSB like Changeis is a clear AI document-analysis task.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Fetch the WOSB spending analysis; extract top agencies, contract types, and spend trends; produce a 1-page Changeis-relevant takeaway brief.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20Women%20Owned%20Small%20Business%20%28WOSB%29%20Prime%20Spending%20Analysis&body=VM2%20TASK%3A%20Review%20Women%20Owned%20Small%20Business%20%28WOSB%29%20Prime%20Spending%20Analysis%0A%0AContext%3A%20Reading%20List%0ADue%3A%20No%20due%20date%0ADescription%3A%20Review%20and%20summarize%20WOSB%20prime%20federal%20spending%20analysis%20report%0A%0ASuggested%20approach%3A%20Fetch%20the%20WOSB%20spending%20analysis%3B%20extract%20top%20agencies%2C%20contract%20types%2C%20and%20spend%20trends%3B%20produce%20a%201-page%20Changeis-relevant%20takeaway%20brief.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#10</div>
+        <div class="task-meta">
+          <span class="task-project">E4-Unimportant & Not urgent</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">Read David Segal: Yearly Planning, Daily Action [The Knowledge Project Ep. #192]</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">AI can transcribe/summarize the podcast, extract actionable planning frameworks, and produce a 1-page highlight doc saving significant reading/listening time.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Fetch transcript or summary of The Knowledge Project Ep. #192; extract top 5 planning frameworks and action items relevant to Varun's goals.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Read%20David%20Segal%3A%20Yearly%20Planning%2C%20Daily%20Action%20%5BThe%20Knowledge%20Project%20Ep.%20%23192%5D&body=VM2%20TASK%3A%20Read%20David%20Segal%3A%20Yearly%20Planning%2C%20Daily%20Action%20%5BThe%20Knowledge%20Project%20Ep.%20%23192%5D%0A%0AContext%3A%20E4-Unimportant%20%26%20Not%20urgent%0ADue%3A%20No%20due%20date%0ADescription%3A%20Consume%20and%20extract%20insights%20from%20The%20Knowledge%20Project%20podcast%20episode%20%23192%20on%20yearly%20planning%0A%0ASuggested%20approach%3A%20Fetch%20transcript%20or%20summary%20of%20The%20Knowledge%20Project%20Ep.%20%23192%3B%20extract%20top%205%20planning%20frameworks%20and%20action%20items%20relevant%20to%20Varun%27s%20goals.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#11</div>
+        <div class="task-meta">
+          <span class="task-project">Reading List</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">How to Hire Top Talent: Recruiting Event Ideas from LinkedIn</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">AI can read the LinkedIn article, extract the most relevant recruiting event ideas for a federal consulting firm, and generate a Changeis-specific action plan.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Fetch the LinkedIn talent resource; synthesize top 5 recruiting event strategies applicable to Changeis's size and sector; output ready-to-use event plan.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20How%20to%20Hire%20Top%20Talent%3A%20Recruiting%20Event%20Ideas%20from%20LinkedIn&body=VM2%20TASK%3A%20How%20to%20Hire%20Top%20Talent%3A%20Recruiting%20Event%20Ideas%20from%20LinkedIn%0A%0AContext%3A%20Reading%20List%0ADue%3A%20No%20due%20date%0ADescription%3A%20Research%20and%20summarize%20LinkedIn%27s%20guide%20on%20hiring%20top%20talent%20and%20recruiting%20event%20strategies%0A%0ASuggested%20approach%3A%20Fetch%20the%20LinkedIn%20talent%20resource%3B%20synthesize%20top%205%20recruiting%20event%20strategies%20applicable%20to%20Changeis%27s%20size%20and%20sector%3B%20output%20ready-to-use%20event%20plan.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#12</div>
+        <div class="task-meta">
+          <span class="task-project">Reading List</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">Capture Planning (Shipley CG v3.0)</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">AI can read the Shipley capture planning PDF, extract the key process steps, and create a condensed reference card or Changeis-adapted capture checklist.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Fetch the Shipley Capture Planning v3.0 document; extract process framework and key decision gates; produce a Changeis capture plan template.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Capture%20Planning%20%28Shipley%20CG%20v3.0%29&body=VM2%20TASK%3A%20Capture%20Planning%20%28Shipley%20CG%20v3.0%29%0A%0AContext%3A%20Reading%20List%0ADue%3A%20No%20due%20date%0ADescription%3A%20Review%20Shipley%20capture%20planning%20document%20for%20BD%20methodology%0A%0ASuggested%20approach%3A%20Fetch%20the%20Shipley%20Capture%20Planning%20v3.0%20document%3B%20extract%20process%20framework%20and%20key%20decision%20gates%3B%20produce%20a%20Changeis%20capture%20plan%20template.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#13</div>
+        <div class="task-meta">
+          <span class="task-project">Inbox</span>
+          <span class="task-due">2026-05-17</span>
+        </div>
+      </div>
+      <div class="task-title">GitHub: marketingskills for Claude Code and AI agents</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">Evaluating an AI marketing skills repo requires technical review, capability benchmarking, and assessment of applicability to Changeis marketing automation.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Review the GitHub repo structure and README; assess which marketing skill modules apply to Changeis BD; draft a 1-page evaluation memo.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20GitHub%3A%20marketingskills%20for%20Claude%20Code%20and%20AI%20agents&body=VM2%20TASK%3A%20GitHub%3A%20marketingskills%20for%20Claude%20Code%20and%20AI%20agents%0A%0AContext%3A%20Inbox%0ADue%3A%202026-05-17%0ADescription%3A%20Review%20GitHub%20repo%20coreyhaines31%2Fmarketingskills%20%E2%80%94%20marketing%20skill%20modules%20for%20AI%20agents%0A%0ASuggested%20approach%3A%20Review%20the%20GitHub%20repo%20structure%20and%20README%3B%20assess%20which%20marketing%20skill%20modules%20apply%20to%20Changeis%20BD%3B%20draft%20a%201-page%20evaluation%20memo.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#14</div>
+        <div class="task-meta">
+          <span class="task-project">E4-Unimportant & Not urgent</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">BD Essentials — GovCon BD & Capture On-Demand Training</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">AI can review the training curriculum, extract the most relevant modules for Changeis's BD team, and generate a structured learning plan.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Fetch the Hi-Q Group BD Essentials curriculum; map course content to Changeis BD team skill gaps; recommend a 90-day learning path.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20BD%20Essentials%20%E2%80%94%20GovCon%20BD%20%26%20Capture%20On-Demand%20Training&body=VM2%20TASK%3A%20BD%20Essentials%20%E2%80%94%20GovCon%20BD%20%26%20Capture%20On-Demand%20Training%0A%0AContext%3A%20E4-Unimportant%20%26%20Not%20urgent%0ADue%3A%20No%20due%20date%0ADescription%3A%20Review%20Hi-Q%20Group%27s%20GovCon%20BD%20%26%20Capture%20training%20curriculum%0A%0ASuggested%20approach%3A%20Fetch%20the%20Hi-Q%20Group%20BD%20Essentials%20curriculum%3B%20map%20course%20content%20to%20Changeis%20BD%20team%20skill%20gaps%3B%20recommend%20a%2090-day%20learning%20path.">Task VM2</a>
+      </div>
+    </div>
+    <div class="task-card">
+      <div class="task-card-header">
+        <div class="task-rank">#15</div>
+        <div class="task-meta">
+          <span class="task-project">AI</span>
+          <span class="task-due">No due date</span>
+        </div>
+      </div>
+      <div class="task-title">100% Autonomous Newsletters - Daily (daily.ai)</div>
+      <div class="task-section-label">Why AI Can Help</div>
+      <div class="task-body">AI can research the platform, compare to alternatives (Writesonic, Copy.ai, Gamma), and produce a feature/pricing comparison matrix for Changeis content strategy.</div>
+      <div class="task-section-label">Suggested Approach</div>
+      <div class="task-body">Research daily.ai and 3 comparable platforms; produce a comparison table on features, pricing, and fit for Changeis internal/external newsletter use case.</div>
+      <div class="task-actions">
+        <a class="btn-task-vm2" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20100%25%20Autonomous%20Newsletters%20-%20Daily%20%28daily.ai%29&body=VM2%20TASK%3A%20100%25%20Autonomous%20Newsletters%20-%20Daily%20%28daily.ai%29%0A%0AContext%3A%20AI%0ADue%3A%20No%20due%20date%0ADescription%3A%20Evaluate%20daily.ai%20autonomous%20newsletter%20platform%20for%20potential%20use%0A%0ASuggested%20approach%3A%20Research%20daily.ai%20and%203%20comparable%20platforms%3B%20produce%20a%20comparison%20table%20on%20features%2C%20pricing%2C%20and%20fit%20for%20Changeis%20internal%2Fexternal%20newsletter%20use%20case.">Task VM2</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- VM2 Context Slug — visible panel -->
+  <div class="slug-panel">
+    <h3>VM2 Context Slug</h3>
+    <table>
+      <tr><td>Task</td><td>VM2 Auto-Helper — 2026-05-14</td></tr>
+      <tr><td>File</td><td>vm2-auto-helper-2026-05-14.html</td></tr>
+      <tr><td>Railway URL</td><td><a href="https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-14.html">https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-14.html</a></td></tr>
+      <tr><td>Tasks Scanned</td><td>684 non-VM2 tasks (710 total fetched, 26 VM2 filtered)</td></tr>
+      <tr><td>Candidates</td><td>15 AI-actionable tasks surfaced</td></tr>
+      <tr><td>Cost Estimate</td><td>$0.23 conservative / $0.43 ceiling (Claude Sonnet 4.6, ~45K input tokens)</td></tr>
+      <tr><td>Created</td><td>2026-05-14</td></tr>
+    </table>
+  </div>
+
+  <!-- Session Context (collapsible) -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">&#9658;</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "VM2 Auto-Helper \u2014 2026-05-14",
+  "task_date": "2026-05-14",
+  "deliverable_file": "vm2-auto-helper-2026-05-14.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-14.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "created_date": "2026-05-14",
+  "revised_date": null,
+  "original_instructions": "Execute Todoist Auto-Helper cron 27d43c4a for 2026-05-14. Fetch all Todoist tasks via REST API (primary path per architecture v4.5), filter VM2/vm2-done tasks, analyze remaining tasks for AI suitability, curate 12-18 candidates with brief explanations and Task VM2 mailto buttons.",
+  "approach": "Fetched 710 tasks from Todoist REST API with cursor pagination. Filtered 26 VM2/vm2-done tasks. Scored remaining 684 tasks by AI-suitability keywords (research, writing, BD, analysis, scheduling, recruiting, compliance, etc.). Curated top 15 candidates from high-priority projects (BD, Strategy, Recruiting, Inbox) with personalized why-AI-helps and suggested-approach copy.",
+  "key_findings": [
+    "710 total Todoist tasks fetched; 26 VM2/vm2-done filtered; 684 non-VM2 tasks analyzed",
+    "Top candidates concentrated in BD, Strategy, Recruiting, and Inbox projects",
+    "Federal procurement research (OFAM capture, F2026072550 solicitation, Pipeline Review) offers immediate ROI",
+    "Content/marketing tasks (Fed100, holiday card list, newsletter) are quick AI wins",
+    "Several reading-list items (Shipley, WOSB analysis, Knowledge Project) can be auto-summarized"
+  ],
+  "dead_ends": [
+    "Pipedream connector caps at 50 tasks \u2014 bypassed via direct REST API per architecture v4.5",
+    "Some high-scored tasks were URL bookmarks (not actionable tasks) \u2014 manually excluded from candidates"
+  ],
+  "assumptions": [
+    "VM2 label filtering covers both label name 'VM2' and 'vm2-done' (case-insensitive)",
+    "Tasks without descriptions are treated as title-only for scoring",
+    "Candidates ranked by AI-actionability score + project strategic value"
+  ],
+  "open_questions": [
+    "Should Auto-Helper run daily or only on schedule (M/W/F)?",
+    "Pipeline Review VM task (due 2026-05-15) \u2014 is there a structured pipeline spreadsheet to reference?"
+  ],
+  "data_sources": [
+    {
+      "name": "Todoist REST API v1",
+      "url": "https://api.todoist.com/api/v1/tasks"
+    },
+    {
+      "name": "Todoist Projects API",
+      "url": "https://api.todoist.com/api/v1/projects"
+    }
+  ],
+  "next_steps": [
+    "Task VM2 any of the 15 candidates via the mailto buttons",
+    "Prioritize: OFAM capture (overdue), Pipeline Review (due tomorrow), F2026072550 deep dive",
+    "Consider adding AI-suitability label in Todoist to tag tasks for future auto-helper runs"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~45,000",
+    "output_tokens_est": "~6,000",
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.23",
+    "cost_ceiling": "$0.43",
+    "notes": "Main cost driver: processing 710 Todoist tasks through scoring + curating 15 candidate write-ups. No external research calls required."
+  }
+}</div>
+  </div>
+
+  <!-- Hidden JSON block -->
+  <script type="application/json" id="vm2-context-data">
+{
+  "task_name": "VM2 Auto-Helper \u2014 2026-05-14",
+  "task_date": "2026-05-14",
+  "deliverable_file": "vm2-auto-helper-2026-05-14.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-14.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "created_date": "2026-05-14",
+  "revised_date": null,
+  "original_instructions": "Execute Todoist Auto-Helper cron 27d43c4a for 2026-05-14. Fetch all Todoist tasks via REST API (primary path per architecture v4.5), filter VM2/vm2-done tasks, analyze remaining tasks for AI suitability, curate 12-18 candidates with brief explanations and Task VM2 mailto buttons.",
+  "approach": "Fetched 710 tasks from Todoist REST API with cursor pagination. Filtered 26 VM2/vm2-done tasks. Scored remaining 684 tasks by AI-suitability keywords (research, writing, BD, analysis, scheduling, recruiting, compliance, etc.). Curated top 15 candidates from high-priority projects (BD, Strategy, Recruiting, Inbox) with personalized why-AI-helps and suggested-approach copy.",
+  "key_findings": [
+    "710 total Todoist tasks fetched; 26 VM2/vm2-done filtered; 684 non-VM2 tasks analyzed",
+    "Top candidates concentrated in BD, Strategy, Recruiting, and Inbox projects",
+    "Federal procurement research (OFAM capture, F2026072550 solicitation, Pipeline Review) offers immediate ROI",
+    "Content/marketing tasks (Fed100, holiday card list, newsletter) are quick AI wins",
+    "Several reading-list items (Shipley, WOSB analysis, Knowledge Project) can be auto-summarized"
+  ],
+  "dead_ends": [
+    "Pipedream connector caps at 50 tasks \u2014 bypassed via direct REST API per architecture v4.5",
+    "Some high-scored tasks were URL bookmarks (not actionable tasks) \u2014 manually excluded from candidates"
+  ],
+  "assumptions": [
+    "VM2 label filtering covers both label name 'VM2' and 'vm2-done' (case-insensitive)",
+    "Tasks without descriptions are treated as title-only for scoring",
+    "Candidates ranked by AI-actionability score + project strategic value"
+  ],
+  "open_questions": [
+    "Should Auto-Helper run daily or only on schedule (M/W/F)?",
+    "Pipeline Review VM task (due 2026-05-15) \u2014 is there a structured pipeline spreadsheet to reference?"
+  ],
+  "data_sources": [
+    {
+      "name": "Todoist REST API v1",
+      "url": "https://api.todoist.com/api/v1/tasks"
+    },
+    {
+      "name": "Todoist Projects API",
+      "url": "https://api.todoist.com/api/v1/projects"
+    }
+  ],
+  "next_steps": [
+    "Task VM2 any of the 15 candidates via the mailto buttons",
+    "Prioritize: OFAM capture (overdue), Pipeline Review (due tomorrow), F2026072550 deep dive",
+    "Consider adding AI-suitability label in Todoist to tag tasks for future auto-helper runs"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~45,000",
+    "output_tokens_est": "~6,000",
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.23",
+    "cost_ceiling": "$0.43",
+    "notes": "Main cost driver: processing 710 Todoist tasks through scoring + curating 15 candidate write-ups. No external research calls required."
+  }
+}
+  </script>
+
+  <!-- Continue This Work -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off &mdash; full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" id="emailBtn" href="mailto:vm2.viru@gmail.com?subject=VM2%20Follow-Up%3A%20VM2%20Auto-Helper%202026-05-14&body=VM2%20FOLLOW-UP%0A%0APrevious%20deliverable%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fvm2-auto-helper-2026-05-14.html%0A%0AContinue%20this%20work.%20Read%20the%20Session%20Context%20at%20the%20bottom%20of%20the%20deliverable%20for%20full%20context.%0A%0AAdditional%20instructions%3A%0A%5BTYPE%20YOUR%20FOLLOW-UP%20REQUEST%20HERE%5D">Email to VM2</a>
+      <a class="btn btn-secondary" id="todoistBtn" href="https://todoist.com/app/task?content=Follow%20up%3A%20VM2%20Auto-Helper%202026-05-14&description=Ref%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fvm2-auto-helper-2026-05-14.html&labels=vm2">Create Todoist Follow-Up</a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential &middot; VM2 Auto-Helper &mdot; 2026-05-14 &middot; VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '\u25d0 Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '\u25d0 Light';
+    }
+  }
+
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-14.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the VM2 Auto-Helper for 2026-05-14.
+
+Here is the previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off. The context slug contains: original instructions, approach taken, key findings, dead ends, assumptions, open questions, data sources used, and next steps.
+
+Open questions from last session:
+- Should Auto-Helper run daily or only on schedule (M/W/F)?
+- Pipeline Review VM task (due 2026-05-15) -- is there a structured pipeline spreadsheet to reference?
+
+Suggested next steps:
+- Task VM2 any of the 15 candidates via the mailto buttons
+- Prioritize: OFAM capture (overdue), Pipeline Review (due tomorrow), F2026072550 deep dive
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    });
+  }
+</script>
+
+</body>
+</html>
