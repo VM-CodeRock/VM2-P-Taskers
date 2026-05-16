@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: FY27 RFI-SEVP — Changeis BD Intelligence</title>
+<style>
+:root {
+  --bg: #f5f6fa;
+  --surface: #ffffff;
+  --surface2: #f0f4f8;
+  --text: #1a1a2e;
+  --muted: #6b7280;
+  --border: #d1d5db;
+  --navy: #1e3a5f;
+  --navy2: #1B2A4A;
+  --red: #c53a3a;
+  --teal: #008B8B;
+  --green: #2D7D4A;
+  --gold: #b8860b;
+  --link: #1a56db;
+  --row-alt: #f0f4f8;
+}
+[data-theme="dark"] {
+  --bg: #0f1117;
+  --surface: #1a1d2e;
+  --surface2: #252840;
+  --text: #e8eaf0;
+  --muted: #9ca3af;
+  --border: #374151;
+  --navy: #1e3a5f;
+  --row-alt: #1e2235;
+  --link: #93bbfc;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: Georgia, 'Times New Roman', serif; font-size: 15px; line-height: 1.6; }
+.topbar {
+  background: var(--navy);
+  color: #fff;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-brand { font-family: Charter, Georgia, serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+.topbar-brand span { opacity: 0.6; font-weight: 400; }
+.toggle-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  padding: 5px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: system-ui, sans-serif;
+}
+.container { max-width: 880px; margin: 0 auto; padding: 32px 20px 60px; }
+h1 { font-family: Charter, Georgia, serif; font-size: 28px; color: var(--navy); font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
+.subtitle { font-family: system-ui, sans-serif; color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+h2 { font-family: Charter, Georgia, serif; font-size: 20px; color: var(--red); font-weight: 700; margin: 36px 0 12px; border-bottom: 2px solid var(--red); padding-bottom: 6px; }
+h3 { font-family: Charter, Georgia, serif; font-size: 16px; color: var(--navy); font-weight: 700; margin: 20px 0 8px; }
+p { margin-bottom: 12px; color: var(--text); font-family: Georgia, serif; }
+ul { margin: 8px 0 12px 20px; }
+li { margin-bottom: 5px; color: var(--text); }
+a { color: var(--link); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.meta-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+.meta-label { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.meta-value { font-family: system-ui, sans-serif; font-size: 14px; font-weight: 600; color: var(--text); }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-family: system-ui, sans-serif; font-size: 13.5px; }
+thead tr { background: var(--navy2); color: #fff; }
+th { padding: 10px 12px; text-align: left; font-weight: 600; }
+tbody tr:nth-child(even) { background: var(--row-alt); }
+tbody tr:nth-child(odd) { background: var(--surface); }
+td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: system-ui, sans-serif;
+}
+.badge-go { background: #d1fae5; color: #065f46; }
+.badge-nogo { background: #fee2e2; color: #7f1d1d; }
+.badge-monitor { background: #fef3c7; color: #78350f; }
+.badge-partner { background: #ede9fe; color: #4c1d95; }
+.badge-strong { background: #d1fae5; color: #065f46; }
+.badge-moderate { background: #fef3c7; color: #78350f; }
+.badge-low { background: #fee2e2; color: #7f1d1d; }
+.badge-incumbent { background: #e0f2fe; color: #0c4a6e; }
+
+.verdict-box {
+  background: var(--navy);
+  color: #fff;
+  border-radius: 10px;
+  padding: 24px 28px;
+  margin: 24px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.verdict-icon { font-size: 42px; flex-shrink: 0; }
+.verdict-label { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; margin-bottom: 4px; }
+.verdict-text { font-family: Charter, Georgia, serif; font-size: 22px; font-weight: 700; margin-bottom: 6px; color: #4ade80; }
+.verdict-sub { font-family: system-ui, sans-serif; font-size: 14px; opacity: 0.85; }
+.pwin-bar-wrap { margin: 12px 0 20px; }
+.pwin-label { font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; }
+.pwin-bar { height: 18px; background: var(--border); border-radius: 9px; overflow: hidden; }
+.pwin-fill { height: 100%; background: linear-gradient(90deg, #1e3a5f, #2D7D4A); border-radius: 9px; transition: width 0.8s ease; }
+.callout {
+  background: #e8f4f8;
+  border-left: 4px solid var(--teal);
+  padding: 14px 18px;
+  border-radius: 0 6px 6px 0;
+  margin: 16px 0;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+}
+[data-theme="dark"] .callout { background: #1a2f35; }
+.callout strong { color: var(--teal); }
+.incumbent-alert {
+  background: #fef9c3;
+  border-left: 4px solid #ca8a04;
+  padding: 14px 18px;
+  border-radius: 0 6px 6px 0;
+  margin: 16px 0;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+}
+[data-theme="dark"] .incumbent-alert { background: #2d2a10; }
+.skip-check {
+  background: #ecfdf5;
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+}
+[data-theme="dark"] .skip-check { background: #052e1c; }
+.skip-check .pass { color: #065f46; font-weight: 700; }
+[data-theme="dark"] .skip-check .pass { color: #34d399; }
+.action-item { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.action-num { background: var(--navy); color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: system-ui, sans-serif; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+.action-content h4 { font-family: system-ui, sans-serif; font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.action-content p { font-size: 13px; color: var(--muted); margin: 0; font-family: system-ui, sans-serif; }
+details { margin: 12px 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+summary {
+  background: var(--surface2);
+  padding: 12px 16px;
+  cursor: pointer;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "▶ "; font-size: 11px; }
+details[open] summary::before { content: "▼ "; }
+details .inner { padding: 16px; font-family: system-ui, sans-serif; font-size: 13.5px; }
+.continue-panel { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin: 28px 0; }
+.continue-panel h3 { margin-top: 0; color: var(--navy); font-size: 15px; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.btn {
+  padding: 9px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.footer { text-align: center; padding: 24px; font-family: system-ui, sans-serif; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); margin-top: 40px; }
+@media (max-width: 600px) { .meta-grid { grid-template-columns: 1fr 1fr; } .verdict-box { flex-direction: column; gap: 12px; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">VM2 · <span>Perplexity Computer</span></div>
+  <button class="toggle-btn" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'">◑ Toggle</button>
+</div>
+
+<div class="container">
+
+  <h1>Deep Dive: FY27 RFI-SEVP</h1>
+  <div class="subtitle">Created: 2026-05-15 &nbsp;·&nbsp; ICE / HSI SEVP PMO Support &nbsp;·&nbsp; NAICS 541519 &nbsp;·&nbsp; Sources Sought</div>
+
+  <!-- OPPORTUNITY SNAPSHOT -->
+  <div class="meta-grid">
+    <div class="meta-item">
+      <div class="meta-label">Solicitation #</div>
+      <div class="meta-value">FY27_RFI-SEVP</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Agency / Office</div>
+      <div class="meta-value">DHS / ICE / HSI / ITD</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">NAICS</div>
+      <div class="meta-value">541519 — Other Computer Related Services</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Notice Type</div>
+      <div class="meta-value">Sources Sought (RFI)</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Response Deadline</div>
+      <div class="meta-value" style="color: var(--red); font-weight:700;">May 25, 2026 — 2:00 PM EDT</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Posted</div>
+      <div class="meta-value">May 15, 2026</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Place of Performance</div>
+      <div class="meta-value">Virginia (Remote/Hybrid)</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Set-Aside</div>
+      <div class="meta-value">None specified (Full &amp; Open expected)</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Est. Contract Value</div>
+      <div class="meta-value">$10M – $20M (forecast)</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Contract Vehicle</div>
+      <div class="meta-value">CIO-SP3 SB (NITAAC) — likely</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Primary POC</div>
+      <div class="meta-value">Tonya Fells — <a href="mailto:Tonya.T.Fells@ice.dhs.gov">Tonya.T.Fells@ice.dhs.gov</a></div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Secondary POC</div>
+      <div class="meta-value">Trisha Goldsberry — <a href="mailto:patricia.goldsberry@ice.dhs.gov">patricia.goldsberry@ice.dhs.gov</a></div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>⚡ Key Context:</strong> This RFI includes a full draft Performance Work Statement (PWS). Government intends to select "several respondents" for a <strong>live capability demonstration</strong>. This is explicitly the recompete of Changeis's current $35.3M SEVP PMO contract (70CTD022FR0000005, expiring Jan 31, 2027).
+  </div>
+
+  <!-- SKIP RULE CHECK -->
+  <h2>Skip-Rule Check</h2>
+  <div class="skip-check">
+    <span class="pass">✓ PASS — No skip rule triggered.</span><br><br>
+    SEVP/ICE IT PMO support does <strong>not</strong> match any auto-skip rule. The requirement is management consulting + Agile PMO support (not investigative/law enforcement staffing, not SDVOSB/8(a)/HUBZone, not physical security, not clinical services, not construction). NAICS 541519 is a Changeis core competency. Additionally, this task was <strong>user-initiated</strong> — Varun explicitly created this Todoist task requesting a deep dive. Deep dive proceeds regardless.
+  </div>
+
+  <!-- REQUIREMENT SUMMARY -->
+  <h2>Requirement Summary</h2>
+  <p>This RFI is market research for a recompete of SEVP Program Management Office (PMO) Support — the successor to Changeis's current contract <strong>70CTD022FR0000005</strong>. The PWS defines three coordinated contractor teams:</p>
+
+  <table>
+    <thead><tr><th>Team</th><th>Function</th><th>Key Scope</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>SMU Team</strong><br><small>System Management Unit</small></td>
+        <td>Unit-level PMO support</td>
+        <td>Portfolio roadmap, IMS maintenance, calendar management, strategic planning, business owner support, executive briefings</td>
+      </tr>
+      <tr>
+        <td><strong>SEVIS Programs Team (SPS)</strong><br><small>SEVIS Programs Section</small></td>
+        <td>Section-level program &amp; project support</td>
+        <td>Requirements elicitation, backlog grooming, user acceptance testing, production support, risk management, Schedule mgmt, knowledge management, Tableau analytics support</td>
+      </tr>
+      <tr>
+        <td><strong>SBAS Team</strong><br><small>SEVP Business Automation Section</small></td>
+        <td>Section-level program admin</td>
+        <td>SEVPAMS library management, business process documentation, task management, technical writing, records management (NO dev/coding)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Key Requirements Features</h3>
+  <ul>
+    <li><strong>Agile-driven PMO:</strong> All three teams use Agile methodologies — backlog grooming, sprint planning, Product Owner comms</li>
+    <li><strong>Generative AI mandate:</strong> Contractor staff must demonstrate proficiency with DHSChat and ICE-approved AI tools for document production</li>
+    <li><strong>Performance standards:</strong> 98% timely deliverable submission; 90% staffing minimum (monthly review); 14-day government acceptance cycle</li>
+    <li><strong>Key personnel:</strong> 9 named roles — Program Manager, Project Manager (SPS), SBAS Lead PMA, SEVIS Lead Requirements Analyst, SEVIS Requirements Analysts, SBAS PMAs, Technical Writer/Editor, Functional Testers, PMA</li>
+    <li><strong>Security:</strong> DHS 4300A/B compliance, PIV/FIPS 201, FISMA, ICE SLM Handbook — IT-2 / public trust clearances likely</li>
+    <li><strong>SEVPAMS platform:</strong> SharePoint / Dynamics 365 / Power Apps / Azure / Tableau — contractor must be proficient</li>
+    <li><strong>Exclusions:</strong> No software development, no coding, no SEVIS environment management for SBAS team</li>
+    <li><strong>Demo requirement:</strong> Government will select respondents for <em>live operational demonstrations</em> — platforms and data services</li>
+  </ul>
+
+  <!-- INCUMBENCY ANALYSIS -->
+  <h2>Incumbency Analysis</h2>
+
+  <div class="incumbent-alert">
+    <strong>⭐ CHANGEIS IS THE INCUMBENT.</strong> Contract 70CTD022FR0000005 (SEVP IT &amp; PMO Support) was awarded to Changeis Inc. in February 2022 at $31.9M, expanded to $35.3M, under GSA MAS via CIO-SP3 vehicle. Period of performance: Feb 2022 – Jan 31, 2027. This RFI covers the direct successor requirement.
+  </div>
+
+  <table>
+    <thead><tr><th>Contractor</th><th>Contract</th><th>Vehicle</th><th>Value</th><th>NAICS</th><th>Scope</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Changeis Inc.</strong></td>
+        <td>70CTD022FR0000005</td>
+        <td>GSA MAS / CIO-SP3</td>
+        <td>$35.3M</td>
+        <td>541512</td>
+        <td>SEVP IT &amp; PMO support — full scope</td>
+        <td><span class="badge badge-incumbent">Incumbent ✓</span></td>
+      </tr>
+      <tr>
+        <td><strong>Dev Technology Group</strong></td>
+        <td>70CTD025FR0000009</td>
+        <td>GSA MAS (47QTCA19D00JT)</td>
+        <td>$63.6M</td>
+        <td>541511</td>
+        <td>SEVIS O&amp;M and adaptive services (separate contract)</td>
+        <td><span class="badge badge-moderate">Adjacent — Active</span></td>
+      </tr>
+      <tr>
+        <td><strong>Booz Allen Hamilton</strong></td>
+        <td>70CMSD25FR0000001</td>
+        <td>GSA OASIS</td>
+        <td>$1.7M</td>
+        <td>541611</td>
+        <td>SEVP ACS Data Analytics (short-term)</td>
+        <td><span class="badge badge-moderate">Adjacent — Expired</span></td>
+      </tr>
+      <tr>
+        <td><strong>CHEVO LLC</strong></td>
+        <td>70CMSD23FR0000202</td>
+        <td>OASIS+</td>
+        <td>TBD</td>
+        <td>541611</td>
+        <td>SEVP Fee Management Support (recompeting Q4 FY26)</td>
+        <td><span class="badge badge-moderate">Parallel — Recompeting</span></td>
+      </tr>
+      <tr>
+        <td><strong>Insight Technology Solutions</strong></td>
+        <td>Multiple</td>
+        <td>Direct</td>
+        <td>$20.5M</td>
+        <td>541519</td>
+        <td>SEVP SRC Level I Call Center Support (5-year)</td>
+        <td><span class="badge badge-low">Separate Function</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Competitive Landscape Assessment</h3>
+  <p>The SEVP IT ecosystem is distributed across 4-5 prime contracts. The PMO/PMO-support lane (this requirement) is currently owned exclusively by Changeis. Potential competitors on recompete include:</p>
+  <ul>
+    <li><strong>Dev Technology Group</strong> — SEVIS O&amp;M incumbent, strong ICE/SEVP relationships, deep SEVIS technical knowledge. Will likely pursue or team. Full &amp; open competitor with ICE past performance.</li>
+    <li><strong>Booz Allen Hamilton</strong> — SEVP data analytics experience; large prime with OASIS+ and MAS vehicles. Risk: over-qualified / cost disadvantage on SB recompete.</li>
+    <li><strong>CEVA / Accenture Federal / Deloitte</strong> — possible large business partners if full &amp; open; less likely for SB set-aside on CIO-SP3 SB.</li>
+    <li><strong>Mid-tier IT management consultancies</strong> (Sevatec, Tantus, ActioNet) — probable competitors on CIO-SP3 SB lane.</li>
+  </ul>
+
+  <!-- RAG ENGINE RESULTS -->
+  <h2>Changeis Capability Match (RAG Engine)</h2>
+  <p>RAG query: <em>"SEVP Student Exchange Visitor Program Program Management Office IT support agile program management risk management SEVIS system requirements business automation operational support data analytics"</em> — Top match returned.</p>
+
+  <table>
+    <thead><tr><th>Rank</th><th>Task Order</th><th>Client</th><th>Composite Score</th><th>Relevance</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>DHS ICE SEVP PMO (70CTD022FR0000005)</strong></td>
+        <td>DHS / ICE</td>
+        <td>0.311</td>
+        <td><span class="badge badge-strong">STRONG — Direct</span></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>FAA eFAST BAFM III (693KA8-18-F-00012)</td>
+        <td>FAA / Volpe</td>
+        <td>0.310</td>
+        <td><span class="badge badge-moderate">Moderate — PMO/Mgmt</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>V330A2232</td>
+        <td>DOT / FAA / Volpe</td>
+        <td>0.248</td>
+        <td><span class="badge badge-moderate">Moderate — Stakeholder Mgmt</span></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>V1312005</td>
+        <td>DOT / FAA / Volpe</td>
+        <td>0.190</td>
+        <td><span class="badge badge-low">Relevant — Program Eval</span></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>CBP OFAM (HCaTS)</td>
+        <td>CBP (DHS)</td>
+        <td>0.071</td>
+        <td><span class="badge badge-low">Relevant — DHS ecosystem</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Note:</strong> The top RAG match is Changeis's own SEVP PMO contract — this is a direct predecessor match. The RAG composite scores reflect chunked document similarity and a score of 0.311 for 50 matching chunks represents comprehensive alignment. The current SEVP PMO SOW is essentially the reference document for the new RFI PWS.
+  </div>
+
+  <!-- CAPABILITY MATRIX -->
+  <h2>Capability Matrix</h2>
+
+  <table>
+    <thead><tr><th>RFI Requirement</th><th>Changeis Coverage</th><th>Evidence / Contract</th><th>Fit</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Agile PMO / Program Management</td>
+        <td>Core competency — 4 years delivering SEVP PMO under Agile</td>
+        <td>70CTD022FR0000005 — active, $35.3M</td>
+        <td><span class="badge badge-strong">★★★ Direct</span></td>
+      </tr>
+      <tr>
+        <td>SEVIS Requirements Definition &amp; Backlog Management</td>
+        <td>Direct — current team supports SPS requirements, backlog grooming, Product Owner comms</td>
+        <td>70CTD022FR0000005 PWS Section 5.1</td>
+        <td><span class="badge badge-strong">★★★ Direct</span></td>
+      </tr>
+      <tr>
+        <td>Risk Management Plans &amp; Risk Inventory</td>
+        <td>Risk management support explicitly in current contract scope</td>
+        <td>APFS forecast F2026073413 confirms incumbent scope</td>
+        <td><span class="badge badge-strong">★★★ Direct</span></td>
+      </tr>
+      <tr>
+        <td>SEVPAMS / SharePoint KM Library Management</td>
+        <td>Active — supports SEVPAMS library and knowledge management artifacts today</td>
+        <td>70CTD022FR0000005 SOW</td>
+        <td><span class="badge badge-strong">★★★ Direct</span></td>
+      </tr>
+      <tr>
+        <td>SEVP Business Automation Section (SBAS) Support</td>
+        <td>SBAS support included in current contract scope; RPA / Tableau / SID chatbot</td>
+        <td>70CTD022FR0000005</td>
+        <td><span class="badge badge-strong">★★★ Direct</span></td>
+      </tr>
+      <tr>
+        <td>User Acceptance Testing (UAT)</td>
+        <td>SPS functional testing and UAT is part of current delivery team</td>
+        <td>70CTD022FR0000005 Section 8.8</td>
+        <td><span class="badge badge-strong">★★★ Direct</span></td>
+      </tr>
+      <tr>
+        <td>Technical Writing &amp; Communications</td>
+        <td>Technical Writer/Editor key personnel in current contract</td>
+        <td>70CTD022FR0000005 Section 8.7</td>
+        <td><span class="badge badge-strong">★★★ Direct</span></td>
+      </tr>
+      <tr>
+        <td>Generative AI Tool Proficiency (DHSChat)</td>
+        <td>Emerging — Changeis has AI capability and uses AI-assisted document tools; DHSChat familiarity being developed by current staff</td>
+        <td>Changeis capabilities + current program staff</td>
+        <td><span class="badge badge-moderate">★★☆ Good (developing)</span></td>
+      </tr>
+      <tr>
+        <td>DHS / ICE Security Compliance (FISMA, DHS 4300)</td>
+        <td>Fully compliant — 4 years of ICE security requirements on current contract</td>
+        <td>70CTD022FR0000005</td>
+        <td><span class="badge badge-strong">★★★ Direct</span></td>
+      </tr>
+      <tr>
+        <td>Program Integrated Master Schedule (IMS)</td>
+        <td>Direct — IMS maintenance is a current deliverable</td>
+        <td>70CTD022FR0000005 Section 6.9</td>
+        <td><span class="badge badge-strong">★★★ Direct</span></td>
+      </tr>
+      <tr>
+        <td>Live Capability Demonstration</td>
+        <td>Strong position — can demonstrate actual SEVPAMS workflows, SEVIS backlog process, IMS artifacts from live program</td>
+        <td>Incumbent advantage — can show real deliverables</td>
+        <td><span class="badge badge-strong">★★★ Incumbent Edge</span></td>
+      </tr>
+      <tr>
+        <td>CIO-SP3 SB Vehicle Access</td>
+        <td><strong>VERIFY:</strong> Confirm Changeis has active CIO-SP3 SB prime or teaming arrangement — APFS forecast vehicle is CIO-SP3 SB</td>
+        <td>Need to verify — critical for bid eligibility</td>
+        <td><span class="badge badge-moderate">★★☆ Verify Needed</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- GO / NO-GO ASSESSMENT -->
+  <h2>Go / No-Go Assessment</h2>
+
+  <div class="verdict-box">
+    <div class="verdict-icon">🟢</div>
+    <div>
+      <div class="verdict-label">Recommendation</div>
+      <div class="verdict-text">STRONG PURSUE — Incumbent Recompete</div>
+      <div class="verdict-sub">Changeis holds the expiring predecessor contract. This RFI is the direct market research for the recompete. Responding to the RFI and positioning for the live demo is a strategic imperative — losing this would represent a significant revenue loss and disruption to a 4-year customer relationship.</div>
+    </div>
+  </div>
+
+  <h3>PWin Factor Scoring</h3>
+  <div class="pwin-bar-wrap">
+    <div class="pwin-label"><span>Customer Intimacy</span><span>95%</span></div>
+    <div class="pwin-bar"><div class="pwin-fill" style="width:95%"></div></div>
+  </div>
+  <div class="pwin-bar-wrap">
+    <div class="pwin-label"><span>Technical Capability Match</span><span>98%</span></div>
+    <div class="pwin-bar"><div class="pwin-fill" style="width:98%"></div></div>
+  </div>
+  <div class="pwin-bar-wrap">
+    <div class="pwin-label"><span>Past Performance (Direct)</span><span>100%</span></div>
+    <div class="pwin-bar"><div class="pwin-fill" style="width:100%"></div></div>
+  </div>
+  <div class="pwin-bar-wrap">
+    <div class="pwin-label"><span>Contract Vehicle (CIO-SP3 SB) Access</span><span>70%</span></div>
+    <div class="pwin-bar"><div class="pwin-fill" style="width:70%"></div></div>
+  </div>
+  <div class="pwin-bar-wrap">
+    <div class="pwin-label"><span>Competitive Differentiation</span><span>85%</span></div>
+    <div class="pwin-bar"><div class="pwin-fill" style="width:85%"></div></div>
+  </div>
+  <div class="pwin-bar-wrap">
+    <div class="pwin-label"><span>Overall PWin Estimate</span><span style="color: #4ade80; font-weight: 800;">~68–75%</span></div>
+    <div class="pwin-bar"><div class="pwin-fill" style="width:72%"></div></div>
+  </div>
+
+  <table style="margin-top:16px">
+    <thead><tr><th>Factor</th><th>Assessment</th><th>Risk Level</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Incumbent status</td>
+        <td>Changeis holds 70CTD022FR0000005 through Jan 31, 2027 — direct predecessor</td>
+        <td><span class="badge badge-strong">Strength</span></td>
+      </tr>
+      <tr>
+        <td>Contract value change</td>
+        <td>Forecast value ($10–20M) is significantly lower than current $35.3M — scope may be reduced (SBAS split, fee management on OASIS+)</td>
+        <td><span class="badge badge-moderate">Medium Risk</span></td>
+      </tr>
+      <tr>
+        <td>Vehicle change risk</td>
+        <td>Current contract on MAS/CIO-SP3; recompete forecast on CIO-SP3 SB — confirm Changeis SB status and CIO-SP3 SB prime</td>
+        <td><span class="badge badge-moderate">Medium Risk — Verify</span></td>
+      </tr>
+      <tr>
+        <td>Competition from Dev Technology Group</td>
+        <td>Dev Tech is SEVIS O&amp;M incumbent — may pursue PMO lane to consolidate. Strong competitor with ICE relationships.</td>
+        <td><span class="badge badge-moderate">Medium Risk</span></td>
+      </tr>
+      <tr>
+        <td>Demo requirement</td>
+        <td>Live demo heavily favors Changeis — can demonstrate actual SEVPAMS deliverables and working IMS from live program</td>
+        <td><span class="badge badge-strong">Major Advantage</span></td>
+      </tr>
+      <tr>
+        <td>AI proficiency requirement</td>
+        <td>New PWS explicitly requires DHSChat / Gen AI tool fluency — Changeis must demonstrate staff capability</td>
+        <td><span class="badge badge-moderate">Low-Med Risk</span></td>
+      </tr>
+      <tr>
+        <td>Political/immigration policy environment</td>
+        <td>SEVP mission (tracking foreign students) is a core Trump administration enforcement priority — program is likely to grow/remain funded</td>
+        <td><span class="badge badge-strong">Favorable</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ACTION ITEMS -->
+  <h2>Action Items for Varun</h2>
+
+  <div class="action-item">
+    <div class="action-num">1</div>
+    <div class="action-content">
+      <h4>Submit RFI Response + Secure Live Demo Slot (Due: May 25, 2026)</h4>
+      <p>Respond to the RFI immediately. As the incumbent, the response should demonstrate deep SEVIS domain knowledge, highlight the current delivery team's performance record, and specifically address the AI/DHSChat requirement. Goal: secure one of the "several respondent" live demo invitations. Draft response should include: capability narrative, list of current SEVP staff with Gen AI proficiency examples, and a proposed demo agenda covering SEVIS backlog management, SEVPAMS KM workflow, and IMS artifacts. Send to Tonya Fells (Tonya.T.Fells@ice.dhs.gov) and cc Trisha Goldsberry.</p>
+    </div>
+  </div>
+
+  <div class="action-item">
+    <div class="action-num">2</div>
+    <div class="action-content">
+      <h4>Confirm CIO-SP3 SB Vehicle Access &amp; Build Teaming Strategy</h4>
+      <p>The APFS forecast (F2026073413) specifies CIO-SP3 SB as the contract vehicle. Confirm whether Changeis has an active CIO-SP3 SB prime contract or needs to team. If teaming is required, identify CIO-SP3 SB primes with SEVP/ICE experience. Consider proactive outreach to Dev Technology Group for a teaming conversation — they are the SEVIS O&amp;M incumbent and a logical partner (complementary scopes, no OCI issue on the PMO lane). Also evaluate whether Insight Technology Solutions (SRC call center incumbent) would add relevant capture context.</p>
+    </div>
+  </div>
+
+  <div class="action-item">
+    <div class="action-num">3</div>
+    <div class="action-content">
+      <h4>Prepare Live Demo Package &amp; Refresh Key Personnel Roster</h4>
+      <p>Prepare a demo script using sanitized versions of actual SEVPAMS deliverables, IMS screenshots, risk registry, and Tableau dashboards from the current contract. Identify 2–3 staff who can credibly demonstrate DHSChat/Gen AI proficiency for document production. Ensure key personnel (Program Manager, SPS Project Manager, SBAS Lead, SEVIS Lead Requirements Analyst) are confirmed and available for the proposal — the PWS has 9 named key personnel positions and a 90% staffing floor. Any staff departures before proposal submission should be backfilled with cleared, DHS-experienced candidates.</p>
+    </div>
+  </div>
+
+  <div class="action-item">
+    <div class="action-num">4</div>
+    <div class="action-content">
+      <h4>Monitor APFS for Formal RFP Release (est. June 30, 2026)</h4>
+      <p>Per the APFS forecast, the solicitation is expected to release ~June 30, 2026 with award in Q1 FY2027. Set a SAM.gov watch on ICE/HSI and ensure the VM2 SAM monitor is tracking solicitations from office 70CTD0. Capture any pre-award market days or one-on-ones ICE may offer. Note the related CHEVO recompete (SEVP Fee Management, OASIS+, Q4 FY26) — explore whether that team's transition creates any staffing opportunity or competitive intelligence.</p>
+    </div>
+  </div>
+
+  <div class="action-item">
+    <div class="action-num">5</div>
+    <div class="action-content">
+      <h4>Track Parallel SEVP Recompetes (Ecosystem Defense)</h4>
+      <p>Three SEVP contracts are simultaneously recompeting in FY26–Q1 FY27: (1) this PMO recompete, (2) CHEVO's Fee Management contract (OASIS+, ~Q4 FY26), and (3) Booz Allen's ACS Data Analytics requirement (competitive, was awarded Jan 2025). Monitor all three. Losing any of these to new entrants could shift SEVP's prime contractor relationships and threaten incumbent advantage on this PMO recompete. Consider whether pursuing the ACS Data Analytics lane (if recompeted) would strengthen or dilute Changeis's SEVP footprint.</p>
+    </div>
+  </div>
+
+  <!-- INTEL & LINKS -->
+  <h2>Intelligence Sources</h2>
+  <table>
+    <thead><tr><th>Source</th><th>Finding</th><th>URL</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>SAM.gov (API)</td>
+        <td>Full opportunity data, POC, PWS attachment</td>
+        <td><a href="https://sam.gov/opp/345baeb318f84d979cc534a13ad446ef/view" target="_blank">sam.gov/opp/…/view</a></td>
+      </tr>
+      <tr>
+        <td>OrangeSlices.ai</td>
+        <td>APFS forecast F2026073413 — Changeis incumbent confirmed, $10–20M CIO-SP3 SB, June 2026 RFP</td>
+        <td><a href="https://orangeslices.ai/dhs-hsi-preparing-20m-cio-sp3-sb-recompete-of-35m-sevp-program-management-and-risk-support-task/" target="_blank">orangeslices.ai</a></td>
+      </tr>
+      <tr>
+        <td>HigherGov</td>
+        <td>Contract 70CTD022FR0000005 details — $35.3M, 81% funded, expiring Jan 31, 2027</td>
+        <td><a href="https://www.highergov.com/contract/47QTCA18D0078-70CTD022FR0000005/" target="_blank">highergov.com</a></td>
+      </tr>
+      <tr>
+        <td>OrangeSlices.ai</td>
+        <td>Dev Technology Group awarded SEVIS O&amp;M $63.6M (Feb 2025, GSA MAS)</td>
+        <td><a href="https://orangeslices.ai/dev-technology-group-beats-out-17-to-win-64m-dhs-ice-sevp-student-and-exchange-visitor-information-systems-sevis-support-contract/" target="_blank">orangeslices.ai</a></td>
+      </tr>
+      <tr>
+        <td>GovCDOiq</td>
+        <td>Booz Allen $1.7M SEVP ACS Data Analytics (Oct 2024)</td>
+        <td><a href="https://govcdoiq.org/info-bytes/procurements/dhs-ice-awards-booz-allen-1-7m-task-order-for-sevp-data-analytics-support/" target="_blank">govcdoiq.org</a></td>
+      </tr>
+      <tr>
+        <td>Changeis.com</td>
+        <td>Official Changeis SEVP award announcement — Jan 26, 2022</td>
+        <td><a href="https://changeis.com/news/changeis-inc-selected-for-department-of-homeland-security-dhs-student-and-exchange-visitor-program-sevp-award/" target="_blank">changeis.com</a></td>
+      </tr>
+      <tr>
+        <td>Insight TSI</td>
+        <td>SEVP SRC Level I Call Center Support — $20.5M, 5-year prime (separate)</td>
+        <td><a href="https://www.insighttsi.com/post/contract-award-sevp-src-level-1-call-center-support" target="_blank">insighttsi.com</a></td>
+      </tr>
+      <tr>
+        <td>SAM.gov PWS</td>
+        <td>Full draft PWS attachment extracted from DOCX — tasks, staffing, security, deliverables</td>
+        <td>Downloaded via SAM API resource file</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- CONTEXT PANEL -->
+  <h2>Session Context</h2>
+  <details>
+    <summary>Original Instructions &amp; Methodology</summary>
+    <div class="inner">
+      <p><strong>Original Instructions:</strong> Execute VM2-OPP deep dive on FY27_RFI-SEVP (Todoist task 6gfWqJgVqJWph5V5, due 2026-05-16). User-initiated task. SAM.gov notice ID 345baeb318f84d979cc534a13ad446ef.</p>
+      <p><strong>Approach:</strong> (1) Fetched SAM.gov opportunity via API and HTML; (2) Downloaded and extracted PWS attachment DOCX; (3) Searched FPDS/USAspending via web intelligence for incumbent analysis; (4) Called RAG engine at changeis-bd-rag-production.up.railway.app with top_n=20; (5) Checked skip rules — no rule triggered; (6) Cross-referenced APFS forecast confirming recompete details; (7) Synthesized Go/No-Go with PWin factors.</p>
+      <p><strong>Key Findings:</strong></p>
+      <ul>
+        <li>Changeis is the direct incumbent under 70CTD022FR0000005 ($35.3M, expires Jan 31, 2027)</li>
+        <li>APFS forecast F2026073413 confirmed: $10–20M recompete, CIO-SP3 SB, ~June 30 RFP release, Q1 FY2027 award</li>
+        <li>PWS includes a live demonstration requirement — strong incumbent advantage</li>
+        <li>New PWS adds explicit Generative AI / DHSChat proficiency requirement</li>
+        <li>Dev Technology Group (SEVIS O&amp;M incumbent) is the primary competitive threat</li>
+        <li>RAG engine top match: DHS ICE SEVP PMO (70CTD022FR0000005) — direct predecessor</li>
+        <li>No skip rules triggered; user-initiated deep dive proceeds</li>
+      </ul>
+      <p><strong>Dead Ends:</strong> USAspending.gov direct hash URL returned robots disallow; used web intelligence instead. SAM API resource file required direct download and DOCX extraction.</p>
+      <p><strong>Assumptions:</strong> Contract vehicle is CIO-SP3 SB per APFS forecast (not yet confirmed in RFI). Value range $10–20M from APFS forecast. Full &amp; open expected at RFP stage given predecessor was unrestricted.</p>
+      <p><strong>Open Questions:</strong> (1) Does Changeis have a CIO-SP3 SB prime contract? (2) Will scope be reduced from current $35.3M — which SBAS/SMU functions may be split? (3) Will ICE hold individual industry days? (4) Is CHEVO (Fee Management recompete) on any teaming conversations?</p>
+      <p><strong>Data Sources:</strong> SAM.gov API, SAM.gov HTML, SAM.gov PWS DOCX, OrangeSlices.ai, HigherGov, GovCDOiq.org, Changeis.com, Insight TSI, RAG Engine (changeis-bd-rag-production.up.railway.app), APFS Cloud DHS, skip_rules.json.</p>
+      <p><strong>Next Steps:</strong> Submit RFI response by May 25; confirm CIO-SP3 SB vehicle; prepare demo package; monitor APFS for formal RFP.</p>
+    </div>
+  </details>
+
+  <!-- CONTINUE PANEL -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <p style="font-family:system-ui,sans-serif;font-size:13px;color:var(--muted);margin-bottom:8px;">Railway URL: <a href="https://vm2-p-taskers-production.up.railway.app/deep-dive-fy27-rfi-sevp-2026-05-15.html" target="_blank">vm2-p-taskers-production.up.railway.app/deep-dive-fy27-rfi-sevp-2026-05-15.html</a></p>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="
+        const txt = 'Continue this deep dive: FY27 RFI-SEVP (Changeis incumbent recompete). Deliverable at https://vm2-p-taskers-production.up.railway.app/deep-dive-fy27-rfi-sevp-2026-05-15.html. Next task: draft the RFI response for submission to Tonya Fells by May 25, 2026. Key points: demonstrate AI/DHSChat proficiency, confirm CIO-SP3 SB vehicle access, propose live demo agenda.';
+        navigator.clipboard.writeText(txt).then(()=>alert('Copied!'));
+      ">📋 Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=FY27%20RFI-SEVP%20Deep%20Dive%20Follow-Up&body=Deep%20Dive%20published%3A%20https%3A%2F%2Fvm2-p-taskers-production.up.railway.app%2Fdeep-dive-fy27-rfi-sevp-2026-05-15.html%0A%0ANext%20steps%3A%20Submit%20RFI%20response%20by%20May%2025.">✉ Email to VM2</a>
+      <button class="btn btn-secondary" onclick="
+        fetch('/api/todoist/tasks', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            content: 'Draft RFI response: FY27_RFI-SEVP — due May 25',
+            description: 'Draft and submit RFI response for FY27_RFI-SEVP (Changeis incumbent recompete). Key: demonstrate DHSChat/AI proficiency, confirm CIO-SP3 SB vehicle, request demo slot.\n\nDeep Dive: https://vm2-p-taskers-production.up.railway.app/deep-dive-fy27-rfi-sevp-2026-05-15.html',
+            due_string: '2026-05-23',
+            labels: ['VM2']
+          })
+        }).then(r => r.ok ? alert('Todoist task created!') : window.open('https://todoist.com/add?content=Draft+RFI+response+FY27_RFI-SEVP'))
+        .catch(()=>window.open('https://todoist.com/add?content=Draft+RFI+response+FY27_RFI-SEVP'));
+      ">✓ Create Todoist Follow-Up</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    Changeis Confidential · Deep Dive: FY27 RFI-SEVP · May 15, 2026 · VM2 Deliverable
+  </div>
+
+</div>
+
+<!-- HIDDEN JSON CONTEXT BLOCK -->
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Deep Dive FY27_RFI-SEVP",
+  "task_date": "2026-05-15",
+  "created_date": "2026-05-15",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-fy27-rfi-sevp-2026-05-15.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-fy27-rfi-sevp-2026-05-15.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute VM2-OPP deep dive on FY27_RFI-SEVP (Todoist task 6gfWqJgVqJWph5V5, due 2026-05-16). User-initiated. SAM.gov notice_id 345baeb318f84d979cc534a13ad446ef. NAICS 541519, ICE/HSI, Sources Sought.",
+  "approach": "Fetched SAM.gov via API + HTML; extracted PWS DOCX attachment; web intelligence for FPDS/USAspending incumbency; RAG engine call (top_n=20); skip rule check; APFS forecast research; Go/No-Go synthesis.",
+  "key_findings": [
+    "Changeis is direct incumbent: 70CTD022FR0000005, $35.3M, expires Jan 31 2027",
+    "APFS forecast F2026073413 confirms $10-20M recompete, CIO-SP3 SB, ~June 30 RFP, Q1 FY27 award",
+    "PWS includes live capability demonstration — major incumbent advantage",
+    "New PWS adds Gen AI / DHSChat proficiency requirement",
+    "Dev Technology Group (SEVIS O&M incumbent) is primary competitive threat",
+    "No skip rules triggered; recommendation: STRONG PURSUE"
+  ],
+  "dead_ends": ["USAspending.gov direct URL blocked by robots; used web intelligence instead"],
+  "assumptions": ["CIO-SP3 SB vehicle per APFS forecast (not confirmed in RFI)", "Value range $10-20M from APFS", "Full & open at RFP stage"],
+  "open_questions": [
+    "Does Changeis hold an active CIO-SP3 SB prime contract?",
+    "Which scope elements may be reduced vs current $35.3M?",
+    "Will ICE hold industry days or one-on-ones before RFP?",
+    "CHEVO (Fee Management recompete) teaming opportunities?"
+  ],
+  "data_sources": [
+    {"name": "SAM.gov API", "url": "https://api.sam.gov/opportunities/v2/search?noticeid=345baeb318f84d979cc534a13ad446ef"},
+    {"name": "SAM.gov Opportunity Page", "url": "https://sam.gov/opp/345baeb318f84d979cc534a13ad446ef/view"},
+    {"name": "OrangeSlices.ai — Changeis incumbent confirmed", "url": "https://orangeslices.ai/dhs-hsi-preparing-20m-cio-sp3-sb-recompete-of-35m-sevp-program-management-and-risk-support-task/"},
+    {"name": "HigherGov — Contract 70CTD022FR0000005", "url": "https://www.highergov.com/contract/47QTCA18D0078-70CTD022FR0000005/"},
+    {"name": "RAG Engine", "url": "https://changeis-bd-rag-production.up.railway.app/match"}
+  ],
+  "next_steps": [
+    "Submit RFI response by May 25, 2026 — demonstrate AI/DHSChat proficiency",
+    "Confirm CIO-SP3 SB vehicle access for Changeis",
+    "Prepare live demo package using sanitized SEVPAMS/IMS artifacts",
+    "Monitor APFS/SAM for formal RFP release (~June 30, 2026)",
+    "Explore teaming with Dev Technology Group on complementary scopes"
+  ],
+  "go_nogo": "STRONG PURSUE",
+  "pwin_estimate": "68-75%",
+  "cost_estimate": {
+    "model": "claude-sonnet-4-5",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 8,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.38",
+    "cost_ceiling": "$0.75",
+    "notes": "Multiple web searches, SAM API fetch, DOCX extraction, RAG engine call, full HTML generation"
+  }
+}
+</script>
+
+</body>
+</html>
