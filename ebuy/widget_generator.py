@@ -10,6 +10,15 @@ HERE = Path(__file__).parent
 HISTORY_PATH = HERE / 'ebuy_history.jsonl'
 OUTPUT_PATH = HERE.parent / 'ebuy-portal-widget.html'
 
+VEHICLE_NAMES = {
+    '47QTCA18D0078': 'GSA MAS',
+    '47QTCB22D0075': 'STARS III',
+    '47QRCA25DS260': 'OASIS+ SB',
+    '47QRCA25DU072': 'OASIS+ UR',
+    '47QRCA25DS139': 'Agile OASIS+ SB',
+    '47QRCA25DA423': 'ArchZen OASIS+ SB',
+}
+
 ET = timezone(timedelta(hours=-4))
 NOW = datetime.now(ET)
 

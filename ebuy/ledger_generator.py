@@ -14,6 +14,17 @@ HISTORY_PATH = HERE / 'ebuy_history.jsonl'
 OUTPUT_PATH = HERE.parent / 'ebuy-ledger.html'
 ANALYST_EMAIL_PLACEHOLDER = 'TBD@changeis.com'   # User will provide later
 
+# Friendly names for contract vehicles (per Varun, 5/19/2026)
+VEHICLE_NAMES = {
+    '47QTCA18D0078': 'GSA MAS',
+    '47QTCB22D0075': 'STARS III',
+    '47QRCA25DS260': 'OASIS+ SB',
+    '47QRCA25DU072': 'OASIS+ UR',
+    '47QRCA25DS139': 'Agile OASIS+ SB',
+    '47QRCA25DA423': 'ArchZen OASIS+ SB',
+}
+
+
 ET = timezone(timedelta(hours=-4))  # EDT in May
 NOW = datetime.now(ET)
 TODAY = NOW.date()
@@ -87,19 +98,20 @@ def status_badge(status):
 
 def mailto_link(ev):
     subj = f"eBuy Download Request - {ev['request_id']} - {(ev.get('title') or '')[:80]}"
+    vehicle_code = ev.get('vehicle') or ''
+    vehicle_name = VEHICLE_NAMES.get(vehicle_code, '')
+    vehicle_str = f'{vehicle_name} ({vehicle_code})' if vehicle_name else (vehicle_code or 'unknown')
     body_lines = [
-        "Please log into GSA eBuy and download all materials for the following request:",
+        "Request to download all materials for the following request:",
         "",
-        f"Request ID: {ev['request_id']}",
-        f"Status: {ev['status']}",
+        f"eBuy Request ID: {ev['request_id']}",
         f"Title: {ev.get('title') or '(not parsed)'}",
         f"Buyer: {ev.get('buyer') or '(not parsed)'}",
         f"Posted: {ev.get('posted_date') or '(unknown)'}",
         f"Due By: {ev.get('due_by') or '(unknown)'}",
-        f"Contract Vehicle: {ev.get('vehicle') or '(unknown)'}",
+        f"Contract Vehicle: {vehicle_str}",
         "",
-        f"Save attachments to: V M2/VM2-main-folder/VM2-eBuy/{ev['request_id']}/",
-        "Reply to this email when uploaded.",
+        "Save attachments to: Dropbox and attach to email",
         "",
         "Thanks,",
         "Varun"
@@ -151,7 +163,7 @@ def build_row(ev, is_today=False):
   <td class="col-reqid"><code>{escape(ev['request_id'])}</code></td>
   <td class="col-title">{escape(title)}</td>
   <td class="col-buyer">{escape(buyer)}</td>
-  <td class="col-vehicle"><code>{escape(ev.get('vehicle') or '')}</code></td>
+  <td class="col-vehicle"><div class="vehicle-name">{escape(VEHICLE_NAMES.get(ev.get('vehicle') or '', ''))}</div><code class="vehicle-code">{escape(ev.get('vehicle') or '')}</code></td>
   <td class="col-posted">{fmt_dt(ev.get('posted_date'))}</td>
   <td class="col-due"><div>{fmt_dt(ev.get('due_by'))}</div><div class="due-pill {due_class}">{due_label}</div></td>
   <td class="col-action"><a class="btn-request" href="{mailto_link(ev)}">Request Analyst Download</a></td>
@@ -215,7 +227,7 @@ def main():
         for s, c in status_counts.most_common()
     )
     vehicle_filter_opts = ''.join(
-        f'<option value="{escape(v)}">{escape(v)} ({c})</option>'
+        f'<option value="{escape(v)}">{escape(VEHICLE_NAMES.get(v, v))} · {escape(v)} ({c})</option>'
         for v, c in vehicle_counts.most_common()
     )
 
@@ -241,9 +253,15 @@ def main():
         },
         "analyst_email_placeholder": ANALYST_EMAIL_PLACEHOLDER,
         "cron_cadence": {
-            "weekdays": "9 AM / 12 PM / 3 PM / 6 PM ET",
+            "weekdays": "9 AM and 4 PM ET",
             "weekends": "12 PM ET only",
-            "utc_cron_edt": "0 13,16,19,22 * * 1-5 + 0 16 * * 0,6",
+            "utc_cron_edt": "0 13,20 * * 1-5 + 0 16 * * 0,6 + 0 0 * * 1 (reconcile)",
+            "cron_ids": {
+                "weekday_9am": "b98dfb95",
+                "weekday_4pm": "3bc6d0fa",
+                "weekend_noon": "6c80e6a2",
+                "weekly_reconcile": "ce5ef3a6"
+            },
         },
         "cost_estimate": {
             "model": "claude-sonnet-4.5",
@@ -419,7 +437,10 @@ table.ledger tbody tr.is-today td:first-child {{ border-left:3px solid var(--ora
 .col-reqid {{ width:120px; white-space:nowrap; font-family:'Consolas',monospace; }}
 .col-title {{ min-width:240px; max-width:340px; font-weight:600; color:var(--text-std); }}
 .col-buyer {{ min-width:180px; max-width:240px; color:var(--text-muted); font-size:12px; }}
-.col-vehicle {{ width:130px; white-space:nowrap; font-family:'Consolas',monospace; font-size:11px; color:var(--text-muted); }}
+.col-vehicle {{ width:155px; white-space:nowrap; }}
+.vehicle-name {{ font-family:Calibri,Arial,sans-serif; font-weight:700; font-size:12px; color:var(--navy); line-height:1.2; }}
+[data-theme="dark"] .vehicle-name {{ color:#e2e2e2; }}
+.vehicle-code {{ font-family:'Consolas',monospace; font-size:10px; color:var(--text-muted); display:inline-block; margin-top:2px; }}
 .col-posted {{ width:160px; white-space:nowrap; color:var(--text-muted); font-size:12px; }}
 .col-due {{ width:180px; white-space:nowrap; }}
 .col-action {{ width:180px; min-width:180px; white-space:nowrap; text-align:right; padding-right:14px !important; }}
@@ -581,7 +602,7 @@ footer {{
     <div><dt>Source sender:</dt> <dd>ebuy_admin@gsa.gov</dd></div>
     <div><dt>History file:</dt> <dd><code>cron_tracking/ebuy_monitor/ebuy_history.jsonl</code></dd></div>
     <div><dt>Dedupe key:</dt> <dd>sha1(request_id + status + posted_date)</dd></div>
-    <div><dt>Cron cadence:</dt> <dd>Weekdays 9 AM / 12 PM / 3 PM / 6 PM ET · Weekends 12 PM ET</dd></div>
+    <div><dt>Cron cadence:</dt> <dd>Weekdays 9 AM &amp; 4 PM ET · Weekends 12 PM ET · Weekly reconciliation Sun 8 PM ET</dd></div>
     <div><dt>Analyst email:</dt> <dd><code>{ANALYST_EMAIL_PLACEHOLDER}</code> — placeholder pending</dd></div>
   </dl>
 </div>
