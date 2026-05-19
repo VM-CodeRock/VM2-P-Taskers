@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: HSI Division 4 Unit 4 RFI — 2026-05-19</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --green: #2D7D4A;
+    --orange: #D97D2A;
+    --teal: #008B8B;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 30px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p { font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
+  .section ul, .section ol { padding-left: 20px; margin-bottom: 10px; }
+  .section li { font-size: 15px; margin-bottom: 5px; line-height: 1.5; }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  .callout {
+    background: #E8F4F8;
+    border-left: 4px solid var(--teal);
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 14.5px;
+    color: #333;
+  }
+  [data-theme="dark"] .callout { background: #1a2d38; color: #ccc; border-left-color: var(--teal); }
+  .callout strong { color: #002060; }
+  [data-theme="dark"] .callout strong { color: #7eb3e0; }
+
+  .verdict-box {
+    border: 2px solid;
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 14px 0;
+    font-family: system-ui, sans-serif;
+  }
+  .verdict-pursue { border-color: #2D7D4A; background: #f0faf4; }
+  .verdict-monitor { border-color: #D97D2A; background: #fdf6ee; }
+  .verdict-pass { border-color: #B22222; background: #fdf0f0; }
+  .verdict-partner { border-color: #2E6DA4; background: #eef5fb; }
+  [data-theme="dark"] .verdict-pursue { background: #152a1e; }
+  [data-theme="dark"] .verdict-monitor { background: #2a1e0e; }
+  [data-theme="dark"] .verdict-pass { background: #2a1010; }
+  [data-theme="dark"] .verdict-partner { background: #101e2a; }
+  .verdict-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 6px;
+  }
+  .verdict-pursue .verdict-label { color: #2D7D4A; }
+  .verdict-monitor .verdict-label { color: #D97D2A; }
+  .verdict-pass .verdict-label { color: #B22222; }
+  .verdict-partner .verdict-label { color: #2E6DA4; }
+  .verdict-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .verdict-body { font-size: 14.5px; color: var(--text-muted); line-height: 1.55; }
+
+  .score-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .score-strong { background: #2D7D4A; color: #fff; }
+  .score-moderate { background: #2E6DA4; color: #fff; }
+  .score-relevant { background: #D97D2A; color: #fff; }
+  .score-low { background: #888; color: #fff; }
+
+  .tag {
+    display: inline-block;
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 600;
+    background: var(--surface-alt); border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 3px; margin: 2px;
+    color: var(--text-muted);
+  }
+
+  .label-factual {
+    font-family: system-ui, sans-serif; font-size: 10px; font-weight: 700;
+    color: #2D7D4A; text-transform: uppercase; letter-spacing: 0.08em;
+    background: #edf7f2; border: 1px solid #b8e0c8; padding: 1px 6px; border-radius: 2px;
+    margin-left: 6px; vertical-align: middle;
+  }
+  .label-inference {
+    font-family: system-ui, sans-serif; font-size: 10px; font-weight: 700;
+    color: #D97D2A; text-transform: uppercase; letter-spacing: 0.08em;
+    background: #fdf4e8; border: 1px solid #f0d0a0; padding: 1px 6px; border-radius: 2px;
+    margin-left: 6px; vertical-align: middle;
+  }
+
+  .action-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    margin-bottom: 8px; font-size: 14.5px;
+  }
+  .action-num {
+    flex-shrink: 0; width: 22px; height: 22px;
+    background: var(--navy); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    margin-top: 2px;
+  }
+
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 22px; }
+    .container { padding: 0 16px; }
+  }
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">◑ Dark</button>
+</div>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-badge">Deep Dive</div>
+    <h1>HSI Division 4 Unit 4 Continued Automation and Enhancements</h1>
+    <div class="hero-sub">RFI / Sources Sought — ICE/DHS — RFI-FY26-VSPTS</div>
+    <div class="hero-date">Created: 2026-05-19 &nbsp;|&nbsp; Response Due: 2026-05-27 &nbsp;|&nbsp; SAM: <a href="https://sam.gov/opp/65b64df287104d1c98d1929624ba2f80/view" target="_blank">65b64df28710...</a></div>
+  </div>
+
+  <!-- Opportunity Snapshot -->
+  <div class="section">
+    <div class="section-header">Opportunity Snapshot</div>
+    <table>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Notice Title</strong></td><td>RFI/Sources Sought: HSI Division 4 Unit 4 Continued Automation and Enhancements (D4U4) <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>Solicitation ID</strong></td><td>RFI-FY26-VSPTS (note: SAM.gov has a typo in Notice ID; this action is NOT related to VSTPS) <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>Agency</strong></td><td>U.S. Immigration and Customs Enforcement (ICE), DHS — Information Technology Division (OCIO) <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>Notice Type</strong></td><td>Sources Sought / RFI <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541519 — Other Computer Related Services (SBA size standard: $34M) <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>PSC</strong></td><td>DD01 — IT and Telecom: Service Delivery Support Services (ITSM, Operations Center, Project/PM) <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>Set-Aside</strong></td><td>None (Full &amp; Open) — though 54% of similar ICE contracts have carried a set-aside <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>Place of Performance</strong></td><td>Washington, DC <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>Posted / Updated</strong></td><td>May 15, 2026 / May 18, 2026 <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>Response Deadline</strong></td><td>May 27, 2026, 5:00 PM EDT <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>Contract Vehicle</strong></td><td>Not stated in RFI; prior cycle used GSA MAS (Excella, $15.9M task order, Dec 2021) <span class="label-inference">Inference</span></td></tr>
+        <tr><td><strong>Estimated Value</strong></td><td>Not disclosed; prior award ~$15.9M over 5 years; market data suggests $10M–$20M range <span class="label-inference">Inference</span></td></tr>
+        <tr><td><strong>Period of Performance</strong></td><td>Not stated; typical O&amp;M follow-on: 1 base + 4 option years (~5 years) <span class="label-inference">Inference</span></td></tr>
+        <tr><td><strong>Primary POC</strong></td><td>Joseph Thibault, Contract Specialist — <a href="mailto:joseph.d.thibault@ice.dhs.gov">joseph.d.thibault@ice.dhs.gov</a> <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>Secondary POC</strong></td><td>Trisha Goldsberry (Patricia) — <a href="mailto:patricia.goldsberry@ice.dhs.gov">patricia.goldsberry@ice.dhs.gov</a> <span class="label-factual">Factual</span></td></tr>
+        <tr><td><strong>FPDS Org Code</strong></td><td>7012-ITD00 <span class="label-factual">Factual</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Scope & Requirements -->
+  <div class="section">
+    <div class="section-header">Scope and Technical Requirements</div>
+    <p>The D4U4 system is a <strong>cloud-native, browser-based application</strong> launched in September 2018. It serves as a centralized repository for forms and data within ICE Homeland Security Investigations (HSI) Division 4, Unit 4. The platform uses <strong>Amazon Web Services (AWS)</strong> and open-source technology to execute digital workflows and store investigative data. <span class="label-factual">Factual</span></p>
+
+    <p>ICE requires <strong>Operation and Maintenance (O&amp;M) services</strong> covering five functional modules: tracking, workflow management, records retention, reporting and analytics, and financial management/accounting workflow processing — all built using Agile software development. <span class="label-factual">Factual</span></p>
+
+    <div class="callout">
+      <strong>Scope Summary (RFI Language):</strong> ICE seeks a business-centric approach to system design — minimizing duplicative tasks, leveraging common functionality, reducing maintenance complexity, and using open architecture best practices. All work shall be accomplished through cloud-based hosting and DevSecOps tools within ICE's Agile environment.
+    </div>
+
+    <p><strong>Anticipated High-Level Task Areas:</strong></p>
+    <ul>
+      <li>O&amp;M Support including Agile Planning and Support Services</li>
+      <li>Troubleshooting, corrective, preventative, and adaptive maintenance</li>
+      <li>Minor and moderate backlog changes</li>
+      <li>Help desk / user support</li>
+      <li>Backup and data management</li>
+      <li>System integration maintenance</li>
+      <li>Upgrades and refactoring</li>
+      <li>DevSecOps engineering support</li>
+    </ul>
+
+    <p><strong>Key Technical Stack (from prior RFI and contract documentation):</strong> <span class="label-factual">Factual</span></p>
+    <div style="margin-top:6px;">
+      <span class="tag">AWS Lambda</span>
+      <span class="tag">AWS ECS</span>
+      <span class="tag">Amazon Athena</span>
+      <span class="tag">Amazon RDS</span>
+      <span class="tag">Amazon QLDB / DynamoDB</span>
+      <span class="tag">Amazon SageMaker</span>
+      <span class="tag">Open-Source CI/CD Pipeline</span>
+      <span class="tag">Agile / Scrum</span>
+      <span class="tag">DevSecOps</span>
+      <span class="tag">Financial Mgmt Workflow</span>
+    </div>
+
+    <p style="margin-top:12px;"><strong>Optional Enhancement Areas (from 2021 predecessor RFI):</strong> <span class="label-factual">Factual</span></p>
+    <ul>
+      <li>Enhancements to the existing open-source CI/CD pipeline application</li>
+      <li>Financial management enhancements — workflow automation and ledger software</li>
+      <li>Standard operating procedures and training material development</li>
+    </ul>
+  </div>
+
+  <!-- Incumbent and Contract History -->
+  <div class="section">
+    <div class="section-header">Incumbent Research and Contract History</div>
+
+    <table>
+      <thead><tr><th>Generation</th><th>Contractor</th><th>Award / Details</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Gen 1 (Original)</strong></td>
+          <td>Excella Consulting (Arlington, VA)</td>
+          <td>Incumbent as of March 2021 RFI; contract expiring September 2021; developed D4U4 system (launched Sept 2018) <span class="label-factual">Factual</span></td>
+          <td>Expired ~Sept 2021</td>
+        </tr>
+        <tr>
+          <td><strong>Gen 2 (2021 Recompete)</strong></td>
+          <td>Excella Consulting (retained)</td>
+          <td>5-year, $15.9M task order awarded December 2021 via GSA MAS for "DHS ICE DIV4 CAE" (Division 4 Continued Automation and Enhancements) — Agile software delivery, full-stack development, cloud support <span class="label-factual">Factual</span></td>
+          <td>Active — ~Dec 2026 expiry <span class="label-inference">Inference</span></td>
+        </tr>
+        <tr>
+          <td><strong>Gen 3 (This RFI)</strong></td>
+          <td>TBD</td>
+          <td>RFI-FY26-VSPTS posted May 2026; sources sought to inform acquisition strategy for continued O&amp;M and enhancements <span class="label-factual">Factual</span></td>
+          <td>Pre-solicitation</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:14px;">
+      <strong>Key Incumbent Intelligence:</strong> Excella Consulting is the current D4U4 incumbent (Gen 2 award, ~$15.9M, December 2021). The 5-year task order likely expires in late 2026, which aligns with this RFI timing. Excella has 5+ years of continuous D4U4 performance, AWS architecture knowledge, and a deep understanding of HSI Division 4 workflows — making it a formidable defender. <span class="label-inference">Inference</span>
+    </div>
+
+    <p><strong>Related ICE OCIO Contracts (Competitive Context):</strong></p>
+    <table>
+      <thead><tr><th>Program</th><th>Vehicle</th><th>Awardee</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>SWIFT IDIQ (4 Domains)</td>
+          <td>DHS ICE OCIO SWIFT</td>
+          <td>DevTechnology, Procentrix, GovCIO, ICF, Stella JV, Unissant, Indev</td>
+          <td>$340M shared ceiling</td>
+          <td>Sept 2022–2027; Agile dev, PaaS, hyper-automation, viz <span class="label-factual">Factual</span></td>
+        </tr>
+        <tr>
+          <td>HSI Collaborative Services (SWIFT TO)</td>
+          <td>SWIFT</td>
+          <td>Dev Technology Group</td>
+          <td>$25.3M</td>
+          <td>Sept 2023; 5-year; 2 bidders <span class="label-factual">Factual</span></td>
+        </tr>
+        <tr>
+          <td>SEVP PMO Support (Changeis)</td>
+          <td>GSA MAS</td>
+          <td><strong>Changeis, Inc.</strong></td>
+          <td>$35.3M</td>
+          <td>70CTD022FR0000005; Feb 2022; 6 bidders; current incumbent on SEVP PMO recompete <span class="label-factual">Factual</span></td>
+        </tr>
+        <tr>
+          <td>SEVIS O&amp;M (recompeted)</td>
+          <td>GSA MAS</td>
+          <td>Dev Technology Group</td>
+          <td>$63.6M</td>
+          <td>Feb 2025; 18 bidders; replaced prior incumbent <span class="label-factual">Factual</span></td>
+        </tr>
+        <tr>
+          <td>VINE Support</td>
+          <td>CIO-SP3</td>
+          <td>Data Systems Analysts</td>
+          <td>$21.6M</td>
+          <td>July 2024; single bidder <span class="label-factual">Factual</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Changeis Fit & RAG Analysis -->
+  <div class="section">
+    <div class="section-header">Changeis Capability and RAG Analysis</div>
+
+    <p>The BD-RAG engine was queried against the D4U4 opportunity scope (cloud-native AWS, DevSecOps, Agile, O&amp;M, digital workflows, financial management, NAICS 541519). <strong>No matches scored above the LOW threshold (&lt;0.45)</strong>, reflecting that Changeis's current past performance corpus is concentrated in program management, compliance, and operational support — not software O&amp;M or AWS DevSecOps engineering. The highest-scoring match was FAA CLMRS (0.32) and DHS ICE SEVP PMO (0.31), both in the LOW tier.</p>
+
+    <table>
+      <thead><tr><th>RAG Tier</th><th>Score Threshold</th><th>Matches</th><th>Implication</th></tr></thead>
+      <tbody>
+        <tr><td><span class="score-badge score-strong">Strong</span></td><td>≥ 0.65</td><td>0</td><td>No direct technical software O&amp;M past performance</td></tr>
+        <tr><td><span class="score-badge score-moderate">Moderate</span></td><td>0.50 – 0.64</td><td>0</td><td>No moderate-tier matches</td></tr>
+        <tr><td><span class="score-badge score-relevant">Relevant</span></td><td>0.45 – 0.49</td><td>0</td><td>Gap in AWS/DevSecOps documented experience</td></tr>
+        <tr><td><span class="score-badge score-low">Low</span></td><td>&lt; 0.45</td><td>10</td><td>Adjacent work (FAA CLMRS, ICE SEVP PMO); not O&amp;M software delivery</td></tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:12px;"><strong>Best Adjacent Past Performance — ICE SEVP PMO (70CTD022FR0000005):</strong> <span class="label-factual">Factual</span></p>
+    <div class="callout">
+      Changeis holds a $35.3M, 5-year task order at ICE HSI for SEVP Program Management Office support, awarded February 2022 via GSA MAS. This contract demonstrates: (1) an active ICE/HSI relationships; (2) experience with Agile IT implementation within ICE's environment; (3) knowledge of ICE OCIO governance structures; and (4) emerging technologies and business innovation/automation expertise per Changeis's own announcement. This is the strongest relevant past performance, though it is classified as program management support rather than software O&amp;M engineering.
+    </div>
+
+    <p><strong>Capability Matrix — D4U4 Requirements vs. Changeis Strengths:</strong></p>
+    <table>
+      <thead><tr><th>D4U4 Requirement</th><th>Changeis Strength</th><th>Gap</th><th>Assessment</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Agile software delivery / sprint execution</td>
+          <td>Agile PM support on ICE SEVP; SEVP announcement cites "Agile IT implementation"</td>
+          <td>Software engineering delivery (not PM) is undemonstrated in RAG corpus</td>
+          <td><span class="score-badge score-relevant">Partial</span></td>
+        </tr>
+        <tr>
+          <td>AWS cloud-native O&amp;M (Lambda, ECS, Athena, RDS)</td>
+          <td>Not documented in current past performance corpus</td>
+          <td>Significant — AWS engineering is a technical discriminator</td>
+          <td><span class="score-badge score-low">Gap</span></td>
+        </tr>
+        <tr>
+          <td>DevSecOps pipeline engineering</td>
+          <td>Not documented</td>
+          <td>Critical gap — core requirement</td>
+          <td><span class="score-badge score-low">Gap</span></td>
+        </tr>
+        <tr>
+          <td>ICE/HSI agency knowledge</td>
+          <td>Strong — active $35.3M SEVP contract; understanding of HSI NSD mission</td>
+          <td>Minimal — D4U4 is different HSI division</td>
+          <td><span class="score-badge score-strong">Strong</span></td>
+        </tr>
+        <tr>
+          <td>Financial management workflow automation</td>
+          <td>FAA CLMRS involves IFS Cloud financial workflow; some crossover</td>
+          <td>Federal financial systems experience documented but not in DHS context</td>
+          <td><span class="score-badge score-relevant">Partial</span></td>
+        </tr>
+        <tr>
+          <td>Help desk / user support</td>
+          <td>Operational support on SEVP; user-facing program support documented</td>
+          <td>Minor</td>
+          <td><span class="score-badge score-moderate">Moderate</span></td>
+        </tr>
+        <tr>
+          <td>Records retention and workflow management</td>
+          <td>SEVP involves knowledge libraries, version control, metadata management</td>
+          <td>Moderate — different system type</td>
+          <td><span class="score-badge score-relevant">Partial</span></td>
+        </tr>
+        <tr>
+          <td>Full &amp; Open competition eligibility</td>
+          <td>Changeis qualifies under NAICS 541519 ($34M size standard)</td>
+          <td>None — revenue likely under threshold</td>
+          <td><span class="score-badge score-strong">Eligible</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Competitive Landscape -->
+  <div class="section">
+    <div class="section-header">Competitive Landscape</div>
+    <p>This is an O&amp;M software engineering recompete for a custom cloud-native application on AWS. The competitive pool will be shaped by AWS DevSecOps experience on federal systems and prior ICE/DHS exposure. <span class="label-inference">Inference</span></p>
+
+    <table>
+      <thead><tr><th>Competitor</th><th>Advantage</th><th>Threat Level</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Excella Consulting</strong> (incumbent)</td>
+          <td>Built and operates D4U4 since 2018 (~8 years); full AWS stack knowledge; technical context depth; team continuity; $15.9M Gen 2 award winner <span class="label-factual">Factual</span></td>
+          <td style="color:#B22222;font-weight:700;">Very High</td>
+        </tr>
+        <tr>
+          <td><strong>Dev Technology Group</strong></td>
+          <td>Active ICE SWIFT contractor (HSI Collaborative Services, $25.3M); SEVIS O&amp;M winner ($63.6M, Feb 2025); deep ICE OCIO relationship <span class="label-factual">Factual</span></td>
+          <td style="color:#D97D2A;font-weight:700;">High</td>
+        </tr>
+        <tr>
+          <td><strong>GovCIO</strong></td>
+          <td>SWIFT PaaS domain holder; ICE cloud modernization experience; Agile delivery track record <span class="label-factual">Factual</span></td>
+          <td style="color:#D97D2A;font-weight:700;">High</td>
+        </tr>
+        <tr>
+          <td><strong>Procentrix</strong></td>
+          <td>SWIFT Collaborative Services domain; ICE OCIO relationship <span class="label-factual">Factual</span></td>
+          <td style="color:#D97D2A;font-weight:700;">Moderate–High</td>
+        </tr>
+        <tr>
+          <td><strong>Unissant / Indev LLC</strong></td>
+          <td>SWIFT Hyper Automation and Visualization domains; small business; ICE OCIO familiarity <span class="label-factual">Factual</span></td>
+          <td style="color:#2E6DA4;font-weight:700;">Moderate</td>
+        </tr>
+        <tr>
+          <td><strong>Other AWS/Agile boutiques</strong></td>
+          <td>Full &amp; Open means broad field — likely 5–10 qualified bidders; HigherGov estimates 15% award odds <span class="label-inference">Inference</span></td>
+          <td style="color:#666;">Variable</td>
+        </tr>
+        <tr>
+          <td><strong>Changeis (solo)</strong></td>
+          <td>ICE/HSI relationship (SEVP), DHS familiarity, small business positioning</td>
+          <td style="color:#D97D2A;font-weight:700;">Low without tech partner</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:14px;">
+      <strong>Shaping Signal:</strong> The RFI uses the term "continued" and references an existing custom-built system — language that strongly favors incumbent knowledge. The solicitation number typo ("VSPTS" vs "VSTPS") on SAM.gov may indicate a rushed or placeholder posting, which could signal a near-term sole-source or limited competition if the government has shaping already underway. <span class="label-inference">Inference</span>
+    </div>
+  </div>
+
+  <!-- Go/No-Go Assessment -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Assessment</div>
+
+    <div class="verdict-box verdict-partner">
+      <div class="verdict-label">Recommendation</div>
+      <div class="verdict-title">PURSUE WITH TECHNICAL PARTNER</div>
+      <div class="verdict-body">
+        Changeis should respond to this RFI but only as a teaming lead or subcontractor paired with a qualified AWS DevSecOps software O&amp;M firm. A solo pursuit without a technical engineering partner would be non-competitive and risk damaging Changeis's credibility with ICE OCIO contracting officers who know the D4U4 system's technical depth.
+      </div>
+    </div>
+
+    <p style="margin-top:16px;"><strong>Rationale — Factors Supporting Pursuit:</strong></p>
+    <ul>
+      <li><strong>Active ICE/HSI relationship:</strong> Changeis holds a $35.3M SEVP contract with ICE HSI — same agency, adjacent division. This is institutional capital that most competitors lack. <span class="label-factual">Factual</span></li>
+      <li><strong>Mission alignment:</strong> ICE OCIO work is directly in Changeis's core market vertical; maintaining ICE presence reduces concentration risk as SEVP recompetes in FY2027. <span class="label-inference">Inference</span></li>
+      <li><strong>RFI stage — low cost to engage:</strong> Responding to a Sources Sought has minimal BD cost and establishes Changeis in the government's market research. It seeds recognition with Joseph Thibault and Trisha Goldsberry. <span class="label-inference">Inference</span></li>
+      <li><strong>Full &amp; Open competition:</strong> No set-aside exclusion; Changeis is eligible to compete directly. <span class="label-factual">Factual</span></li>
+      <li><strong>Partial capability overlap:</strong> Agile PM, ICE governance knowledge, user support, and financial workflow experience (FAA CLMRS) provide a foundation for a credible narrative with a technical partner. <span class="label-inference">Inference</span></li>
+    </ul>
+
+    <p><strong>Factors Counseling Against Solo Pursuit:</strong></p>
+    <ul>
+      <li><strong>No AWS DevSecOps engineering past performance in RAG corpus:</strong> The core of D4U4 is cloud software O&amp;M — Lambda, ECS, Athena, RDS, QLDB — where Changeis has no documented track record. <span class="label-factual">Factual</span></li>
+      <li><strong>Excella is a dominant incumbent:</strong> 8-year continuous performance, architectural ownership, team in place. Win probability against Excella solo is very low. <span class="label-inference">Inference</span></li>
+      <li><strong>Market assessment 15% award odds (HigherGov):</strong> Low competition estimate reflects incumbent advantage and technical specificity. <span class="label-factual">Factual</span></li>
+      <li><strong>RAG score gap:</strong> Zero matches above LOW tier indicates a material capability gap relative to the stated technical requirements. <span class="label-factual">Factual</span></li>
+    </ul>
+
+    <p><strong>Scoring Summary:</strong></p>
+    <table>
+      <thead><tr><th>Evaluation Criterion</th><th>Weight</th><th>Changeis Score</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Technical Capability (AWS, DevSecOps, Agile O&amp;M)</td><td>35%</td><td>2/10</td><td>Critical gap; requires teaming partner</td></tr>
+        <tr><td>Agency Relationship (ICE/HSI)</td><td>25%</td><td>8/10</td><td>Strong — active SEVP, adjacent HSI division</td></tr>
+        <tr><td>Past Performance Relevance</td><td>20%</td><td>3/10</td><td>PM/support documented; O&amp;M software not</td></tr>
+        <tr><td>Competitive Position</td><td>10%</td><td>3/10</td><td>Against Excella solo: very low; with tech partner: moderate</td></tr>
+        <tr><td>Strategic Value</td><td>10%</td><td>7/10</td><td>ICE continuity, adjacency to SEVP recompete defense</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:8px; font-size:13px; color:var(--text-muted);">Weighted Score (solo): ~3.8/10 — NOT COMPETITIVE. Weighted Score (with tech partner): ~6.0/10 — COMPETITIVE.</p>
+  </div>
+
+  <!-- Action Plan -->
+  <div class="section">
+    <div class="section-header">Action Plan to May 27 Deadline</div>
+
+    <div class="action-item">
+      <div class="action-num">1</div>
+      <div>
+        <strong>Identify and contact a qualified AWS DevSecOps teaming partner (by May 22)</strong><br>
+        <span style="font-size:14px; color:var(--text-muted);">Target candidates: firms with AWS federal credentials, D4U4-adjacent experience, and ICE OCIO contract history. Candidates to consider: Indev LLC, DCI (Dev Consultants), or a certified AWS GovCloud ISV. Avoid SWIFT holders who may pursue solo. Structure as Changeis prime (leveraging SEVP relationship / program management lead) with technical sub providing O&amp;M engineering.</span>
+      </div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-num">2</div>
+      <div>
+        <strong>Submit RFI response by May 27, 5:00 PM EDT</strong><br>
+        <span style="font-size:14px; color:var(--text-muted);">Address: (a) company capabilities in Agile O&amp;M and DevSecOps; (b) AWS cloud experience; (c) ICE/DHS past performance; (d) teaming structure; (e) contract vehicle availability (GSA MAS, CIO-SP3, or SWIFT eligibility). Keep response concise — 3–5 pages. Emphasize SEVP relationship and ICE OCIO familiarity. Email to <a href="mailto:joseph.d.thibault@ice.dhs.gov">joseph.d.thibault@ice.dhs.gov</a> and <a href="mailto:patricia.goldsberry@ice.dhs.gov">patricia.goldsberry@ice.dhs.gov</a>.</span>
+      </div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-num">3</div>
+      <div>
+        <strong>Request a capabilities briefing with ICE OCIO (within 5 business days of RFI close)</strong><br>
+        <span style="font-size:14px; color:var(--text-muted);">Use Changeis's existing ICE relationship (SEVP CO / COR) to facilitate an introduction to the D4U4 program office. A one-pager on Changeis's ICE footprint + proposed teaming approach should precede this ask.</span>
+      </div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-num">4</div>
+      <div>
+        <strong>Monitor for solicitation release (expected Q3–Q4 FY2026)</strong><br>
+        <span style="font-size:14px; color:var(--text-muted);">Watch SAM.gov for formal RFP under RFI-FY26-VSPTS or a successor notice. Archive date is June 11, 2026 — expect solicitation or no-compete determination by September 2026. Set Todoist alert and SAM.gov saved search.</span>
+      </div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-num">5</div>
+      <div>
+        <strong>Assess SEVP recompete overlap and strategic ICE positioning (30-day horizon)</strong><br>
+        <span style="font-size:14px; color:var(--text-muted);">SEVP PMO recompete is expected Q4 FY2026–Q1 FY2027 (APFS record F2026073350 shows Financial &amp; Acquisition Support; SEVP PMO primary is imminent). D4U4 pursuit strengthens ICE portfolio breadth and makes Changeis a harder target for SEVP displacement. These two opportunities should be managed as a coordinated ICE account strategy.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Corporate Experience Seeds -->
+  <div class="section">
+    <div class="section-header">Corporate Experience Seeds (RFI Response Language)</div>
+
+    <p><strong>ICE/HSI SEVP Program Management (Changeis prime):</strong><br>
+    <span style="font-size:14.5px;">Changeis supports the ICE Homeland Security Investigations (HSI) Student and Exchange Visitor Program (SEVP) under a $35.3M task order, providing Agile IT implementation, emerging technology advisory, systems requirements development, and business innovation and automation. This active engagement within ICE OCIO demonstrates Changeis's operational familiarity with ICE's governance structures, data systems, and Agile development environment.</span></p>
+
+    <p style="margin-top:12px;"><strong>Financial Workflow Automation — FAA CLMRS (Changeis performance):</strong><br>
+    <span style="font-size:14.5px;">On the FAA Contract Lifecycle and Management Reporting System (CLMRS), Changeis supports IFS Cloud financial workflow operations, backlog management, and system integration activities — directly analogous to D4U4's financial management and accounting workflow modules. This work demonstrates experience maintaining complex workflow automation systems in a federal operational environment.</span></p>
+
+    <p style="margin-top:12px;"><strong>Agile O&amp;M and DevSecOps (to be sourced from technical partner):</strong><br>
+    <span style="font-size:14.5px;">[Insert technical partner's AWS GovCloud, DevSecOps CI/CD, and federal software O&amp;M past performance here once teaming partner is identified. Recommend 2–3 examples with specific AWS services used, NAICS 541519 contracts, and measurable O&amp;M outcomes.]</span></p>
+  </div>
+
+  <!-- Key Risks and Open Questions -->
+  <div class="section">
+    <div class="section-header">Key Risks and Open Questions</div>
+    <table>
+      <thead><tr><th>Item</th><th>Risk / Question</th><th>Mitigation / Next Step</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Sole-source risk</strong></td>
+          <td>Solicitation number typo and "continued" language may signal intent to award to Excella without full competition <span class="label-inference">Inference</span></td>
+          <td>Submit RFI response to establish Changeis as a viable competitor; request justification if FAR 6.302 sole-source is posted</td>
+        </tr>
+        <tr>
+          <td><strong>Set-aside conversion</strong></td>
+          <td>54% of similar ICE contracts have a set-aside; government may shift to SB or 8(a) based on RFI responses <span class="label-inference">Inference</span></td>
+          <td>Confirm Changeis's SB status for NAICS 541519; monitor for set-aside amendment post-RFI</td>
+        </tr>
+        <tr>
+          <td><strong>Contract vehicle</strong></td>
+          <td>RFI does not specify vehicle; prior award used GSA MAS; SWIFT is eligible but requires existing IDIQ position</td>
+          <td>Confirm Changeis's GSA MAS schedule includes NAICS 541519 SIN; assess CIO-SP3 eligibility</td>
+        </tr>
+        <tr>
+          <td><strong>SEVP recompete conflict</strong></td>
+          <td>SEVP PMO recompete and D4U4 may compete for the same BD bandwidth in Q3–Q4 FY2026 <span class="label-inference">Inference</span></td>
+          <td>Coordinate BD calendar; prioritize SEVP defense if resource-constrained</td>
+        </tr>
+        <tr>
+          <td><strong>Technical partner availability</strong></td>
+          <td>Best-fit partners (Indev, DCI) may already be teamed with Excella or pursuing solo <span class="label-inference">Inference</span></td>
+          <td>Move quickly on teaming outreach before solicitation release formalizes teams</td>
+        </tr>
+        <tr>
+          <td><strong>Estimated contract value</strong></td>
+          <td>Not disclosed; Gen 2 was $15.9M over 5 years (~$3.2M/year); Gen 3 may increase with financial management module expansion</td>
+          <td>Validate in capabilities briefing; use $15–25M range for internal resource planning</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">&#9658;</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">{
+  "task_name": "Deep Dive: HSI Division 4 Unit 4 RFI",
+  "task_date": "2026-05-19",
+  "created_date": "2026-05-19",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-hsi-div4-unit4-rfi-2026-05-19.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-hsi-div4-unit4-rfi-2026-05-19.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute vm2-opp-deep-dive workflow for Todoist task id 6ggQr443cfgM9jQh, label VM2, due 2026-05-19. Title: RFI/Sources Sought: HSI Division 4 Unit 4 Continued Automation and Enhancements. SAM URL: https://sam.gov/opp/65b64df287104d1c98d1929624ba2f80/view. Analyze opportunity, run BD-RAG, research incumbents, build capability matrix, Go/No-Go, action plan.",
+  "approach": "1. Fetched SAM.gov opportunity page for D4U4 RFI details. 2. Searched HigherGov, GovDash, Potomac Officers Club for scope and incumbent intel. 3. Ran BD-RAG POST /match with top_n=25 against D4U4 scope; received 10 matches all in LOW tier. 4. Researched Excella Consulting as Gen 1 and Gen 2 D4U4 incumbent ($15.9M, Dec 2021). 5. Confirmed Changeis ICE SEVP PMO contract (70CTD022FR0000005, $35.3M) as best adjacent past performance. 6. Mapped competitive landscape using SWIFT IDIQ holders and ICE OCIO contract history. 7. Built capability matrix, Go/No-Go assessment, and action plan.",
+  "key_findings": [
+    "D4U4 is a custom AWS cloud-native application (Lambda, ECS, Athena, RDS, QLDB, SageMaker) serving HSI Division 4 Unit 4 investigative workflows — launched Sept 2018",
+    "Excella Consulting is the current incumbent (Gen 2 award, ~$15.9M, Dec 2021, 5-year GSA MAS task order) — dominant defender with 8 years continuous performance",
+    "BD-RAG returned zero matches above LOW tier (top score 0.32 for FAA CLMRS) — Changeis lacks documented AWS DevSecOps O&M engineering past performance",
+    "Changeis holds a $35.3M active ICE/HSI SEVP contract (70CTD022FR0000005) — strongest adjacent leverage but classified as PM support, not software O&M",
+    "Recommendation: PURSUE WITH TECHNICAL PARTNER — Changeis should submit RFI response and identify an AWS DevSecOps engineering subcontractor before solicitation releases (est. Q3-Q4 FY2026)",
+    "54% of similar ICE contracts carry a set-aside — may shift from current Full & Open after RFI market research",
+    "Solicitation number typo ('VSPTS' vs 'VSTPS') is flagged in SAM.gov notice — may indicate hastily posted RFI or placeholder posting"
+  ],
+  "dead_ends": [
+    "USAspending direct search blocked by robots.txt — could not retrieve D4U4 contract history directly",
+    "SAM.gov API (DEMO_KEY) returned 404 — no structured API data available",
+    "No solicitation attachments listed in SAM.gov posting — scope derived from public RFI text and predecessor 2021 RFI",
+    "Current D4U4 contract number (Gen 2) not found in FPDS search — Excella award inferred from press coverage (Potomac Officers Club, HS Today, Excella announcement)"
+  ],
+  "assumptions": [
+    "Excella's Gen 2 award ($15.9M, Dec 2021) is a 5-year task order expiring approximately Dec 2026, aligning with this RFI timing",
+    "Contract vehicle for solicitation is likely GSA MAS or CIO-SP3 based on predecessor and similar ICE OCIO awards",
+    "Estimated contract value $15M-$25M based on Gen 2 precedent with potential scope expansion for financial management module",
+    "SEVP PMO recompete will occur Q4 FY2026-Q1 FY2027 based on APFS record F2026073350"
+  ],
+  "open_questions": [
+    "Who is the current D4U4 prime (Gen 2 Excella) and is there a subcontractor team?",
+    "What contract vehicle will the formal solicitation use — GSA MAS, CIO-SP3, SWIFT, or standalone?",
+    "Will the government shift to small business set-aside based on RFI responses?",
+    "What is the anticipated total contract value for Gen 3?",
+    "Has the government already identified shaping language favoring a specific incumbent?"
+  ],
+  "data_sources": [
+    "SAM.gov: https://sam.gov/opp/65b64df287104d1c98d1929624ba2f80/view",
+    "HigherGov: https://www.highergov.com/contract-opportunity/rfi-sources-sought-hsi-division-4-unit-4-continue-rfi-fy26-vspts-r-83421/",
+    "GovDash: https://discover.govdash.com/solicitations/019e08a6-6588-7382-af55-da54ba464a6d--rfi-sources-sought-hsi-division-4-unit-4-continued-automation-and-enhancements-d",
+    "Potomac Officers Club (2021 RFI): https://www.potomacofficersclub.com/news/ice-posts-rfi-for-cloud-app-operations-maintenance-support/",
+    "HS Today (Excella award 2022): https://www.hstoday.us/industry/industry-news/excella-to-provide-software-delivery-cloud-support-on-dhs-contract/",
+    "Changeis SEVP announcement: https://changeis.com/news/changeis-inc-selected-for-department-of-homeland-security-dhs-student-and-exchange-visitor-program-sevp-award/",
+    "HigherGov (Changeis SEVP contract): https://www.highergov.com/contract/47QTCA18D0078-70CTD022FR0000005/",
+    "OrangeSlices (ICE SEVP recompete): https://orangeslices.ai/dhs-hsi-preparing-20m-cio-sp3-sb-recompete-of-35m-sevp-program-management-and-risk-support-task/",
+    "HS Today (SWIFT IDIQ): https://www.hstoday.us/industry/industry-news/ice-awards-seven-companies-positions-on-340-million-swift-contract/",
+    "Changeis BD-RAG Engine: https://changeis-bd-rag-production.up.railway.app/match"
+  ],
+  "next_steps": [
+    "Identify AWS DevSecOps teaming partner by May 22, 2026",
+    "Submit RFI response to joseph.d.thibault@ice.dhs.gov by May 27, 5:00 PM EDT",
+    "Request capabilities briefing with ICE OCIO D4U4 program office",
+    "Monitor SAM.gov for formal solicitation release",
+    "Coordinate D4U4 and SEVP recompete BD strategy as unified ICE account plan"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 8,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.45",
+    "cost_ceiling": "$0.85",
+    "notes": "Multi-source research (SAM.gov, HigherGov, GovDash, Potomac Officers Club, HS Today, Changeis.com), BD-RAG API call, FPDS research, HTML document generation"
+  }
+}</div>
+  </div>
+
+  <!-- Continue This Work -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off — full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <div class="footer">
+    Changeis Confidential &nbsp;·&nbsp; Deep Dive: HSI Division 4 Unit 4 RFI &nbsp;·&nbsp; 2026-05-19 &nbsp;·&nbsp; VM2 Deliverable
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "Deep Dive: HSI Division 4 Unit 4 RFI",
+  "task_date": "2026-05-19",
+  "created_date": "2026-05-19",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-hsi-div4-unit4-rfi-2026-05-19.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-hsi-div4-unit4-rfi-2026-05-19.html",
+  "version": 1,
+  "prior_versions": [],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~65,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 8,
+    "cost_conservative": "$0.45",
+    "cost_ceiling": "$0.85",
+    "notes": "Multi-source research, BD-RAG API call, FPDS research, HTML generation"
+  }
+}
+</script>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '◑ Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '◑ Light';
+    }
+  }
+
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-hsi-div4-unit4-rfi-2026-05-19.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the HSI Division 4 Unit 4 Deep Dive.
+
+Previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON) and pick up where the last session left off.
+
+Open questions from last session:
+- Who is on the current D4U4 teaming structure under Excella (Gen 2)?
+- What contract vehicle will the formal solicitation use?
+- Will the government shift to small business set-aside?
+- What is the anticipated total contract value for Gen 3?
+
+Suggested next steps:
+- Identify AWS DevSecOps teaming partner candidates
+- Draft RFI response sections for Changeis
+- Monitor SAM.gov for formal solicitation
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied — paste into a new VM2 session');
+    });
+  }
+
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: HSI Division 4 Unit 4 Deep Dive');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP\n\nPrevious deliverable: ${DELIVERABLE_URL}\n\nContinue this work. Read the Session Context at the bottom of the deliverable for full context.\n\nAdditional instructions:\n[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  const todoistTitle = encodeURIComponent('Follow up: HSI D4U4 Deep Dive');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
