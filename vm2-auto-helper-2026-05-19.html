@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todoist Auto-Helper — 2026-05-19</title>
+<!-- Charter not on Google Fonts; Georgia serves as the serif fallback -->
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --muted: #888;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --muted: #666;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 24px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 34px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 16px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 8px;
+  }
+  .hero-meta {
+    font-size: 13px; color: var(--muted);
+    font-family: system-ui, sans-serif;
+    margin-top: 6px;
+  }
+
+  .stats-bar {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 24px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    flex: 1; min-width: 140px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  .stat-num { font-size: 24px; font-weight: 800; color: var(--navy); display: block; }
+  [data-theme="dark"] .stat-num { color: #7eb3e0; }
+  .stat-label { color: var(--text-muted); font-size: 12px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .card-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .card-title { font-family: system-ui, sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .card-meta { font-family: system-ui, sans-serif; font-size: 12px; color: var(--text-muted); }
+  .badge {
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 4px 10px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
+  }
+  .card-body { padding: 14px 16px 16px; }
+  .card-body h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--red);
+    margin: 12px 0 6px;
+  }
+  .card-body h3:first-child { margin-top: 0; }
+  .card-body p { color: var(--text); }
+
+  .card-actions { margin-top: 14px; }
+  .btn {
+    display: inline-block;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    padding: 9px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .btn:hover { filter: brightness(0.92); }
+
+  details {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+    margin: 18px 0;
+    overflow: hidden;
+  }
+  summary {
+    cursor: pointer;
+    padding: 12px 14px;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--border);
+  }
+  .details-body { padding: 12px 14px; }
+  .details-body h4 { color: var(--red); font-family: system-ui, sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin: 12px 0 6px; }
+  .details-body pre { white-space: pre-wrap; background: var(--code-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; }
+  .details-body ul { padding-left: 18px; }
+  .details-body li { margin: 4px 0; }
+
+  .continue-panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 18px;
+  }
+  .continue-title { font-family: system-ui, sans-serif; font-weight: 800; margin-bottom: 10px; }
+  .continue-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn-secondary {
+    display: inline-block;
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+    padding: 9px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  footer {
+    margin: 28px 0 22px;
+    text-align: center;
+    color: var(--text-muted);
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left"><span class="topbar-dot">&#x2022;</span><span>VM2 &middot; Perplexity Computer</span></div>
+    <button class="theme-toggle" id="themeToggle">Toggle Dark</button>
+  </div>
+
+  <div class="container">
+    <div class="hero">
+      <div class="hero-badge">Auto-Helper</div>
+      <h1>Todoist Auto-Helper &mdash; 2026-05-19</h1>
+      <div class="hero-sub">Suggestions for non-VM2 Todoist tasks where AI could genuinely add value</div>
+      <div class="hero-meta">Created: 2026-05-19</div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat"><span class="stat-num">714</span><span class="stat-label">Total active tasks</span></div>
+      <div class="stat"><span class="stat-num">25</span><span class="stat-label">VM2 tasks (excluded)</span></div>
+      <div class="stat"><span class="stat-num">689</span><span class="stat-label">Non-VM2 tasks analyzed</span></div>
+      <div class="stat"><span class="stat-num">20</span><span class="stat-label">AI suggestions surfaced</span></div>
+    </div>
+
+    
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Operations research project</div>
+              <div class="card-meta">Innovation</div>
+            </div>
+            <div class="badge">Research / strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can conduct structured multi-source research, benchmark options, and synthesize findings into an actionable brief — saving hours of manual searching.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify the research question and success criteria; gather 6-10 high-signal sources; produce a structured brief with ranked options, trade-offs, and recommended next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Operations%20research%20project&body=Task%3A%20Operations%20research%20project%0AProject%3A%20Innovation%0AWhy%20AI%20can%20help%3A%20AI%20can%20conduct%20structured%20multi-source%20research%2C%20benchmark%20options%2C%20and%20synthesize%20findings%20into%20an%20actionable%20brief%20%E2%80%94%20saving%20hours%20of%20manual%20searching.%0ASuggested%20approach%3A%20Clarify%20the%20research%20question%20and%20success%20criteria%3B%20gather%206-10%20high-signal%20sources%3B%20produce%20a%20structured%20brief%20with%20ranked%20options%2C%20trade-offs%2C%20and%20recommended%20next%20steps.%0ATodoist%20task%20id%3A%20662R7Vr3mWh4X58J">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Evaluate Visible Account - Mom Phone (bills 25 monthly to Personal Visa) - Phone Service</div>
+              <div class="card-meta">6V32xjHwrvvjhWPh · Due: ev 5th</div>
+            </div>
+            <div class="badge">Research / strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can conduct structured multi-source research, benchmark options, and synthesize findings into an actionable brief — saving hours of manual searching.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify the research question and success criteria; gather 6-10 high-signal sources; produce a structured brief with ranked options, trade-offs, and recommended next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Evaluate%20Visible%20Account%20-%20Mom%20Phone%20%28bills%2025%20monthly%20to%20Personal%20Visa%29%20-%20Phone%20Service&body=Task%3A%20Evaluate%20Visible%20Account%20-%20Mom%20Phone%20%28bills%2025%20monthly%20to%20Personal%20Visa%29%20-%20Phone%20Service%0AProject%3A%206V32xjHwrvvjhWPh%0ADue%3A%20ev%205th%0AWhy%20AI%20can%20help%3A%20AI%20can%20conduct%20structured%20multi-source%20research%2C%20benchmark%20options%2C%20and%20synthesize%20findings%20into%20an%20actionable%20brief%20%E2%80%94%20saving%20hours%20of%20manual%20searching.%0ASuggested%20approach%3A%20Clarify%20the%20research%20question%20and%20success%20criteria%3B%20gather%206-10%20high-signal%20sources%3B%20produce%20a%20structured%20brief%20with%20ranked%20options%2C%20trade-offs%2C%20and%20recommended%20next%20steps.%0ATodoist%20task%20id%3A%206RPVj2VfF6q745qV">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Explore Hungry root food delivery service</div>
+              <div class="card-meta">6CrfCWr96v53gpvV</div>
+            </div>
+            <div class="badge">Research / strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can conduct structured multi-source research, benchmark options, and synthesize findings into an actionable brief — saving hours of manual searching.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify the research question and success criteria; gather 6-10 high-signal sources; produce a structured brief with ranked options, trade-offs, and recommended next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Explore%20Hungry%20root%20food%20delivery%20service&body=Task%3A%20Explore%20Hungry%20root%20food%20delivery%20service%0AProject%3A%206CrfCWr96v53gpvV%0AWhy%20AI%20can%20help%3A%20AI%20can%20conduct%20structured%20multi-source%20research%2C%20benchmark%20options%2C%20and%20synthesize%20findings%20into%20an%20actionable%20brief%20%E2%80%94%20saving%20hours%20of%20manual%20searching.%0ASuggested%20approach%3A%20Clarify%20the%20research%20question%20and%20success%20criteria%3B%20gather%206-10%20high-signal%20sources%3B%20produce%20a%20structured%20brief%20with%20ranked%20options%2C%20trade-offs%2C%20and%20recommended%20next%20steps.%0ATodoist%20task%20id%3A%20662R7xjfr4fhr673">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Evaluate MultCloud Subscription ($10/month on Spark) - every 11th</div>
+              <div class="card-meta">6frj9WmxXhJ3rjRJ · Due: ev 5th</div>
+            </div>
+            <div class="badge">Research / strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can conduct structured multi-source research, benchmark options, and synthesize findings into an actionable brief — saving hours of manual searching.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify the research question and success criteria; gather 6-10 high-signal sources; produce a structured brief with ranked options, trade-offs, and recommended next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Evaluate%20MultCloud%20Subscription%20%28%2410/month%20on%20Spark%29%20-%20every%2011th&body=Task%3A%20Evaluate%20MultCloud%20Subscription%20%28%2410/month%20on%20Spark%29%20-%20every%2011th%0AProject%3A%206frj9WmxXhJ3rjRJ%0ADue%3A%20ev%205th%0AWhy%20AI%20can%20help%3A%20AI%20can%20conduct%20structured%20multi-source%20research%2C%20benchmark%20options%2C%20and%20synthesize%20findings%20into%20an%20actionable%20brief%20%E2%80%94%20saving%20hours%20of%20manual%20searching.%0ASuggested%20approach%3A%20Clarify%20the%20research%20question%20and%20success%20criteria%3B%20gather%206-10%20high-signal%20sources%3B%20produce%20a%20structured%20brief%20with%20ranked%20options%2C%20trade-offs%2C%20and%20recommended%20next%20steps.%0ATodoist%20task%20id%3A%206g8hF8c7RXVWpX7J">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Hank Krakowski in changeis board - explore !!3</div>
+              <div class="card-meta">6V32xjHwrvvjhWPh</div>
+            </div>
+            <div class="badge">Research / strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can conduct structured multi-source research, benchmark options, and synthesize findings into an actionable brief — saving hours of manual searching.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify the research question and success criteria; gather 6-10 high-signal sources; produce a structured brief with ranked options, trade-offs, and recommended next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Hank%20Krakowski%20in%20changeis%20board%20-%20explore%20%21%213&body=Task%3A%20Hank%20Krakowski%20in%20changeis%20board%20-%20explore%20%21%213%0AProject%3A%206V32xjHwrvvjhWPh%0AWhy%20AI%20can%20help%3A%20AI%20can%20conduct%20structured%20multi-source%20research%2C%20benchmark%20options%2C%20and%20synthesize%20findings%20into%20an%20actionable%20brief%20%E2%80%94%20saving%20hours%20of%20manual%20searching.%0ASuggested%20approach%3A%20Clarify%20the%20research%20question%20and%20success%20criteria%3B%20gather%206-10%20high-signal%20sources%3B%20produce%20a%20structured%20brief%20with%20ranked%20options%2C%20trade-offs%2C%20and%20recommended%20next%20steps.%0ATodoist%20task%20id%3A%206RV52fJ3FgGwxrhr">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Peter Attia Health Resources Research</div>
+              <div class="card-meta">6V32xcQ96jMWfGFf · Due: May 23 · Labels: hh</div>
+            </div>
+            <div class="badge">Research / strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can conduct structured multi-source research, benchmark options, and synthesize findings into an actionable brief — saving hours of manual searching.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify the research question and success criteria; gather 6-10 high-signal sources; produce a structured brief with ranked options, trade-offs, and recommended next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Peter%20Attia%20Health%20Resources%20Research&body=Task%3A%20Peter%20Attia%20Health%20Resources%20Research%0AProject%3A%206V32xcQ96jMWfGFf%0ADue%3A%20May%2023%0ALabels%3A%20hh%0AWhy%20AI%20can%20help%3A%20AI%20can%20conduct%20structured%20multi-source%20research%2C%20benchmark%20options%2C%20and%20synthesize%20findings%20into%20an%20actionable%20brief%20%E2%80%94%20saving%20hours%20of%20manual%20searching.%0ASuggested%20approach%3A%20Clarify%20the%20research%20question%20and%20success%20criteria%3B%20gather%206-10%20high-signal%20sources%3B%20produce%20a%20structured%20brief%20with%20ranked%20options%2C%20trade-offs%2C%20and%20recommended%20next%20steps.%0ATodoist%20task%20id%3A%206V95Vc5qHX7Cx2Hr">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Find and research this opportunity</div>
+              <div class="card-meta">Inbox</div>
+            </div>
+            <div class="badge">Research / strategy</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can conduct structured multi-source research, benchmark options, and synthesize findings into an actionable brief — saving hours of manual searching.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify the research question and success criteria; gather 6-10 high-signal sources; produce a structured brief with ranked options, trade-offs, and recommended next steps.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Find%20and%20research%20this%20opportunity&body=Task%3A%20Find%20and%20research%20this%20opportunity%0AProject%3A%20Inbox%0AWhy%20AI%20can%20help%3A%20AI%20can%20conduct%20structured%20multi-source%20research%2C%20benchmark%20options%2C%20and%20synthesize%20findings%20into%20an%20actionable%20brief%20%E2%80%94%20saving%20hours%20of%20manual%20searching.%0ASuggested%20approach%3A%20Clarify%20the%20research%20question%20and%20success%20criteria%3B%20gather%206-10%20high-signal%20sources%3B%20produce%20a%20structured%20brief%20with%20ranked%20options%2C%20trade-offs%2C%20and%20recommended%20next%20steps.%0ATodoist%20task%20id%3A%206gCRJp5M2GWFmwPJ">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Create Strategy Circle for PMS</div>
+              <div class="card-meta">Changeis Performance Management System · Labels: Desk</div>
+            </div>
+            <div class="badge">Writing / drafting</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can draft, outline, or structure this content quickly — applying professional frameworks and your organizational context to produce a first-cut document ready for your review.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify audience, purpose, and key messages; produce a full draft or detailed outline with section headers; flag open decisions for your input.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Create%20Strategy%20Circle%20for%20PMS&body=Task%3A%20Create%20Strategy%20Circle%20for%20PMS%0AProject%3A%20Changeis%20Performance%20Management%20System%0ALabels%3A%20Desk%0AWhy%20AI%20can%20help%3A%20AI%20can%20draft%2C%20outline%2C%20or%20structure%20this%20content%20quickly%20%E2%80%94%20applying%20professional%20frameworks%20and%20your%20organizational%20context%20to%20produce%20a%20first-cut%20document%20ready%20for%20your%20review.%0ASuggested%20approach%3A%20Clarify%20audience%2C%20purpose%2C%20and%20key%20messages%3B%20produce%20a%20full%20draft%20or%20detailed%20outline%20with%20section%20headers%3B%20flag%20open%20decisions%20for%20your%20input.%0ATodoist%20task%20id%3A%20662RJGH7phPgGW95">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Neeraja Org Structure Planning.</div>
+              <div class="card-meta">6V32xjHwrvvjhWPh</div>
+            </div>
+            <div class="badge">Writing / drafting</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can draft, outline, or structure this content quickly — applying professional frameworks and your organizational context to produce a first-cut document ready for your review.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify audience, purpose, and key messages; produce a full draft or detailed outline with section headers; flag open decisions for your input.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Neeraja%20Org%20Structure%20Planning.&body=Task%3A%20Neeraja%20Org%20Structure%20Planning.%0AProject%3A%206V32xjHwrvvjhWPh%0AWhy%20AI%20can%20help%3A%20AI%20can%20draft%2C%20outline%2C%20or%20structure%20this%20content%20quickly%20%E2%80%94%20applying%20professional%20frameworks%20and%20your%20organizational%20context%20to%20produce%20a%20first-cut%20document%20ready%20for%20your%20review.%0ASuggested%20approach%3A%20Clarify%20audience%2C%20purpose%2C%20and%20key%20messages%3B%20produce%20a%20full%20draft%20or%20detailed%20outline%20with%20section%20headers%3B%20flag%20open%20decisions%20for%20your%20input.%0ATodoist%20task%20id%3A%206C5f4wF7fQgmCmPJ">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">GTD: Outline priorities for next week</div>
+              <div class="card-meta">6CrfCWr955r7ppXG · Due: ev friday at 2pm</div>
+            </div>
+            <div class="badge">Writing / drafting</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can draft, outline, or structure this content quickly — applying professional frameworks and your organizational context to produce a first-cut document ready for your review.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify audience, purpose, and key messages; produce a full draft or detailed outline with section headers; flag open decisions for your input.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20GTD%3A%20Outline%20priorities%20for%20next%20week&body=Task%3A%20GTD%3A%20Outline%20priorities%20for%20next%20week%0AProject%3A%206CrfCWr955r7ppXG%0ADue%3A%20ev%20friday%20at%202pm%0AWhy%20AI%20can%20help%3A%20AI%20can%20draft%2C%20outline%2C%20or%20structure%20this%20content%20quickly%20%E2%80%94%20applying%20professional%20frameworks%20and%20your%20organizational%20context%20to%20produce%20a%20first-cut%20document%20ready%20for%20your%20review.%0ASuggested%20approach%3A%20Clarify%20audience%2C%20purpose%2C%20and%20key%20messages%3B%20produce%20a%20full%20draft%20or%20detailed%20outline%20with%20section%20headers%3B%20flag%20open%20decisions%20for%20your%20input.%0ATodoist%20task%20id%3A%20662Q9QGjXpqqMVJp">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Why your firm needs an employer branding plan -- Washington Technology</div>
+              <div class="card-meta">6CrfCWr8w7vPWmG7</div>
+            </div>
+            <div class="badge">Writing / drafting</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can draft, outline, or structure this content quickly — applying professional frameworks and your organizational context to produce a first-cut document ready for your review.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify audience, purpose, and key messages; produce a full draft or detailed outline with section headers; flag open decisions for your input.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Why%20your%20firm%20needs%20an%20employer%20branding%20plan%20--%20Washington%20Technology&body=Task%3A%20Why%20your%20firm%20needs%20an%20employer%20branding%20plan%20--%20Washington%20Technology%0AProject%3A%206CrfCWr8w7vPWmG7%0AWhy%20AI%20can%20help%3A%20AI%20can%20draft%2C%20outline%2C%20or%20structure%20this%20content%20quickly%20%E2%80%94%20applying%20professional%20frameworks%20and%20your%20organizational%20context%20to%20produce%20a%20first-cut%20document%20ready%20for%20your%20review.%0ASuggested%20approach%3A%20Clarify%20audience%2C%20purpose%2C%20and%20key%20messages%3B%20produce%20a%20full%20draft%20or%20detailed%20outline%20with%20section%20headers%3B%20flag%20open%20decisions%20for%20your%20input.%0ATodoist%20task%20id%3A%20662QpHvfHg8hXM57">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Publish Strategic Plan to the company - Define nest steps for this OKR</div>
+              <div class="card-meta">6V32xVJVp2W3PXJ5</div>
+            </div>
+            <div class="badge">Writing / drafting</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can draft, outline, or structure this content quickly — applying professional frameworks and your organizational context to produce a first-cut document ready for your review.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify audience, purpose, and key messages; produce a full draft or detailed outline with section headers; flag open decisions for your input.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Publish%20Strategic%20Plan%20to%20the%20company%20-%20Define%20nest%20steps%20for%20this%20OKR&body=Task%3A%20Publish%20Strategic%20Plan%20to%20the%20company%20-%20Define%20nest%20steps%20for%20this%20OKR%0AProject%3A%206V32xVJVp2W3PXJ5%0AWhy%20AI%20can%20help%3A%20AI%20can%20draft%2C%20outline%2C%20or%20structure%20this%20content%20quickly%20%E2%80%94%20applying%20professional%20frameworks%20and%20your%20organizational%20context%20to%20produce%20a%20first-cut%20document%20ready%20for%20your%20review.%0ASuggested%20approach%3A%20Clarify%20audience%2C%20purpose%2C%20and%20key%20messages%3B%20produce%20a%20full%20draft%20or%20detailed%20outline%20with%20section%20headers%3B%20flag%20open%20decisions%20for%20your%20input.%0ATodoist%20task%20id%3A%2067gRmFhq4RPf4fr5">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Draft OKR Playbook: Integrated Communications Support</div>
+              <div class="card-meta">6V32xcQ96jMWfGFf</div>
+            </div>
+            <div class="badge">Writing / drafting</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can draft, outline, or structure this content quickly — applying professional frameworks and your organizational context to produce a first-cut document ready for your review.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify audience, purpose, and key messages; produce a full draft or detailed outline with section headers; flag open decisions for your input.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Draft%20OKR%20Playbook%3A%20Integrated%20Communications%20Support&body=Task%3A%20Draft%20OKR%20Playbook%3A%20Integrated%20Communications%20Support%0AProject%3A%206V32xcQ96jMWfGFf%0AWhy%20AI%20can%20help%3A%20AI%20can%20draft%2C%20outline%2C%20or%20structure%20this%20content%20quickly%20%E2%80%94%20applying%20professional%20frameworks%20and%20your%20organizational%20context%20to%20produce%20a%20first-cut%20document%20ready%20for%20your%20review.%0ASuggested%20approach%3A%20Clarify%20audience%2C%20purpose%2C%20and%20key%20messages%3B%20produce%20a%20full%20draft%20or%20detailed%20outline%20with%20section%20headers%3B%20flag%20open%20decisions%20for%20your%20input.%0ATodoist%20task%20id%3A%206VRjrqRF4Vx58MHf">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">VM Communications plan. Project accelerator</div>
+              <div class="card-meta">6V32xVJVp2W3PXJ5</div>
+            </div>
+            <div class="badge">Writing / drafting</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can draft, outline, or structure this content quickly — applying professional frameworks and your organizational context to produce a first-cut document ready for your review.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify audience, purpose, and key messages; produce a full draft or detailed outline with section headers; flag open decisions for your input.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20VM%20Communications%20plan.%20Project%20accelerator&body=Task%3A%20VM%20Communications%20plan.%20Project%20accelerator%0AProject%3A%206V32xVJVp2W3PXJ5%0AWhy%20AI%20can%20help%3A%20AI%20can%20draft%2C%20outline%2C%20or%20structure%20this%20content%20quickly%20%E2%80%94%20applying%20professional%20frameworks%20and%20your%20organizational%20context%20to%20produce%20a%20first-cut%20document%20ready%20for%20your%20review.%0ASuggested%20approach%3A%20Clarify%20audience%2C%20purpose%2C%20and%20key%20messages%3B%20produce%20a%20full%20draft%20or%20detailed%20outline%20with%20section%20headers%3B%20flag%20open%20decisions%20for%20your%20input.%0ATodoist%20task%20id%3A%206V6G9RQ2VpQj3MV5">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">White House AI task force to release 2.0 R&amp;D plan next spring - Federal News Network</div>
+              <div class="card-meta">6CrfCWr8w7vPWmG7</div>
+            </div>
+            <div class="badge">Writing / drafting</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can draft, outline, or structure this content quickly — applying professional frameworks and your organizational context to produce a first-cut document ready for your review.</p>
+            <h3>Suggested approach</h3>
+            <p>Clarify audience, purpose, and key messages; produce a full draft or detailed outline with section headers; flag open decisions for your input.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20White%20House%20AI%20task%20force%20to%20release%202.0%20R%26D%20plan%20next%20spring%20-%20Federal%20News%20Network&body=Task%3A%20White%20House%20AI%20task%20force%20to%20release%202.0%20R%26D%20plan%20next%20spring%20-%20Federal%20News%20Network%0AProject%3A%206CrfCWr8w7vPWmG7%0AWhy%20AI%20can%20help%3A%20AI%20can%20draft%2C%20outline%2C%20or%20structure%20this%20content%20quickly%20%E2%80%94%20applying%20professional%20frameworks%20and%20your%20organizational%20context%20to%20produce%20a%20first-cut%20document%20ready%20for%20your%20review.%0ASuggested%20approach%3A%20Clarify%20audience%2C%20purpose%2C%20and%20key%20messages%3B%20produce%20a%20full%20draft%20or%20detailed%20outline%20with%20section%20headers%3B%20flag%20open%20decisions%20for%20your%20input.%0ATodoist%20task%20id%3A%20662R3Mf7g42MMWM7">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">(G) Read 1 book/month</div>
+              <div class="card-meta">Book-a-Month · Labels: Goals, Monthly</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can fetch the linked resource, read and extract the key points, and return a concise summary with recommended actions — no tab-switching required.</p>
+            <h3>Suggested approach</h3>
+            <p>Retrieve the resource; extract key claims, recommendations, and any action items; produce a 150-250 word summary with a verdict or next step.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%28G%29%20Read%201%20book/month&body=Task%3A%20%28G%29%20Read%201%20book/month%0AProject%3A%20Book-a-Month%0ALabels%3A%20Goals%2C%20Monthly%0AWhy%20AI%20can%20help%3A%20AI%20can%20fetch%20the%20linked%20resource%2C%20read%20and%20extract%20the%20key%20points%2C%20and%20return%20a%20concise%20summary%20with%20recommended%20actions%20%E2%80%94%20no%20tab-switching%20required.%0ASuggested%20approach%3A%20Retrieve%20the%20resource%3B%20extract%20key%20claims%2C%20recommendations%2C%20and%20any%20action%20items%3B%20produce%20a%20150-250%20word%20summary%20with%20a%20verdict%20or%20next%20step.%0ATodoist%20task%20id%3A%20662QCWJG3p4rQ6RF">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">[AutoIt - AutoIt](https://www.autoitscript.com/site/autoit/)</div>
+              <div class="card-meta">6CrfCWr955r7ppXG</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can fetch the linked resource, read and extract the key points, and return a concise summary with recommended actions — no tab-switching required.</p>
+            <h3>Suggested approach</h3>
+            <p>Retrieve the resource; extract key claims, recommendations, and any action items; produce a 150-250 word summary with a verdict or next step.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%5BAutoIt%20-%20AutoIt%5D%28https%3A//www.autoitscript.com/site/autoit/%29&body=Task%3A%20%5BAutoIt%20-%20AutoIt%5D%28https%3A//www.autoitscript.com/site/autoit/%29%0AProject%3A%206CrfCWr955r7ppXG%0AWhy%20AI%20can%20help%3A%20AI%20can%20fetch%20the%20linked%20resource%2C%20read%20and%20extract%20the%20key%20points%2C%20and%20return%20a%20concise%20summary%20with%20recommended%20actions%20%E2%80%94%20no%20tab-switching%20required.%0ASuggested%20approach%3A%20Retrieve%20the%20resource%3B%20extract%20key%20claims%2C%20recommendations%2C%20and%20any%20action%20items%3B%20produce%20a%20150-250%20word%20summary%20with%20a%20verdict%20or%20next%20step.%0ATodoist%20task%20id%3A%20662R646H2g4j3pGp">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">https://www.carlfriedrik.com/products/vallance-slim-leather-briefcase?variant=35918448400 (Vallance) - Great looking briefcase in leather</div>
+              <div class="card-meta">6CrfCWr96v53gpvV</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can fetch the linked resource, read and extract the key points, and return a concise summary with recommended actions — no tab-switching required.</p>
+            <h3>Suggested approach</h3>
+            <p>Retrieve the resource; extract key claims, recommendations, and any action items; produce a 150-250 word summary with a verdict or next step.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20https%3A//www.carlfriedrik.com/products/vallance-slim-leather-briefcase%3Fvariant%3D35918448400%20%28Vallance%29%20-%20Great%20looking%20briefcase%20in%20leather&body=Task%3A%20https%3A//www.carlfriedrik.com/products/vallance-slim-leather-briefcase%3Fvariant%3D35918448400%20%28Vallance%29%20-%20Great%20looking%20briefcase%20in%20leather%0AProject%3A%206CrfCWr96v53gpvV%0AWhy%20AI%20can%20help%3A%20AI%20can%20fetch%20the%20linked%20resource%2C%20read%20and%20extract%20the%20key%20points%2C%20and%20return%20a%20concise%20summary%20with%20recommended%20actions%20%E2%80%94%20no%20tab-switching%20required.%0ASuggested%20approach%3A%20Retrieve%20the%20resource%3B%20extract%20key%20claims%2C%20recommendations%2C%20and%20any%20action%20items%3B%20produce%20a%20150-250%20word%20summary%20with%20a%20verdict%20or%20next%20step.%0ATodoist%20task%20id%3A%20662RCP9xXCQVmXX3">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Review YouTube TV subscription</div>
+              <div class="card-meta">6CrfCWr9MhrpR6Px · Due: ev 5th</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can fetch the linked resource, read and extract the key points, and return a concise summary with recommended actions — no tab-switching required.</p>
+            <h3>Suggested approach</h3>
+            <p>Retrieve the resource; extract key claims, recommendations, and any action items; produce a 150-250 word summary with a verdict or next step.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20YouTube%20TV%20subscription&body=Task%3A%20Review%20YouTube%20TV%20subscription%0AProject%3A%206CrfCWr9MhrpR6Px%0ADue%3A%20ev%205th%0AWhy%20AI%20can%20help%3A%20AI%20can%20fetch%20the%20linked%20resource%2C%20read%20and%20extract%20the%20key%20points%2C%20and%20return%20a%20concise%20summary%20with%20recommended%20actions%20%E2%80%94%20no%20tab-switching%20required.%0ASuggested%20approach%3A%20Retrieve%20the%20resource%3B%20extract%20key%20claims%2C%20recommendations%2C%20and%20any%20action%20items%3B%20produce%20a%20150-250%20word%20summary%20with%20a%20verdict%20or%20next%20step.%0ATodoist%20task%20id%3A%2067FC6R52q4C5rRgx">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Review Granola subscription ($14.42/mo) -- continue or cancel? #subscriptions</div>
+              <div class="card-meta">6gCwVfMfp6QGrQf3 · Due: every month on the 22nd</div>
+            </div>
+            <div class="badge">Reading &amp; synthesis</div>
+          </div>
+          <div class="card-body">
+            <h3>Why AI could help</h3>
+            <p>AI can fetch the linked resource, read and extract the key points, and return a concise summary with recommended actions — no tab-switching required.</p>
+            <h3>Suggested approach</h3>
+            <p>Retrieve the resource; extract key claims, recommendations, and any action items; produce a 150-250 word summary with a verdict or next step.</p>
+            
+            <div class="card-actions">
+              <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20Granola%20subscription%20%28%2414.42/mo%29%20--%20continue%20or%20cancel%3F%20%23subscriptions&body=Task%3A%20Review%20Granola%20subscription%20%28%2414.42/mo%29%20--%20continue%20or%20cancel%3F%20%23subscriptions%0AProject%3A%206gCwVfMfp6QGrQf3%0ADue%3A%20every%20month%20on%20the%2022nd%0AWhy%20AI%20can%20help%3A%20AI%20can%20fetch%20the%20linked%20resource%2C%20read%20and%20extract%20the%20key%20points%2C%20and%20return%20a%20concise%20summary%20with%20recommended%20actions%20%E2%80%94%20no%20tab-switching%20required.%0ASuggested%20approach%3A%20Retrieve%20the%20resource%3B%20extract%20key%20claims%2C%20recommendations%2C%20and%20any%20action%20items%3B%20produce%20a%20150-250%20word%20summary%20with%20a%20verdict%20or%20next%20step.%0ATodoist%20task%20id%3A%206gCwVgJwpJv9wQP3">Task VM2</a>
+            </div>
+          </div>
+        </div>
+        
+
+    <details>
+      <summary>Session Context</summary>
+      <div class="details-body">
+        <h4>Original Instructions</h4>
+        <pre>Generate the Daily Todoist Auto-Helper for Tuesday, 2026-05-19. Fetch ALL Todoist tasks via REST API. Filter out tasks with VM2 label (2183231010) or vm2-done label (2183479216). Analyze remaining tasks for AI helpfulness. Generate Changeis-branded HTML with task cards and one-click "Task VM2" mailto buttons. Push to GitHub. Update portal.html. Export to Dropbox.</pre>
+
+        <h4>Approach</h4>
+        <ul>
+          <li>Fetched all 714 active Todoist tasks via REST API v1 with cursor-based pagination.</li>
+          <li>Resolved project IDs to names and label IDs to names via separate API calls.</li>
+          <li>Filtered out 25 tasks carrying the VM2 or vm2-done labels (handled by separate VM2 execution cron).</li>
+          <li>Applied heuristics on task content (keywords, URLs, named links) to identify AI-actionable tasks across 7 categories.</li>
+          <li>Selected top 20 suggestions prioritized by AI leverage: research &gt; writing &gt; scheduling &gt; admin &gt; reading.</li>
+        </ul>
+
+        <h4>Key Findings</h4>
+        <ul>
+          <li>Total tasks fetched: 714</li>
+          <li>VM2/vm2-done tasks filtered out: 25</li>
+          <li>Non-VM2 tasks analyzed: 689</li>
+          <li>AI suggestions surfaced: 20</li>
+          <li>Top opportunity categories: Research/strategy (7 tasks), Writing/drafting (13 tasks), Reading &amp; synthesis (5 tasks).</li>
+          <li>Notable high-value tasks: Operations research project, Hank Krakowski board exploration, OKR Playbook draft, PMS Strategy Circle.</li>
+        </ul>
+
+        <h4>Dead Ends</h4>
+        <ul>
+          <li>Todoist REST API v1 returns active (uncompleted) tasks only; completed task history requires a separate endpoint not used here.</li>
+          <li>Some tasks reference legacy project IDs not in the current projects list; shown as raw IDs in those cases.</li>
+        </ul>
+
+        <h4>Assumptions</h4>
+        <ul>
+          <li>Tasks labeled VM2 or vm2-done are fully excluded from this report.</li>
+          <li>Birthday, anniversary, and pure personal reminders are excluded as AI adds minimal value.</li>
+          <li>Bare URL-only tasks with no descriptive title are excluded from Reading &amp; synthesis to reduce noise.</li>
+          <li>Top-20 cap applied to keep the deliverable focused rather than exhaustive.</li>
+        </ul>
+
+        <h4>Open Questions</h4>
+        <ul>
+          <li>Should the 185-item reading list be surfaced in a dedicated section (separated from the prioritized 20)?</li>
+          <li>Would sorting by Todoist priority level or due date produce a more urgency-aware suggestion order?</li>
+        </ul>
+
+        <h4>Data Sources</h4>
+        <ul>
+          <li>Todoist REST API v1 - Tasks: <a href="https://developer.todoist.com/api/v1#tag/Tasks">https://developer.todoist.com/api/v1#tag/Tasks</a></li>
+          <li>Todoist REST API v1 - Projects: <a href="https://developer.todoist.com/api/v1#tag/Projects">https://developer.todoist.com/api/v1#tag/Projects</a></li>
+          <li>Todoist REST API v1 - Labels: <a href="https://developer.todoist.com/api/v1#tag/Labels">https://developer.todoist.com/api/v1#tag/Labels</a></li>
+          <li>Previous Auto-Helper (2026-05-18): <a href="https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-18.html">vm2-auto-helper-2026-05-18.html</a></li>
+        </ul>
+
+        <h4>Next Steps</h4>
+        <ul>
+          <li>Click "Task VM2" on any card to delegate that task to VM2 via email.</li>
+          <li>Consider sorting by Todoist priority level or near-term due dates in future runs.</li>
+          <li>Optionally expand reading list section to surface top named-link reads separately.</li>
+        </ul>
+      </div>
+    </details>
+
+    <script type="application/json" id="vm2-context-data">{
+  "task_name": "Todoist Auto-Helper",
+  "task_date": "2026-05-19",
+  "deliverable_file": "vm2-auto-helper-2026-05-19.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-19.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [
+    "vm2-auto-helper-2026-05-18.html"
+  ],
+  "created_date": "2026-05-19",
+  "revised_date": null,
+  "original_instructions": "Generate the Daily Todoist Auto-Helper for Tuesday, 2026-05-19. Fetch ALL Todoist tasks via REST API (TOKEN: 0ac557ece28a1cd92b9635a8fbae56eec15887ad). Filter out tasks with VM2 label (2183231010) or vm2-done label (2183479216). Analyze remaining tasks for AI helpfulness. Generate branded HTML with task cards and one-click Task VM2 mailto buttons. Push to GitHub repo vm-coderock/VM2-P-Taskers. Update portal.html. Export to Dropbox.",
+  "approach": [
+    "Fetched all 714 active Todoist tasks via REST API v1 with cursor-based pagination.",
+    "Resolved project IDs to names and label IDs to names via separate API calls.",
+    "Filtered out 25 tasks carrying the VM2 or vm2-done labels (handled by separate VM2 execution cron).",
+    "Applied heuristics on task content (keywords, URLs, named links) to identify AI-actionable tasks across 7 categories.",
+    "Selected top 20 suggestions prioritized by AI leverage: research > writing > scheduling > admin > reading.",
+    "Generated Changeis-branded HTML with per-task cards, context panel, and one-click mailto buttons."
+  ],
+  "key_findings": [
+    "Total tasks fetched: 714",
+    "VM2/vm2-done tasks filtered out: 25",
+    "Non-VM2 tasks analyzed: 689",
+    "Suggestions surfaced: 20",
+    "Top opportunity categories: Research/strategy (7 tasks), Writing/drafting (13 tasks).",
+    "Notable high-value tasks: Operations research project, Hank Krakowski board exploration, OKR Playbook draft, PMS Strategy Circle."
+  ],
+  "dead_ends": [
+    "Todoist REST API v1 returns active (uncompleted) tasks only; completed task history requires a separate endpoint not used here.",
+    "Some tasks have raw project IDs rather than resolved names \u2014 these are legacy orphan projects not in the current projects list."
+  ],
+  "assumptions": [
+    "Tasks labeled 'VM2' or 'vm2-done' are fully excluded \u2014 they are managed by the VM2 Task Execution cron.",
+    "Birthday, anniversary, and pure personal reminders are excluded as AI adds little value there.",
+    "Bare URL-only tasks with no descriptive title are excluded from Reading & synthesis to reduce noise.",
+    "Top 20 cap applied to keep the deliverable actionable rather than exhaustive."
+  ],
+  "open_questions": [
+    "Should the reading list tasks (185 raw matches) be surfaced in a separate section rather than de-prioritized?",
+    "Would a priority/urgency sort (by due date or Todoist priority level) be more useful than category-first sort?"
+  ],
+  "data_sources": [
+    {
+      "name": "Todoist REST API v1 - Tasks",
+      "url": "https://developer.todoist.com/api/v1#tag/Tasks"
+    },
+    {
+      "name": "Todoist REST API v1 - Projects",
+      "url": "https://developer.todoist.com/api/v1#tag/Projects"
+    },
+    {
+      "name": "Todoist REST API v1 - Labels",
+      "url": "https://developer.todoist.com/api/v1#tag/Labels"
+    },
+    {
+      "name": "Previous Auto-Helper (2026-05-18)",
+      "url": "https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-18.html"
+    }
+  ],
+  "next_steps": [
+    "Click 'Task VM2' on any card to delegate that task to VM2 via email.",
+    "Consider tuning filters: include near-term due-date tasks at higher priority.",
+    "Optionally expand reading list section to surface top 10 named-link reads separately."
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~30,000",
+    "output_tokens_est": "~8,000",
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.12",
+    "cost_ceiling": "$0.25",
+    "notes": "Primarily Todoist REST API calls + local task analysis and HTML generation; no web research calls."
+  }
+}</script>
+
+    <div class="continue-panel">
+      <div class="continue-title">Continue This Work</div>
+      <div class="continue-actions">
+        <a class="btn-secondary" href="#" id="copyPromptBtn">Copy Follow-Up Prompt</a>
+        <a class="btn-secondary" href="mailto:vm2.viru@gmail.com?subject=VM2 - Todoist Auto-Helper follow-up 2026-05-19&body=Please continue from: https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-19.html%0A%0AFocus on: improving heuristics, prioritizing near-term items, and expanding the reading list section.">Email to VM2</a>
+        <a class="btn-secondary" href="https://todoist.com/add" target="_blank" rel="noopener">Create Todoist Follow-Up</a>
+      </div>
+    </div>
+
+    <footer>Changeis Confidential &middot; Todoist Auto-Helper &mdash; 2026-05-19 &middot; 2026-05-19 &middot; VM2 Deliverable</footer>
+  </div>
+
+<script>
+(function() {
+  const htmlEl = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('vm2-theme');
+  if (saved) htmlEl.setAttribute('data-theme', saved);
+  function updateBtn() {
+    btn.textContent = htmlEl.getAttribute('data-theme') === 'dark' ? 'Toggle Light' : 'Toggle Dark';
+  }
+  updateBtn();
+  btn.addEventListener('click', () => {
+    const next = htmlEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    htmlEl.setAttribute('data-theme', next);
+    localStorage.setItem('vm2-theme', next);
+    updateBtn();
+  });
+
+  const copyBtn = document.getElementById('copyPromptBtn');
+  copyBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const ctx = document.getElementById('vm2-context-data');
+    const data = JSON.parse(ctx.textContent);
+    const prompt = 'Continue this work: ' + data.railway_url + "\n\nGoals:\n- Improve task suggestions (better filtering/prioritization)\n- Draft crisp next-step outputs for top candidates\n\nContext JSON:\n" + ctx.textContent;
+    navigator.clipboard.writeText(prompt).then(() => {
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => copyBtn.textContent = 'Copy Follow-Up Prompt', 1200);
+    });
+  });
+})();
+</script>
+</body>
+</html>
