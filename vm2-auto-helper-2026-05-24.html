@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VM2 Auto-Helper &mdash; May 24, 2026</title>
+<style>
+
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --urgent-bg: #fff8f0;
+    --urgent-border: #D97D2A;
+    --muted: #5a5a5a;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --urgent-bg: #2a2218;
+    --urgent-border: #D97D2A;
+    --muted: #8a8e96;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 40px 0 28px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: var(--text); }
+  .hero-sub {
+    font-family: system-ui, sans-serif;
+    font-size: 14px; color: var(--text-muted);
+    margin-top: 6px;
+  }
+  .meta-line {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--muted);
+    margin-top: 10px;
+  }
+
+  .section-header {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--red);
+    margin: 32px 0 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Summary bar */
+  .summary-bar {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 20px;
+    margin-bottom: 28px;
+    box-shadow: var(--card-shadow);
+  }
+  .summary-stat {
+    font-family: system-ui, sans-serif;
+    display: flex; flex-direction: column; gap: 2px;
+    flex: 1; min-width: 110px;
+  }
+  .summary-stat .stat-num {
+    font-size: 24px; font-weight: 700; color: var(--navy);
+    line-height: 1;
+  }
+  [data-theme="dark"] .summary-stat .stat-num { color: var(--text); }
+  .summary-stat .stat-label {
+    font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .summary-div { width: 1px; background: var(--border); }
+
+  /* Task cards */
+  .task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--navy);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--card-shadow);
+  }
+  .task-card.urgent {
+    border-left-color: var(--red);
+    background: var(--urgent-bg);
+    border-color: var(--urgent-border);
+  }
+  .task-card-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; margin-bottom: 8px;
+  }
+  .task-title {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    font-family: Charter, Georgia, serif;
+    line-height: 1.3;
+  }
+  .task-meta {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-muted);
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .tag {
+    display: inline-block;
+    background: var(--surface-alt); border: 1px solid var(--border);
+    border-radius: 3px; padding: 1px 7px;
+    font-family: system-ui, sans-serif; font-size: 10px;
+    color: var(--text-muted); font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tag-due {
+    background: #fff0f0; border-color: #f0b0b0; color: #c53a3a;
+  }
+  [data-theme="dark"] .tag-due { background: #3a1a1a; border-color: #7a3a3a; color: #f09090; }
+  .tag-today {
+    background: #c53a3a; border-color: #c53a3a; color: #fff;
+  }
+  .task-body { font-size: 14px; line-height: 1.5; }
+  .task-body p { margin-bottom: 6px; }
+  .task-body strong { font-weight: 700; }
+  .task-action {
+    margin-top: 12px;
+  }
+  .btn {
+    display: inline-block;
+    font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600;
+    background: var(--btn-bg); color: var(--btn-text);
+    border: none; border-radius: 5px; padding: 6px 14px;
+    cursor: pointer; text-decoration: none;
+    transition: opacity 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+
+  /* Context panel */
+  details {
+    background: var(--panel-bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 14px 18px; margin-bottom: 14px;
+  }
+  summary {
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; color: var(--text-muted);
+    list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+ "; font-weight: 700; }
+  details[open] summary::before { content: "- "; }
+  details[open] summary { margin-bottom: 12px; }
+  details p, details li { font-size: 13px; line-height: 1.6; }
+  details ul, details ol { padding-left: 18px; }
+  details li { margin-bottom: 4px; }
+  details h4 {
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--red);
+    margin: 12px 0 6px;
+  }
+  details h4:first-child { margin-top: 0; }
+
+  /* Continue This Work panel */
+  .continue-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px 20px; margin-bottom: 14px;
+    box-shadow: var(--card-shadow);
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .continue-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  footer {
+    text-align: center;
+    font-family: system-ui, sans-serif; font-size: 11px;
+    color: var(--text-faint);
+    padding: 24px 0 32px;
+    border-top: 1px solid var(--border);
+    margin-top: 28px;
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 24px; }
+    .summary-bar { gap: 12px; }
+    .task-card-header { flex-direction: column; }
+  }
+
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left"><span class="topbar-dot">●</span> VM2 · Perplexity Computer</div>
+    <button class="theme-toggle" onclick="toggleTheme()">Dark/Light</button>
+  </div>
+
+  <div class="container">
+    <div class="hero">
+      <div class="hero-badge">Auto-Helper</div>
+      <h1>VM2 Auto-Helper — Sunday, May 24, 2026</h1>
+      <div class="hero-sub">Non-VM2 tasks that Perplexity Computer can accelerate (research, writing, synthesis, planning).</div>
+      <div class="meta-line">Created: 2026-05-24</div>
+    </div>
+
+    
+<div class="summary">
+  <div class="summary-item"><div class="summary-k">Tasks fetched</div><div class="summary-v">719</div></div>
+  <div class="summary-item"><div class="summary-k">Filtered out (VM2/vm2-done)</div><div class="summary-v">25</div></div>
+  <div class="summary-item"><div class="summary-k">Suggested (AI-helpable)</div><div class="summary-v">20</div></div>
+</div>
+
+
+    <div class="section-header">Suggested Tasks to Delegate</div>
+    <div class="grid">
+      
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">[Review Weekly Priorities](https://docs.google.com/spreadsheets/d/1WwiBYr6aIFNWvWPxDX4jIJ5uHXd3o7Z6CPY27AZZsHM/edit#gid=169321390)</div>
+          <div class="card-meta">0-Ritual · Due: every day</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%5BReview%20Weekly%20Priorities%5D%28https%3A//docs.google.com/spreadsheets/d/1WwiBYr6aIFNWvWPxDX4jIJ5uHXd3o7Z6CPY27AZZsHM/edit%23gid%3D169321390%29&amp;body=Task%3A%20%5BReview%20Weekly%20Priorities%5D%28https%3A//docs.google.com/spreadsheets/d/1WwiBYr6aIFNWvWPxDX4jIJ5uHXd3o7Z6CPY27AZZsHM/edit%23gid%3D169321390%29%0AProject%3A%200-Ritual%0ADue%3A%20every%20day%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%20662R8HQQ7rhmXJQg">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">https://www.linkedin.com/jobs/blog/linkedin-workforce-report-february-2018-washington-dc</div>
+          <div class="card-meta">Reading List</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20https%3A//www.linkedin.com/jobs/blog/linkedin-workforce-report-february-2018-washington-dc&amp;body=Task%3A%20https%3A//www.linkedin.com/jobs/blog/linkedin-workforce-report-february-2018-washington-dc%0AProject%3A%20Reading%20List%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%20662RFGCHx2vgxmGf">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">http://sbdl.shipleywins.com/files/documents/8/Capture%20Planning_CG%20v3.0.pdf</div>
+          <div class="card-meta">Reading List</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20http%3A//sbdl.shipleywins.com/files/documents/8/Capture%2520Planning_CG%2520v3.0.pdf&amp;body=Task%3A%20http%3A//sbdl.shipleywins.com/files/documents/8/Capture%2520Planning_CG%2520v3.0.pdf%0AProject%3A%20Reading%20List%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%20662R3rWvQvwqhqGf">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">[Writesonic Pricing Plans: Most Affordable AI Writer](https://writesonic.com/pricing)</div>
+          <div class="card-meta">E4-Unimportant &amp; Not urgent</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%5BWritesonic%20Pricing%20Plans%3A%20Most%20Affordable%20AI%20Writer%5D%28https%3A//writesonic.com/pricing%29&amp;body=Task%3A%20%5BWritesonic%20Pricing%20Plans%3A%20Most%20Affordable%20AI%20Writer%5D%28https%3A//writesonic.com/pricing%29%0AProject%3A%20E4-Unimportant%20%26%20Not%20urgent%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%2068Gq8vrXrpGXx2xh">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">[Federal Register :: Office of the Assistant Secretary for Research and Technology; Request for Information-Research To Support Establishing ...](https://www.federalregister.gov/documents/2026/02/04/2026-02236/office-of-the-assistant-secretary-for-research-and-technology-request-for-information-research-to)</div>
+          <div class="card-meta">Inbox</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%5BFederal%20Register%20%3A%3A%20Office%20of%20the%20Assistant%20Secretary%20for%20Research%20and%20Technology%3B%20Request%20for%20Information-Research%20To%20Support%20Establishing%20...%5D%28https%3A//www.federalregister.gov/documents/2026/02/04/2026-02236/office-of-the-assistant-secretary-for-research-and-technology-request-for-information-research-to%29&amp;body=Task%3A%20%5BFederal%20Register%20%3A%3A%20Office%20of%20the%20Assistant%20Secretary%20for%20Research%20and%20Technology%3B%20Request%20for%20Information-Research%20To%20Support%20Establishing%20...%5D%28https%3A//www.federalregister.gov/documents/2026/02/04/2026-02236/office-of-the-assistant-secretary-for-research-and-technology-request-for-information-research-to%29%0AProject%3A%20Inbox%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%206fwJ5wvjMp7C37wr">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Review Granola subscription ($14.42/mo) -- continue or cancel? #subscriptions</div>
+          <div class="card-meta">subscriptions · Due: every 22nd</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>VM2 can help by clarifying the objective, breaking this into steps, and producing any draft materials needed to execute quickly.</p>
+        <h3>Suggested approach</h3>
+        <p>Convert into a checklist with owners + timing, identify any missing info, and draft any templates/emails needed to complete it.</p>
+        <h3>Task notes</h3><p>Granola Business subscription. $14.00/mo + $0.42 tax (MD 3%) = $14.42. Billed via Stripe (Link payment). Receipt #2937-9317, Invoice #1RLSSIJE-0002. Renewal cycle: Mar 22 - Apr 22. Support: help.granola.ai or hey@granola.so</p>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20Granola%20subscription%20%28%2414.42/mo%29%20--%20continue%20or%20cancel%3F%20%23subscriptions&amp;body=Task%3A%20Review%20Granola%20subscription%20%28%2414.42/mo%29%20--%20continue%20or%20cancel%3F%20%23subscriptions%0AProject%3A%20subscriptions%0ADue%3A%20every%2022nd%0ADescription%3A%20Granola%20Business%20subscription.%20%2414.00/mo%20%2B%20%240.42%20tax%20%28MD%203%25%29%20%3D%20%2414.42.%20Billed%20via%20Stripe%20%28Link%20payment%29.%20Receipt%20%232937-9317%2C%20Invoice%20%231RLSSIJE-0002.%20Renewal%20cycle%3A%20Mar%2022%20-%20Apr%2022.%20Support%3A%20help.granola.ai%20or%20hey%40granola.so%0AWhy%20AI%20could%20help%3A%20VM2%20can%20help%20by%20clarifying%20the%20objective%2C%20breaking%20this%20into%20steps%2C%20and%20producing%20any%20draft%20materials%20needed%20to%20execute%20quickly.%0ASuggested%20approach%3A%20Convert%20into%20a%20checklist%20with%20owners%20%2B%20timing%2C%20identify%20any%20missing%20info%2C%20and%20draft%20any%20templates/emails%20needed%20to%20complete%20it.%0ATodoist%20task%20id%3A%206gCwVgJwpJv9wQP3">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Deep Dive: F2026072550 — Policy Execution, Analytics, &amp; Automation Support</div>
+          <div class="card-meta">Inbox</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        <h3>Task notes</h3><p>Organization: DHS HQ/PLCY
+NAICS: 541611 - Administrative Management and General Management Consulting Services
+Brief: https://vm2-p-taskers-production.up.railway.app/changeis-daily-brief-2026-04-07.html</p>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Deep%20Dive%3A%20F2026072550%20%E2%80%94%20Policy%20Execution%2C%20Analytics%2C%20%26%20Automation%20Support&amp;body=Task%3A%20Deep%20Dive%3A%20F2026072550%20%E2%80%94%20Policy%20Execution%2C%20Analytics%2C%20%26%20Automation%20Support%0AProject%3A%20Inbox%0ADescription%3A%20Organization%3A%20DHS%20HQ/PLCY%0ANAICS%3A%20541611%20-%20Administrative%20Management%20and%20General%20Management%20Consulting%20Services%0ABrief%3A%20https%3A//vm2-p-taskers-production.up.railway.app/changeis-daily-brief-2026-04-07.html%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%206gJj8VCQWfVRGjmJ">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Review [Beautiful.ai](https://Beautiful.ai) Membership ($144/year)</div>
+          <div class="card-meta">subscriptions · Due: Every 1st</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20%5BBeautiful.ai%5D%28https%3A//Beautiful.ai%29%20Membership%20%28%24144/year%29&amp;body=Task%3A%20Review%20%5BBeautiful.ai%5D%28https%3A//Beautiful.ai%29%20Membership%20%28%24144/year%29%0AProject%3A%20subscriptions%0ADue%3A%20Every%201st%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%206c6WFQH7qFHx8vXh">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">https://www.evernote.com/shard/s9/sh/acccbd51-39aa-46d5-1585-3fc8b53a80df/9c959fbe56941aee0256c60e3b359413 (Malhotra CRM Review)</div>
+          <div class="card-meta">UV · Due: ev Monday</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20https%3A//www.evernote.com/shard/s9/sh/acccbd51-39aa-46d5-1585-3fc8b53a80df/9c959fbe56941aee0256c60e3b359413%20%28Malhotra%20CRM%20Review%29&amp;body=Task%3A%20https%3A//www.evernote.com/shard/s9/sh/acccbd51-39aa-46d5-1585-3fc8b53a80df/9c959fbe56941aee0256c60e3b359413%20%28Malhotra%20CRM%20Review%29%0AProject%3A%20UV%0ADue%3A%20ev%20Monday%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%20662HjmcW9GwRcwq7">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">[Harry Google Sheet Update](https://docs.google.com/spreadsheets/d/1jJjPaY2zX25plkCxPTMGepc9Y-bAaNvYnrxCRMDObBk/edit?usp=sharing)</div>
+          <div class="card-meta">E2-Important &amp; Not urgent · Due: Ev 2 days</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%5BHarry%20Google%20Sheet%20Update%5D%28https%3A//docs.google.com/spreadsheets/d/1jJjPaY2zX25plkCxPTMGepc9Y-bAaNvYnrxCRMDObBk/edit%3Fusp%3Dsharing%29&amp;body=Task%3A%20%5BHarry%20Google%20Sheet%20Update%5D%28https%3A//docs.google.com/spreadsheets/d/1jJjPaY2zX25plkCxPTMGepc9Y-bAaNvYnrxCRMDObBk/edit%3Fusp%3Dsharing%29%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0ADue%3A%20Ev%202%20days%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%206cH6jwrfpvcPhxfX">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">[YPO DC Membership Pipeline (Redda Link)](https://reddagroup.sharepoint.com/:x:/r/sites/YPOMembership-External/Shared%20Documents/General/FY%2026%20Membership%20Docket.xlsx?d=w0807009eba4c4d88bc7ce28193b4dffa&amp;csf=1&amp;web=1&amp;e=8eX4ff)</div>
+          <div class="card-meta">E4-Unimportant &amp; Not urgent · Due: ev Wednesday</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%5BYPO%20DC%20Membership%20Pipeline%20%28Redda%20Link%29%5D%28https%3A//reddagroup.sharepoint.com/%3Ax%3A/r/sites/YPOMembership-External/Shared%2520Documents/General/FY%252026%2520Membership%2520Docket.xlsx%3Fd%3Dw0807009eba4c4d88bc7ce28193b4dffa%26csf%3D1%26web%3D1%26e%3D8eX4ff%29&amp;body=Task%3A%20%5BYPO%20DC%20Membership%20Pipeline%20%28Redda%20Link%29%5D%28https%3A//reddagroup.sharepoint.com/%3Ax%3A/r/sites/YPOMembership-External/Shared%2520Documents/General/FY%252026%2520Membership%2520Docket.xlsx%3Fd%3Dw0807009eba4c4d88bc7ce28193b4dffa%26csf%3D1%26web%3D1%26e%3D8eX4ff%29%0AProject%3A%20E4-Unimportant%20%26%20Not%20urgent%0ADue%3A%20ev%20Wednesday%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%206f4GVj44cC87FhFh">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">[Home Hosting - Invitee Backlog 2026](https://docs.google.com/spreadsheets/d/1QvRmqQUTAAB8DEPa1-YlRW9mNvOGJcl5UYmMtZ6K6a0/edit?usp=sharing)</div>
+          <div class="card-meta">E4-Unimportant &amp; Not urgent · Due: ev 15th</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%5BHome%20Hosting%20-%20Invitee%20Backlog%202026%5D%28https%3A//docs.google.com/spreadsheets/d/1QvRmqQUTAAB8DEPa1-YlRW9mNvOGJcl5UYmMtZ6K6a0/edit%3Fusp%3Dsharing%29&amp;body=Task%3A%20%5BHome%20Hosting%20-%20Invitee%20Backlog%202026%5D%28https%3A//docs.google.com/spreadsheets/d/1QvRmqQUTAAB8DEPa1-YlRW9mNvOGJcl5UYmMtZ6K6a0/edit%3Fusp%3Dsharing%29%0AProject%3A%20E4-Unimportant%20%26%20Not%20urgent%0ADue%3A%20ev%2015th%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%206fh9rg6jQRjRPWc9">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">[FAA APEX Industry Day — Analysis &amp; Next Steps · May 4, 2026](https://vm2-p-taskers-production.up.railway.app/faa-apex-industry-day-analysis-2026-05-04.html)</div>
+          <div class="card-meta">E2-Important &amp; Not urgent · Due: May 23</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        <h3>Task notes</h3><p>FAA APEX Industry Day — Analysis &amp; Next Steps</p>
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%5BFAA%20APEX%20Industry%20Day%20%E2%80%94%20Analysis%20%26%20Next%20Steps%20%C2%B7%20May%204%2C%202026%5D%28https%3A//vm2-p-taskers-production.up.railway.app/faa-apex-industry-day-analysis-2026-05-04.html%29&amp;body=Task%3A%20%5BFAA%20APEX%20Industry%20Day%20%E2%80%94%20Analysis%20%26%20Next%20Steps%20%C2%B7%20May%204%2C%202026%5D%28https%3A//vm2-p-taskers-production.up.railway.app/faa-apex-industry-day-analysis-2026-05-04.html%29%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0ADue%3A%20May%2023%0ADescription%3A%20FAA%20APEX%20Industry%20Day%20%E2%80%94%20Analysis%20%26%20Next%20Steps%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%206gX8vMPP4mMpWr35">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">[From developer desks to the whole organization: Running Claude Cowork in Amazon Bedrock | Artificial Intelligence](https://aws.amazon.com/blogs/machine-learning/from-developer-desks-to-the-whole-organization-running-claude-cowork-in-amazon-bedrock/?sc_channel=sm&amp;sc_publisher=LINKEDIN&amp;sc_country=global&amp;sc_geo=GLOBAL&amp;sc_outcome=awareness&amp;linkId=931378390)</div>
+          <div class="card-meta">Inbox · Due: May 23</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20%5BFrom%20developer%20desks%20to%20the%20whole%20organization%3A%20Running%20Claude%20Cowork%20in%20Amazon%20Bedrock%20%7C%20Artificial%20Intelligence%5D%28https%3A//aws.amazon.com/blogs/machine-learning/from-developer-desks-to-the-whole-organization-running-claude-cowork-in-amazon-bedrock/%3Fsc_channel%3Dsm%26sc_publisher%3DLINKEDIN%26sc_country%3Dglobal%26sc_geo%3DGLOBAL%26sc_outcome%3Dawareness%26linkId%3D931378390%29&amp;body=Task%3A%20%5BFrom%20developer%20desks%20to%20the%20whole%20organization%3A%20Running%20Claude%20Cowork%20in%20Amazon%20Bedrock%20%7C%20Artificial%20Intelligence%5D%28https%3A//aws.amazon.com/blogs/machine-learning/from-developer-desks-to-the-whole-organization-running-claude-cowork-in-amazon-bedrock/%3Fsc_channel%3Dsm%26sc_publisher%3DLINKEDIN%26sc_country%3Dglobal%26sc_geo%3DGLOBAL%26sc_outcome%3Dawareness%26linkId%3D931378390%29%0AProject%3A%20Inbox%0ADue%3A%20May%2023%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%206gR4VhmMgXJWhccr">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Review Disney+, Hulu, ESPN Unlimited Bundle plan. Charged monthly to 1941 Spark. 35/month after 1 year (Nov 2026) - varunm24@gmail.com</div>
+          <div class="card-meta">E4-Unimportant &amp; Not urgent · Due: ev 5th</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This benefits from structured research and synthesis; VM2 can gather sources, compare options, and recommend a clear path.</p>
+        <h3>Suggested approach</h3>
+        <p>Define decision criteria, collect 5–10 high-signal sources, build a comparison table, then deliver a recommendation + next steps.</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Review%20Disney%2B%2C%20Hulu%2C%20ESPN%20Unlimited%20Bundle%20plan.%20Charged%20monthly%20to%201941%20Spark.%2035/month%20after%201%20year%20%28Nov%202026%29%20-%20varunm24%40gmail.com&amp;body=Task%3A%20Review%20Disney%2B%2C%20Hulu%2C%20ESPN%20Unlimited%20Bundle%20plan.%20Charged%20monthly%20to%201941%20Spark.%2035/month%20after%201%20year%20%28Nov%202026%29%20-%20varunm24%40gmail.com%0AProject%3A%20E4-Unimportant%20%26%20Not%20urgent%0ADue%3A%20ev%205th%0AWhy%20AI%20could%20help%3A%20This%20benefits%20from%20structured%20research%20and%20synthesis%3B%20VM2%20can%20gather%20sources%2C%20compare%20options%2C%20and%20recommend%20a%20clear%20path.%0ASuggested%20approach%3A%20Define%20decision%20criteria%2C%20collect%205%E2%80%9310%20high-signal%20sources%2C%20build%20a%20comparison%20table%2C%20then%20deliver%20a%20recommendation%20%2B%20next%20steps.%0ATodoist%20task%20id%3A%206fG6gGC87V63468h">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">ACTION: 2025 GLC Registration Update - Chicago GLC Filling Quickly (Review 1500 reimbursement link in email)</div>
+          <div class="card-meta">E3-Urgent &amp; Unimportant · Due: May 22</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This is writing-heavy; VM2 can draft a strong first version, tighten structure, and tailor tone for the intended audience.</p>
+        <h3>Suggested approach</h3>
+        <p>Clarify audience + goal, produce a structured outline, draft v1 content, then iterate with a quick edit pass (clarity, brevity, and CTA).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20ACTION%3A%202025%20GLC%20Registration%20Update%20-%20Chicago%20GLC%20Filling%20Quickly%20%28Review%201500%20reimbursement%20link%20in%20email%29&amp;body=Task%3A%20ACTION%3A%202025%20GLC%20Registration%20Update%20-%20Chicago%20GLC%20Filling%20Quickly%20%28Review%201500%20reimbursement%20link%20in%20email%29%0AProject%3A%20E3-Urgent%20%26%20Unimportant%0ADue%3A%20May%2022%0AWhy%20AI%20could%20help%3A%20This%20is%20writing-heavy%3B%20VM2%20can%20draft%20a%20strong%20first%20version%2C%20tighten%20structure%2C%20and%20tailor%20tone%20for%20the%20intended%20audience.%0ASuggested%20approach%3A%20Clarify%20audience%20%2B%20goal%2C%20produce%20a%20structured%20outline%2C%20draft%20v1%20content%2C%20then%20iterate%20with%20a%20quick%20edit%20pass%20%28clarity%2C%20brevity%2C%20and%20CTA%29.%0ATodoist%20task%20id%3A%206fh668mFH9rRGcrf">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Process Consulting Agreement_Changeis_kinnetek (Rachel Siebert) DRAFT 20260209.docx</div>
+          <div class="card-meta">E2-Important &amp; Not urgent · Due: May 26</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This is writing-heavy; VM2 can draft a strong first version, tighten structure, and tailor tone for the intended audience.</p>
+        <h3>Suggested approach</h3>
+        <p>Clarify audience + goal, produce a structured outline, draft v1 content, then iterate with a quick edit pass (clarity, brevity, and CTA).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Process%20Consulting%20Agreement_Changeis_kinnetek%20%28Rachel%20Siebert%29%20DRAFT%2020260209.docx&amp;body=Task%3A%20Process%20Consulting%20Agreement_Changeis_kinnetek%20%28Rachel%20Siebert%29%20DRAFT%2020260209.docx%0AProject%3A%20E2-Important%20%26%20Not%20urgent%0ADue%3A%20May%2026%0AWhy%20AI%20could%20help%3A%20This%20is%20writing-heavy%3B%20VM2%20can%20draft%20a%20strong%20first%20version%2C%20tighten%20structure%2C%20and%20tailor%20tone%20for%20the%20intended%20audience.%0ASuggested%20approach%3A%20Clarify%20audience%20%2B%20goal%2C%20produce%20a%20structured%20outline%2C%20draft%20v1%20content%2C%20then%20iterate%20with%20a%20quick%20edit%20pass%20%28clarity%2C%20brevity%2C%20and%20CTA%29.%0ATodoist%20task%20id%3A%206g5c3Jrp2Vxqgwg5">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Confirm June 9 Forum and add Planning to Agenda</div>
+          <div class="card-meta">E3-Urgent &amp; Unimportant · Due: 2026-06-15 12:00</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This benefits from structured research and synthesis; VM2 can gather sources, compare options, and recommend a clear path.</p>
+        <h3>Suggested approach</h3>
+        <p>Define decision criteria, collect 5–10 high-signal sources, build a comparison table, then deliver a recommendation + next steps.</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Confirm%20June%209%20Forum%20and%20add%20Planning%20to%20Agenda&amp;body=Task%3A%20Confirm%20June%209%20Forum%20and%20add%20Planning%20to%20Agenda%0AProject%3A%20E3-Urgent%20%26%20Unimportant%0ADue%3A%202026-06-15%2012%3A00%0AWhy%20AI%20could%20help%3A%20This%20benefits%20from%20structured%20research%20and%20synthesis%3B%20VM2%20can%20gather%20sources%2C%20compare%20options%2C%20and%20recommend%20a%20clear%20path.%0ASuggested%20approach%3A%20Define%20decision%20criteria%2C%20collect%205%E2%80%9310%20high-signal%20sources%2C%20build%20a%20comparison%20table%2C%20then%20deliver%20a%20recommendation%20%2B%20next%20steps.%0ATodoist%20task%20id%3A%206ggr6CFFwcfg9jMf">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">https://www.carlfriedrik.com/products/vallance-slim-leather-briefcase?variant=35918448400 (Vallance) - Great looking briefcase in leather</div>
+          <div class="card-meta">Shopping</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20https%3A//www.carlfriedrik.com/products/vallance-slim-leather-briefcase%3Fvariant%3D35918448400%20%28Vallance%29%20-%20Great%20looking%20briefcase%20in%20leather&amp;body=Task%3A%20https%3A//www.carlfriedrik.com/products/vallance-slim-leather-briefcase%3Fvariant%3D35918448400%20%28Vallance%29%20-%20Great%20looking%20briefcase%20in%20leather%0AProject%3A%20Shopping%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%20662RCP9xXCQVmXX3">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">Read http://www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/ (A Quick Overview of the Momentum Planners - Productive Flourishing -)</div>
+          <div class="card-meta">Weekly GTD</div>
+        </div>
+        <div class="badge">AI-Helpable</div>
+      </div>
+      <div class="card-body">
+        <h3>Why AI could help</h3>
+        <p>This looks link-driven; VM2 can read the referenced material, extract the key points, and turn it into clear next actions.</p>
+        <h3>Suggested approach</h3>
+        <p>Open the link(s), summarize the 5–10 most important takeaways, and draft a short action plan (owners, deadlines, and dependencies).</p>
+        
+        <div class="card-actions">
+          <a class="btn" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Read%20http%3A//www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/%20%28A%20Quick%20Overview%20of%20the%20Momentum%20Planners%20-%20Productive%20Flourishing%20-%29&amp;body=Task%3A%20Read%20http%3A//www.productiveflourishing.com/free-planners/quick-overview-momentum-planners/%20%28A%20Quick%20Overview%20of%20the%20Momentum%20Planners%20-%20Productive%20Flourishing%20-%29%0AProject%3A%20Weekly%20GTD%0AWhy%20AI%20could%20help%3A%20This%20looks%20link-driven%3B%20VM2%20can%20read%20the%20referenced%20material%2C%20extract%20the%20key%20points%2C%20and%20turn%20it%20into%20clear%20next%20actions.%0ASuggested%20approach%3A%20Open%20the%20link%28s%29%2C%20summarize%20the%205%E2%80%9310%20most%20important%20takeaways%2C%20and%20draft%20a%20short%20action%20plan%20%28owners%2C%20deadlines%2C%20and%20dependencies%29.%0ATodoist%20task%20id%3A%20662RCQc5mVQ2fc3g">Task VM2</a>
+        </div>
+      </div>
+    </div>
+    
+    </div>
+
+    
+<details class="context">
+  <summary>Session Context (required)</summary>
+  <div class="context-body">
+    <h3>Original Instructions</h3>
+    <pre>Daily Todoist Auto-Helper: Scan ALL Todoist tasks and identify non-VM2 tasks where AI could help. Fetch tasks via Todoist REST API, filter out tasks with labels VM2 or vm2-done, score remaining tasks for AI-helpability, and publish a Changeis-styled HTML page with per-task cards and one-click Task VM2 mailto buttons. Update portal.html and export deliverable to Dropbox. Plain HTML only; no encryption.</pre>
+    <h3>Approach</h3>
+    <ul><li>Fetched all tasks, projects via Todoist REST API (paginated).</li><li>Excluded tasks labeled VM2 or vm2-done.</li><li>Scored remaining tasks by keyword intent (research/writing/analysis/scheduling/summarization) + presence of URLs and description length.</li><li>Selected top tasks and generated Changeis-styled cards with mailto actions.</li></ul>
+    <h3>Key Findings</h3>
+    <ul><li>Fetched 719 total tasks across all projects.</li><li>Filtered out 25 tasks already in VM2/vm2-done.</li><li>Flagged 20 high-leverage tasks where VM2 can accelerate research/writing/synthesis.</li></ul>
+    <h3>Dead Ends</h3>
+    <ul><li>Todoist Pipedream connector is disconnected; used direct Todoist REST API instead.</li></ul>
+    <h3>Assumptions</h3>
+    <ul><li>Todoist task label strings include &#x27;VM2&#x27; or &#x27;vm2-done&#x27; when those labels are applied.</li></ul>
+    <h3>Open Questions</h3>
+    <ul><li>None.</li></ul>
+    <h3>Data Sources</h3>
+    <ul><li><a href="https://api.todoist.com/api/v1/tasks">https://api.todoist.com/api/v1/tasks</a></li><li><a href="https://api.todoist.com/api/v1/projects">https://api.todoist.com/api/v1/projects</a></li></ul>
+    <h3>Next Steps</h3>
+    <ul><li>Click &#x27;Task VM2&#x27; on any card to email the task to VM2 for execution.</li><li>Optionally refine scoring rules to reduce false positives (e.g., errands).</li></ul>
+  </div>
+</details>
+
+
+    <script type="application/json" id="vm2-context-data">{
+  &quot;task_name&quot;: &quot;Todoist Auto-Helper&quot;,
+  &quot;task_date&quot;: &quot;2026-05-24&quot;,
+  &quot;deliverable_file&quot;: &quot;vm2-auto-helper-2026-05-24.html&quot;,
+  &quot;railway_url&quot;: &quot;https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-24.html&quot;,
+  &quot;version&quot;: 1,
+  &quot;prior_versions&quot;: [],
+  &quot;related_deliverables&quot;: [
+    &quot;portal.html&quot;
+  ],
+  &quot;created_date&quot;: &quot;2026-05-24&quot;,
+  &quot;revised_date&quot;: null,
+  &quot;original_instructions&quot;: &quot;Daily Todoist Auto-Helper: Scan ALL Todoist tasks and identify non-VM2 tasks where AI could help. Fetch tasks via Todoist REST API, filter out tasks with labels VM2 or vm2-done, score remaining tasks for AI-helpability, and publish a Changeis-styled HTML page with per-task cards and one-click Task VM2 mailto buttons. Update portal.html and export deliverable to Dropbox. Plain HTML only; no encryption.&quot;,
+  &quot;approach&quot;: [
+    &quot;Fetched all tasks, projects via Todoist REST API (paginated).&quot;,
+    &quot;Excluded tasks labeled VM2 or vm2-done.&quot;,
+    &quot;Scored remaining tasks by keyword intent (research/writing/analysis/scheduling/summarization) + presence of URLs and description length.&quot;,
+    &quot;Selected top tasks and generated Changeis-styled cards with mailto actions.&quot;
+  ],
+  &quot;key_findings&quot;: [
+    &quot;Fetched 719 total tasks across all projects.&quot;,
+    &quot;Filtered out 25 tasks already in VM2/vm2-done.&quot;,
+    &quot;Flagged 20 high-leverage tasks where VM2 can accelerate research/writing/synthesis.&quot;
+  ],
+  &quot;dead_ends&quot;: [
+    &quot;Todoist Pipedream connector is disconnected; used direct Todoist REST API instead.&quot;
+  ],
+  &quot;assumptions&quot;: [
+    &quot;Todoist task label strings include &#x27;VM2&#x27; or &#x27;vm2-done&#x27; when those labels are applied.&quot;
+  ],
+  &quot;open_questions&quot;: [
+    &quot;None.&quot;
+  ],
+  &quot;data_sources&quot;: [
+    &quot;https://api.todoist.com/api/v1/tasks&quot;,
+    &quot;https://api.todoist.com/api/v1/projects&quot;
+  ],
+  &quot;next_steps&quot;: [
+    &quot;Click &#x27;Task VM2&#x27; on any card to email the task to VM2 for execution.&quot;,
+    &quot;Optionally refine scoring rules to reduce false positives (e.g., errands).&quot;
+  ],
+  &quot;cost_estimate&quot;: {
+    &quot;model&quot;: &quot;claude-sonnet-4-6&quot;,
+    &quot;model_pricing&quot;: &quot;$3/$15 per 1M tokens&quot;,
+    &quot;input_tokens_est&quot;: &quot;~25,000&quot;,
+    &quot;output_tokens_est&quot;: &quot;~6,000&quot;,
+    &quot;search_calls&quot;: 0,
+    &quot;subagent_calls&quot;: 0,
+    &quot;cost_conservative&quot;: &quot;$0.10&quot;,
+    &quot;cost_ceiling&quot;: &quot;$0.25&quot;,
+    &quot;notes&quot;: &quot;No web search; main cost is classifying/scoring task text and rendering HTML.&quot;
+  }
+}</script>
+
+    
+<div class="continue">
+  <div class="continue-title">Continue This Work</div>
+  <div class="continue-actions">
+    <button class="btn-secondary" onclick="navigator.clipboard.writeText('Follow up on VM2 Auto-Helper: https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-24.html\n\nWhat are the top 3 items to delegate to VM2 today, and why?')">Copy Follow-Up Prompt</button>
+    <a class="btn-secondary" href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20Auto-Helper%20follow-up\&body=Auto-Helper%20URL%3A%20https%3A//vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-24.html%0A%0APlease%20execute%20the%20highest-impact%20item%28s%29%20from%20this%20list.">Email to VM2</a>
+    <a class="btn-secondary" href="https://todoist.com/add" target="_blank" rel="noopener">Create Todoist Follow-Up</a>
+  </div>
+</div>
+
+
+    <div class="footer">Changeis Confidential · VM2 Auto-Helper · 2026-05-24 · VM2 Deliverable</div>
+  </div>
+
+<script>
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  }
+
+  function copyFollowUp() {
+    const prompt = `Continue from VM2 Auto-Helper (2026-05-23).
+Railway URL: https://vm2-p-taskers-production.up.railway.app/vm2-auto-helper-2026-05-23.html
+
+Context: 718 Todoist tasks fetched, 694 non-VM2 candidates, 15 AI-helpable suggestions surfaced.
+Top priorities today: FMCSA IT-SWAT capture, IPSS3 one-pager, Peter Attia health research, MAPS briefing.
+
+Follow-up task:`;
+    navigator.clipboard.writeText(prompt).then(() => alert('Prompt copied to clipboard.'));
+  }
+
+</script>
+</body>
+</html>
