@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RFI Analysis: Datadog Hybrid Cloud Observability (RFI1813710) | Changeis</title>
+<style>
+  :root {
+    --changeis-navy: #1B2A4A;
+    --deep-navy: #002060;
+    --brand-blue: #2E6DA4;
+    --heading-blue: #2E74B5;
+    --section-blue: #1F4D78;
+    --action-teal: #008B8B;
+    --success-green: #2D7D4A;
+    --approval-green: #1A7A3A;
+    --innovation-purple: #6B4C9A;
+    --attention-orange: #D97D2A;
+    --alert-red: #B22222;
+    --caution-gold: #B8860B;
+    --text-primary: #222222;
+    --text-standard: #333333;
+    --text-secondary: #666666;
+    --text-muted: #888888;
+    --border-gray: #B0B0B0;
+    --separator: #CCCCCC;
+    --bg-white: #FFFFFF;
+    --bg-callout: #E8F4F8;
+    --bg-row-alt: #F2F6FA;
+    --link-blue: #0563C1;
+    --font-heading: 'Calibri', 'Arial', sans-serif;
+    --font-body-serif: 'Georgia', 'Times New Roman', serif;
+    --font-body-sans: system-ui, 'Calibri', 'Arial', sans-serif;
+    --bg-page: #f4f5f7;
+    --bg-card: #ffffff;
+    --th-bg: #1B2A4A;
+    --th-color: #ffffff;
+  }
+
+  [data-theme="dark"] {
+    --text-primary: #e8eaf0;
+    --text-standard: #c8ccd8;
+    --text-secondary: #9ba3b8;
+    --text-muted: #7a8299;
+    --bg-page: #0f1320;
+    --bg-card: #1a1f2e;
+    --bg-callout: #1f2a3a;
+    --bg-row-alt: #1e2330;
+    --border-gray: #3a4050;
+    --separator: #2a3045;
+    --th-bg: #0d1a3a;
+    --th-color: #c8d8f0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body-serif);
+    font-size: 11pt;
+    color: var(--text-primary);
+    line-height: 1.55;
+    background: var(--bg-page);
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    background: var(--changeis-navy);
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    border-bottom: 3px solid var(--action-teal);
+    padding: 0 24px;
+    gap: 0;
+  }
+  .topbar-logo {
+    font-family: var(--font-heading);
+    font-size: 9pt;
+    color: #aabbcc;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 12px 18px 12px 0;
+    border-right: 1px solid rgba(255,255,255,0.12);
+    margin-right: 18px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .topbar-logo span { color: var(--action-teal); font-weight: 700; }
+  .topbar-title {
+    font-family: var(--font-heading);
+    font-size: 10pt;
+    color: #dde5ef;
+    font-weight: 600;
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .topbar-toggle {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    color: #aabbcc;
+    font-family: var(--font-heading);
+    font-size: 8.5pt;
+    padding: 5px 12px;
+    cursor: pointer;
+    margin-left: 16px;
+    flex-shrink: 0;
+    transition: all 0.18s;
+  }
+  .topbar-toggle:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+  /* CONTAINER */
+  .container {
+    max-width: 880px;
+    margin: 0 auto;
+    background: var(--bg-card);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.10);
+  }
+
+  /* COVER */
+  .cover {
+    background: var(--changeis-navy);
+    color: #fff;
+    padding: 44px 48px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 200px; height: 100%;
+    background: linear-gradient(135deg, transparent 50%, rgba(0,139,139,0.12) 50%);
+  }
+  .cover .doc-type {
+    font-family: var(--font-heading);
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--action-teal);
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .cover h1 {
+    font-family: var(--font-heading);
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+    line-height: 1.25;
+  }
+  .cover .subtitle {
+    font-family: var(--font-heading);
+    font-size: 13pt;
+    color: #7bb3d8;
+    margin-bottom: 18px;
+  }
+  .cover .meta {
+    font-family: var(--font-heading);
+    font-size: 10pt;
+    color: #aabbcc;
+    line-height: 1.9;
+  }
+  .cover .meta strong { color: #dde5ef; }
+  .version-line {
+    font-family: var(--font-heading);
+    font-size: 9pt;
+    color: var(--text-muted);
+    padding: 6px 48px;
+    background: var(--bg-row-alt);
+    border-bottom: 1px solid var(--separator);
+  }
+
+  /* VERDICT BANNER */
+  .verdict-banner {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 48px;
+    color: #fff;
+  }
+  .verdict-banner.go { background: linear-gradient(135deg, #1d5c34, var(--success-green)); }
+  .verdict-banner.nogo { background: linear-gradient(135deg, #9b2020, var(--alert-red)); }
+  .verdict-banner.conditional { background: linear-gradient(135deg, #c06a1f, var(--attention-orange)); }
+  .verdict-icon { font-size: 28px; flex-shrink: 0; }
+  .verdict-label {
+    font-family: var(--font-heading);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .verdict-detail { font-family: var(--font-body-sans); font-size: 10.5pt; opacity: 0.93; margin-top: 2px; }
+
+  /* CONTENT SECTIONS */
+  .content { padding: 32px 48px 48px; }
+
+  h2 {
+    font-family: var(--font-heading);
+    font-size: 14pt;
+    font-weight: 700;
+    color: var(--deep-navy);
+    border-bottom: 2px solid var(--action-teal);
+    padding-bottom: 6px;
+    margin-top: 32px;
+    margin-bottom: 14px;
+  }
+  [data-theme="dark"] h2 { color: #c8d8f0; border-color: var(--action-teal); }
+
+  h3 {
+    font-family: var(--font-heading);
+    font-size: 12pt;
+    font-weight: 700;
+    color: var(--section-blue);
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+  [data-theme="dark"] h3 { color: #a8c0e0; }
+
+  p { margin-bottom: 10px; }
+
+  /* TABLES */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 18px;
+    font-family: var(--font-body-sans);
+    font-size: 10pt;
+  }
+  th {
+    background: var(--th-bg);
+    color: var(--th-color);
+    font-weight: 700;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 9.5pt;
+  }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--separator);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: var(--bg-row-alt); }
+
+  /* CALLOUT */
+  .callout {
+    background: var(--bg-callout);
+    border-left: 3px solid var(--action-teal);
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-family: var(--font-body-sans);
+    font-size: 10.5pt;
+    color: var(--text-standard);
+  }
+  .callout strong { color: var(--deep-navy); }
+  [data-theme="dark"] .callout strong { color: #a8c0e0; }
+
+  /* SCORE BADGES */
+  .badge {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-size: 8.5pt;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-strong { background: #d4edda; color: #155724; }
+  .badge-moderate { background: #d1ecf1; color: #0c5460; }
+  .badge-relevant { background: #fff3cd; color: #856404; }
+  .badge-low { background: #f8d7da; color: #721c24; }
+  .badge-go { background: #d4edda; color: #155724; }
+  .badge-nogo { background: #f8d7da; color: #721c24; }
+  .badge-conditional { background: #fff3cd; color: #856404; }
+  .badge-rfi { background: #e2e3f0; color: var(--innovation-purple); }
+  .badge-strength { background: #d4edda; color: #155724; }
+  .badge-gap { background: #f8d7da; color: #721c24; }
+  .badge-partial { background: #fff3cd; color: #856404; }
+  .badge-critical { background: #f8d7da; color: #721c24; }
+  .badge-medium { background: #fff3cd; color: #856404; }
+  .badge-low-risk { background: #d4edda; color: #155724; }
+
+  /* SCORE BAR */
+  .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .score-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--separator);
+    flex: 1;
+    overflow: hidden;
+  }
+  .score-bar-fill { height: 100%; border-radius: 4px; background: var(--brand-blue); }
+
+  /* RISK REGISTER */
+  .risk-critical td:first-child { border-left: 3px solid var(--alert-red); }
+  .risk-high td:first-child { border-left: 3px solid var(--attention-orange); }
+  .risk-medium td:first-child { border-left: 3px solid var(--caution-gold); }
+  .risk-low td:first-child { border-left: 3px solid var(--success-green); }
+
+  /* ACTION ITEMS */
+  .action-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--separator);
+  }
+  .action-item:last-child { border-bottom: none; }
+  .action-num {
+    background: var(--action-teal);
+    color: #fff;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 9pt;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .action-body { flex: 1; font-family: var(--font-body-sans); font-size: 10.5pt; }
+  .action-owner { font-size: 9pt; color: var(--text-muted); margin-top: 2px; }
+
+  /* CONTEXT PANEL */
+  .context-panel {
+    border: 1px solid var(--separator);
+    border-radius: 0;
+    padding: 18px 24px;
+    margin: 24px 0 0;
+    background: var(--bg-row-alt);
+    font-family: var(--font-body-sans);
+  }
+  .context-panel h2 { font-size: 11pt; margin-top: 0; border-color: var(--border-gray); color: var(--text-secondary); }
+  .context-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; font-size: 9pt; margin: 8px 0; }
+  .context-grid dt { color: var(--text-muted); }
+  .context-grid dd { color: var(--text-standard); }
+  .continue-title { font-weight: 700; font-size: 10pt; margin: 14px 0 8px; color: var(--text-secondary); }
+  .continue-btn {
+    display: inline-block;
+    background: var(--changeis-navy);
+    color: #c8d8f0;
+    font-family: var(--font-heading);
+    font-size: 8.5pt;
+    padding: 6px 14px;
+    border-radius: 4px;
+    margin: 3px 4px 3px 0;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+  }
+  .continue-btn:hover { background: var(--brand-blue); color: #fff; }
+
+  /* FOOTER */
+  .footer {
+    background: var(--changeis-navy);
+    color: #7a8fa8;
+    font-family: var(--font-heading);
+    font-size: 8.5pt;
+    padding: 14px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer a { color: var(--action-teal); text-decoration: none; }
+
+  /* PRINT */
+  @media print {
+    .topbar, .topbar-toggle { display: none; }
+    .container { box-shadow: none; max-width: 100%; }
+    .verdict-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  @media (max-width: 600px) {
+    .cover, .content { padding: 20px 18px; }
+    .version-line { padding: 6px 18px; }
+    .topbar { padding: 0 12px; }
+    .footer { padding: 12px 18px; flex-direction: column; gap: 4px; }
+    .context-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo"><span>C</span>hangeis VM2</div>
+  <div class="topbar-title">RFI Analysis — Datadog Hybrid Cloud Observability (RFI1813710)</div>
+  <button class="topbar-toggle" onclick="toggleTheme()">Toggle Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="doc-type">VM2 Type B Forward Analysis &bull; RFI Deep Dive</div>
+    <h1>Datadog Hybrid Cloud Observability<br>RFI Analysis — RFI1813710</h1>
+    <div class="subtitle">IRS / Department of the Treasury &mdash; GSA eBuy MAS 518210C</div>
+    <div class="meta">
+      <strong>Buyer:</strong> Alonzo Brown, IRS Infrastructure Tech Ops (ITO) / Integrated Operations (IOP)<br>
+      <strong>Contract Vehicle:</strong> GSA MAS 47QTCA18D0078 &bull; MAS SIN 518210C<br>
+      <strong>RFI Posted:</strong> May 26, 2026 &bull; <strong>Response Due:</strong> May 29, 2026, 1:00 PM EDT<br>
+      <strong>Period of Performance:</strong> 09/30/2026 &ndash; 09/29/2027 (Base, 12 months, no options)<br>
+      <strong>Contract Type:</strong> Firm-Fixed-Price (FFP) &bull; <strong>IGCE:</strong> ~$5,000,000<br>
+      <strong>Prepared:</strong> 2026-05-27 &bull; <strong>Requested by:</strong> Alex Madison via Varun Malhotra
+    </div>
+  </div>
+  <div class="version-line">Created: 2026-05-27 &bull; Revised: 2026-05-27 &bull; VM2 Automated Analysis &bull; Source: email_id 19e68fd3a22d2ceb</div>
+
+  <!-- GO/NO-GO VERDICT BANNER -->
+  <div class="verdict-banner conditional">
+    <div class="verdict-icon">&#9654;</div>
+    <div>
+      <div class="verdict-label">PURSUE WITH PARTNER &mdash; CONDITIONAL GO</div>
+      <div class="verdict-detail">Changeis must secure Datadog authorized reseller status (or team with an existing Datadog VAR) before bidding. This is a brand-name sole-source for Datadog ONLY — no alternative product accepted. Reseller path is the strategic priority.</div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content">
+
+    <!-- 1. EXECUTIVE SUMMARY -->
+    <h2>1. Executive Summary</h2>
+    <div class="callout">
+      <strong>Decision Required by Noon EDT, May 27, 2026.</strong> The IRS is seeking a single authorized Datadog reseller to provide FedRAMP-certified observability licensing covering 15,000+ servers and 400+ mission-critical applications under a $5M FFP base contract (no options). The SF-1014 invokes FAR 16.505(a)(4) brand-name exception — Datadog is the only acceptable product. Changeis must either: (a) act as the prime reseller if it holds/can expedite Datadog authorized reseller credentials, or (b) team immediately with a qualified Datadog Federal VAR (e.g., Carahsoft, SAIC, Leidos) as subcontractor providing professional services and TAM support.
+    </div>
+    <p>The BD-RAG match returned <strong>10 matches at LOW tier</strong> (highest composite score: 0.3214), reflecting that Changeis's current corpus is FAA/DOT program management work — not IT observability software reselling. This is expected and <strong>does not disqualify pursuit</strong>: the reseller requirement is a business relationship (Datadog partner program), not a past performance citation. Changeis's GSA MAS 518210C (IT VAR/SIN) presence and WOSB/EDWOSB status are the operative qualifications.</p>
+    <p>The teaming strategy and Datadog partner channel path are the critical execution steps. Win probability as a prime/reseller-only firm: <strong>35–50%</strong>. Win probability in teaming arrangement: <strong>55–70%</strong> depending on partner selection. Recommend immediate outreach to Datadog Federal sales team and evaluation of Carahsoft partnership.</p>
+
+    <!-- 2. OPPORTUNITY SNAPSHOT -->
+    <h2>2. Opportunity Snapshot</h2>
+    <table>
+      <tr><th>Field</th><th>Details</th></tr>
+      <tr><td><strong>RFI / Solicitation ID</strong></td><td>RFI1813710</td></tr>
+      <tr><td><strong>Title</strong></td><td>Datadog — RFI (Hybrid Cloud Observability Subscription Licensing)</td></tr>
+      <tr><td><strong>Buying Agency</strong></td><td>Department of the Treasury &mdash; Internal Revenue Service (IRS)</td></tr>
+      <tr><td><strong>Requiring Office</strong></td><td>IRS Infrastructure Tech Ops (ITO) / Integrated Operations (IOP) / Enterprise Monitoring</td></tr>
+      <tr><td><strong>Contracting Officer</strong></td><td>Alonzo Brown &mdash; <a href="mailto:Alonzo.l.brown2@irs.gov">Alonzo.l.brown2@irs.gov</a> &bull; 470-769-2118</td></tr>
+      <tr><td><strong>Contract Vehicle</strong></td><td>GSA MAS 47QTCA18D0078 &bull; SIN 518210C (IT Value Added Resellers)</td></tr>
+      <tr><td><strong>Award Method</strong></td><td>Brand-name Sole Source (FAR 16.505(a)(4)) &mdash; Datadog only</td></tr>
+      <tr><td><strong>Contract Type</strong></td><td>Firm-Fixed-Price (FFP) Subscription-Based</td></tr>
+      <tr><td><strong>NAICS</strong></td><td>518210C (IT VAR / Reseller)</td></tr>
+      <tr><td><strong>Set-Aside</strong></td><td>Not specified (brand-name exception — open to any GSA MAS 518210C holder)</td></tr>
+      <tr><td><strong>Period of Performance</strong></td><td>09/30/2026 &ndash; 09/29/2027 (Base, 12 months, zero option periods)</td></tr>
+      <tr><td><strong>IGCE / Ceiling</strong></td><td>~$5,000,000 (FFP commitment, billed monthly)</td></tr>
+      <tr><td><strong>RFI Posted</strong></td><td>May 26, 2026 at 1:27 PM EDT</td></tr>
+      <tr><td><strong>Response Deadline</strong></td><td><strong>May 29, 2026, 1:00 PM EDT</strong></td></tr>
+      <tr><td><strong>Requisition No.</strong></td><td>5000216804</td></tr>
+      <tr><td><strong>Bridge Contract</strong></td><td>No &mdash; new award</td></tr>
+      <tr><td><strong>Incumbent</strong></td><td>Datadog (existing IRS EPZ deployment since 2024); reseller/VAR unknown</td></tr>
+      <tr><td><strong>Award Required By</strong></td><td>September 30, 2026 (Filing Season 2027 continuity)</td></tr>
+    </table>
+
+    <!-- 3. REQUIREMENTS ANALYSIS -->
+    <h2>3. Requirements Analysis</h2>
+    <p>The IRS requires an authorized Datadog reseller to provide FedRAMP-certified SaaS observability licensing, premium support, TAM services, and optional training/integration services for its hybrid cloud infrastructure. Key decomposed requirements:</p>
+
+    <h3>3.1 Core Licensing (Base CLINs)</h3>
+    <table>
+      <tr><th>CLIN</th><th>SKU</th><th>Qty</th><th>Unit</th><th>Description</th></tr>
+      <tr><td>001</td><td>ENTERPRISE-Annual-GOV</td><td>4,000</td><td>Per Host</td><td>Infrastructure Enterprise Monitoring</td></tr>
+      <tr><td>002</td><td>APM-ENT-ANN-GOV</td><td>4,000</td><td>Per Host</td><td>Application Performance Monitoring Enterprise</td></tr>
+      <tr><td>003</td><td>NPM-Annual-GOV</td><td>320</td><td>Per Host</td><td>Cloud Network Performance Monitoring</td></tr>
+      <tr><td>004</td><td>LOGINGESTION-Annual-GOV</td><td>100,000</td><td>Per GB</td><td>Log Ingestion</td></tr>
+      <tr><td>005</td><td>IS-30DAY-ANN-GOV</td><td>10,000</td><td>Per Million Logs Indexed</td><td>Log Indexing (30-day retention)</td></tr>
+      <tr><td>006</td><td>BROWSTEST-Annual-GOV</td><td>5</td><td>Per 1K Tests</td><td>Synthetic Browser Testing</td></tr>
+      <tr><td>007</td><td>APITESTS-Annual-GOV</td><td>20</td><td>Per 10K Tests/Month</td><td>Synthetic API Testing</td></tr>
+      <tr><td>008</td><td>CLOUD-SIEM-15-ANN-GOV</td><td>2,000</td><td>Per Million Events</td><td>Cloud SIEM Indexed Events</td></tr>
+      <tr><td>009</td><td>DATASCANNING-ANN-GOV</td><td>20,000</td><td>Per GB</td><td>Sensitive Data Scanner</td></tr>
+      <tr><td>010</td><td>CSM-ENT-ANN-GOV</td><td>300</td><td>Per Host</td><td>Cyber Vulnerability Scanner (CSM Enterprise)</td></tr>
+      <tr><td>011</td><td>NETWORK-PATH-ANN-GOV</td><td>1,000</td><td>Per 1K Tests/Month</td><td>Visual Traceroute / Network Path</td></tr>
+      <tr><td>012</td><td>CRAFT-ENT-ANN-GOV</td><td>5</td><td>Per Instance</td><td>Cloud Resource Visualization (Deployment Maps)</td></tr>
+      <tr><td>013</td><td>DATABASE-ANN-GOV</td><td>500</td><td>Per Host</td><td>Database Monitoring (Unlimited Instances)</td></tr>
+      <tr><td>014</td><td>SERV-FUN-APM-ANN-GOV</td><td>1,000</td><td>Per Million Trace Invocations</td><td>Serverless Workload Monitoring</td></tr>
+      <tr><td>015</td><td>SERVWORK-APP-ANN-GOV</td><td>1,000</td><td>Per Active Function/Month</td><td>Serverless Infrastructure Monitoring</td></tr>
+      <tr><td>016</td><td>AUDIT-ANN-GOV</td><td>1</td><td>% of total licensing</td><td>Datadog Instance Auditing</td></tr>
+      <tr><td>017</td><td>TAM-12M-GOV</td><td>1</td><td>1 Person/Year</td><td>Technical Account Manager (TAM)</td></tr>
+      <tr><td>018</td><td>Premier Support</td><td>1</td><td>% of total licensing</td><td>Premium Support — All Licensed SKUs</td></tr>
+    </table>
+
+    <h3>3.2 Option CLINs (Training &amp; Integration Services)</h3>
+    <p>15 option CLINs covering: Integration Services (30-session blocks, 2-hour sessions each) and Instructor-Led Training sessions (1 and 12-session blocks). All usage-based at pre-negotiated rates.</p>
+
+    <h3>3.3 Key Technical Requirements</h3>
+    <div class="callout">
+      <strong>FedRAMP Authorization:</strong> All Datadog SKUs must be FedRAMP Moderate AND High certified. No secondary-market or refurbished products. ITAR-compliant, US-based personnel for all support.
+    </div>
+    <ul style="margin-left:18px; margin-bottom:12px; font-family:var(--font-body-sans); font-size:10.5pt;">
+      <li>Coverage: 15,000+ servers, 400+ mission-critical applications</li>
+      <li>Environments: AWS EPZ, OpenShift, Google Cloud, Azure, IBM/Unisys Mainframe (Control-O, Control-M, Sentinel)</li>
+      <li>Support SLA: Critical &lt;30 min, Degraded &lt;4 hr, General &lt;12 hr</li>
+      <li>24x7x365 phone/chat/email support + designated engineers</li>
+      <li>Dedicated TAM: discovery, deployment health reviews, strategic planning</li>
+      <li>Monthly usage dashboard within 30 days of award</li>
+      <li>Monthly usage reports by 5th business day; quarterly trend/forecast reports</li>
+      <li>Usage alerts at 50%, 75%, 90%, 100% thresholds per CLIN</li>
+      <li>Tiered volume discounts — reseller proposes thresholds &amp; percentages</li>
+      <li>MRF invoicing: machine-readable (CSV/XLSX) + human-readable (PDF/dashboard)</li>
+      <li>90-day data transition assistance upon expiration/termination</li>
+    </ul>
+
+    <!-- 4. BD-RAG MATCH ANALYSIS -->
+    <h2>4. BD-RAG Match Analysis</h2>
+    <div class="callout">
+      <strong>Classification: LOW</strong> &mdash; Highest composite score: 0.3214 (STRONG threshold: &ge;0.65). This is expected — Changeis's corpus is primarily FAA/DOT program management, not IT observability software reselling. The low RAG score does <em>not</em> disqualify pursuit; reseller eligibility is a business/partnership status matter, not a past performance citation.
+    </div>
+
+    <table>
+      <tr><th>#</th><th>Task Order</th><th>Composite Score</th><th>Best Chunk</th><th>Chunks</th><th>End Client</th><th>Classification</th></tr>
+      <tr>
+        <td>1</td><td>FAA CLMRS</td>
+        <td>
+          <div class="score-bar-wrap">
+            <span>0.3214</span>
+            <div class="score-bar"><div class="score-bar-fill" style="width:49%;background:#D97D2A;"></div></div>
+          </div>
+        </td>
+        <td>0.0306</td><td>31</td><td>FAA</td><td><span class="badge badge-low">LOW</span></td>
+      </tr>
+      <tr>
+        <td>2</td><td>FAA ATAPS II</td>
+        <td><div class="score-bar-wrap"><span>0.2030</span><div class="score-bar"><div class="score-bar-fill" style="width:31%;background:#D97D2A;"></div></div></div></td>
+        <td>0.0328</td><td>6</td><td>DHS/DOT/FAA/TSA</td><td><span class="badge badge-low">LOW</span></td>
+      </tr>
+      <tr>
+        <td>3</td><td>CORPORATE</td>
+        <td><div class="score-bar-wrap"><span>0.1400</span><div class="score-bar"><div class="score-bar-fill" style="width:21%;background:#B22222;"></div></div></div></td>
+        <td>0.0286</td><td>4</td><td>DOT/FAA/FHWA/FMCSA</td><td><span class="badge badge-low">LOW</span></td>
+      </tr>
+      <tr>
+        <td>4</td><td>V3342064</td>
+        <td><div class="score-bar-wrap"><span>0.1299</span><div class="score-bar"><div class="score-bar-fill" style="width:20%;background:#B22222;"></div></div></div></td>
+        <td>0.0141</td><td>4</td><td>DOT/FAA/Volpe</td><td><span class="badge badge-low">LOW</span></td>
+      </tr>
+      <tr>
+        <td>5</td><td>V3342098</td>
+        <td><div class="score-bar-wrap"><span>0.1281</span><div class="score-bar"><div class="score-bar-fill" style="width:19%;background:#B22222;"></div></div></div></td>
+        <td>0.0116</td><td>4</td><td>FRA/Volpe</td><td><span class="badge badge-low">LOW</span></td>
+      </tr>
+      <tr>
+        <td>6</td><td>FAA eFAST BAFM III</td>
+        <td><div class="score-bar-wrap"><span>0.1086</span><div class="score-bar"><div class="score-bar-fill" style="width:16%;background:#B22222;"></div></div></div></td>
+        <td>0.0265</td><td>3</td><td>FAA/Volpe</td><td><span class="badge badge-low">LOW</span></td>
+      </tr>
+      <tr>
+        <td>7</td><td>DHS ICE SEVP PMO</td>
+        <td><div class="score-bar-wrap"><span>0.0993</span><div class="score-bar"><div class="score-bar-fill" style="width:15%;background:#B22222;"></div></div></div></td>
+        <td>0.0133</td><td>3</td><td>DHS/ICE</td><td><span class="badge badge-low">LOW</span></td>
+      </tr>
+    </table>
+
+    <p style="font-family:var(--font-body-sans);font-size:10pt;color:var(--text-secondary);">
+      <em>Scoring thresholds: STRONG &ge;0.65 &bull; MODERATE 0.50&ndash;0.64 &bull; RELEVANT 0.45&ndash;0.49 &bull; LOW &lt;0.45. 10 of 50 requested matches returned (low corpus coverage signal for IT observability/reseller domain).</em>
+    </p>
+    <div class="callout">
+      <strong>Strategic Interpretation:</strong> The FAA CLMRS match (score 0.3214) surfaces cloud observability adjacent work — monitoring, vulnerability scanning, microservice observability — which can be used for narrative capability evidence in a response. The DHS ICE match demonstrates federal cybersecurity/IT exposure. These are bridge narratives only; the primary qualification is Datadog authorized reseller status.
+    </div>
+
+    <!-- 5. CAPABILITY FIT MATRIX -->
+    <h2>5. Capability Fit Matrix</h2>
+    <table>
+      <tr>
+        <th style="width:28%">Requirement</th>
+        <th style="width:30%">Changeis Evidence / Position</th>
+        <th style="width:22%">Status</th>
+        <th style="width:20%">Action Required</th>
+      </tr>
+      <tr>
+        <td><strong>Authorized Datadog Reseller</strong><br><em>(FAR 16.505(a)(4) Brand-Name)</em></td>
+        <td>Not confirmed — requires Datadog Partner Network enrollment and authorization</td>
+        <td><span class="badge badge-gap">CRITICAL GAP</span></td>
+        <td>Immediate Datadog Federal partner inquiry or team with Carahsoft/Presidio</td>
+      </tr>
+      <tr>
+        <td><strong>GSA MAS 518210C Hold</strong></td>
+        <td>Changeis holds GSA MAS (confirmed per email signature WOSB/EDWOSB GSA MAS eFAST)</td>
+        <td><span class="badge badge-strength">STRENGTH</span></td>
+        <td>Verify 518210C SIN is active; if not, add SIN modification</td>
+      </tr>
+      <tr>
+        <td><strong>FedRAMP Certified SKU Provisioning</strong></td>
+        <td>Datadog handles FedRAMP; reseller passes through. No Changeis technical action required.</td>
+        <td><span class="badge badge-partial">PARTIAL</span></td>
+        <td>Obtain written confirmation from Datadog of FedRAMP SKU coverage</td>
+      </tr>
+      <tr>
+        <td><strong>TAM — Technical Account Manager</strong></td>
+        <td>Changeis can staff or subcontract a TAM with Datadog certification; adjacent to existing PM/tech advisory delivery</td>
+        <td><span class="badge badge-partial">ADDRESSABLE</span></td>
+        <td>Identify qualified TAM (Datadog-certified preferred); may subcontract to Datadog or VAR partner</td>
+      </tr>
+      <tr>
+        <td><strong>24x7x365 Premier Support</strong></td>
+        <td>Typically passed through Datadog OEM support agreements; reseller facilitates</td>
+        <td><span class="badge badge-partial">PARTIAL</span></td>
+        <td>Negotiate Datadog premier support pass-through in reseller agreement</td>
+      </tr>
+      <tr>
+        <td><strong>Monthly Usage Reporting (CSV/XLSX/PDF)</strong></td>
+        <td>Changeis has demonstrated reporting/data delivery capability (FAA MSR, monthly deliverables)</td>
+        <td><span class="badge badge-strength">STRENGTH</span></td>
+        <td>Template monthly usage report format per SOW Section 2.7</td>
+      </tr>
+      <tr>
+        <td><strong>Dashboard Setup (30-day post-award)</strong></td>
+        <td>FAA CLMRS work includes CloudWatch metrics/dashboards; adjacent evidence</td>
+        <td><span class="badge badge-partial">ADJACENT</span></td>
+        <td>Confirm Datadog dashboard provisioning is within OEM scope; document in proposal</td>
+      </tr>
+      <tr>
+        <td><strong>ITAR Compliant / US-Based Personnel</strong></td>
+        <td>Changeis operates with US-based personnel; WOSB/EDWOSB status confirms</td>
+        <td><span class="badge badge-strength">STRENGTH</span></td>
+        <td>State explicitly in response; confirm all support personnel are US citizens</td>
+      </tr>
+      <tr>
+        <td><strong>Tiered Volume Discount Pricing</strong></td>
+        <td>Requires Datadog authorization to propose discount tiers — reseller agreement defines tiers</td>
+        <td><span class="badge badge-gap">GAP</span></td>
+        <td>Obtain Datadog federal discount schedule prior to RFI response</td>
+      </tr>
+      <tr>
+        <td><strong>IRS/Treasury Experience</strong></td>
+        <td>No IRS/Treasury past performance in BD-RAG corpus; FAA/DOT is DOT-only</td>
+        <td><span class="badge badge-gap">GAP</span></td>
+        <td>Highlight federal IT modernization/cloud work; teaming partner may cover IRS past perf.</td>
+      </tr>
+      <tr>
+        <td><strong>Training &amp; Integration Services (Option CLINs)</strong></td>
+        <td>Passed through Datadog OEM training catalog; reseller schedules sessions</td>
+        <td><span class="badge badge-partial">PASS-THROUGH</span></td>
+        <td>Confirm Datadog training availability and pricing in reseller agreement</td>
+      </tr>
+    </table>
+
+    <!-- 6. SHIPLEY CAPTURE ANALYSIS -->
+    <h2>6. Shipley Capture Analysis</h2>
+
+    <h3>6.1 Bid/No-Bid Scoring</h3>
+    <table>
+      <tr><th>Factor</th><th>Weight</th><th>Score (0–10)</th><th>Weighted</th><th>Assessment</th></tr>
+      <tr>
+        <td>Strategic Fit / Mission Alignment</td><td>15%</td><td>6</td><td>0.90</td>
+        <td>Federal IT observability is adjacent to Changeis IT modernization theme; not primary lane</td>
+      </tr>
+      <tr>
+        <td>Competitive Position / Win Probability</td><td>20%</td><td>5</td><td>1.00</td>
+        <td>Brand-name sole source for Datadog — only resellers compete; moderate field expected</td>
+      </tr>
+      <tr>
+        <td>Capability Match</td><td>20%</td><td>4</td><td>0.80</td>
+        <td>Reseller/VAR not Changeis primary model; TAM and reporting are manageable</td>
+      </tr>
+      <tr>
+        <td>Contract Vehicle</td><td>10%</td><td>9</td><td>0.90</td>
+        <td>Changeis holds GSA MAS — direct eligibility if 518210C SIN confirmed</td>
+      </tr>
+      <tr>
+        <td>Set-Aside / Socioeconomic Advantage</td><td>10%</td><td>5</td><td>0.50</td>
+        <td>Not WOSB set-aside; WOSB provides no advantage in brand-name open competition</td>
+      </tr>
+      <tr>
+        <td>Revenue Potential</td><td>15%</td><td>8</td><td>1.20</td>
+        <td>$5M FFP base is significant; reseller margin on SaaS licenses typically 5–15%</td>
+      </tr>
+      <tr>
+        <td>Past Performance Evidence</td><td>5%</td><td>3</td><td>0.15</td>
+        <td>No IRS/Treasury or observability reseller past performance in corpus</td>
+      </tr>
+      <tr>
+        <td>Bandwidth / Bid Cost</td><td>5%</td><td>7</td><td>0.35</td>
+        <td>RFI response is lightweight; proposal cost if converted will be moderate</td>
+      </tr>
+      <tr>
+        <td><strong>TOTAL (Weighted)</strong></td><td><strong>100%</strong></td><td>&mdash;</td><td><strong>5.80 / 10</strong></td>
+        <td><strong>Conditional GO threshold: &ge;5.5</strong></td>
+      </tr>
+    </table>
+
+    <h3>6.2 Win Probability Assessment</h3>
+    <table>
+      <tr><th>Scenario</th><th>Win Probability</th><th>Rationale</th></tr>
+      <tr>
+        <td>Changeis as Prime Reseller (solo, with Datadog authorization)</td>
+        <td><strong>35–50%</strong></td>
+        <td>Competitive with established Datadog federal VARs (Carahsoft, SAIC, Leidos Technology Solutions); WOSB status provides no set-aside advantage</td>
+      </tr>
+      <tr>
+        <td>Changeis as Prime + Established VAR Subcontractor</td>
+        <td><strong>55–70%</strong></td>
+        <td>Combines Changeis's MAS vehicle with VAR's Datadog relationship; TAM delivered by partner; strongest bid structure</td>
+      </tr>
+      <tr>
+        <td>Changeis as Subcontractor to Large VAR</td>
+        <td>Low (subcontract only)</td>
+        <td>Revenue share only; does not serve BD pipeline goals</td>
+      </tr>
+    </table>
+
+    <h3>6.3 Price-to-Win Analysis</h3>
+    <div class="callout">
+      <strong>IGCE: $5,000,000 FFP base.</strong> Pricing is SKU-based from Datadog's federal price list. Reseller margin on government SaaS licensing typically ranges 5–15% of OEM list price. At $5M IGCE, reseller margin (revenue to Changeis): approximately <strong>$250K–$750K</strong> before overhead. TAM (CLIN 017) and premier support (CLIN 018) are percentage-of-licensing CLINs — propose competitive rates. Volume discount tiers must be proposed — use 5% / 8% / 12% at $1M / $2.5M / $4M cumulative obligation thresholds as starting baseline.
+    </div>
+    <table>
+      <tr><th>Pricing Element</th><th>Recommendation</th></tr>
+      <tr><td>Infrastructure Enterprise (4,000 hosts)</td><td>Lead with Datadog federal price list; propose 5% early-commitment discount</td></tr>
+      <tr><td>APM Enterprise (4,000 hosts)</td><td>Bundle with Infrastructure to show enterprise SKU coherence</td></tr>
+      <tr><td>Log Ingestion (100K GB)</td><td>High-volume; propose volume discount at 75K GB committed threshold</td></tr>
+      <tr><td>TAM (CLIN 017, per year)</td><td>Price at Datadog TAM market rate; consider bundling into fixed annual cost</td></tr>
+      <tr><td>Premier Support (CLIN 018, %)</td><td>Propose 10–12% of total licensing value; benchmark against Datadog list</td></tr>
+      <tr><td>Option CLINs (Training/Integration)</td><td>Price at Datadog instructor-led training list; no markup on OEM services</td></tr>
+    </table>
+
+    <!-- 7. TEAMING STRATEGY -->
+    <h2>7. Teaming Strategy &mdash; Datadog Reseller Channel</h2>
+
+    <h3>7.1 Datadog Federal Partner Landscape</h3>
+    <p>Datadog operates a formal partner program with tiers: <em>Partner, Select, Premier</em>. Federal-authorized resellers (holding FedRAMP SKU access) include a small set of large GovCon VARs. The key question for Changeis is whether it currently holds or can expedite Datadog reseller authorization.</p>
+
+    <table>
+      <tr><th>Partner Option</th><th>Pros</th><th>Cons</th><th>Recommendation</th></tr>
+      <tr>
+        <td><strong>Carahsoft Technology</strong><br>(Master Datadog Federal VAR)</td>
+        <td>Largest Datadog federal VAR; deep IRS/Treasury relationships; can sub-resell to Changeis</td>
+        <td>Changeis becomes dependent on Carahsoft; margin compression; not prime</td>
+        <td>Use as teaming sub to flow Datadog licenses; Changeis primes on management/TAM</td>
+      </tr>
+      <tr>
+        <td><strong>Direct Datadog Partnership</strong></td>
+        <td>Direct margin; positions Changeis as Datadog federal partner for future bids</td>
+        <td>Enrollment time (30–60 days typical); requires Datadog approval; may miss May 29 deadline</td>
+        <td>Start enrollment immediately regardless; will mature for follow-on</td>
+      </tr>
+      <tr>
+        <td><strong>SAIC / Leidos Tech Solutions</strong></td>
+        <td>Established IRS relationships; Datadog certified</td>
+        <td>Large business — may price out Changeis's margin; limited WOSB benefit</td>
+        <td>Consider only if Carahsoft not viable</td>
+      </tr>
+      <tr>
+        <td><strong>Small SDVOSB/WOSB Datadog VAR</strong></td>
+        <td>Potential set-aside opportunity if a follow-on is competed; shared WOSB eligibility</td>
+        <td>May lack IRS past performance; unproven at $5M scale</td>
+        <td>Research — could be ideal prime/sub partner for WOSB-advantaged bid</td>
+      </tr>
+    </table>
+
+    <h3>7.2 Recommended Teaming Structure</h3>
+    <div class="callout">
+      <strong>Recommended:</strong> Changeis as Prime + Carahsoft as Datadog License Pass-Through Sub<br>
+      Changeis provides: Contract management, reporting infrastructure, billing oversight, monthly dashboard setup, option CLIN scheduling, compliance<br>
+      Carahsoft provides: Authorized Datadog license provisioning, OEM price list access, premier support pass-through<br>
+      Datadog OEM provides: TAM (or Changeis staffs independently), FedRAMP environment, tier-1 support escalation
+    </div>
+
+    <h3>7.3 Changeis Datadog Partner Status — Action Items</h3>
+    <ul style="margin-left:18px; margin-bottom:12px; font-family:var(--font-body-sans); font-size:10.5pt;">
+      <li><strong>Today:</strong> Contact Datadog Federal sales (federal@datadoghq.com or via Datadog Federal partner portal) to express interest and request expedited partner enrollment</li>
+      <li><strong>Today:</strong> Contact Carahsoft Datadog team to discuss teaming arrangement for RFI1813710</li>
+      <li><strong>Before May 28:</strong> Confirm GSA MAS 518210C SIN is active; if not, initiate SIN modification</li>
+      <li><strong>Before May 29 (Deadline):</strong> Submit RFI response confirming interest and reseller path</li>
+    </ul>
+
+    <!-- 8. ACTION ITEMS & NEXT STEPS -->
+    <h2>8. Action Items &amp; Next Steps</h2>
+    <div class="action-item">
+      <div class="action-num">1</div>
+      <div class="action-body">
+        <strong>Contact Datadog Federal partner program</strong> — Express intent to respond to RFI1813710; request expedited reseller authorization. Contact: <em>federal@datadoghq.com</em> or Datadog Federal partner portal.
+        <div class="action-owner">Owner: Alex Madison / BD &bull; Due: Today (May 27)</div>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">2</div>
+      <div class="action-body">
+        <strong>Contact Carahsoft Datadog team</strong> — Explore teaming agreement for Datadog license pass-through. Carahsoft is the master Datadog Federal VAR and can enable Changeis to bid as prime.
+        <div class="action-owner">Owner: Varun Malhotra / Alex Madison &bull; Due: Today (May 27)</div>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">3</div>
+      <div class="action-body">
+        <strong>Verify GSA MAS 518210C SIN</strong> — Confirm Changeis holds SIN 518210C (IT Value Added Resellers) under GSA MAS 47QTCA18D0078. If SIN not active, initiate modification through GSA.
+        <div class="action-owner">Owner: Contracts Team &bull; Due: May 28</div>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">4</div>
+      <div class="action-body">
+        <strong>Draft and submit RFI response</strong> — Submit capability statement to Alonzo Brown (<a href="mailto:Alonzo.l.brown2@irs.gov">Alonzo.l.brown2@irs.gov</a>) confirming Changeis interest, GSA MAS vehicle, Datadog reseller path, WOSB/EDWOSB status. Include: proposed teaming structure, preliminary SKU acknowledgment, TAM approach.
+        <div class="action-owner">Owner: Alex Madison / BD &bull; Due: May 29, 12:00 PM EDT (1 hr before deadline)</div>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">5</div>
+      <div class="action-body">
+        <strong>Initiate Datadog partner program enrollment</strong> — Regardless of RFI1813710 outcome, becoming an authorized Datadog federal reseller positions Changeis for future IRS/Treasury and broad-federal observability bids.
+        <div class="action-owner">Owner: Alex Madison &bull; Due: May 30 (ongoing)</div>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">6</div>
+      <div class="action-body">
+        <strong>FPDS / SAM.gov incumbent research</strong> — Search FPDS for previous Datadog IRS contracts to identify current reseller/incumbent. This informs competitive landscape.
+        <div class="action-owner">Owner: VM2 (automated) &bull; Due: May 28</div>
+      </div>
+    </div>
+    <div class="action-item">
+      <div class="action-num">7</div>
+      <div class="action-body">
+        <strong>Monitor for solicitation release</strong> — RFI1813710 is a market research RFI; formal solicitation expected Q3 2026 (award required by Sep 30, 2026). Set SAM.gov watch on NAICS 518210C / IRS / Datadog.
+        <div class="action-owner">Owner: VM2 (automated) &bull; Ongoing</div>
+      </div>
+    </div>
+
+    <!-- 9. RISK REGISTER -->
+    <h2>9. Risk Register</h2>
+    <table>
+      <tr><th style="width:22%">Risk</th><th style="width:12%">Likelihood</th><th style="width:12%">Impact</th><th style="width:14%">Level</th><th style="width:40%">Mitigation</th></tr>
+      <tr class="risk-critical">
+        <td><strong>Changeis lacks Datadog authorized reseller status</strong></td>
+        <td>High</td><td>Critical</td><td><span class="badge badge-critical">CRITICAL</span></td>
+        <td>Pursue Carahsoft teaming immediately; parallel Datadog partner enrollment</td>
+      </tr>
+      <tr class="risk-high">
+        <td><strong>GSA MAS 518210C SIN not active</strong></td>
+        <td>Medium</td><td>High</td><td><span class="badge badge-gap">HIGH</span></td>
+        <td>Verify immediately; SIN modification typically 30–60 days — may miss RFI</td>
+      </tr>
+      <tr class="risk-high">
+        <td><strong>Established Datadog federal VARs (Carahsoft, SAIC) dominate</strong></td>
+        <td>High</td><td>High</td><td><span class="badge badge-gap">HIGH</span></td>
+        <td>Compete on price, WOSB relationship, reporting quality, management fee reduction</td>
+      </tr>
+      <tr class="risk-medium">
+        <td><strong>No IRS/Treasury past performance</strong></td>
+        <td>High</td><td>Medium</td><td><span class="badge badge-medium">MEDIUM</span></td>
+        <td>Leverage FAA/DHS federal IT experience; teaming partner provides IRS CPP</td>
+      </tr>
+      <tr class="risk-medium">
+        <td><strong>Solicitation converts to WOSB/SDVOSB set-aside</strong></td>
+        <td>Low</td><td>Positive</td><td><span class="badge badge-strength">OPPORTUNITY</span></td>
+        <td>Changeis WOSB/EDWOSB status would provide competitive advantage if set-aside used</td>
+      </tr>
+      <tr class="risk-medium">
+        <td><strong>Short response timeline (3 days for RFI)</strong></td>
+        <td>High</td><td>Medium</td><td><span class="badge badge-medium">MEDIUM</span></td>
+        <td>RFI response is lightweight capability statement — can be delivered by May 28 if started today</td>
+      </tr>
+      <tr class="risk-low">
+        <td><strong>IRS reduces scope or delays award</strong></td>
+        <td>Low</td><td>Low</td><td><span class="badge badge-low-risk">LOW</span></td>
+        <td>IRS has Filing Season 2027 hard deadline (Sep 30, 2026) — award unlikely to slip significantly</td>
+      </tr>
+    </table>
+
+    <!-- CONTEXT PANEL -->
+    <div class="context-panel">
+      <h2 style="border-color: var(--border-gray); color: var(--text-secondary);">Session Context</h2>
+      <dl class="context-grid">
+        <dt>Task</dt><dd>VM2 RFI Analysis — Datadog RFI1813710</dd>
+        <dt>Deliverable</dt><dd>rfi-analysis-datadog-rfi1813710-2026-05-27.html</dd>
+        <dt>Railway URL</dt><dd><a href="https://vm2-p-taskers-production.up.railway.app/rfi-analysis-datadog-rfi1813710-2026-05-27.html" target="_blank">vm2-p-taskers-production.up.railway.app</a></dd>
+        <dt>Created</dt><dd>2026-05-27</dd>
+        <dt>Email Source</dt><dd>19e68fd3a22d2ceb (varun@changeis.com)</dd>
+        <dt>BD-RAG Classification</dt><dd>LOW (top: 0.3214 / threshold STRONG &ge;0.65)</dd>
+        <dt>Go/No-Go</dt><dd>PURSUE WITH PARTNER (Conditional GO)</dd>
+        <dt>Response Deadline</dt><dd>May 29, 2026 1:00 PM EDT</dd>
+        <dt>IGCE</dt><dd>~$5,000,000 FFP base</dd>
+        <dt>Cost Estimate (model)</dt><dd>claude-3-7-sonnet / ~$0.40–$0.80 API equiv.</dd>
+      </dl>
+      <div class="continue-title">Continue This Work</div>
+      <button class="continue-btn" onclick="copyContext()">Copy Context JSON</button>
+      <a class="continue-btn" href="portal.html">Back to Portal</a>
+      <a class="continue-btn" href="https://www.ebuy.gsa.gov/ebuy/seller/prepare-quote/RFI1813710?contractNumber=47QTCA18D0078" target="_blank">View RFI on eBuy</a>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>Changeis, Inc. &bull; Confidential &mdash; BD Internal Use Only &bull; VM2 Automated Analysis</span>
+    <span>Sources: <a href="https://www.ebuy.gsa.gov/ebuy/seller/prepare-quote/RFI1813710?contractNumber=47QTCA18D0078" target="_blank">GSA eBuy RFI1813710</a> &bull; <a href="https://changeis-bd-rag-production.up.railway.app" target="_blank">BD-RAG Engine</a> &bull; IRS SOW &amp; SF-1014 (email_id: 19e68fd3a22d2ceb)</span>
+  </div>
+
+</div><!-- /container -->
+
+<!-- VM2 CONTEXT DATA -->
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "RFI Analysis — Datadog Hybrid Cloud Observability RFI1813710",
+  "task_date": "2026-05-27",
+  "deliverable_file": "rfi-analysis-datadog-rfi1813710-2026-05-27.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/rfi-analysis-datadog-rfi1813710-2026-05-27.html",
+  "version": 1,
+  "created_date": "2026-05-27",
+  "revised_date": null,
+  "prior_versions": [],
+  "related_deliverables": ["ebuy-47QRCA25DU072-mras-rb-training-2026-05-26.html", "portal.html"],
+  "original_instructions": "VM2 Type B forward analysis for RFI1813710 Datadog Hybrid Cloud Observability. Deep dive requested by Varun Malhotra (email_id 19e68fd3a22d2ceb). Alex Madison Go/No-Go item for executive agenda decision before noon.",
+  "approach": "Retrieved email 19e68fd3a22d2ceb from Gmail (gcal connector). Downloaded 3 attachments: SF1014 DOCX (112KB), SOW DOCX (58KB), eBuy PDF (250KB). Extracted full text via python-docx and pdfplumber. Submitted enriched query to BD-RAG (top_n=50, returned 10 matches). Applied Shipley Bid/No-Bid 8-factor framework. Identified critical gap: Datadog authorized reseller status. Generated branded HTML deliverable.",
+  "key_findings": [
+    "BD-RAG classification: LOW (top composite: 0.3214; STRONG threshold >=0.65)",
+    "10 of 50 requested matches returned — Changeis corpus is FAA/DOT PM, not IT observability reselling",
+    "CRITICAL GAP: Datadog authorized reseller status required (brand-name FAR 16.505(a)(4))",
+    "STRENGTH: Changeis holds GSA MAS (518210C SIN must be verified)",
+    "STRENGTH: WOSB/EDWOSB status (no set-aside benefit here but positions for future)",
+    "Recommended: Changeis as Prime + Carahsoft as Datadog License sub-VAR",
+    "Go/No-Go: PURSUE WITH PARTNER (Conditional GO) — Bid/No-Bid score: 5.80/10",
+    "IGCE: ~$5M FFP base; reseller margin estimate $250K–$750K",
+    "Response deadline: May 29, 2026 1:00 PM EDT",
+    "Award required by Sep 30, 2026 for Filing Season 2027"
+  ],
+  "rag_results": {
+    "total_matches": 10,
+    "classification": "LOW",
+    "top_score": 0.3214,
+    "top_match": "FAA CLMRS"
+  },
+  "go_nogo": "PURSUE WITH PARTNER",
+  "response_deadline": "2026-05-29T13:00:00-04:00",
+  "cost_estimate": {
+    "model": "claude-3-7-sonnet",
+    "input_tokens_est": 45000,
+    "output_tokens_est": 12000,
+    "input_cost_per_mtok": 3.00,
+    "output_cost_per_mtok": 15.00,
+    "conservative_cost_usd": 0.32,
+    "ceiling_cost_usd": 0.85,
+    "notes": "Includes BD-RAG API call, Gmail retrieval, 3 attachment extractions, full HTML generation"
+  }
+}
+</script>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+function copyContext() {
+  const el = document.getElementById('vm2-context-data');
+  if (el) {
+    navigator.clipboard.writeText(el.textContent).then(() => alert('Context JSON copied.')).catch(() => alert('Copy failed — please copy from page source.'));
+  }
+}
+</script>
+
+</body>
+</html>
