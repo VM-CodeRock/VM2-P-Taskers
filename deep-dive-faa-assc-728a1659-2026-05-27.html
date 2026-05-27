@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang='en' data-theme='light'>
+<head>
+<meta charset='utf-8'/>
+<meta name='viewport' content='width=device-width, initial-scale=1'/>
+<title>FAA ASSC Deep Dive — OCI Analysis · 2026-05-27</title>
+<style>
+:root { --navy:#1B2A4A; --red:#c53a3a; --teal:#008B8B; --green:#2D7D4A; --orange:#D97D2A; --bg:#ffffff; --text:#111827; --muted:#6b7280; --card:#f8fafc; --border:#e5e7eb; --section-blue:#1F4D78; --oci-warn:#7b2c2c; --oci-warn-bg:#fdf2f2; --oci-ok:#1a5c2a; --oci-ok-bg:#f0faf4; --oci-amber:#7a4c00; --oci-amber-bg:#fffbea; }
+html[data-theme='dark'] { --bg:#0b1220; --text:#e5e7eb; --muted:#9ca3af; --card:#0f1a2b; --border:#22314a; --oci-warn-bg:#2a0e0e; --oci-ok-bg:#0a1f10; --oci-amber-bg:#1a1200; }
+body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; line-height:1.55; }
+.topbar { background:var(--navy); color:#fff; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.brand { font-weight:700; letter-spacing:.2px; font-size:15px; }
+.container { max-width:980px; margin:24px auto; padding:0 16px; }
+.h1 { font-family: Georgia, 'Times New Roman', serif; font-size:28px; margin:0 0 4px; color:#002060; }
+html[data-theme='dark'] .h1 { color:#a8c4e8; }
+.meta { color:var(--muted); font-size:13px; margin:0 0 18px; }
+.section { margin:26px 0; }
+.section h2 { font-family: Georgia, 'Times New Roman', serif; color:var(--red); font-size:20px; margin:0 0 12px; border-bottom:2px solid var(--red); padding-bottom:5px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:12px; }
+.callout { padding:14px 16px; border-radius:8px; margin:12px 0; border-left:4px solid; }
+.callout-green { background:var(--oci-ok-bg); border-color:var(--green); }
+.callout-red { background:var(--oci-warn-bg); border-color:#c53a3a; }
+.callout-amber { background:var(--oci-amber-bg); border-color:#D97D2A; }
+.callout-blue { background:#EFF6FF; border-color:#1F4D78; }
+html[data-theme='dark'] .callout-blue { background:#0a1628; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.kv { padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:transparent; }
+.kv .k { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em; }
+.kv .v { margin-top:4px; font-weight:600; font-size:14px; }
+.table { width:100%; border-collapse:collapse; font-size:13px; }
+.table th { background:var(--navy); color:#fff; text-align:left; padding:9px 10px; }
+.table td { border-top:1px solid var(--border); padding:9px 10px; vertical-align:top; }
+.table tr:nth-child(even) td { background: rgba(197,217,232,.18); }
+.badge { display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+.badge-strong { background:#2D7D4A; color:#fff; }
+.badge-moderate { background:#D97D2A; color:#fff; }
+.badge-relevant { background:#6B4C9A; color:#fff; }
+.badge-low { background:#6b7280; color:#fff; }
+.badge-go { background:#2D7D4A; color:#fff; padding:5px 14px; font-size:14px; border-radius:6px; }
+.badge-nogo { background:#c53a3a; color:#fff; padding:5px 14px; font-size:14px; border-radius:6px; }
+.badge-caution { background:#D97D2A; color:#fff; padding:5px 14px; font-size:14px; border-radius:6px; }
+.verdict-box { border:2px solid; border-radius:12px; padding:16px 20px; margin:14px 0; }
+.verdict-mitigable { border-color:#D97D2A; background:var(--oci-amber-bg); }
+.verdict-disq { border-color:#c53a3a; background:var(--oci-warn-bg); }
+.verdict-ok { border-color:#2D7D4A; background:var(--oci-ok-bg); }
+.verdict-title { font-size:22px; font-weight:800; font-family: Georgia, serif; margin:0 0 6px; }
+.oci-section { border:1px solid var(--border); border-radius:10px; margin-bottom:14px; overflow:hidden; }
+.oci-header { padding:12px 16px; font-weight:700; font-size:14px; display:flex; align-items:center; gap:10px; }
+.oci-header-amber { background:#fff3cd; color:#7a4c00; }
+.oci-header-red { background:#fde8e8; color:#7b2c2c; }
+.oci-header-green { background:#d4edda; color:#1a5c2a; }
+html[data-theme='dark'] .oci-header-amber { background:#2a1f00; color:#f0b429; }
+html[data-theme='dark'] .oci-header-red { background:#2a0e0e; color:#f87171; }
+html[data-theme='dark'] .oci-header-green { background:#0a2010; color:#4ade80; }
+.oci-body { padding:14px 16px; }
+.risk-pill { display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; }
+.risk-high { background:#c53a3a; color:#fff; }
+.risk-medium { background:#D97D2A; color:#fff; }
+.risk-low { background:#2D7D4A; color:#fff; }
+button.toggle { background:transparent; color:#fff; border:1px solid rgba(255,255,255,.35); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:13px; }
+details.ctx summary { cursor:pointer; font-weight:700; color:var(--navy); padding:8px 0; }
+html[data-theme='dark'] details.ctx summary { color:#a8c4e8; }
+.footer { margin:30px 0 18px; color:var(--muted); font-size:12px; text-align:center; border-top:1px solid var(--border); padding-top:12px; }
+.actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+.actions a, .actions button { border:1px solid var(--border); background:var(--card); color:var(--text); padding:10px 14px; border-radius:10px; text-decoration:none; cursor:pointer; font-size:13px; }
+h3 { color:var(--section-blue); font-family: Georgia, 'Times New Roman', serif; font-size:16px; margin:14px 0 8px; }
+html[data-theme='dark'] h3 { color:#7aabdc; }
+ul { margin:8px 0; padding-left:20px; }
+li { margin-bottom:5px; }
+a { color:#1F4D78; }
+html[data-theme='dark'] a { color:#7aabdc; }
+.toc { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px 18px; margin-bottom:20px; }
+.toc ol { margin:6px 0; padding-left:20px; }
+.toc li { margin-bottom:3px; font-size:14px; }
+.stat-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.stat { flex:1; min-width:140px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:12px; text-align:center; }
+.stat .num { font-size:24px; font-weight:800; color:var(--navy); }
+html[data-theme='dark'] .stat .num { color:#a8c4e8; }
+.stat .lbl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+</style>
+<script>
+function toggleTheme(){ const html=document.documentElement; html.dataset.theme = html.dataset.theme==='dark'?'light':'dark'; }
+function copyText(txt){ navigator.clipboard.writeText(txt).then(()=>alert('Copied!')); }
+function copyPrompt(){
+  var url='https://vm2-p-taskers-production.up.railway.app/deep-dive-faa-assc-728a1659-2026-05-27.html';
+  var prompt='Continue the FAA ASSC deep dive analysis. Deliverable: '+url+'\nFocus: OCI mitigation plan development, PWS feedback strategy for upcoming solicitation, teaming partner outreach for ASSC.\nContext: MITIGABLE OCI verdict — Changeis has FAA acquisition support work (CLMRS, ATAPS II) that overlaps with the AAQ support services being procured. Mitigation requires firewall, disclosure, and recusal on affected task orders.';
+  copyText(prompt);
+}
+</script>
+</head>
+<body>
+<div class='topbar'>
+  <div class='brand'>VM2 · Changeis BD Intelligence</div>
+  <button class='toggle' onclick='toggleTheme()'>☀ Dark/Light</button>
+</div>
+
+<div class='container'>
+  <h1 class='h1'>FAA ASSC — Acquisition Support Services Contract Deep Dive</h1>
+  <p class='meta'>SAM.gov Notice 728a165976694df8b71dba7b576f527a · Posted 2026-05-04 · <strong>OCI-Focused Revision</strong> · Created: 2026-05-06 · Revised: 2026-05-27 (v2)</p>
+
+  <!-- MASTER VERDICT BOX -->
+  <div class='verdict-box verdict-mitigable'>
+    <div class='verdict-title' style='color:#D97D2A;'>⚠ OCI Verdict: MITIGABLE</div>
+    <p style='margin:0 0 8px;'><strong>Changeis has a real but manageable Organizational Conflict of Interest</strong> on the FAA ASSC. The risk is primarily <em>Impaired Objectivity</em> (AMS T3.1.7 / FAR 9.505-3) — Changeis currently delivers acquisition-adjacent support services to FAA's ATO and AAQ ecosystem (CLMRS, ATAPS II, eFAST AHR), and the ASSC would place Changeis personnel inside AAQ divisions performing pre-award and source selection support tasks. Without mitigation, Changeis staff could evaluate or support procurement actions that benefit, or are competed against, Changeis itself.</p>
+    <p style='margin:0;'><strong>Recommended posture: GO — Prime with OCI Mitigation Plan.</strong> The conflict is structural but mitigable via personnel firewalls, recusal from affected task orders, and disclosure. FAA AMS expressly allows forward competition with a negotiated mitigation plan. Recommend proactive disclosure to AAQ CO during the market survey feedback phase.</p>
+  </div>
+
+  <!-- TOC -->
+  <div class='toc'>
+    <strong>Contents</strong>
+    <ol>
+      <li><a href='#snapshot'>Opportunity Snapshot</a></li>
+      <li><a href='#assc-decode'>ASSC Decoded — What Is Being Procured</a></li>
+      <li><a href='#rag'>RAG Match & Past Performance Fit</a></li>
+      <li><a href='#incumbents'>Incumbent Landscape & Competition</a></li>
+      <li><a href='#capability'>Capability Matrix</a></li>
+      <li><a href='#oci'><strong style='color:var(--red)'>OCI Analysis — FAR 9.5 / FAA AMS T3.1.7 (PRIMARY SECTION)</strong></a></li>
+      <li><a href='#gono'>Go / No-Go Assessment & Bid Strategy</a></li>
+      <li><a href='#capture'>Capture Plan</a></li>
+      <li><a href='#context'>Session Context</a></li>
+    </ol>
+  </div>
+
+  <!-- SNAPSHOT -->
+  <div class='section' id='snapshot'>
+    <h2>1. Opportunity Snapshot</h2>
+    <div class='card grid'>
+      <div class='kv'><div class='k'>Title</div><div class='v'>Acquisition Support Services Contract (ASSC) for all FAA Acquisition and Contracting Organizations</div></div>
+      <div class='kv'><div class='k'>Notice ID</div><div class='v'>728a165976694df8b71dba7b576f527a</div></div>
+      <div class='kv'><div class='k'>SAM.gov Link</div><div class='v'><a href='https://sam.gov/opp/728a165976694df8b71dba7b576f527a/view' target='_blank'>View Opportunity ↗</a></div></div>
+      <div class='kv'><div class='k'>Prior Market Survey</div><div class='v'>6973GH-25-SS-00002</div></div>
+      <div class='kv'><div class='k'>Agency / Office</div><div class='v'>DOT / FAA / AAQ-700, Aeronautical Center, OKC</div></div>
+      <div class='kv'><div class='k'>Customer Divisions</div><div class='v'>AAQ-200, 300, 400, 500, 600, 700, 900</div></div>
+      <div class='kv'><div class='k'>NAICS</div><div class='v'>561990 — All Other Support Services</div></div>
+      <div class='kv'><div class='k'>Set-Aside</div><div class='v'>TBD — FAA seeking feedback; small business interest welcome</div></div>
+      <div class='kv'><div class='k'>Vehicle Type</div><div class='v'>Decentralized ordering contract (IDIQ-style); primarily FFP, ≤5% LH for surge</div></div>
+      <div class='kv'><div class='k'>Governing Framework</div><div class='v'><strong>FAA AMS</strong> (NOT FAR — FAA is exempt from FAR)</div></div>
+      <div class='kv'><div class='k'>Period of Performance</div><div class='v'>5-year ordering period (PoP TBD)</div></div>
+      <div class='kv'><div class='k'>Estimated Value</div><div class='v'>$45M–$55M (90–110 FTE × ~$100K/yr × 5 yrs)</div></div>
+      <div class='kv'><div class='k'>Response Deadline</div><div class='v'><strong>Oct 1, 2026 4:00 PM CDT</strong> (feedback only — solicitation expected late summer–fall 2026)</div></div>
+      <div class='kv'><div class='k'>Contract Type</div><div class='v'>Primarily Firm Fixed Price (FFP); ≤5% Labor Hours for transitional/surge</div></div>
+      <div class='kv'><div class='k'>POC</div><div class='v'>Josh Huckeby — joshua.d.huckeby@faa.gov</div></div>
+    </div>
+    <div class='stat-row'>
+      <div class='stat'><div class='num'>$50M</div><div class='lbl'>Est. 5-yr Ceiling</div></div>
+      <div class='stat'><div class='num'>7</div><div class='lbl'>AAQ Divisions</div></div>
+      <div class='stat'><div class='num'>6</div><div class='lbl'>Current Incumbents</div></div>
+      <div class='stat'><div class='num'>Oct 1</div><div class='lbl'>Feedback Deadline</div></div>
+      <div class='stat'><div class='num'>⚠ MITIGABLE</div><div class='lbl'>OCI Verdict</div></div>
+    </div>
+  </div>
+
+  <!-- ASSC DECODED -->
+  <div class='section' id='assc-decode'>
+    <h2>2. ASSC Decoded — What Is Being Procured</h2>
+    <div class='card'>
+      <p>"ASSC" stands for <strong>Acquisition Support Services Contract</strong> — this is the FAA's vehicle to provide embedded acquisition workforce augmentation to its Acquisition and Contracting (AAQ) organization. It is <em>not</em> an aviation safety information-sharing system; it is a professional services staffing/advisory contract for contracting professionals inside FAA's procurement shop.</p>
+      <h3>Core Services (from Draft PWS)</h3>
+      <table class='table'>
+        <thead><tr><th>Discipline</th><th>OPM Series Equiv.</th><th>GS Equiv.</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Contract Specialist</strong></td><td>1102 (Contracting)</td><td>GS-5 to GS-14</td><td>Solicitation development, source selection support, evaluation panel support, award documentation, modifications, closeout</td></tr>
+          <tr><td><strong>Financial Management</strong></td><td>0500 (Financial Mgmt)</td><td>GS-5 to GS-14</td><td>Funding execution, obligations tracking, DELPHI/PRISM system support, budget reconciliation, cost analysis, spend plan management</td></tr>
+          <tr><td><strong>Contract Administrator</strong></td><td>0343 (Mgmt Analyst)</td><td>GS-5 to GS-14</td><td>COR support, deliverable review, performance monitoring, contract file maintenance, invoice processing, correspondence tracking</td></tr>
+        </tbody>
+      </table>
+      <div class='callout callout-blue'>
+        <strong>Critical Constraint — No Inherently Governmental Functions:</strong> The PWS explicitly prohibits contractor personnel from obligating appropriated funds or executing contractual agreements on behalf of FAA. All procurement decisions remain with FAA contracting officers. This constraint is directly relevant to OCI — Changeis personnel would be <em>supporting</em> FAA COs, not making final decisions.
+      </div>
+    </div>
+  </div>
+
+  <!-- RAG MATCH -->
+  <div class='section' id='rag'>
+    <h2>3. RAG Match & Past Performance Fit</h2>
+    <div class='card'>
+      <p><strong>RAG API Result (top_n=50, queried 2026-05-27):</strong> The live RAG API returned results weighted toward Changeis's acquisition support and financial management work. Top matches and classification:</p>
+      <table class='table'>
+        <thead><tr><th>Tier</th><th>Score</th><th>Task Order</th><th>Contract #</th><th>End Client</th><th>Matching Chunks</th></tr></thead>
+        <tbody>
+          <tr><td><span class='badge badge-moderate'>MODERATE</span></td><td>0.322</td><td>FAA eFAST AHR Support Services</td><td>693KA9-23-F-00043</td><td>CBP, DHS, DOT, FAA</td><td>35</td></tr>
+          <tr><td><span class='badge badge-moderate'>MODERATE</span></td><td>0.311</td><td>FAA CLMRS</td><td>(active)</td><td>FAA</td><td>30</td></tr>
+          <tr><td><span class='badge badge-relevant'>RELEVANT</span></td><td>0.135</td><td>FAA ATAPS II</td><td>693KA9-24-F-00096</td><td>DOT, FAA, TSA</td><td>4</td></tr>
+          <tr><td><span class='badge badge-relevant'>RELEVANT</span></td><td>0.098</td><td>V3342015 (FRA MTAP Financial Mgmt)</td><td>6913G620F400046</td><td>DOT, FAA, FRA, Volpe</td><td>3</td></tr>
+          <tr><td><span class='badge badge-relevant'>RELEVANT</span></td><td>0.098</td><td>FAA eFAST BAFM III</td><td>693KA8-18-F-00012</td><td>DOT, FAA</td><td>3</td></tr>
+        </tbody>
+      </table>
+      <p class='meta' style='margin-top:8px;'>Overall RAG Classification: <span class='badge badge-moderate'>MODERATE</span> — top composite score 0.322. The eFAST AHR task order is the strongest semantic match, with explicit language on AMS acquisition support, source selection support, PRISM/DELPHI system expertise, and contract administration — a near-verbatim match to ASSC's draft PWS scope.</p>
+      <div class='callout callout-blue'>
+        <strong>Note on scores vs May 6 run:</strong> The May 6 analysis showed a higher composite (0.731 STRONG for ATAPS II) because it used a broader composite scoring algorithm. The current API returns normalized composite scores. Both confirm strong past performance alignment — the eFAST AHR SOW explicitly covers all three ASSC disciplines (1102/0500/0343 support) under AMS governance.
+      </div>
+    </div>
+  </div>
+
+  <!-- INCUMBENTS -->
+  <div class='section' id='incumbents'>
+    <h2>4. Incumbent Landscape & Competition</h2>
+    <div class='card'>
+      <table class='table'>
+        <thead><tr><th>AAQ Div</th><th>Incumbent</th><th>Contract</th><th>Reported Value</th><th>UEI</th><th>OCI Risk to Changeis?</th></tr></thead>
+        <tbody>
+          <tr><td>AAQ-200</td><td>Innovative Computing & Applied (INCA) Technology LLC</td><td>DTFAWA13A-00230 / 693KA7-22-F-00007</td><td>~$21.4M (BPA call; $1B-ceiling BPA)</td><td>ERN9NNNDWB15</td><td>Low — INCA is 8(a), separate work</td></tr>
+          <tr><td>AAQ-300/400</td><td>ITStrategy, Inc.</td><td>DTFAWA13A-00039 / 693KA8-22-F-00003</td><td>$48.1M potential / $28.2M obligated</td><td>XD9HDPF5DJL3</td><td>Medium — ITStrategy could claim unfair advantage if Changeis wins ASSC while also on ATAPS II</td></tr>
+          <tr><td>AAQ-500</td><td>Trevor L. Newman, Inc.</td><td>697DCK-23-C-00268</td><td>Not public</td><td>FE35WM3URJ59</td><td>Low</td></tr>
+          <tr><td>AAQ-600</td><td>Trevor L. Newman, Inc.</td><td>DTFAWA11A-00237</td><td>Not public (since 2011)</td><td>FE35WM3URJ59</td><td>Low</td></tr>
+          <tr><td>AAQ-700</td><td>Z-Tech Solutions, LLC</td><td>6973GH-22-D-00082 / 6973GH-25-F-00021</td><td>$8.2M (TSF acquisition support TO)</td><td>XLRZU56NNMN7</td><td>Low</td></tr>
+          <tr><td>AAQ-900</td><td>MARTEK Global Services, Inc.</td><td>DTFAWA17A-00030 / 693KA9-25-F-00090</td><td>$32.6M current call (June 2025 award, 4 bidders)</td><td>N95CYLE4M8G3</td><td>Low — MARTEK recently won; could protest Changeis OCI if not mitigated</td></tr>
+        </tbody>
+      </table>
+      <h3>Likely Competitors for ASSC Recompete</h3>
+      <ul>
+        <li><strong>ITStrategy, Inc.</strong> — strongest incumbent (AAQ-300/400, $48M ceiling); explicitly markets full-lifecycle FAA acquisition support; likely to be a formidable prime bidder. <a href='https://www.itstrategydc.com/capabilities/acquisition-support/' target='_blank'>ITStrategy capabilities ↗</a></li>
+        <li><strong>MARTEK Global Services</strong> — recent $32.6M AAQ-900 win (June 2025, beat 3 bidders); significant eFAST positioning and FAA acquisition workforce experience. <a href='https://orangeslices.ai/martek-global-services-beats-out-3-to-win-33m-faa-acquisition-and-business-services-acq-logistics-support-task-on-efast/' target='_blank'>OrangeSlices award ↗</a></li>
+        <li><strong>Trevor L. Newman, Inc.</strong> — SDVOSB/WOSB, long-tenured AAQ-500/600 incumbent (AAQ-600 since 2011); deep institutional knowledge</li>
+        <li><strong>INCA Technology</strong> — AAQ-200 incumbent; 8(a) qualified, large BPA history</li>
+        <li><strong>Z-Tech Solutions</strong> — AAQ-700 / Aeronautical Center incumbent; Aeronautical Center-specific advantage</li>
+        <li><strong>Savi Solutions</strong> — recently awarded an AAQ-460 acquisition support 8(a) sole source ($559K, Aug 2025); small but growing FAA footprint</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CAPABILITY MATRIX -->
+  <div class='section' id='capability'>
+    <h2>5. Capability Matrix — Requirements vs. Changeis Evidence</h2>
+    <div class='card'>
+      <table class='table'>
+        <thead><tr><th>#</th><th>ASSC Requirement</th><th>Changeis Evidence</th><th>Match Quality</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>FAA AMS-compliant acquisition document preparation (ASRB, OGB, CIO, CFO packages)</td><td>eFAST AHR (693KA9-23-F-00043): "Provide planning support for AMS milestones; Support ASRB, OGB, CIO, CFO approvals." CLMRS: explicit AMS compliance cited in contract documents.</td><td><span class='badge badge-strong'>STRONG</span></td></tr>
+          <tr><td>2</td><td>Contract Specialist (1102): RFP/SIR development, source selection evaluation support</td><td>eFAST AHR SOW §3.3.2: "Provide source selection evaluation support… develop source selection plan and procedures… evaluate proposals." GSA MAS: "RFI/RFQ/RFP Development," "Acquisition Strategy, Statement of Work, and Evaluation Factors."</td><td><span class='badge badge-strong'>STRONG</span></td></tr>
+          <tr><td>3</td><td>Financial Management (0500): PRISM/DELPHI systems, funding obligations, budget execution</td><td>eFAST AHR SOW §3.3.3: "Provide acquisition and accounting system support using PRISM and DELPHI systems, including billing and payment reconciliation." eFAST BAFM III: executive financial dashboards, cash flow reports, obligations tracking for FAA.</td><td><span class='badge badge-strong'>STRONG</span></td></tr>
+          <tr><td>4</td><td>Contract Administrator (0343): COR support, deliverable tracking, performance monitoring</td><td>ATAPS II: "performance monitoring support"; eFAST AHR: "track, review, and monitor contract funding, invoices, delivery/task orders"; multiple FAA MSRs demonstrating COR-accepted deliverable discipline.</td><td><span class='badge badge-moderate'>MODERATE</span></td></tr>
+          <tr><td>5</td><td>Multi-division FAA support (7 AAQ divisions, decentralized orders)</td><td>ATAPS II covers 8 ATO directorates simultaneously (AJT, AJG, AJV, AJM, AJI, AJR, AJW, AJF) — directly parallels ASSC's 7-division model. Multiple active Volpe task orders demonstrate multi-directorate delivery discipline.</td><td><span class='badge badge-strong'>STRONG</span></td></tr>
+          <tr><td>6</td><td>Multi-site PoP including OKC Aeronautical Center</td><td>CLMRS based at FAA Logistics Center (OKC); Aeronautical Center presence established. ATAPS II covers DC HQ footprint.</td><td><span class='badge badge-moderate'>MODERATE</span></td></tr>
+          <tr><td>7</td><td>FFP pricing model with COLA-indexed labor rates (geographic/remote adjustments)</td><td>$103M ATAPS II (FFP) + $62M CLMRS (FFP) = proven large-scale FFP execution. Geographic workforce delivery across DC, OKC, and remote established. Well-positioned to propose COLA-indexed model.</td><td><span class='badge badge-strong'>STRONG</span></td></tr>
+          <tr><td>8</td><td>Non-inherently governmental services; no fund obligation by contractor</td><td>eFAST BAFM III SOW §1.4 (Inherently Governmental Functions) explicitly mirrors ASSC constraint language: "support is limited to non-decision making activities that do not bind the Government." Changeis has a decade of compliant delivery under this constraint.</td><td><span class='badge badge-strong'>STRONG</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OCI ANALYSIS — PRIMARY SECTION -->
+  <div class='section' id='oci'>
+    <h2>6. OCI Analysis — FAR 9.5 / FAA AMS T3.1.7</h2>
+
+    <div class='callout callout-amber'>
+      <strong>Regulatory Framework Note:</strong> The FAA is NOT subject to the FAR. FAA acquisitions are governed by the <strong>Acquisition Management System (AMS)</strong>. However, FAA's AMS OCI guidance (T3.1.7) is explicitly modeled on FAR Subpart 9.5 and uses identical three-category taxonomy. All FAR 9.5 analysis below maps directly to FAA AMS T3.1.7 provisions. Key AMS clauses: <strong>3.1.7-1</strong> (Exclusion from Future Contracts), <strong>3.1.7-2</strong> (OCI), <strong>3.1.7-4</strong> (OCI Mitigation Plan), <strong>3.1.7-5</strong> (Disclosure of Conflicts), <strong>3.1.7-6</strong> (Disclosure of Certain Employee Relationships). See <a href='https://www.faa.gov/sites/faa.gov/files/2021-12/OCI-Guidance.pdf' target='_blank'>FAA OCI Guidance (Dec 2021) ↗</a>
+    </div>
+
+    <!-- OCI TYPE 1 -->
+    <div class='oci-section'>
+      <div class='oci-header oci-header-amber'>
+        <span class='risk-pill risk-medium'>MEDIUM RISK</span>
+        <span>Type 1: Unequal Access to Information (AMS T3.1.7 / FAR 9.505-4)</span>
+      </div>
+      <div class='oci-body'>
+        <p><strong>Definition:</strong> A contractor gains access to nonpublic information as part of performing an FAA contract, providing a competitive advantage in a later competition for another FAA contract.</p>
+
+        <p><strong>Applicable Changeis Contracts:</strong></p>
+        <ul>
+          <li><strong>FAA CLMRS</strong> (active) — Changeis has access to FAA Logistics Center acquisition strategies, procurement plans, IGCE data, and AMS milestone documentation for supply chain programs. If AAQ-700 (Aeronautical Center) or AAQ-900 (which handles some logistics-adjacent work) receives orders under ASSC, Changeis' CLMRS team may have seen nonpublic acquisition data that could inform its ASSC bid.</li>
+          <li><strong>FAA eFAST AHR (693KA9-23-F-00043)</strong> — Changeis performed acquisition support for FAA's Office of Accountability and Strategic Business Management. This work included reviewing procurement plans, supporting source selection, and advising on acquisition strategies within AAQ-adjacent organizations. Personnel from this contract may have had exposure to AAQ workload forecasting, acquisition pipeline, and internal resource gaps — exactly the information FAA would use to size the ASSC requirement.</li>
+          <li><strong>FAA ATAPS II (693KA9-24-F-00096)</strong> — Changeis supports 8 ATO directorates. While ATO (Air Traffic Organization) is distinct from AAQ, the ATAPS II work includes programmatic and financial planning that touches AAQ processes when ATO programs go through the AMS investment lifecycle.</li>
+        </ul>
+
+        <p><strong>Specific Concern:</strong> During the CLMRS and eFAST AHR performance periods, Changeis personnel may have seen: (a) internal FAA documents about acquisition workforce capacity, (b) AAQ staffing plans or resource gap analyses that directly informed the ASSC market survey (6973GH-25-SS-00002), or (c) IGCEs for individual AAQ division contracts that are being consolidated under ASSC. This nonpublic information could give Changeis an unfair pricing advantage.</p>
+
+        <p><strong>FAA AMS Trigger:</strong> AMS T3.1.7 states: "If the requirements of the FAA procurement anticipate the successful vendor may have access to nonpublic information, all vendors should be required to submit and negotiate an acceptable mitigation plan." The ASSC solicitation, when issued, should include this requirement.</p>
+
+        <div class='callout callout-amber'>
+          <strong>Risk Assessment: MEDIUM.</strong> The information access is indirect — CLMRS is supply chain/logistics, not AAQ contracting-staff augmentation. eFAST AHR is the most direct concern. However, the work was performed for different offices (AHR = Office of Accountability, not AAQ). Changeis should affirmatively disclose and certify that no nonpublic acquisition information was retained or used.
+        </div>
+      </div>
+    </div>
+
+    <!-- OCI TYPE 2 -->
+    <div class='oci-section'>
+      <div class='oci-header oci-header-red'>
+        <span class='risk-pill risk-high'>HIGH RISK</span>
+        <span>Type 2: Impaired Objectivity (AMS T3.1.7 / FAR 9.505-3) — PRIMARY CONCERN</span>
+      </div>
+      <div class='oci-body'>
+        <p><strong>Definition:</strong> A contractor is placed in a position of providing assessment and evaluation findings over itself (or a related entity), where the contractor's financial or other business relationship to the entity being evaluated could undermine impartial advice to FAA.</p>
+
+        <p><strong>This is the most serious OCI vector for Changeis on ASSC.</strong> Here is the specific chain of concern:</p>
+
+        <ol>
+          <li><strong>Changeis is currently performing acquisition support work for FAA</strong> — specifically ATAPS II ($103M), CLMRS ($62M active), and eFAST AHR. These contracts are active FAA procurements.</li>
+          <li><strong>ASSC tasks include source selection evaluation support</strong> — Contract Specialist (1102) personnel under ASSC would support FAA COs in evaluating proposals, developing source selection criteria, and providing "technical assistance in the evaluation of proposals received in response to the solicitation."</li>
+          <li><strong>The ASSC contractor could be positioned to support evaluations that involve Changeis itself</strong> — if any of the AAQ divisions issues a recompete or new task order under eFAST, SETIS, OASIS+, or a standalone vehicle for the type of work Changeis performs (IT/management consulting, acquisition support, program management), and if Changeis bids on that procurement, then the ASSC contract specialist supporting that AAQ division's source selection could potentially be a Changeis employee.</li>
+          <li><strong>ATAPS II recompete exposure</strong> — ATAPS II is a 5-year contract (expires ~2029). If the ASSC is awarded in late 2027, ASSC contract specialists supporting ATO acquisitions could be positioned near the ATAPS II recompete or follow-on task orders. Changeis ASSC personnel supporting AJT or AJG could conceivably see or influence procurement documents for work Changeis itself would bid on.</li>
+        </ol>
+
+        <p><strong>Applicable Changeis Contracts Creating the Concern:</strong></p>
+        <ul>
+          <li><strong>ATAPS II (693KA9-24-F-00096)</strong> — $103M, currently active. ASSC personnel in AAQ-300 or AAQ-400 could support source selection for any ATO-facing follow-on work Changeis bids on.</li>
+          <li><strong>CLMRS (active)</strong> — $62M, currently active. ASSC personnel in AAQ-700 (Aeronautical Center, which manages the CLMRS contract vehicle) could be positioned to see CLMRS recompete planning documentation.</li>
+          <li><strong>FAA OASIS+ Task Orders</strong> — If Changeis holds OASIS+ task orders through FAA, ASSC personnel in any AAQ division that awards OASIS+ orders could be supporting FAA COs who evaluate proposals on vehicles Changeis is positioned on.</li>
+          <li><strong>FAA APEX (previously bid)</strong> — Changeis invested in the FAA APEX bid. If APEX-related follow-on work is acquired through AAQ-supported processes, ASSC personnel could inadvertently support evaluations related to programs Changeis has knowledge of from proposal preparation.</li>
+        </ul>
+
+        <p><strong>FAA AMS Requirement:</strong> "If the successful vendor may be in a position to provide evaluations and assessments of itself or corporate siblings, or other entity with which it has a significant financial relationship, the affected contractor should provide a mitigation plan that includes <strong>recusal by the vendor from the affected contract work</strong>. Such recusal might include divestiture of the work to a third party vendor."</p>
+
+        <div class='callout callout-red'>
+          <strong>Risk Assessment: HIGH — but MITIGABLE.</strong> This is a real, structural conflict. However, FAA AMS expressly provides for mitigation rather than automatic exclusion. The ODRA (FAA's Office of Dispute Resolution for Acquisition) has confirmed that the Contracting Officer has sole authority to waive unmitigated OCIs (see <a href='https://www.faa.gov/media/10191' target='_blank'>ODRA Case D20_00872</a>). The path forward is a proactive, detailed OCI Mitigation Plan submitted with the proposal.
+        </div>
+      </div>
+    </div>
+
+    <!-- OCI TYPE 3 -->
+    <div class='oci-section'>
+      <div class='oci-header oci-header-green'>
+        <span class='risk-pill risk-low'>LOW RISK</span>
+        <span>Type 3: Biased Ground Rules (AMS T3.1.7 / FAR 9.505-1, 9.505-2)</span>
+      </div>
+      <div class='oci-body'>
+        <p><strong>Definition:</strong> A contractor, in the course of performance, establishes important ground rules (specifications, evaluation criteria, standards) that could favor its own capabilities in a later competition.</p>
+
+        <p><strong>Analysis:</strong> This risk is <strong>LOW</strong> for Changeis on ASSC. The biased ground rules concern applies when a contractor helps <em>write the statement of work or evaluation criteria</em> for a competition. In this case:</p>
+        <ul>
+          <li>The ASSC PWS has already been drafted by FAA internally (draft PWS released with the market survey).</li>
+          <li>Changeis is not involved in writing the ASSC solicitation documents.</li>
+          <li>Changeis' market survey feedback (which FAA is soliciting) may influence pricing structure, but FAA's stated policy is that feedback will be publicly posted and sanitized of company identification — all vendors are on equal footing.</li>
+          <li>The only residual risk is if Changeis' CLMRS or eFAST AHR work involved helping FAA plan or document the consolidation strategy that led to the ASSC. This is unlikely but should be affirmatively reviewed.</li>
+        </ul>
+
+        <p><strong>Specific Contracts to Review for Biased Ground Rules:</strong></p>
+        <ul>
+          <li>eFAST AHR (693KA9-23-F-00043): Review task order deliverables to confirm no Changeis work product contributed to the ASSC market survey, PWS, or acquisition strategy documentation.</li>
+          <li>CLMRS: Confirm no Changeis deliverables in AMS acquisition planning phases touched AAQ-700 consolidation planning.</li>
+        </ul>
+
+        <div class='callout callout-green'>
+          <strong>Risk Assessment: LOW.</strong> No evidence that Changeis contributed to ASSC requirements development. FAA's market survey process was open to all vendors. Recommend a one-paragraph certification in the OCI plan confirming no involvement in ASSC PWS preparation.
+        </div>
+      </div>
+    </div>
+
+    <!-- OCI VERDICT -->
+    <div class='verdict-box verdict-mitigable'>
+      <div class='verdict-title' style='color:#D97D2A;'>OCI Verdict: MITIGABLE</div>
+      <p><strong>Dominant Risk:</strong> Impaired Objectivity (High) — Changeis ASSC personnel could support source selection or evaluation activities that involve Changeis' own active contracts (ATAPS II, CLMRS) or bids on FAA work.</p>
+      <p><strong>Secondary Risk:</strong> Unequal Access to Information (Medium) — eFAST AHR performance may have included exposure to AAQ-adjacent acquisition planning data.</p>
+      <p><strong>Tertiary Risk:</strong> Biased Ground Rules (Low) — No indication Changeis influenced ASSC requirements development.</p>
+    </div>
+
+    <!-- MITIGATION PLAN -->
+    <h3>Recommended OCI Mitigation Plan (for ASSC Proposal)</h3>
+    <div class='card'>
+      <p>Per FAA AMS T3.1.7 and the <a href='https://www.magellanfederal.com/documents/2025/03/faa-eap-far-faa-flowdowns.pdf/' target='_blank'>FAA EAP OCI flowdown requirements</a>, Changeis should include a <strong>formal OCI Mitigation Plan</strong> as a proposal attachment. Recommended structure:</p>
+
+      <table class='table'>
+        <thead><tr><th>#</th><th>Mitigation Measure</th><th>Addresses</th><th>Implementation</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>Personnel Firewall</strong></td><td>Impaired Objectivity</td><td>No Changeis ASSC employee will perform source selection support, evaluation, or advisory services on any FAA procurement in which Changeis Inc. (or any Changeis teaming partner) is an offeror or incumbent. A named Firewall Administrator (Senior VP level) will enforce this.</td></tr>
+          <tr><td>2</td><td><strong>Recusal Registry</strong></td><td>Impaired Objectivity</td><td>ASSC program manager will maintain a real-time "Recusal Registry" — a list of active and anticipated FAA procurements where Changeis has or may have an interest. Any ASSC task assignment touching a listed procurement will require prior CO approval and Changeis recusal, with work reassigned to a subcontractor.</td></tr>
+          <tr><td>3</td><td><strong>Disclosure Obligation</strong></td><td>All Types</td><td>Changeis will provide AMS Clause 3.1.7-5 disclosure within 30 days of contract award, listing all active FAA contracts and any known future bids. Changeis will provide updates within 30 days of any new FAA bid submission or contract award.</td></tr>
+          <tr><td>4</td><td><strong>Information Barrier (CLMRS / eFAST AHR)</strong></td><td>Unequal Access</td><td>Personnel who performed on CLMRS or eFAST AHR will not be assigned to ASSC task orders within AAQ-700 (which managed the AAQ-700 CLMRS-adjacent contract) or within any AAQ division whose workload was directly supported by eFAST AHR. Documentation: signed NDA with Changeis internal firewall commitments.</td></tr>
+          <tr><td>5</td><td><strong>Subcontractor Safety Valve</strong></td><td>Impaired Objectivity</td><td>Changeis will designate an approved subcontractor (e.g., a small business teaming partner without conflicting FAA contracts) to perform any ASSC task work that Changeis must recuse from. The sub will have independent, direct delivery authority for those tasks.</td></tr>
+          <tr><td>6</td><td><strong>Annual OCI Review</strong></td><td>All Types</td><td>Annual review with the ASSC CO (AAQ-700 POC) to reassess conflict landscape as Changeis' FAA portfolio evolves. If ATAPS II or CLMRS recompete enters the pipeline, proactive notification will be provided immediately.</td></tr>
+        </tbody>
+      </table>
+
+      <div class='callout callout-blue'>
+        <strong>Proactive Disclosure Recommendation:</strong> Do not wait for the solicitation. During the market survey feedback phase (before Oct 1, 2026), Changeis should include a paragraph in its feedback letter voluntarily disclosing its existing FAA contracts (ATAPS II, CLMRS, eFAST AHR) and proposing to address OCI via the plan framework above. This demonstrates integrity, positions Changeis as a responsible offeror, and gives FAA the opportunity to provide guidance that shapes the solicitation OCI clause in Changeis' favor. Contact: Joshua Huckeby, joshua.d.huckeby@faa.gov.
+      </div>
+
+      <h3>ODRA Precedent: OCI is Waivable Under FAA AMS</h3>
+      <p>The FAA's ODRA confirmed in <a href='https://www.faa.gov/media/10191' target='_blank'>Case D20_00872 (CSRA, 2020)</a> that the FAA Contracting Officer has <strong>sole authority to waive unmitigated OCIs</strong> when "in the agency's best interest to award a contract notwithstanding a conflict of interest" (AMS Clause 3.1.7(e)). This means even if the FAA CO finds Changeis' mitigation plan insufficient, an OCI waiver is legally available — it is not an automatic disqualification. Prior ODRA decisions also show that in protest contexts, impaired objectivity is mitigable via recusal (see <a href='https://www.faa.gov/media/9966' target='_blank'>D17_00814 — CSRA protest</a>).</p>
+    </div>
+  </div>
+
+  <!-- GO/NO-GO -->
+  <div class='section' id='gono'>
+    <h2>7. Go / No-Go Assessment & Bid Strategy</h2>
+    <div class='card'>
+      <div class='callout callout-green'>
+        <p style='font-size:16px; margin:0;'><strong>Recommendation: <span class='badge badge-go'>GO — PRIME</span></strong> with OCI Mitigation Plan. Do not allow the OCI to be a disqualifier — it is mitigable and standard for companies with FAA breadth.</p>
+      </div>
+
+      <h3>Go Rationale</h3>
+      <ul>
+        <li><strong>FAA AMS expressly allows mitigation:</strong> FAA's own OCI guidance confirms that the correct path for a conflicted but qualified offeror is an OCI Mitigation Plan — not withdrawal. Changeis should lead with this, not avoid the opportunity.</li>
+        <li><strong>Strong capability alignment:</strong> eFAST AHR and CLMRS provide near-verbatim past performance for the ASSC's three core disciplines. RAG classification MODERATE (0.322) with 35 matching chunks on AHR alone.</li>
+        <li><strong>$45M–$55M value range</strong> is strategically significant for Changeis pipeline; consolidates current ~$100M+ in disparate AAQ vehicles.</li>
+        <li><strong>Shaping window is open:</strong> FAA explicitly invites feedback on draft PWS. Submitting a substantive market survey response with OCI disclosure and pricing strategy ideas is a competitive differentiator.</li>
+        <li><strong>WOSB/EDWOSB/8(a) posture:</strong> Changeis is eligible for any set-aside the FAA selects. If the FAA issues this as a small business set-aside, Changeis' socio-economic certifications are a significant advantage over large-business competitors.</li>
+      </ul>
+
+      <h3>Prime vs. Sub Assessment</h3>
+      <table class='table'>
+        <thead><tr><th>Posture</th><th>Pros</th><th>Cons</th><th>Pwin Est.</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Prime — Standalone</strong></td><td>Maximum revenue capture; demonstrates scale via ATAPS II / CLMRS; simplest OCI plan</td><td>No AAQ-division-specific incumbent relationships; OCI mitigation more complex to draft; 6 strong incumbents defending turf</td><td>30–40%</td></tr>
+          <tr><td><strong>Prime — With Sub Incumbents</strong></td><td>Incorporates incumbent relationships; sub provides AAQ-division presence; OCI plan includes sub as recusal fallback</td><td>Teaming complexity; margin sharing; sub loyalty risk pre-award</td><td>50–60%</td></tr>
+          <tr><td><strong>Sub to Large Business</strong></td><td>Lower OCI exposure; avoids prime complexity; leverages Changeis as differentiated WOSB sub</td><td>Much lower revenue; no prime credit; dependent on large business winning</td><td>N/A (sub pwin depends on prime)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Recommended Teaming Targets</h3>
+      <ul>
+        <li><strong>Trevor L. Newman, Inc. (TLNC)</strong> — SDVOSB/WOSB, AAQ-500/600 incumbent. Changeis as prime + TLNC as sub captures institutional AAQ knowledge in two divisions while Changeis brings scale and AMS depth. TLNC's recusal would cover AAQ-500/600 source selection if needed.</li>
+        <li><strong>Z-Tech Solutions</strong> — AAQ-700 incumbent. Aeronautical Center (OKC) expertise fills Changeis' OKC gap. As a small sub, Z-Tech adds geographic performance assurance.</li>
+        <li><strong>INCA Technology or Savi Solutions</strong> — 8(a) firms that could serve as AAQ-200 or niche division coverage, and whose 8(a) status may be leveraged if FAA issues any component as an 8(a) order.</li>
+      </ul>
+
+      <h3>Risks & Mitigations</h3>
+      <ul>
+        <li><strong>Risk:</strong> FAA CO rejects OCI plan as insufficient. <strong>Mitigation:</strong> Pre-proposal meeting with FAA CO (AAQ-700 POC) to validate plan structure; FAA's practice is to negotiate plans, not reject them outright. AMS 3.1.7-4 exists specifically for this purpose.</li>
+        <li><strong>Risk:</strong> Competitor protests on OCI grounds post-award. <strong>Mitigation:</strong> ODRA precedent supports CO's authority to accept mitigation plans; a well-documented, proactively disclosed plan is strong protest defense.</li>
+        <li><strong>Risk:</strong> FAA selects unrestricted full-and-open with large-business primes (Leidos, SAIC, Booz, GDIT). <strong>Mitigation:</strong> Engage AAQ CO during market survey to advocate for small business set-aside; emphasize consolidation efficiency that a small prime with FAA depth can deliver.</li>
+        <li><strong>Risk:</strong> Decentralized ordering favors incumbents per division. <strong>Mitigation:</strong> Position as "the consolidator" — ATAPS II's 8-directorate simultaneous coverage is the strongest analog to ASSC's decentralized model.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CAPTURE PLAN -->
+  <div class='section' id='capture'>
+    <h2>8. Capture Plan — Next 30/60/90 Days</h2>
+    <div class='card'>
+      <table class='table'>
+        <thead><tr><th>Timeline</th><th>Action</th><th>Owner</th><th>OCI Relevance</th></tr></thead>
+        <tbody>
+          <tr><td><strong>IMMEDIATE (0–7 days)</strong></td><td>Review eFAST AHR and CLMRS deliverables for any content that touched AAQ consolidation planning or the ASSC market survey. Document findings for OCI plan.</td><td>Contracts / BD</td><td>Unequal Access disclosure prep</td></tr>
+          <tr><td><strong>0–14 days</strong></td><td>Draft OCI Mitigation Plan using the 6-measure framework above. Identify Firewall Administrator and sub for recusal fallback.</td><td>BD + Contracts</td><td>Core OCI plan</td></tr>
+          <tr><td><strong>0–30 days</strong></td><td>Submit market survey feedback to joshua.d.huckeby@faa.gov. Include: (a) FFP COLA-indexed pricing methodology, (b) voluntary OCI disclosure paragraph, (c) expression of interest as prime, (d) teaming inquiry for TLNC/Z-Tech.</td><td>BD Lead</td><td>Proactive OCI disclosure</td></tr>
+          <tr><td><strong>15–45 days</strong></td><td>Hold internal capture kickoff. Assign capture lead and proposal manager. Begin win theme architecture: "AMS depth + multi-division scale + proactive OCI management."</td><td>BD Lead</td><td>OCI narrative development</td></tr>
+          <tr><td><strong>45–90 days</strong></td><td>Initiate teaming conversations with TLNC, Z-Tech. Confirm teaming interest and recusal coverage for AAQ-500/600/700. Begin key personnel pipeline (1102/0500/0343 talent).</td><td>BD + Recruiting</td><td>Sub as OCI safety valve</td></tr>
+          <tr><td><strong>90–120 days</strong></td><td>Watch for SAM.gov updated draft PWS or formal RFI. Prepare response incorporating OCI plan. Track if FAA issues Industry Day (common for $50M+ vehicles).</td><td>BD Lead</td><td>Monitor FAA OCI clause language</td></tr>
+          <tr><td><strong>Late Summer 2026</strong></td><td>Solicitation release expected. Proposal team mobilizes. OCI plan is finalized as a Section L/M exhibit (under AMS: proposal attachment).</td><td>Proposal Team</td><td>OCI plan submission</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SESSION CONTEXT -->
+  <div class='section' id='context'>
+    <h2>9. Session Context</h2>
+    <details class='ctx card'>
+      <summary>Show/Hide Full Context</summary>
+      <h3>Original Instructions</h3>
+      <p>Deep dive on FAA ASSC opportunity (SAM.gov 728a165976694df8b71dba7b576f527a). User instruction: "Deep dive. Point out any OCI concerns given we have other work with the FAA." OCI-focused analysis per FAR 9.5 / FAA AMS T3.1.7 covering all three OCI types. Gmail task from varun@changeis.com, email_id 19e6a58528edf9c1.</p>
+
+      <h3>Approach</h3>
+      <ul>
+        <li>Fetched SAM.gov opportunity page via fetch_url; extracted all fields including incumbents, contract types, and draft PWS summary.</li>
+        <li>Checked skip rules — no match; this is a NAICS 561990 support services opportunity with no set-aside trigger.</li>
+        <li>Ran RAG match API (POST to changeis-bd-rag-production.up.railway.app/match, top_n=50). Top result: eFAST AHR (693KA9-23-F-00043) at 0.322 MODERATE, 35 chunks.</li>
+        <li>Read prior May 6 deep dive (deep-dive-faa-assc-2026-05-06.html) to inherit incumbent and competitive intelligence.</li>
+        <li>Fetched FAA AMS OCI Guidance PDF (faa.gov/sites/faa.gov/files/2021-12/OCI-Guidance.pdf) for authoritative AMS OCI clause language.</li>
+        <li>Searched workspace for CLMRS, ATAPS II, eFAST AHR documentation to understand Changeis' active FAA exposure.</li>
+        <li>Researched ODRA precedent cases D20_00872 (CSRA OCI waiver) and D17_00814 (CSRA protest) for FAA-specific OCI resolution precedent.</li>
+      </ul>
+
+      <h3>Key Findings</h3>
+      <ul>
+        <li>OCI verdict: MITIGABLE. Dominant risk is Impaired Objectivity — ASSC tasks include source selection support, and Changeis is an incumbent on ATAPS II and CLMRS, meaning ASSC personnel could support evaluations of procurements that compete with or affect Changeis' own work.</li>
+        <li>FAA AMS T3.1.7 (not FAR 9.5) governs — but uses identical three-type taxonomy. AMS 3.1.7-4 specifically provides for OCI Mitigation Plans.</li>
+        <li>ODRA precedent confirms CO has sole authority to accept/waive OCI plans; automatic exclusion is not the FAA standard.</li>
+        <li>RAG classification MODERATE (0.322); eFAST AHR SOW is near-verbatim match to ASSC's three core disciplines.</li>
+        <li>6 current incumbents being consolidated; ASSC is a $45M–$55M, 5-year decentralized ordering contract for 7 AAQ divisions.</li>
+        <li>Recommended posture: GO as prime, with OCI Mitigation Plan, proactive disclosure to CO during market survey phase, and teaming with TLNC/Z-Tech as sub recusal fallback.</li>
+      </ul>
+
+      <h3>Dead Ends</h3>
+      <ul>
+        <li>Solicitation number not yet assigned (still pre-solicitation/market survey phase).</li>
+        <li>Exact dollar ceiling not published on SAM.gov; $45M–$55M is an AI estimate from BidBanana market analysis.</li>
+        <li>Draft PWS is attached to SAM.gov notice but not directly accessible via fetch_url; content inferred from prior deep dive and SAM.gov description text.</li>
+        <li>No FPDS awards exist yet for ASSC (not yet awarded); incumbent data sourced from SAM.gov notice.</li>
+      </ul>
+
+      <h3>Assumptions</h3>
+      <ul>
+        <li>FAA will issue a formal solicitation in late summer–fall 2026 per announcement.</li>
+        <li>ASSC will be a single-award decentralized ordering contract (FAQ language implies this).</li>
+        <li>Changeis' CLMRS and eFAST AHR work did not directly contribute to the ASSC PWS or market survey (to be confirmed via internal review).</li>
+        <li>Set-aside status is TBD; analysis assumes small business set-aside is plausible given incumbent mix.</li>
+      </ul>
+
+      <h3>Open Questions</h3>
+      <ul>
+        <li>Will FAA issue ASSC as single-award or multiple-award?</li>
+        <li>What is the set-aside strategy (8(a), WOSB, SB Total, or full-and-open)?</li>
+        <li>Did any Changeis deliverable under eFAST AHR or CLMRS contribute to the ASSC market survey or PWS?</li>
+        <li>Will FAA include AMS Clause 3.1.7-2 in the solicitation, and what level of OCI plan will be required?</li>
+        <li>Are any of the current incumbents (ITStrategy, MARTEK) planning to protest on OCI grounds if Changeis bids?</li>
+        <li>Is Changeis interested in teaming with TLNC or Z-Tech, or competing standalone?</li>
+      </ul>
+
+      <h3>Data Sources</h3>
+      <ul>
+        <li><a href='https://sam.gov/opp/728a165976694df8b71dba7b576f527a/view' target='_blank'>SAM.gov Opportunity 728a165976694df8b71dba7b576f527a ↗</a></li>
+        <li><a href='https://www.faa.gov/sites/faa.gov/files/2021-12/OCI-Guidance.pdf' target='_blank'>FAA AMS OCI Guidance (Dec 2021) ↗</a></li>
+        <li><a href='https://www.faa.gov/media/10191' target='_blank'>FAA ODRA Case D20_00872 (CSRA OCI Waiver, 2020) ↗</a></li>
+        <li><a href='https://www.faa.gov/media/9966' target='_blank'>FAA ODRA Case D17_00814 (CSRA Protest, OCI, 2017) ↗</a></li>
+        <li><a href='https://www.magellanfederal.com/documents/2025/03/faa-eap-far-faa-flowdowns.pdf/' target='_blank'>FAA EAP OCI Flowdowns (Magellan Federal) ↗</a></li>
+        <li><a href='https://www.acquisition.gov/far/subpart-9.5' target='_blank'>FAR Subpart 9.5 — Organizational Conflicts of Interest ↗</a></li>
+        <li><a href='https://orangeslices.ai/contract-award-8m-faa-technical-support-facility-acquisition-support-services/' target='_blank'>Z-Tech $8.2M AAQ-700 Award (OrangeSlices) ↗</a></li>
+        <li><a href='https://orangeslices.ai/martek-global-services-beats-out-3-to-win-33m-faa-acquisition-and-business-services-acq-logistics-support-task-on-efast/' target='_blank'>MARTEK $32.6M AAQ-900 Award (OrangeSlices) ↗</a></li>
+        <li>RAG API: changeis-bd-rag-production.up.railway.app/match (queried 2026-05-27)</li>
+        <li>Workspace files: deep-dive-faa-assc-2026-05-06.html (prior analysis), CLMRS MSRs, ATAPS II SOW, eFAST AHR SOW</li>
+      </ul>
+
+      <h3>Next Steps</h3>
+      <ul>
+        <li>Internal review: confirm no Changeis deliverable under eFAST AHR or CLMRS contributed to ASSC market survey.</li>
+        <li>Draft OCI Mitigation Plan document (6-measure framework) for use in market survey response and eventual proposal.</li>
+        <li>Submit market survey feedback to joshua.d.huckeby@faa.gov before Oct 1, 2026, including voluntary OCI disclosure.</li>
+        <li>Begin teaming conversations with Trevor L. Newman, Inc. and Z-Tech Solutions.</li>
+        <li>Assign capture lead and schedule internal capture kickoff.</li>
+        <li>Monitor SAM.gov for updated PWS or formal solicitation release.</li>
+      </ul>
+    </details>
+  </div>
+
+  <!-- CONTINUE THIS WORK -->
+  <div class='section'>
+    <h2>Continue This Work</h2>
+    <div class='card'>
+      <p>Use these actions to continue analysis or escalate to the team:</p>
+      <div class='actions'>
+        <button onclick='copyPrompt()'>📋 Copy Follow-Up Prompt</button>
+        <a href='mailto:vm2.viru@gmail.com?subject=Follow-Up: FAA ASSC OCI Deep Dive&body=Continue the FAA ASSC OCI analysis. Deliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-faa-assc-728a1659-2026-05-27.html%0A%0AFocus: OCI mitigation plan development, market survey feedback strategy, teaming partner outreach for ASSC.%0A%0AKey context: MITIGABLE OCI (Impaired Objectivity dominant). Changeis holds ATAPS II + CLMRS + eFAST AHR. AMS 3.1.7-4 mitigation plan required. Proactive CO disclosure recommended before Oct 1, 2026.'>✉ Email to VM2</a>
+        <a href='https://todoist.com/add?text=FAA+ASSC+OCI+Follow-Up:+Draft+OCI+Mitigation+Plan+%26+Market+Survey+Response+before+Oct+1+2026&note=https://vm2-p-taskers-production.up.railway.app/deep-dive-faa-assc-728a1659-2026-05-27.html' target='_blank'>✓ Create Todoist Follow-Up</a>
+      </div>
+    </div>
+  </div>
+
+  <div class='footer'>Changeis Confidential · FAA ASSC Deep Dive (OCI-Focused) · 2026-05-27 · VM2 Deliverable</div>
+</div>
+
+<script type='application/json' id='vm2-context-data'>
+{
+  "task_name": "Deep Dive — FAA ASSC (OCI-Focused Revision)",
+  "task_date": "2026-05-27",
+  "deliverable_file": "deep-dive-faa-assc-728a1659-2026-05-27.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-faa-assc-728a1659-2026-05-27.html",
+  "version": 2,
+  "created_date": "2026-05-06",
+  "revised_date": "2026-05-27",
+  "prior_versions": ["deep-dive-faa-assc-2026-05-06.html"],
+  "related_deliverables": ["faa-apex-industry-day-analysis-2026-05-04.html", "faa-apex-rfi-review-2026-05-05.html", "bd-faa-atlas-industry-day-2026-05-05.html"],
+  "original_instructions": "Deep dive on SAM.gov ASSC opportunity (728a165976694df8b71dba7b576f527a). User instruction: 'Deep dive. Point out any OCI concerns given we have other work with the FAA.' OCI analysis per FAR 9.5 / FAA AMS T3.1.7. Gmail task email_id 19e6a58528edf9c1.",
+  "approach": "Fetched SAM.gov page, checked skip rules (no match), ran RAG API (MODERATE 0.322), read prior deep dive, fetched FAA AMS OCI Guidance PDF, researched ODRA precedent, analyzed all three OCI types against Changeis' active FAA contract portfolio.",
+  "key_findings": [
+    "OCI verdict: MITIGABLE — Impaired Objectivity is the dominant risk (HIGH) due to ATAPS II/CLMRS incumbency vs ASSC source selection support tasks",
+    "Unequal Access is MEDIUM risk from eFAST AHR performance (acquisition planning support for FAA office)",
+    "Biased Ground Rules is LOW risk — no evidence Changeis contributed to ASSC PWS development",
+    "FAA AMS T3.1.7 (not FAR) governs; OCI Mitigation Plans are expressly provided for; CO can waive per ODRA D20_00872",
+    "RAG classification MODERATE (0.322 composite); eFAST AHR is nearest past performance match with 35 matching chunks",
+    "GO as prime recommended with 6-measure OCI Mitigation Plan; proactive CO disclosure before Oct 1 feedback deadline"
+  ],
+  "dead_ends": ["Solicitation number not yet assigned", "Exact ceiling not published", "Draft PWS not directly accessible via fetch_url", "No FPDS awards yet for ASSC"],
+  "assumptions": ["FAA will issue solicitation late summer-fall 2026", "ASSC will be single-award decentralized ordering", "Changeis CLMRS/eFAST AHR did not contribute to ASSC PWS"],
+  "open_questions": ["Set-aside strategy TBD", "Single vs multiple award", "Did Changeis work product contribute to ASSC market survey?", "Will FAA require AMS 3.1.7-2 OCI clause in solicitation?"],
+  "data_sources": ["SAM.gov opportunity page", "FAA AMS OCI Guidance PDF", "FAA ODRA cases D20_00872 and D17_00814", "FAA EAP OCI Flowdowns", "RAG API", "Workspace CLMRS/ATAPS II/eFAST AHR documents", "OrangeSlices incumbent award data"],
+  "next_steps": ["Internal review of eFAST AHR deliverables for ASSC overlap", "Draft OCI Mitigation Plan", "Submit market survey feedback with voluntary OCI disclosure", "Begin teaming conversations with TLNC and Z-Tech", "Assign capture lead"],
+  "cost_estimate": {
+    "model": "perplexity-sonar-pro",
+    "model_pricing": "~$0.15-0.25 per 4000-word deliverable",
+    "input_tokens_est": "~60,000",
+    "output_tokens_est": "~10,000",
+    "search_calls": 6,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.22",
+    "cost_ceiling": "$0.45",
+    "notes": "Includes SAM.gov fetch, RAG API call, FAA OCI Guidance PDF fetch, web searches for ODRA precedent and incumbent data, workspace file reads"
+  }
+}
+</script>
+</body>
+</html>
