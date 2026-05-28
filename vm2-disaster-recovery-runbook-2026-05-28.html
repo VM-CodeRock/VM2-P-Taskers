@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html data-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>VM2 Disaster Recovery Runbook &mdash; May 28, 2026 (v3.3)</title>
+<style>
+:root {
+  --bg:#ffffff; --bg-alt:#f7f7f7; --bg-card:#fafafa;
+  --text:#1a1a1a; --text-sec:#6b6b6b; --text-muted:#999;
+  --accent:#c53a3a; --accent-hover:#a82e2e;
+  --border:#e5e5e5; --border-light:#f0f0f0;
+  --navy:#1B2A4A; --blue:#2E6DA4; --teal:#008B8B;
+  --green:#2D7D4A; --orange:#D97D2A; --purple:#6B4C9A;
+  --font-serif:Charter,'Bitstream Charter','Sitka Text',Cambria,Georgia,serif;
+  --font-sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --font-mono:'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;
+  --w:900px;
+}
+[data-theme="dark"]{
+  --bg:#1a1a1a; --bg-alt:#242424; --bg-card:#2a2a2a;
+  --text:#e5e5e5; --text-sec:#a0a0a0; --text-muted:#707070;
+  --accent:#e05555; --accent-hover:#f06666;
+  --border:#333; --border-light:#2a2a2a;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-serif);font-size:1rem;line-height:1.7;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+.topbar{border-bottom:1px solid var(--border);padding:.8rem 1.2rem;display:flex;justify-content:space-between;align-items:center;max-width:var(--w);margin:0 auto}
+.topbar-brand{font-family:var(--font-sans);font-size:.8rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:.8rem}
+.topbar-date{font-family:var(--font-sans);font-size:.8rem;color:var(--text-muted)}
+.theme-toggle{background:none;border:1px solid var(--border);border-radius:6px;padding:.3rem .5rem;cursor:pointer;font-size:.85rem;color:var(--text-sec)}
+.theme-toggle:hover{border-color:var(--text-sec)}
+.page{max-width:var(--w);margin:0 auto;padding:0 1.2rem 4rem}
+h1{font-family:var(--font-serif);font-size:1.8rem;font-weight:700;color:var(--text);margin:2rem 0 .5rem;line-height:1.3}
+h2{font-family:var(--font-sans);font-size:.75rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+h3{font-family:var(--font-serif);font-size:1.15rem;font-weight:700;color:var(--text);margin:1.5rem 0 .5rem}
+h4{font-family:var(--font-sans);font-size:.85rem;font-weight:600;color:var(--text-sec);margin:1.2rem 0 .4rem}
+p{margin:.5rem 0;color:var(--text)}
+ul,ol{margin:.5rem 0 .5rem 1.5rem}
+li{margin:.3rem 0;color:var(--text)}
+code{font-family:var(--font-mono);font-size:.85em;background:var(--bg-alt);padding:.15rem .4rem;border-radius:3px;color:var(--accent)}
+pre{background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:1rem;overflow-x:auto;font-family:var(--font-mono);font-size:.82rem;line-height:1.5;margin:.8rem 0;color:var(--text)}
+table{width:100%;border-collapse:collapse;margin:.8rem 0;font-size:.9rem}
+th{background:var(--navy);color:#fff;font-family:var(--font-sans);font-size:.8rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:.6rem .8rem;text-align:left}
+td{padding:.5rem .8rem;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:nth-child(even){background:var(--bg-alt)}
+.callout{background:var(--bg-alt);border-left:3px solid var(--teal);padding:1rem;margin:1rem 0;border-radius:0 6px 6px 0}
+.callout-warn{border-left-color:var(--orange);background:#fff8f0}
+[data-theme="dark"] .callout-warn{background:#2a2218}
+.callout-critical{border-left-color:var(--accent);background:#fff0f0}
+[data-theme="dark"] .callout-critical{background:#2a1818}
+.callout h4{margin:0 0 .4rem;color:var(--navy)}
+[data-theme="dark"] .callout h4{color:var(--text)}
+.badge{display:inline-block;font-family:var(--font-sans);font-size:.7rem;font-weight:600;padding:.2rem .5rem;border-radius:3px;letter-spacing:.03em;text-transform:uppercase}
+.badge-cron{background:#e8f4f8;color:#0d7377}
+[data-theme="dark"] .badge-cron{background:#1a3333;color:#4dd4d8}
+.badge-skill{background:#f0e8f8;color:#6B4C9A}
+[data-theme="dark"] .badge-skill{background:#2a1f3a;color:#b08de0}
+.badge-cred{background:#f8e8e8;color:#b22222}
+[data-theme="dark"] .badge-cred{background:#3a1a1a;color:#e06060}
+.badge-new{background:#e8f8ee;color:#2D7D4A}
+[data-theme="dark"] .badge-new{background:#1a3323;color:#5dd48d}
+.toc{background:var(--bg-alt);border:1px solid var(--border);border-radius:6px;padding:1.2rem 1.5rem;margin:1.5rem 0}
+.toc h4{margin:0 0 .6rem;font-family:var(--font-sans);font-size:.8rem;color:var(--text-sec)}
+.toc ol{margin:0;padding-left:1.2rem}
+.toc li{margin:.3rem 0;font-size:.9rem}
+.toc a{color:var(--accent);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.section-num{font-family:var(--font-mono);font-size:.75rem;color:var(--text-muted);margin-right:.4rem}
+details{margin:.8rem 0}
+summary{cursor:pointer;font-weight:600;color:var(--accent);font-family:var(--font-sans);font-size:.9rem;padding:.5rem 0}
+details[open] summary{margin-bottom:.5rem}
+.footer{border-top:1px solid var(--border);padding:1.5rem 0;margin-top:3rem;text-align:center;font-family:var(--font-sans);font-size:.75rem;color:var(--text-muted)}
+@media print{
+  .topbar,.theme-toggle,.toc,.footer,details summary::marker{}
+  body{font-size:9pt;line-height:1.4}
+  pre{font-size:7pt;white-space:pre-wrap}
+  h2{page-break-before:always}
+  .page{max-width:100%}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand">VM2</div>
+  <div class="topbar-right">
+    <span class="topbar-date">May 25, 2026</span>
+    <button class="theme-toggle" onclick="let t=document.documentElement;t.dataset.theme=t.dataset.theme==='dark'?'light':'dark'">&#9681; Theme</button>
+  </div>
+</div>
+
+<div class="page">
+
+<h1>VM2 Disaster Recovery Runbook</h1>
+<p style="color:var(--text-sec);font-size:.95rem;margin-bottom:.5rem">Complete system reconstruction guide &mdash; Version 3.3 &mdash; Created: 2026-04-06 &middot; Revised: 2026-05-28</p>
+<p style="color:var(--text-muted);font-size:.85rem">This document enables full reconstruction of the VM2 automated workflow system on a new Perplexity Computer account, a different platform, or after a session/data loss event. It is designed to be executed by someone with no prior knowledge of the system.</p>
+
+<div class="callout callout-critical">
+<h4>&#9888; CONFIDENTIAL &mdash; Contains Credentials</h4>
+<p>This document contains API keys, tokens, passwords, and integration secrets. Treat with the same care as a password vault export. Do not share publicly.</p>
+</div>
+
+<div class="callout" style="border-left-color:var(--green)">
+<h4>Version 3.3 &mdash; May 28, 2026 <span class="badge badge-new">Latest</span></h4>
+<p><strong>Changes in v3.3 (May 28, 2026 update):</strong> NEW Issue #10 APFS RAG Parser Field Mismatch &mdash; cron 8734a0c6 was using <code>record.get('title')</code> which is null; real fields are <code>requirements_title</code> + <code>requirement</code>; asterisk-prefixed apfs_numbers (e.g. <code>*F2025071074</code>) must be preserved verbatim as unique keys. 4 records inline-patched 5/27 (F2026073183, F2026073425, F2026073890, *F2025071074; all LOW 0.30&ndash;0.32). UTC Rollover stand-down events: 13 &rarr; <strong>18 cumulative skip events</strong> (events #14&ndash;#18 on 5/27 night; events #17&ndash;#18 first surfaced 5th recurring task). <strong>5th recurring task added:</strong> &ldquo;Review Changeis New Hire Tracker&rdquo; (SharePoint Excel). Total vm2-recurring tasks: 5. TYPE B Gmail Deep Dive: 3 proven user-initiated executions on 5/27 (ASSC FAA email_id 19e6a58528edf9c1 &mdash; OCI MITIGABLE GO, RFQ1813793 email_id 19e6a8594fa13a8c &mdash; GO prime GSA MAS, YPO DC SOP email_id 19e6b0fb2fddb582 &mdash; 7-stage lifecycle). processed_email_ids: 196 &rarr; 199. Audit cron 5cfbd2ec race condition Issue #5 confirmed 5/27: 1 PM run flagged ASSC as missed intake while subagent was concurrently processing. Remediated 10 Dropbox misses + 1 missing portal entry. Audit run count 87 &rarr; 89. Compliance audit 5/28: 8 deliverables missing context components; 1 non-bot commit (e00c702). deliverable_count=924, run_number=25. NEW sections: §8j APFS RAG Recovery (Issue #10), §8k Gmail Intake Race Condition. 5-task UTC rollover playbook updated.</p>
+
+<h4>Version 3.2 &mdash; May 25, 2026</h4>
+<p><strong>Changes in v3.2 (May 25, 2026 update):</strong> Open Issue #2 (Auto-Helper 27d43c4a todoist__pipedream reference) <strong>RESOLVED 5/24</strong> via permanent REST patch &mdash; no Pipedream dependency. Three new Open Issues: <strong>#11</strong> Gmail Intake 2da8354a silent-write failure (state stuck 5/22, manually refreshed 5/24); <strong>#12</strong> Audit cron 5cfbd2ec using wrong Gmail connector (pplx_device__mail instead of gcal) &mdash; runtime approval required; <strong>#13</strong> SAM Monitor 8f2a4ac1 stale lock PID 268736 (5/25 13:00 UTC, window 5/18&rarr;5/25). UTC Rollover stand-down events 88 &rarr; <strong>13 cumulative skip events</strong> (pattern renamed). ATEPS-II: $147.3M total backlog; Changeis IDC terminated for convenience 4/21/25 ($114.7M&rarr;$0). MAPS: Amendment 008 detected on HigherGov (5/22); SAM.gov still showing Amendment 0002 (stale); deadline June 22 2026 12:00 PM ET; TechSur withdrew both protests. ICF FHWA Safety IDIQ #286766 fully executed 5/22 (new vehicle live). FAA ARP HQ Strategic Planning Support (9c87922d) due 5/26 5PM ET, WOSB, RAG STRONG 0.652. FMCSA Motus Issues #006 (5/24) and #007 (5/25) as external committer. Weekly Digest W21 published: 59 deliverables, peak 5/18 (17), 0 FAIL, git tag v2026-W21. YPO Backlog 5/25: 4 active introductions. Deliverable count 890, run_number=24. NEW: load_skill workaround documented (read SKILL.md from disk directly). Same 14 crons, no new skills.</p>
+
+<h4>Version 3.1 &mdash; May 23, 2026</h4>
+<p><strong>Changes in v3.1:</strong> CRITICAL ATEPS-II finding: Changeis IDC 693KA925D00004 terminated for convenience 4/21/25 ($114.6M ceiling reduced 100%; prior checks missed this for 13 months). Auto-Helper 5/23 executed via inline REST workaround (5/21+5/22 still missing); deliverable count 876&rarr;890; UTC rollover stand-downs 81+&rarr;88+ cumulative; Weekly Digest W21 published; AI Daily reported OpenAI S-1 filing + Trump AI EO withdrawal + Anthropic Project Glasswing vulnerabilities.</p>
+
+<h4>Version 3.0 &mdash; May 22, 2026</h4>
+<p><strong>Changes in v3.0:</strong> Deliverable count 856&rarr;876. Auto-Helper Cron 27d43c4a missing runs 5/21+5/22 &mdash; REST-only workaround documented. Open Issue #2 logged. MAPS state refreshed: Amendment 007 detected 5/22 on HigherGov (SAM.gov still stale at 0002). ICF FHWA Safety IDIQ executed 5/22. External committer FMCSA Motus (3 commits). YPO backlog 4 active intros.</p>
+
+<h4>Version 2.9 &mdash; May 20, 2026</h4>
+<p><strong>Changes in v2.9:</strong> Deliverable count 840&rarr;856 (+16). APFS RAG normalizer post-run patch applied 5/20. UTC Rollover Stand-Downs 65&rarr;74. MAPS Amendment 0006 / May 20 5 PM EDT deadline reached; cron 2702d270 KEEP RUNNING through ~8/17. External committers detected. SAM Monitor 8f2a4ac1 stale-lock pattern observed 5/20 (PID 247615). Portal race-condition resolved 5/20 22:01.</p>
+</div>
+
+<div class="toc">
+<h4>TABLE OF CONTENTS</h4>
+<ol>
+<li><a href="#s1">System Overview &amp; Architecture</a></li>
+<li><a href="#s2">Infrastructure &amp; Hosting</a></li>
+<li><a href="#s3">All Credentials &amp; API Keys</a></li>
+<li><a href="#s4">Connected Services (Connectors)</a></li>
+<li><a href="#s5">User Skills (5 Skills)</a></li>
+<li><a href="#s6">All 14 Scheduled Tasks (Cron Jobs)</a></li>
+<li><a href="#s7">File System &amp; State Files</a></li>
+<li><a href="#s8">Key Configuration Files</a></li>
+<li><a href="#s8b">Thread Tag Mechanism</a></li>
+<li><a href="#s8c">Public Sharing Pattern</a></li>
+<li><a href="#s8d">New Deliverable Patterns (v2.6)</a></li>
+<li><a href="#s8e">Gmail Attachment Retrieval (v2.5)</a></li>
+<li><a href="#s8f">SAM Monitor Hardening (v2.6)</a></li>
+<li><a href="#s8g">SAM Stuck-Run Cleanup Procedure (v2.6)</a></li>
+<li><a href="#s8h">APFS RAG Schema Drift Detection (v2.9)</a></li>
+<li><a href="#s8i">load_skill Failure Workaround (v3.2)</a></li>
+<li><a href="#s8j">APFS RAG Recovery &mdash; Issue #10 (v3.3)</a></li>
+<li><a href="#s8k">Gmail Intake Race Condition with Audit Cron (v3.3)</a></li>
+<li><a href="#s9">Global Workflow Rules</a></li>
+<li><a href="#s10">User Instructions (Preserved Verbatim)</a></li>
+<li><a href="#s11">Step-by-Step Recovery Procedure</a></li>
+<li><a href="#s11b">Pending Instruction Fixes (v3.3)</a></li>
+<li><a href="#s12">Troubleshooting &amp; Known Issues</a></li>
+<li><a href="#s11p5a">Phase 5a: Compliance Slug Regression &mdash; Inline Retrofit</a></li>
+<li><a href="#s13">Appendix: NAICS Code Reference</a></li>
+</ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s1"><span class="section-num">01</span> System Overview &amp; Architecture</h2>
+
+<h3>What is VM2?</h3>
+<p>VM2 ("Varun Malhotra 2") is an automated Chief-of-Staff AI system built on Perplexity Computer for Varun Malhotra, President of Changeis Inc. It runs 14 scheduled tasks that automate:</p>
+<ul>
+<li><strong>Daily Executive Agenda</strong> &mdash; Morning briefing with calendar, email triage, and task priorities</li>
+<li><strong>Federal Opportunity Intelligence</strong> &mdash; Monitoring DHS APFS and SAM.gov for contract opportunities, RAG-scoring them against Changeis past performance, and generating deep-dive analyses</li>
+<li><strong>Task Automation</strong> &mdash; Executing tasks from Todoist (VM2 label) and Gmail (vm2.viru@gmail.com)</li>
+<li><strong>Compliance &amp; Governance</strong> &mdash; Nightly audits, weekly digests, monthly integrity checks, deliverable integrity audits</li>
+<li><strong>Business Development</strong> &mdash; YPO introduction tracking, Todoist auto-helper suggestions, MAPS amendment monitoring</li>
+</ul>
+
+<h3>Architecture Diagram</h3>
+<pre>
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                    PERPLEXITY COMPUTER (VM2)                      &#9474;
+&#9474;                                                                   &#9474;
+&#9474;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474;
+&#9474;  &#9474;  14 Cron Jobs   &#9474;  &#9474;  5 User Skills    &#9474;  &#9474;  State Files  &#9474;  &#9474;
+&#9474;  &#9474;  (Scheduled)    &#9474;  &#9474;  (Behavior Specs) &#9474;  &#9474;  (Tracking)   &#9474;  &#9474;
+&#9474;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;  &#9474;
+&#9474;         &#9474;                                                         &#9474;
+&#9474;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488; &#9474;
+&#9474;  &#9474;  Connectors: Outlook, Gmail, Todoist, GitHub, Dropbox,      &#9474; &#9474;
+&#9474;  &#9474;  SharePoint, Box, Google Drive, Jira, Teams, Fireflies      &#9474; &#9474;
+&#9474;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496; &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+          &#9474;
+    &#9484;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;     &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+    &#9474;  GitHub Repo      &#9474;     &#9474;  Railway Hosting     &#9474;
+    &#9474;  vm-coderock/     &#9474;&#9472;&#9472;&#9472;&#9472;&#9658;&#9474;  nginx + basic auth  &#9474;
+    &#9474;  VM2-P-Taskers    &#9474;     &#9474;  vm2 / 97harry23!    &#9474;
+    &#9474;  (890 deliverables)&#9474;     &#9474;  + Todoist proxy     &#9474;
+    &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;     &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+          &#9474;
+    &#9484;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;     &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+    &#9474;  Dropbox          &#9474;     &#9474;  RAG Engine          &#9474;
+    &#9474;  V M2/VM2-main-   &#9474;     &#9474;  Railway app         &#9474;
+    &#9474;  folder/VM2-P/    &#9474;     &#9474;  changeis-bd-rag     &#9474;
+    &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;     &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+</pre>
+
+<h3>Data Flow Summary</h3>
+<ol>
+<li>Cron fires &rarr; loads required user skills &rarr; collects data from external APIs/connectors</li>
+<li>Processes data (filtering, RAG scoring, triage) &rarr; generates HTML deliverable</li>
+<li>Publishes: GitHub push &rarr; portal.html update &rarr; Dropbox upload &rarr; email delivery</li>
+<li>Tracks state in JSON files under <code>/home/user/workspace/cron_tracking/</code></li>
+</ol>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s2"><span class="section-num">02</span> Infrastructure &amp; Hosting</h2>
+
+<h3>GitHub Repository</h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Repository</td><td><code>vm-coderock/VM2-P-Taskers</code></td></tr>
+<tr><td>GitHub Pages URL</td><td><code>https://vm-coderock.github.io/VM2-P-Taskers/</code></td></tr>
+<tr><td>Total HTML files</td><td>890 deliverables</td></tr>
+<tr><td>Git user.email</td><td><code>varun@changeis.com</code></td></tr>
+<tr><td>Git user.name</td><td><code>VM2-Perplexity</code></td></tr>
+<tr><td>Auth method</td><td><code>api_credentials=["github"]</code> (Perplexity Computer built-in)</td></tr>
+<tr><td>Key files</td><td><code>index.html</code> (redirect stub), <code>portal.html</code> (deliverables index), <code>_system/</code> (scripts)</td></tr>
+</table>
+
+<div class="callout">
+<h4>index.html is IMMUTABLE</h4>
+<p><code>index.html</code> is a ~229-byte redirect stub that points to <code>portal.html</code>. It must never be modified. The deliverables index is <code>portal.html</code>.</p>
+<pre>&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset="utf-8"&gt;
+&lt;meta http-equiv="refresh" content="0;url=portal.html"&gt;
+&lt;title&gt;Redirecting&hellip;&lt;/title&gt;&lt;/head&gt;&lt;body&gt;
+&lt;p&gt;Redirecting to &lt;a href="portal.html"&gt;portal.html&lt;/a&gt;&hellip;&lt;/p&gt;
+&lt;/body&gt;&lt;/html&gt;</pre>
+</div>
+
+<h3>Railway Hosting <span class="badge badge-cron">Tier 1 &mdash; Auth-Protected</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>URL</td><td><code>https://vm2-p-taskers-production.up.railway.app/</code></td></tr>
+<tr><td>Auth</td><td>nginx basic auth: username <code>vm2</code>, password <code>97harry23!</code></td></tr>
+<tr><td>Stack</td><td>nginx serving static HTML from GitHub repo</td></tr>
+<tr><td>Todoist Proxy</td><td><code>/api/todoist/</code> &rarr; proxies to <code>https://api.todoist.com/api/v1/</code></td></tr>
+<tr><td>Proxy Auth</td><td>nginx injects <code>Authorization: Bearer</code> from <code>VM2_TODOIST_TOKEN</code> env var</td></tr>
+<tr><td>Basic auth disabled on</td><td><code>/api/todoist/</code> endpoint (so JS can call it from browser)</td></tr>
+<tr><td>Entrypoint</td><td><code>entrypoint.sh</code> injects token at container start</td></tr>
+</table>
+
+<h3>Dropbox</h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Root path</td><td><code>/V M2/VM2-main-folder/VM2-P/</code></td></tr>
+<tr><td>Alt path (wrapup skill)</td><td><code>/VM2-main-folder/VM2-P/Taskers/</code></td></tr>
+<tr><td>App Key</td><td><code>hxpsk9te4wiyzud</code></td></tr>
+<tr><td>App Secret</td><td><code>586m8kofaq3isn9</code></td></tr>
+<tr><td>Refresh Token</td><td><code>-CFeD0umIIYAAAAAAAAAAZJJvNziWCUZGTiCVL7QYt2wzpmnVAxg-fB3a0gXHaFx</code></td></tr>
+<tr><td>Token URL</td><td><code>https://api.dropbox.com/oauth2/token</code></td></tr>
+<tr><td>Upload URL</td><td><code>https://content.dropboxapi.com/2/files/upload</code></td></tr>
+<tr><td>Known issue (v2.5)</td><td><span class="badge badge-cred">Dup-on-overwrite</span> Connector creates &ldquo;(1)&rdquo; duplicate instead of replacing. Fix: add <code>mode: overwrite</code> to upload API calls.</td></tr>
+</table>
+
+<h3>RAG Engine (Changeis BD)</h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Endpoint</td><td><code>POST https://changeis-bd-rag-production.up.railway.app/match</code></td></tr>
+<tr><td>Auth Header</td><td><code>X-API-Key</code> (NOT <code>Authorization: Bearer</code>)</td></tr>
+<tr><td>API Key</td><td><code>a3-nFpt4YJHCXpsTHS7ZAikNllzrPtCORKBoSN8tAAE</code></td></tr>
+<tr><td>Parameters</td><td><code>{"query": "...", "top_n": 50}</code></td></tr>
+<tr><td>Response schema (v2.9)</td><td><code>{query, matches[], best_match, best_score, tier}</code> &mdash; each match has <code>composite_score</code></td></tr>
+<tr><td>Scoring Tiers</td><td>STRONG &ge;0.65, MODERATE 0.50&ndash;0.64, RELEVANT 0.45&ndash;0.49, LOW &lt;0.45</td></tr>
+<tr><td>Config file</td><td><code>/home/user/workspace/cron_tracking/rag_config/config.json</code></td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s3"><span class="section-num">03</span> All Credentials &amp; API Keys</h2>
+
+<div class="callout callout-critical">
+<h4>&#128274; Sensitive Credentials</h4>
+<p>Store these securely. Rotate if this document is ever exposed.</p>
+</div>
+
+<table>
+<tr><th>Service</th><th>Credential Type</th><th>Value</th></tr>
+<tr><td>Railway (VM2-P-Taskers)</td><td>Basic auth</td><td>username: <code>vm2</code> &nbsp; password: <code>97harry23!</code></td></tr>
+<tr><td>Todoist</td><td>API Token</td><td><code>0ac557ece28a1cd92b9635a8fbae56eec15887ad</code></td></tr>
+<tr><td>RAG Engine</td><td>X-API-Key</td><td><code>a3-nFpt4YJHCXpsTHS7ZAikNllzrPtCORKBoSN8tAAE</code></td></tr>
+<tr><td>SAM.gov</td><td>Registered API Key</td><td><code>SAM-405b5074-59aa-4a23-8e25-a794f8edabb4</code><br/>Path on disk: <code>/home/user/workspace/.secrets/sam_api_key.txt</code></td></tr>
+<tr><td>Dropbox</td><td>App Key</td><td><code>hxpsk9te4wiyzud</code></td></tr>
+<tr><td>Dropbox</td><td>App Secret</td><td><code>586m8kofaq3isn9</code></td></tr>
+<tr><td>Dropbox</td><td>Refresh Token</td><td><code>-CFeD0umIIYAAAAAAAAAAZJJvNziWCUZGTiCVL7QYt2wzpmnVAxg-fB3a0gXHaFx</code></td></tr>
+<tr><td>GitHub</td><td>Auth method</td><td><code>api_credentials=["github"]</code> (platform-managed)</td></tr>
+<tr><td>APFS API</td><td>None (public)</td><td><code>https://apfs-cloud.dhs.gov/api/forecast/</code></td></tr>
+<tr><td>SAM.gov</td><td>Registered API key (see above)</td><td><code>https://api.sam.gov/opportunities/v2/search</code></td></tr>
+<tr><td>Gmail (VM2)</td><td>Account</td><td><code>vm2.viru@gmail.com</code> (connector source: <code>gcal</code>)</td></tr>
+<tr><td>Outlook</td><td>Account</td><td><code>varunm24@gmail.com</code> (connector source: <code>outlook</code>)</td></tr>
+<tr><td>Email recipient</td><td>Delivery address</td><td><code>varun@changeis.com</code></td></tr>
+</table>
+
+<h3>Todoist Label IDs</h3>
+<table>
+<tr><th>Label</th><th>ID</th><th>Purpose</th></tr>
+<tr><td><code>VM2</code></td><td><code>2183231010</code></td><td>Tasks for AI agent execution</td></tr>
+<tr><td><code>vm2-opp</code></td><td><code>2183369880</code></td><td>Opportunity deep-dive requests</td></tr>
+<tr><td><code>vm2-done</code></td><td><code>2183604438</code></td><td>Applied after task completion</td></tr>
+<tr><td><code>vm2-thread</code></td><td>(added 5/5/2026)</td><td>Applied to Todoist tasks that belong to a thread; description first line: <code>thread:&lt;slug&gt;</code></td></tr>
+<tr><td><code>vm2-recurring</code></td><td>(auto-created)</td><td>Recurring tasks &mdash; execute on exact due date only</td></tr>
+<tr><td><code>VEB</code></td><td>(auto-created)</td><td>Items flagged for executive brief</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s4"><span class="section-num">04</span> Connected Services (Connectors)</h2>
+
+<table>
+<tr><th>Connector</th><th>Source ID</th><th>Primary Tools Used</th><th>Used By</th></tr>
+<tr><td>Microsoft Outlook</td><td><code>outlook</code></td><td>search_calendar, search_email, send_email</td><td>Morning routine, daily brief email, YPO</td></tr>
+<tr><td>Gmail</td><td><code>gcal</code></td><td>search_email, send_email, get_email_attachments, read_email, download_attachment</td><td>VM2 Gmail task intake; attachment retrieval exhaust-order v2.5</td></tr>
+<tr><td>Todoist</td><td><code>todoist__pipedream</code></td><td>todoist-search-tasks</td><td>Task execution, auto-helper <span class="badge badge-cred">DISCONNECTED since 5/6</span> &mdash; all crons use REST API primary</td></tr>
+<tr><td>GitHub</td><td><code>github_mcp_direct</code></td><td>git CLI via api_credentials</td><td>All deliverable publishing</td></tr>
+<tr><td>Dropbox</td><td><code>dropbox</code></td><td>Connector + direct API</td><td>All deliverable archiving <span class="badge badge-cred">Dup-on-overwrite bug v2.5</span></td></tr>
+<tr><td>SharePoint</td><td><code>sharepoint</code></td><td>Available for document search</td><td>On-demand</td></tr>
+<tr><td>Microsoft Teams</td><td><code>microsoft_teams_mcp_merge</code></td><td>Available for messaging</td><td>On-demand</td></tr>
+<tr><td>Jira</td><td><code>jira_mcp_merge</code></td><td>Available for project tracking</td><td>On-demand</td></tr>
+<tr><td>Google Drive</td><td><code>google_drive</code></td><td>Available for file access</td><td>On-demand</td></tr>
+<tr><td>Fireflies</td><td><code>fireflies</code></td><td>Meeting transcription</td><td>On-demand</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s5"><span class="section-num">05</span> User Skills (5 Skills)</h2>
+
+<h3>Skill 1: changeis-style <span class="badge badge-skill">Brand Guide</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Purpose</td><td>Defines all Changeis brand colors, typography, table formatting for HTML/CSS/PDF/DOCX deliverables</td></tr>
+<tr><td>Key colors</td><td>Navy <code>#1B2A4A</code>, Deep Navy <code>#002060</code>, Teal <code>#008B8B</code>, Green <code>#2D7D4A</code></td></tr>
+<tr><td>v3.2 note</td><td>If <code>load_skill</code> fails in cron/subagent context, read <code>/home/user/workspace/skills/user/changeis-style/Changeis_Refined_Document_Style.md</code> directly. See &sect;8i.</td></tr>
+</table>
+
+<h3>Skill 2: morning-routine <span class="badge badge-skill">Daily Brief</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Purpose</td><td>Chief of Staff AI daily workflow &mdash; generates 2-page print-ready executive agenda</td></tr>
+<tr><td>Email to</td><td><code>varun@changeis.com</code> (plain text body + HTML attachment)</td></tr>
+</table>
+
+<h3>Skill 3: vm2-opp-deep-dive <span class="badge badge-skill">BD Intelligence</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Purpose</td><td>Full opportunity deep-dive system: APFS/SAM monitoring, RAG scoring, daily briefs, deep-dive analyses</td></tr>
+<tr><td>RAG Engine</td><td><code>POST /match</code> with <code>X-API-Key</code> header &mdash; v2.9: use new response schema (composite_score, best_score, tier)</td></tr>
+</table>
+
+<h3>Skill 4: vm2-gmail-tasks <span class="badge badge-skill">Email Intake</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Purpose</td><td>Monitor vm2.viru@gmail.com for task emails with "VM2" in subject/body</td></tr>
+<tr><td>Gmail connector</td><td>source: <code>gcal</code></td></tr>
+<tr><td>v3.2 note</td><td>Issue #11: silent-write failure 5/22 left state stuck; refreshed manually 5/24. Issue #12: cron 5cfbd2ec mistakenly uses <code>pplx_device__mail</code> instead of <code>gcal</code> &mdash; requires runtime approval correction.</td></tr>
+</table>
+
+<h3>Skill 5: vm2-wrapup <span class="badge badge-skill">Compliance</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Purpose</td><td>Nightly compliance audit: verify all deliverables follow global rules</td></tr>
+<tr><td>Rules checked</td><td>7 rules: portal.html entries, GitHub, plain HTML, Dropbox, Todoist, context slug, index.html integrity</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s6"><span class="section-num">06</span> All 14 Scheduled Tasks (Cron Jobs)</h2>
+
+<p>Each cron must be recreated using <code>schedule_cron(action="create", ...)</code>. All times are in UTC; EDT = UTC-4.</p>
+
+<div class="callout callout-warn">
+<h4>Background Cron Limitation</h4>
+<p>Background crons CANNOT load user skills. They will escalate to the foreground session when skill loading is needed. This is a known platform behavior, not a bug. Workaround: read SKILL.md file directly from disk. See &sect;8i.</p>
+</div>
+
+<h3>Complete Cron Table (14 Active Crons)</h3>
+<p style="color:var(--text-muted);font-size:.85rem"><strong>Changed in v2.2:</strong> Cron 11 Opportunity Deep Dive Monitor (<code>6f5371ab</code>) has been deleted. Deep dives are now email-driven only. Do NOT recreate this cron during recovery. Same 14 crons through v3.2 &mdash; no new crons added.</p>
+<table>
+<tr><th>#</th><th>Name</th><th>ID</th><th>Schedule (UTC)</th><th>EDT</th><th>Days</th><th>v3.3 Notes</th></tr>
+<tr><td>1</td><td>Daily Executive Agenda</td><td><code>c40cee7b</code></td><td><code>0 10 * * 1-5</code></td><td>6:00 AM</td><td>M&ndash;F</td><td><span class="badge badge-cron">&#9888; {stamp} bug</span></td></tr>
+<tr><td>2</td><td>Todoist Auto-Helper</td><td><code>27d43c4a</code></td><td><code>0 11 * * *</code></td><td>7:00 AM</td><td>Daily</td><td><span class="badge badge-new">REST patch RESOLVED 5/24</span> &mdash; Issue #2 closed; no Pipedream dependency</td></tr>
+<tr><td>3</td><td>APFS Daily Monitor</td><td><code>8734a0c6</code></td><td><code>0 12 * * 1-5</code></td><td>8:00 AM</td><td>M&ndash;F</td><td><span class="badge badge-new">RAG schema drift patch 5/18</span> Normalizer bake-in PENDING (see &sect;8h)</td></tr>
+<tr><td>4</td><td>YPO Weekly Backlog</td><td><code>b56c2335</code></td><td><code>0 12 * * 1</code></td><td>8:00 AM</td><td>Monday</td><td>4 active introductions as of 5/25</td></tr>
+<tr><td>5</td><td>MAPS Amendment Monitor</td><td><code>2702d270</code></td><td><code>0 13 * * 1-5</code></td><td>9:00 AM</td><td>M&ndash;F</td><td><span class="badge badge-new">ACTIVE v2.4</span> Amend 008 on HigherGov (SAM stale at 0002); deadline June 22 2026 12:00 PM ET; TechSur withdrew protests; KEEP RUNNING</td></tr>
+<tr><td>6</td><td>SAM.gov Daily Monitor (DB-backed)</td><td><code>8f2a4ac1</code></td><td><code>0 13 * * 1-5</code></td><td>9:00 AM</td><td>M&ndash;F</td><td><span class="badge badge-cred">Issue #13: stale lock PID 268736 on 5/25 13:00 UTC (window 5/18&rarr;5/25)</span> See &sect;8g</td></tr>
+<tr><td>7</td><td>Combined Daily Brief (mailto buttons)</td><td><code>8516a029</code></td><td><code>0 14 * * 1-5</code></td><td>10:00 AM</td><td>M&ndash;F</td><td><span class="badge badge-new">Date fix applied 5/18</span> Cron instructions update PENDING</td></tr>
+<tr><td>8</td><td>Deliverable Integrity Audit</td><td><code>5cfbd2ec</code></td><td><code>0 1,17 * * *</code></td><td>9 AM + 5 PM</td><td>Daily</td><td><span class="badge badge-cred">Issue #12: wrong Gmail connector (pplx_device__mail → gcal)</span> Runtime approval required</td></tr>
+<tr><td>9</td><td>VM2 Gmail Task Intake (TYPE A/B)</td><td><code>2da8354a</code></td><td><code>0 0-2,11-23 * * *</code></td><td>Hourly 7am&ndash;10pm</td><td>Daily</td><td><span class="badge badge-cred">Issue #11: silent-write failure 5/22; state stuck, refreshed 5/24</span></td></tr>
+<tr><td>10</td><td>VM2 Todoist Execution</td><td><code>64b6a5cc</code></td><td><code>0 0-2,11-23 * * *</code></td><td>Hourly 7am&ndash;10pm</td><td>Daily</td><td>13 cumulative UTC rollover skip events <span class="badge badge-cred">UTC rollover issue &mdash; fix pending user authorization</span></td></tr>
+<tr><td>11</td><td>Nightly Compliance Audit</td><td><code>6494d39d</code></td><td><code>0 2 * * 1,2,4,6</code></td><td>10 PM</td><td>Mon/Tue/Thu/Sat</td><td><span class="badge badge-new">REST-first rule v2.6</span></td></tr>
+<tr><td>12</td><td>VM2 Weekly Digest</td><td><code>972eaa3f</code></td><td><code>0 12 * * 6</code></td><td>8:00 AM</td><td>Saturday</td><td>W21 published: 59 deliverables, peak 5/18 (17), 0 FAIL, tag v2026-W21</td></tr>
+<tr><td>13</td><td>Monthly Dropbox Integrity</td><td><code>44ba162a</code></td><td><code>0 13 1 * *</code></td><td>9:00 AM</td><td>1st of month</td><td>&mdash;</td></tr>
+<tr><td>14</td><td>System Docs Auto-Update</td><td><code>f91881fb</code></td><td><code>0 3 * * 0,2,4,6</code></td><td>11:00 PM</td><td>Sat/Mon/Wed/Fri</td><td><em>v3.3: deliverable_count=924, run_number=25</em></td></tr>
+</table>
+
+<!-- OPEN ISSUES TABLE -->
+<h3>Open Issues Tracker <span class="badge badge-new">UPDATED v3.3</span></h3>
+<table>
+<tr><th>#</th><th>Cron</th><th>Description</th><th>Status</th><th>Detected</th></tr>
+<tr><td>1</td><td><code>64b6a5cc</code></td><td>UTC rollover schedule: <code>0 0-2,11-23</code> fires at midnight UTC (8pm EDT) &mdash; 13 cumulative skip events; fix: change to <code>0 11-23 * * *</code></td><td><span class="badge badge-cred">OPEN &mdash; awaiting user authorization</span></td><td>5/4</td></tr>
+<tr><td>2</td><td><code>27d43c4a</code></td><td>Auto-Helper todoist__pipedream reference causing DISCONNECTED connector escalation</td><td><span class="badge badge-new">RESOLVED 5/24 &mdash; REST patch permanent</span></td><td>5/22</td></tr>
+<tr><td>3</td><td><code>8734a0c6</code></td><td>APFS RAG normalizer inline patch (v2.9 schema) must be permanently baked into cron instructions</td><td><span class="badge badge-cred">OPEN &mdash; pending schedule_cron update</span></td><td>5/18</td></tr>
+<tr><td>10</td><td><code>8734a0c6</code></td><td>APFS RAG parser field mismatch: <code>record.get('title')</code> is null; use <code>requirements_title</code> + <code>requirement</code>. Asterisk-prefixed apfs_numbers (e.g. <code>*F2025071074</code>) must be preserved verbatim. 4 records inline-patched 5/27: F2026073183, F2026073425, F2026073890, *F2025071074 (all LOW 0.30&ndash;0.32). Correct composite query documented in §8j.</td><td><span class="badge badge-warn">INLINE PATCHED 5/27 &mdash; permanent fix pending</span></td><td>5/27</td></tr>
+<tr><td>4</td><td><code>8516a029</code></td><td>Combined Daily Brief builder date-pin &mdash; cron instructions must reference date-agnostic builder pattern</td><td><span class="badge badge-cred">OPEN &mdash; inline fix applied 5/18; cron update pending</span></td><td>5/18</td></tr>
+<tr><td>5</td><td><code>c40cee7b</code></td><td>Daily Executive Agenda <code>{stamp}</code> f-string bug in <code>build_agenda.py</code></td><td><span class="badge badge-cred">OPEN &mdash; unresolved</span></td><td>5/6</td></tr>
+<tr><td>6</td><td><code>5cfbd2ec</code></td><td>Audit cron false-positive: Dropbox folder-invite + OOO emails flagged as missed VM2 intake. <strong>v3.3:</strong> Race condition confirmed 5/27 &mdash; 1 PM audit flagged ASSC as missed intake while subagent was concurrently processing. Remediated 10 Dropbox misses + 1 portal entry. Audit run count 87 &rarr; 89. See §8k.</td><td><span class="badge badge-cred">OPEN &mdash; race condition confirmed 5/27; filter pending</span></td><td>5/19</td></tr>
+<tr><td>7</td><td><code>2702d270</code></td><td>MAPS SAM.gov stale at Amendment 0002; HigherGov shows Amendment 008; state not synced</td><td><span class="badge badge-cred">OPEN &mdash; monitoring continues; SAM.gov stale data issue</span></td><td>5/22</td></tr>
+<tr><td>8</td><td>&mdash;</td><td>ATEPS-II: Changeis IDC 693KA925D00004 terminated for convenience 4/21/25 ($114.6M&rarr;$0); $147.3M total backlog</td><td><span class="badge badge-cred">CRITICAL &mdash; BD pipeline posture revision needed</span></td><td>5/23</td></tr>
+<tr><td>9</td><td>&mdash;</td><td>External committers in repo (eBuy ledger, eBuy portal widget, FMCSA Motus); NOT mapped to 14 documented crons</td><td><span class="badge badge-cred">OPEN &mdash; provenance investigation pending</span></td><td>5/20</td></tr>
+<tr><td>10</td><td>&mdash;</td><td>Portal race-condition risk: concurrent cron pushes may overwrite portal rows</td><td><span class="badge badge-cred">OPEN &mdash; resolved 5/20 22:01 (commit 91348a0); monitoring</span></td><td>5/20</td></tr>
+<tr><td>11</td><td><code>2da8354a</code></td><td>Gmail Intake silent-write failure: state files stuck 5/22; state did not advance after processing</td><td><span class="badge badge-cred">OPEN &mdash; manually refreshed 5/24; root cause unknown</span></td><td>5/22</td></tr>
+<tr><td>12</td><td><code>5cfbd2ec</code></td><td>Audit cron using wrong Gmail connector (<code>pplx_device__mail</code> instead of <code>gcal</code>); runtime approval required to switch</td><td><span class="badge badge-cred">OPEN &mdash; runtime approval required</span></td><td>5/24</td></tr>
+<tr><td>13</td><td><code>8f2a4ac1</code></td><td>SAM Monitor stale lock PID 268736: stuck in_progress run 5/25 13:00 UTC; window 5/18&rarr;5/25</td><td><span class="badge badge-cred">OPEN &mdash; cleanup procedure required (see &sect;8g)</span></td><td>5/25</td></tr>
+</table>
+
+<h3>Cron 2: Todoist Auto-Helper <span class="badge badge-cron">27d43c4a</span> <span class="badge badge-new">RESOLVED v3.2 &mdash; REST Patch Permanent 5/24</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Cron (UTC)</td><td><code>0 11 * * *</code></td></tr>
+<tr><td>Resolution (5/24)</td><td>Permanent REST patch applied: all Todoist operations now use direct REST API v1 with Bearer token. No <code>todoist__pipedream</code> connector reference remains. Issue #2 CLOSED.</td></tr>
+<tr><td>REST endpoint</td><td><code>GET https://api.todoist.com/api/v1/tasks?label=VM2</code> with <code>Authorization: Bearer 0ac557ece28a1cd92b9635a8fbae56eec15887ad</code></td></tr>
+</table>
+
+<h3>Cron 3: APFS Daily Monitor <span class="badge badge-cron">8734a0c6</span> <span class="badge badge-new">RAG Schema Drift Patch v2.9</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Cron (UTC)</td><td><code>0 12 * * 1-5</code></td></tr>
+<tr><td>API</td><td><code>https://apfs-cloud.dhs.gov/api/forecast/</code> (HYPHEN, public, no key)</td></tr>
+<tr><td>v2.9 RAG schema fix</td><td>Endpoint now returns <code>{query, matches[], best_match, best_score, tier}</code>. Normalizer must use <code>composite_score</code> per match (not top_score), <code>tier</code> for classification (not <code>classification</code>), <code>best_score</code> for top score. Inline patch applied 5/18. PENDING: bake permanently into cron instructions. See &sect;8h.</td></tr>
+</table>
+
+<h3>Cron 5: MAPS Amendment Monitor <span class="badge badge-cron">2702d270</span> <span class="badge badge-new">Amendment 008 Detected v3.2</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Cron (UTC)</td><td><code>0 13 * * 1-5</code></td></tr>
+<tr><td>State (v3.2)</td><td>Amendment 008 detected on HigherGov 5/22; SAM.gov still stale at Amendment 0002. Deadline June 22 2026 12:00 PM ET. TechSur withdrew both protests.</td></tr>
+<tr><td>CRITICAL</td><td>Keep cron 2702d270 RUNNING through June 22 deadline AND through ~Aug 17 (B-424433.7 ICE protest decision). Do NOT deactivate.</td></tr>
+</table>
+
+<h3>Cron 6: SAM Monitor <span class="badge badge-cron">8f2a4ac1</span> <span class="badge badge-new">Issue #13 Stale Lock v3.2</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Cron (UTC)</td><td><code>0 13 * * 1-5</code></td></tr>
+<tr><td>Issue #13 (v3.2)</td><td>Stale lock PID 268736 detected 5/25 13:00 UTC. Run was marked <code>in_progress</code> with window 5/18&rarr;5/25. Lock held 7 days &mdash; PID no longer alive. Execute cleanup procedure from &sect;8g.</td></tr>
+</table>
+
+<h3>Cron 8: Deliverable Integrity Audit <span class="badge badge-cron">5cfbd2ec</span> <span class="badge badge-new">Issue #12 Wrong Connector v3.2</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Cron (UTC)</td><td><code>0 1,17 * * *</code></td></tr>
+<tr><td>Issue #12 (v3.2)</td><td>Audit cron is using <code>pplx_device__mail</code> connector instead of <code>gcal</code> for Gmail operations. This causes PERMISSION or DISCONNECTED errors. Fix: update cron instructions to use <code>gcal</code> source for all Gmail operations. Requires runtime approval to apply cron instruction update.</td></tr>
+<tr><td>False-positive (v2.9)</td><td>Audit flagging Dropbox folder-invite emails and OOO auto-replies as "missed intake CRITICAL." Mitigation applied (email_ids in processed_email_ids state). PENDING: filter Dropbox/auto-reply senders at intake; match replies via <code>References</code>/<code>In-Reply-To</code> headers.</td></tr>
+</table>
+
+<h3>Cron 9: VM2 Gmail Task Intake <span class="badge badge-cron">2da8354a</span> <span class="badge badge-new">Issue #11 Silent-Write v3.2</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Cron (UTC)</td><td><code>0 0-2,11-23 * * *</code></td></tr>
+<tr><td>Issue #11 (v3.2)</td><td>Silent-write failure on 5/22: cron processed emails but did not advance state file timestamps/processed_email_ids. State appeared stuck at 5/22 values until manually refreshed 5/24. Root cause: write operation completed without error but file system state was not flushed. Detection: check <code>gmail_intake/state.json</code> last_run against actual processing.</td></tr>
+</table>
+
+<h3>Cron 10: VM2 Todoist Task Execution <span class="badge badge-cron">64b6a5cc</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Cron (UTC)</td><td><code>0 0-2,11-23 * * *</code></td></tr>
+<tr><td>v3.3 UTC rollover</td><td>18 cumulative UTC rollover skip events (was 13; +5 on 5/27 night, events #14&ndash;#18). Events #17&ndash;#18 first surfaced the 5th recurring task (Hire Tracker). Pattern logged consistently. URGENT fix still pending: change schedule from <code>0 0-2,11-23 * * *</code> to <code>0 11-23 * * *</code>. <strong>5 tasks at rollover:</strong> FAA Daily on SAM, Check ATEPS-II SAM Record, G2X FedCiv Review, Latest AI features and developments (AI Daily), Review Changeis New Hire Tracker.</td></tr>
+</table>
+
+<h3>Cron 14: System Docs Auto-Update <span class="badge badge-cron">f91881fb</span></h3>
+<table>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td>Cron (UTC)</td><td><code>0 3 * * 0,2,4,6</code></td></tr>
+<tr><td>Purpose</td><td>Auto-regenerate Architecture, System Guide, and DR Runbook when changes detected</td></tr>
+<tr><td>State file</td><td><code>cron_tracking/system_docs_update/state.json</code> and <code>cron_tracking/f91881fb/</code></td></tr>
+</table>
+<p><em>v3.3: deliverable_count=924, run_number=25</em></p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s7"><span class="section-num">07</span> File System, State Files &amp; SQLite Data Layer</h2>
+
+<h3>Workspace Directory Structure</h3>
+<pre>
+/home/user/workspace/
+&#9500;&#9472;&#9472; VM2-P-Taskers/             # GitHub repo (cloned)
+&#9474;   &#9500;&#9472;&#9472; index.html              # IMMUTABLE redirect stub (&rarr; portal.html)
+&#9474;   &#9500;&#9472;&#9472; portal.html             # Deliverables index (890 deliverables)
+&#9474;   &#9500;&#9472;&#9472; _system/                # Button JS, deep-dive spec, scripts
+&#9474;   &#9500;&#9472;&#9472; *-thread.html           # Thread aggregator pages (5 active)
+&#9474;   &#9492;&#9472;&#9472; *.html                  # 890 deliverable files
+&#9474;
+&#9500;&#9472;&#9472; cron_tracking/              # State files for all crons
+&#9474;   &#9500;&#9472;&#9472; apfs_monitor/
+&#9474;   &#9500;&#9472;&#9472; sam_monitor/
+&#9474;   &#9500;&#9472;&#9472; todoist_vm2/
+&#9474;   &#9500;&#9472;&#9472; gmail_intake/
+&#9474;   &#9500;&#9472;&#9472; 6a1f1c3b/               # Gmail intake state FALLBACK
+&#9474;   &#9500;&#9472;&#9472; deliverable_audit/
+&#9474;   &#9500;&#9472;&#9472; maps_amendment_monitor/
+&#9474;   &#9500;&#9472;&#9472; system_docs_update/     # System Docs Auto-Update tracking
+&#9474;   &#9500;&#9472;&#9472; f91881fb/               # System Docs per-cron tracking
+&#9474;   &#9500;&#9472;&#9472; rag_config/
+&#9474;   &#9500;&#9472;&#9472; thread_tags/
+&#9474;   &#9492;&#9472;&#9472; {cron_id}/              # Per-cron tracking directories
+&#9474;
+&#9500;&#9472;&#9472; data/
+&#9474;   &#9492;&#9472;&#9472; sam/
+&#9474;       &#9500;&#9472;&#9472; sam.sqlite
+&#9474;       &#9500;&#9472;&#9472; daily_monitor.py       # HARDENED v2.6
+&#9474;       &#9500;&#9472;&#9472; pull_backfill.py
+&#9474;       &#9492;&#9472;&#9472; .daily_monitor.lock    # NEW v2.6
+&#9474;
+&#9500;&#9472;&#9472; .secrets/
+&#9474;   &#9492;&#9472;&#9472; sam_api_key.txt
+&#9474;
+&#9500;&#9472;&#9472; skills/
+&#9474;   &#9492;&#9472;&#9472; user/
+&#9474;       &#9500;&#9472;&#9472; changeis-style/Changeis_Refined_Document_Style.md
+&#9474;       &#9500;&#9472;&#9472; vm2-opp-deep-dive/SKILL.md
+&#9474;       &#9500;&#9472;&#9472; vm2-gmail-tasks/SKILL.md
+&#9474;       &#9492;&#9472;&#9472; vm2-wrapup/SKILL.md
+&#9474;
+&#9492;&#9472;&#9472; deliverable-specs.md
+</pre>
+
+<h3>Critical State Files</h3>
+<table>
+<tr><th>File</th><th>Purpose</th><th>Schema / v3.3 note</th></tr>
+<tr><td><code>cron_tracking/system_docs_update/state.json</code></td><td>System Docs Auto-Update state</td><td>{last_run, last_update, docs_updated[], changes_detected[], cron_count, deliverable_count} &mdash; <em>v3.3: deliverable_count=924, run_number=25</em></td></tr>
+<tr><td><code>cron_tracking/f91881fb/state.json</code></td><td>System Docs cron per-ID state (mirror)</td><td>Same as above &mdash; <em>v3.3: deliverable_count=924, run_number=25</em></td></tr>
+<tr><td><code>cron_tracking/apfs_monitor/apfs_opportunities_latest.json</code></td><td>NAICS-filtered APFS opportunities with RAG scores</td><td>v2.9: composite_score per match (new schema); 15 STRONG candidates re-scored 5/18. FAA ARP HQ 9c87922d: STRONG 0.652, due 5/26.</td></tr>
+<tr><td><code>cron_tracking/maps_amendment_monitor/state.json</code></td><td>MAPS solicitation amendment tracking</td><td>v3.2: Amendment 008 on HigherGov; SAM stale at 0002; deadline June 22 2026 12:00 PM ET; keep running through ~8/17</td></tr>
+<tr><td><code>cron_tracking/gmail_intake/state.json</code></td><td>Gmail email processing (PRIMARY)</td><td>v3.2: Issue #11 &mdash; silent-write failure 5/22 left state stuck; refreshed 5/24. Monitor closely.</td></tr>
+<tr><td><code>cron_tracking/6a1f1c3b/state.json</code></td><td>Gmail email processing (FALLBACK)</td><td>Same schema; kept in sync with gmail_intake/state.json</td></tr>
+<tr><td><code>cron_tracking/rag_config/config.json</code></td><td>RAG Engine auth config</td><td>v2.9: schema updated to reflect new response format (composite_score, best_score, tier)</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s8"><span class="section-num">08</span> Key Configuration Files</h2>
+
+<h3>deliverable-specs.md</h3>
+<p>Location: <code>/home/user/workspace/deliverable-specs.md</code></p>
+<p>Master specification for ALL deliverable output. Defines HTML/CSS structure, mandatory bottom sections, file naming, Railway URL pattern, portal.html entry format, badge class options, and context slug JSON requirements.</p>
+
+<h3>portal.html Entry Format</h3>
+<pre>&lt;tr data-date="YYYY-MM-DD" data-type="Type Name" data-updated="YYYY-MM-DD" data-thread=""&gt;
+  &lt;td class="col-date"&gt;YYYY-MM-DD&lt;/td&gt;
+  &lt;td class="col-title"&gt;&lt;a href="filename.html"&gt;Title&lt;/a&gt;&lt;/td&gt;
+  &lt;td class="col-type"&gt;&lt;span class="badge badge-{badgeclass}"&gt;Type Name&lt;/span&gt;&lt;/td&gt;
+  &lt;td class="col-updated"&gt;YYYY-MM-DD&lt;/td&gt;
+  &lt;td class="col-link"&gt;&lt;a class="link-icon" href="filename.html" title="Open"&gt;&uarr;&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s8b"><span class="section-num">08b</span> Thread Tag Mechanism <span class="badge badge-new">NEW v2.3</span></h2>
+
+<p>Adds a <code>data-thread="&lt;slug&gt;"</code> attribute to portal.html rows for deliverables belonging to named topic clusters. System docs have <code>data-thread=""</code> (no thread).</p>
+
+<h3>Active Aggregator Pages (5)</h3>
+<table>
+<tr><th>File</th><th>Thread Slug</th><th>Description</th></tr>
+<tr><td><code>faa-apex-thread.html</code></td><td><code>faa-apex</code></td><td>FAA APEX program deliverables</td></tr>
+<tr><td><code>faa-atlas-thread.html</code></td><td><code>faa-atlas</code></td><td>FAA ATLAS program deliverables</td></tr>
+<tr><td><code>faa-oig-47238-thread.html</code></td><td><code>faa-oig-47238</code></td><td>FAA OIG 47238 deliverables</td></tr>
+<tr><td><code>mkt-aic-thread.html</code></td><td><code>mkt-aic</code></td><td>Market AIC deliverables</td></tr>
+<tr><td><code>oasis-plus-thread.html</code></td><td><code>oasis-plus</code></td><td>OASIS+ deliverables</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s8c"><span class="section-num">08c</span> Public Sharing Pattern <span class="badge badge-new">NEW v2.4</span></h2>
+
+<table>
+<tr><th>Tier</th><th>Method</th><th>Auth</th><th>Use Case</th></tr>
+<tr><td><strong>Tier 1</strong></td><td>Railway (<code>vm2-p-taskers-production.up.railway.app</code>)</td><td>nginx basic auth (vm2 / 97harry23!)</td><td>All standard VM2 deliverables &mdash; internal use only</td></tr>
+<tr><td><strong>Tier 2</strong></td><td>GitHub Pages per-deliverable repos (<code>vm-coderock/{repo-name}</code>)</td><td>Public (no auth)</td><td>Deliverables intended for external sharing</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s8d"><span class="section-num">08d</span> New Deliverable Patterns (v2.6) <span class="badge badge-new">UPDATED v2.6</span></h2>
+
+<p>Nine deliverable template patterns established through v2.6. Each defines a reusable workflow for recurring task types. See system guide for full descriptions of all 9 patterns. New in v3.2: no new patterns; existing patterns inherit RAG schema fix and FMCSA Motus Issues #006/#007 activity.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s8e"><span class="section-num">08e</span> Gmail Attachment Retrieval (v2.5) <span class="badge badge-new">NEW v2.5</span></h2>
+
+<p>Canonical three-step exhaust-order for retrieving email attachments via the Gmail connector (<code>gcal</code> source):</p>
+<ol>
+<li><strong><code>get_email_attachments(email_id)</code></strong> &mdash; Fastest method. Returns attachment list with IDs.</li>
+<li><strong><code>read_email(id, include_attachments=true)</code></strong> &mdash; If step 1 fails or returns empty list.</li>
+<li><strong><code>download_attachment(id)</code></strong> &mdash; Final fallback.</li>
+</ol>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s8f"><span class="section-num">08f</span> SAM Monitor Hardening (v2.6) <span class="badge badge-new">NEW v2.6</span></h2>
+
+<p>Patch applied to <code>/home/user/workspace/data/sam/daily_monitor.py</code> on 2026-05-15 to prevent SQLite-lock errors from concurrent cron executions.</p>
+
+<h3>Hardening Changes (v2.6)</h3>
+<table>
+<tr><th>Change</th><th>Implementation</th><th>Purpose</th></tr>
+<tr><td>WAL journal mode</td><td><code>PRAGMA journal_mode=WAL</code></td><td>Reduces lock contention</td></tr>
+<tr><td>Connection timeout</td><td><code>sqlite3.connect(database, timeout=30.0)</code></td><td>Python-level wait before error</td></tr>
+<tr><td>busy_timeout PRAGMA</td><td><code>PRAGMA busy_timeout=30000</code></td><td>SQLite-level wait at C library</td></tr>
+<tr><td>Lockfile</td><td><code>/home/user/workspace/data/sam/.daily_monitor.lock</code></td><td>Process-level mutex</td></tr>
+<tr><td>Stale-PID detection</td><td><code>os.kill(pid, 0)</code> &mdash; if OSError, PID dead &rarr; remove lockfile</td><td>Prevents permanent lock on crashed run</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s8g"><span class="section-num">08g</span> SAM Stuck-Run Cleanup Procedure (v2.6) <span class="badge badge-new">UPDATED v3.2</span></h2>
+
+<p>When <code>daily_monitor.py</code> is killed mid-run, it may leave a row in the <code>runs</code> table with <code>status='in_progress'</code>.</p>
+
+<div class="callout callout-warn">
+<h4>Active Issue #13: PID 268736 &mdash; Stale Lock 5/25 13:00 UTC</h4>
+<p>SAM Monitor cron 8f2a4ac1 has a stale lock PID 268736 that has been in_progress since 5/18 (window 5/18&rarr;5/25, 7 days). The PID is no longer alive. Execute the cleanup procedure below immediately to restore normal operation.</p>
+</div>
+
+<h3>Cleanup Procedure</h3>
+<ol>
+<li>Verify lockfile is absent: <code>ls -la /home/user/workspace/data/sam/.daily_monitor.lock 2>/dev/null || echo "No lockfile"</code></li>
+<li>Check for orphaned in-progress run: <code>sqlite3 /home/user/workspace/data/sam/sam.sqlite "SELECT id, start_time, status FROM runs WHERE status='in_progress';"</code></li>
+<li>If orphaned row found: <code>sqlite3 /home/user/workspace/data/sam/sam.sqlite "UPDATE runs SET status='failed', end_time=datetime('now') WHERE status='in_progress' AND start_time &lt; datetime('now','-2 hours');"</code></li>
+<li>Remove stale lockfile: <code>rm -f /home/user/workspace/data/sam/.daily_monitor.lock</code></li>
+<li>Re-run the monitor: <code>python3 /home/user/workspace/data/sam/daily_monitor.py</code></li>
+</ol>
+
+<h3>Issue #13 Specific Cleanup (v3.2)</h3>
+<pre>
+# 1. Verify PID 268736 is dead
+kill -0 268736 2>/dev/null && echo "PID ALIVE" || echo "PID DEAD (safe to clear)"
+
+# 2. Clear the orphaned in_progress row (7-day age guard override for this incident)
+sqlite3 /home/user/workspace/data/sam/sam.sqlite \
+  "UPDATE runs SET status='failed', end_time=datetime('now') \
+   WHERE status='in_progress' AND start_time < datetime('now','-1 hour');"
+
+# 3. Remove any stale lockfile
+rm -f /home/user/workspace/data/sam/.daily_monitor.lock
+
+# 4. Confirm cleanup
+sqlite3 /home/user/workspace/data/sam/sam.sqlite \
+  "SELECT id, start_time, status FROM runs ORDER BY start_time DESC LIMIT 5;"
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s8h"><span class="section-num">08h</span> APFS RAG Schema Drift Detection (v2.9) <span class="badge badge-new">UPDATED v3.3 — Issue #10</span></h2>
+
+<p>The RAG engine endpoint schema changed on 2026-05-20. Cron 8734a0c6 normalizer expected the old schema and produced incorrect scoring until an inline patch was applied.</p>
+
+<div class="callout callout-warn">
+<h4>Schema Change Detected 5/18/2026</h4>
+<p>The RAG endpoint <code>POST /match</code> now returns a different JSON structure. Old normalizer (pre-v2.9) used <code>classification</code>, <code>top_score</code>, and <code>top_matches[]</code>. These keys no longer exist in the response.</p>
+</div>
+
+<h3>Old vs. New Schema</h3>
+<table>
+<tr><th>Field</th><th>Old Schema (pre-v2.9)</th><th>New Schema (v2.9)</th></tr>
+<tr><td>Classification key</td><td><code>classification</code></td><td><code>tier</code></td></tr>
+<tr><td>Top score</td><td><code>top_score</code></td><td><code>best_score</code></td></tr>
+<tr><td>Match list</td><td><code>top_matches[]</code></td><td><code>matches[]</code></td></tr>
+<tr><td>Per-match score</td><td>(not present)</td><td><code>composite_score</code> per match object</td></tr>
+<tr><td>Best match object</td><td>(derived from top_matches[0])</td><td><code>best_match</code> (explicit top-level key)</td></tr>
+<tr><td>Query echo</td><td>(not present)</td><td><code>query</code> (echoes the query sent)</td></tr>
+</table>
+
+<h3>Normalizer Patch (apply to cron 8734a0c6 instructions)</h3>
+<pre>
+# v2.9 RAG normalizer patch
+# Replace old normalizer with this logic wherever RAG response is parsed
+
+def parse_rag_response(response_json):
+    """Parse v2.9 RAG engine response. Use composite_score for per-match scoring."""
+    tier = response_json.get("tier", "LOW")           # was: classification
+    best_score = response_json.get("best_score", 0.0)  # was: top_score
+    matches = response_json.get("matches", [])          # was: top_matches
+
+    scored = []
+    for m in matches:
+        score = m.get("composite_score", 0.0)           # NEW: per-match score
+        scored.append({
+            "match": m,
+            "score": score,
+            "tier": "STRONG" if score >= 0.65 else
+                    "MODERATE" if score >= 0.50 else
+                    "RELEVANT" if score >= 0.45 else "LOW"
+        })
+
+    return {
+        "tier": tier,
+        "best_score": best_score,
+        "best_match": response_json.get("best_match"),  # NEW: explicit best match
+        "scored_matches": scored
+    }
+</pre>
+
+<h3>5/18/2026 Inline Patch Results</h3>
+<p>44 APFS records re-scored after applying normalizer. 15 STRONG candidates identified:</p>
+<table>
+<tr><th>APFS Number</th><th>Score</th><th>Tier</th></tr>
+<tr><td>F2026073416</td><td>0.7363</td><td>STRONG</td></tr>
+<tr><td>F2026073472</td><td>0.7129</td><td>STRONG</td></tr>
+<tr><td>F2026073280</td><td>0.7119</td><td>STRONG</td></tr>
+<tr><td>F2026073690</td><td>0.6857</td><td>STRONG</td></tr>
+<tr><td>F2026072977</td><td>0.6681</td><td>STRONG</td></tr>
+<tr><td>F2026073564</td><td>0.6668</td><td>STRONG</td></tr>
+<tr><td>(9 more)</td><td>&ge;0.65</td><td>STRONG</td></tr>
+</table>
+
+<h3>Recovery if Patch is Lost</h3>
+<p>If cron 8734a0c6 instructions are reset or workspace is rebuilt without this patch, re-apply the normalizer above. The old keys (<code>classification</code>, <code>top_score</code>, <code>top_matches</code>) will return undefined/null and cause silent mis-scoring. Detection: if all opportunities score as 0.00 or "LOW", the normalizer is likely reading from old schema keys.</p>
+
+<div class="callout">
+<h4>PENDING: Permanent Bake-In</h4>
+<p>The normalizer patch was applied inline on 5/18. The cron 8734a0c6 instructions must be permanently updated via <code>schedule_cron(action="update", cron_id="8734a0c6", ...)</code> to include this normalizer. Without this, the next run that receives a fresh session context will revert to the old normalizer. See &sect;11b Fix 5.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s8i"><span class="section-num">08i</span> load_skill Failure Workaround (v3.2) <span class="badge badge-new">NEW v3.2</span></h2>
+
+<p>Background cron subagents cannot call <code>load_skill()</code>. When a cron depends on a user skill and the load fails, use the direct-file-read workaround.</p>
+
+<div class="callout callout-warn">
+<h4>load_skill Fails in Background Cron Context</h4>
+<p>The <code>load_skill</code> tool is not available to background subagents. Calls return an error or silently fail. This is a known platform limitation, not a bug. All VM2 system doc cron instructions note "DIRECT SKILL READS: read file path directly."</p>
+</div>
+
+<h3>Skill File Paths on Disk</h3>
+<table>
+<tr><th>Skill</th><th>File Path</th></tr>
+<tr><td>changeis-style</td><td><code>/home/user/workspace/skills/user/changeis-style/Changeis_Refined_Document_Style.md</code></td></tr>
+<tr><td>vm2-opp-deep-dive</td><td><code>/home/user/workspace/skills/user/vm2-opp-deep-dive/SKILL.md</code></td></tr>
+<tr><td>vm2-gmail-tasks</td><td><code>/home/user/workspace/skills/user/vm2-gmail-tasks/SKILL.md</code></td></tr>
+<tr><td>vm2-wrapup</td><td><code>/home/user/workspace/skills/user/vm2-wrapup/SKILL.md</code></td></tr>
+<tr><td>deliverable-specs</td><td><code>/home/user/workspace/deliverable-specs.md</code></td></tr>
+</table>
+
+<h3>Workaround Procedure</h3>
+<ol>
+<li>Instead of <code>load_skill(name="changeis-style")</code>, use the <code>read</code> tool:
+<pre>read(file_path="/home/user/workspace/skills/user/changeis-style/Changeis_Refined_Document_Style.md")</pre>
+</li>
+<li>For deliverable-specs: <code>read(file_path="/home/user/workspace/deliverable-specs.md")</code></li>
+<li>Include the workaround instruction verbatim in cron system prompt: <strong>DIRECT SKILL READS: read [path] instead of using load_skill</strong></li>
+<li>This pattern is now canonical for ALL system docs cron executions (f91881fb Run #24+)</li>
+</ol>
+
+<h3>Detection</h3>
+<p>If a deliverable is missing brand colors, wrong fonts, or wrong callout styles, suspect load_skill failure. Check if the cron instructions include the DIRECT SKILL READS override.</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s8j"><span class="section-num">08j</span> APFS RAG Recovery &mdash; Issue #10 (v3.3) <span class="badge badge-new">NEW v3.3</span></h2>
+<p>Use this procedure when cron 8734a0c6 escalates APFS records with null RAG scores or incorrect LOW tiers that should be higher. The root cause is <code>record.get('title')</code> returning null &mdash; the fix is to re-run RAG using the correct composite query.</p>
+
+<h3>Symptoms</h3>
+<ul>
+<li>APFS records returning score 0.00 or tier LOW (0.30&ndash;0.32) that have strong keywords in their description</li>
+<li>Escalation email shows apfs_number with asterisk prefix (e.g. <code>*F2025071074</code>) &mdash; score anomaly likely</li>
+<li>Cron log shows <code>record.get('title')</code> returning None/null</li>
+</ul>
+
+<h3>Step-by-Step Recovery</h3>
+<ol>
+<li><strong>Fetch the raw APFS record</strong> from <code>cron_tracking/apfs_monitor/apfs_opportunities_latest.json</code></li>
+<li><strong>Extract the correct fields:</strong> <code>requirements_title</code>, <code>requirement</code>, <code>org</code>, <code>naics</code>, <code>contract_vehicle</code></li>
+<li><strong>Build the composite RAG query using this exact template:</strong>
+<pre style="background:var(--bg-code,#f5f5f5);padding:8px 12px;border-radius:4px;font-size:.85rem;overflow-x:auto;">Agency: {org}
+Title: {requirements_title}
+NAICS: {naics}
+Vehicle: {contract_vehicle}
+Description: {requirement}</pre>
+</li>
+<li><strong>Asterisk-prefix rule:</strong> Preserve <code>apfs_number</code> values starting with <code>*</code> verbatim (e.g. <code>*F2025071074</code>). The asterisk is a DHS unique-key prefix &mdash; do NOT strip it when storing or referencing records.</li>
+<li><strong>POST to RAG endpoint:</strong>
+<pre style="background:var(--bg-code,#f5f5f5);padding:8px 12px;border-radius:4px;font-size:.85rem;overflow-x:auto;">POST https://changeis-bd-rag-production.up.railway.app/match
+Headers: X-API-Key: a3-nFpt4YJHCXpsTHS7ZAikNllzrPtCORKBoSN8tAAE
+Body: {"query": "&lt;composite query above&gt;"}</pre>
+</li>
+<li><strong>Extract score:</strong> Use <code>max(matches[].composite_score)</code> &mdash; NOT <code>best_score</code> alone. Apply tier thresholds: STRONG &ge;0.65, MODERATE 0.50&ndash;0.64, RELEVANT 0.45&ndash;0.49, LOW &lt;0.45.</li>
+<li><strong>Update the opportunity record</strong> with corrected score and tier. Update the escalation if the corrected tier changes the go/no-go assessment.</li>
+<li><strong>Log in state:</strong> Add a note to <code>cron_tracking/apfs_monitor/apfs_opportunities_latest.json</code> with inline-patch flag and corrected score.</li>
+</ol>
+
+<h3>5/27 Inline Patch Records (for reference)</h3>
+<table>
+<tr><th>APFS Number</th><th>Score (old null query)</th><th>Score (corrected query)</th><th>Tier</th></tr>
+<tr><td>F2026073183</td><td>0.00 (null title)</td><td>0.30</td><td>LOW</td></tr>
+<tr><td>F2026073425</td><td>0.00 (null title)</td><td>0.31</td><td>LOW</td></tr>
+<tr><td>F2026073890</td><td>0.00 (null title)</td><td>0.32</td><td>LOW</td></tr>
+<tr><td>*F2025071074</td><td>0.00 (null title)</td><td>0.30</td><td>LOW</td></tr>
+</table>
+
+<h2 id="s8k"><span class="section-num">08k</span> Gmail Intake Race Condition with Audit Cron (v3.3) <span class="badge badge-new">NEW v3.3</span></h2>
+<p>Use this procedure when cron 5cfbd2ec (Deliverable Integrity Audit) flags an email as missed intake but investigation shows the email was (or is being) concurrently processed by a subagent.</p>
+
+<h3>What Happened on 5/27 (Reference Event)</h3>
+<ol>
+<li>User-initiated subagent was processing ASSC FAA email (email_id: 19e6a58528edf9c1) &mdash; deep dive in progress</li>
+<li>Audit cron 5cfbd2ec ran its 1 PM window and detected the email as &ldquo;not yet processed&rdquo; (in-flight processing not visible to audit)</li>
+<li>Audit escalated as CRITICAL missed intake</li>
+<li>Reality: email was actively being processed &mdash; false positive due to race condition</li>
+</ol>
+
+<h3>Recovery Steps</h3>
+<ol>
+<li><strong>Before escalating:</strong> Check if a subagent session is currently open and processing the flagged email (look for in-flight task in Todoist or recent Perplexity session)</li>
+<li><strong>If concurrent processing confirmed:</strong> Mark as false positive &mdash; do NOT escalate as missed intake. Wait for subagent to complete.</li>
+<li><strong>After subagent completes:</strong> Verify deliverable was created, portal entry added, Dropbox upload done</li>
+<li><strong>Remediate any audit-triggered Dropbox/portal gaps:</strong> If audit wrote false-positive records, correct them. Check for duplicate entries.</li>
+<li><strong>Add email_id to <code>processed_email_ids</code></strong> once confirmed processed, to prevent future audit flags on the same email</li>
+<li><strong>Log the race condition event</strong> in audit cron state with timestamp and email_id for pattern tracking</li>
+</ol>
+
+<h3>Prevention</h3>
+<p>The permanent fix is to check in-flight subagent work before auditing. Until this is implemented, treat any audit escalation of an email that was recently user-requested as a potential race condition false positive. Issue #5 confirmed 5/27.</p>
+
+<h2 id="s9"><span class="section-num">09</span> Global Workflow Rules</h2>
+
+<div class="callout">
+<h4>These rules apply to EVERY deliverable and EVERY cron</h4>
+</div>
+
+<ol>
+<li><strong>portal.html is the index</strong> &mdash; NEVER touch index.html. It is an immutable redirect stub.</li>
+<li><strong>EVERY deliverable is logged</strong> in portal.html.</li>
+<li><strong>Context slug required</strong> &mdash; Every deliverable includes: Session Context (collapsible), Hidden JSON block (with cost_estimate and thread field), Continue This Work panel, Footer.</li>
+<li><strong>Plain HTML only</strong> &mdash; NO StaticCrypt encryption. Railway nginx basic auth handles password protection.</li>
+<li><strong>Triple publish</strong> &mdash; Push to GitHub, update portal.html, save to Dropbox.</li>
+<li><strong>Git config</strong> &mdash; <code>user.email="varun@changeis.com"</code>, <code>user.name="VM2-Perplexity"</code></li>
+<li><strong>Git pull --rebase</strong> before every push &mdash; prevents conflicts.</li>
+<li><strong>Each task = separate session</strong> &mdash; Use run_subagent per task for follow-up continuity.</li>
+<li><strong>Full memory</strong> &mdash; Pick up on prior analysis and reasoning, never start from scratch.</li>
+<li><strong>Outlook plain-text body</strong> &mdash; Outlook connector only supports plain text. Always use attachment for HTML.</li>
+<li><strong>Todoist connector limit</strong> &mdash; Max 50 tasks. Always use direct REST API with cursor pagination as primary method. Connector is DISCONNECTED since 5/6.</li>
+<li><strong>Delivery log for recurring tasks</strong> &mdash; Append deliverable link to task description after each execution.</li>
+<li><strong>No-confirmation policy (NEW v2.0)</strong> &mdash; All actions are pre-approved.</li>
+<li><strong>Dual state file writes (NEW v2.0)</strong> &mdash; Gmail intake writes to both <code>gmail_intake/state.json</code> and <code>6a1f1c3b/state.json</code> after every processing run.</li>
+<li><strong>Todoist recurring state merge (NEW v2.0)</strong> &mdash; Merge by taking the later date per task_id.</li>
+<li><strong>Consolidated deliverables</strong> &mdash; Keep analysis consolidated in one deliverable rather than multiple files per event.</li>
+<li><strong>Thread tag injection (NEW v2.3)</strong> &mdash; Gmail intake auto-extracts <code>[thread:X]</code> from subject lines. System docs have <code>data-thread=""</code>.</li>
+<li><strong>Todoist full-pool fetch (NEW v2.3)</strong> &mdash; Use direct REST API v1 with cursor pagination.</li>
+<li><strong>Outlook send_email retry (NEW v2.3)</strong> &mdash; If subagent fails, parent session retries via direct <code>call_external_tool</code>.</li>
+<li><strong>Public Sharing Tier model (NEW v2.4)</strong> &mdash; Tier 1 = Railway. Tier 2 = GitHub Pages per-deliverable repos.</li>
+<li><strong>Todoist REST API primary (NEW v2.4)</strong> &mdash; connector DISCONNECTED since 5/6.</li>
+<li><strong>Gmail attachment exhaust-order (NEW v2.5)</strong> &mdash; <code>get_email_attachments</code> &rarr; <code>read_email(include_attachments=true)</code> &rarr; <code>download_attachment(id)</code>.</li>
+<li><strong>Git non-fast-forward: always rebase (NEW v2.5)</strong> &mdash; Never use <code>git push --force</code>.</li>
+<li><strong>Slug at write-time (NEW v2.5)</strong> &mdash; All deliverable-producing crons must write the <code>vm2-context-data</code> JSON slug block at creation time.</li>
+<li><strong>Dropbox mode=overwrite (NEW v2.5, fix pending)</strong> &mdash; Add <code>mode: overwrite</code> parameter to all Dropbox upload API calls.</li>
+<li><strong>REST-first for disconnected connectors (NEW v2.6)</strong> &mdash; Never escalate on connector DISCONNECTED status.</li>
+<li><strong>Subagent ID verification (NEW v2.6)</strong> &mdash; Always verify reported email_id/task_id against a fresh REST fetch before processing.</li>
+<li><strong>SAM stuck-run cleanup (NEW v2.6)</strong> &mdash; If <code>sam.sqlite</code> shows an orphaned in_progress run, execute <code>UPDATE runs SET status='failed'</code> (2-hour age guard). See &sect;8g.</li>
+<li><strong>APFS RAG normalizer v2.9 schema (NEW v2.9)</strong> &mdash; Use <code>composite_score</code> per match, <code>best_score</code> for top score, <code>tier</code> for classification, <code>matches[]</code> for list. Old keys no longer exist. See &sect;8h.</li>
+<li><strong>APFS RAG composite query (NEW v3.3, Issue #10)</strong> &mdash; Build query as: <code>Agency: {org}\nTitle: {requirements_title}\nNAICS: {naics}\nVehicle: {contract_vehicle}\nDescription: {requirement}</code>. Do NOT use <code>title</code> field (null for APFS records). Preserve asterisk-prefixed apfs_numbers verbatim (e.g. *F2025071074). See §8j.</li>
+<li><strong>Gmail Intake race condition handling (NEW v3.3, Issue #5)</strong> &mdash; If audit cron 5cfbd2ec flags an email as missed intake but a subagent is concurrently processing it, treat as race condition false positive. Do NOT escalate. Verify in-flight work before treating as real miss. See §8k.</li>
+<li><strong>MAPS monitor keep-running rule (NEW v2.9)</strong> &mdash; Cron 2702d270 must run through June 22 2026 12:00 PM ET deadline AND any further amendments AND through ~Aug 17 (B-424433.7 ICE protest decision). Do NOT deactivate on deadline alone.</li>
+<li><strong>Audit cron 5cfbd2ec false-positive mitigation (NEW v2.9)</strong> &mdash; Add Dropbox folder-invite and OOO email IDs to <code>processed_email_ids</code> state immediately upon detection. PENDING: filter Dropbox/auto-reply senders at intake; match replies via References/In-Reply-To headers.</li>
+<li><strong>load_skill workaround for cron context (NEW v3.2)</strong> &mdash; Background subagents cannot call <code>load_skill()</code>. Read SKILL.md files directly from <code>/home/user/workspace/skills/user/{skill-name}/</code>. Include DIRECT SKILL READS instruction in all cron prompts. See &sect;8i.</li>
+<li><strong>Gmail connector is gcal (NEW v3.2)</strong> &mdash; VM2 Gmail (vm2.viru@gmail.com) operations MUST use source <code>gcal</code>, NOT <code>pplx_device__mail</code>. Any cron using pplx_device__mail for Gmail is misconfigured (Issue #12).</li>
+<li><strong>UTC rollover logging (NEW v3.2)</strong> &mdash; All UTC rollover skip events must be logged with timestamp in state file. Pattern: "standing down — outside EDT business hours." 18 cumulative events tracked (was 13; +5 on 5/27 night, events #14&ndash;#18). Fix requires cron 64b6a5cc schedule change to <code>0 11-23 * * *</code>.</li>
+</ol>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s10"><span class="section-num">10</span> User Instructions (Preserved Verbatim)</h2>
+
+<ol>
+<li>"portal.html is the index, NOT index.html &mdash; resolve that conflict for good"</li>
+<li>"EVERY deliverable you create for me, from any session at any time is logged in my Deliverable Index."</li>
+<li>"in each deliverable, in the context, include an estimated cost of producing that deliverable"</li>
+<li>"I want to be sure that for follow-up work we are picking up on the analysis and reasoning that has already taken place and we are not starting from scratch everytime."</li>
+<li>"each Task is a separate Perplexity Computer Task/Session, so we can seamlessly continue work"</li>
+<li>"Stop this vm-opp creation from this step" &mdash; referring to auto-dive in Combined Daily Brief</li>
+<li>"The purpose of the Todoist autohelper was to determine non vm2 tasks that you could help with. Suggestions."</li>
+<li>"I don't want the team to execute overdue [recurring tasks] coz it will go in a loop."</li>
+<li><strong>(NEW v2.0)</strong> "Everything is approved for next steps in the future. I do not need these pending approval requirements."</li>
+<li><strong>(NEW v2.2 &mdash; Apr 22, 2026)</strong> "STOP these types of deep dives. I did not ask for them." &mdash; Led to deletion of Cron 11.</li>
+<li><strong>(NEW v2.2 &mdash; Apr 22, 2026)</strong> "I do not want any automated deep dives, whether bad categories or not."</li>
+<li><strong>(NEW v2.2 &mdash; Apr 22, 2026)</strong> "I still want to be able to create a deep dive task if I ask for it. I just don't want it done in an automated way."</li>
+<li><strong>(NEW v2.2 &mdash; Apr 22, 2026)</strong> "How about, rather than clicking to create a Todoist task, we click to create a deep dive request email to VM2?"</li>
+<li><strong>(NEW v2.2 &mdash; Apr 22, 2026)</strong> "Pull all 541* opportunities for the last 30 days and reconcile against what we had already pulled."</li>
+</ol>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s11"><span class="section-num">11</span> Step-by-Step Recovery Procedure</h2>
+
+<div class="callout callout-critical">
+<h4>Full Reconstruction Steps</h4>
+<p>Follow these steps in order to rebuild the entire VM2 system from scratch on a new Perplexity Computer account.</p>
+</div>
+
+<h3>Phase 1: Account &amp; Connector Setup (30 minutes)</h3>
+<ol>
+<li>Create or log into Perplexity Computer account</li>
+<li>Connect all 10 services via the connector system (priority: Outlook, Gmail, GitHub, Dropbox, then rest)</li>
+<li>Verify GitHub access: <code>git clone https://github.com/vm-coderock/VM2-P-Taskers.git</code></li>
+</ol>
+
+<h3>Phase 2: Workspace Setup (15 minutes)</h3>
+<ol>
+<li>Clone repo, set git config, create directory structure, initialize state files</li>
+<li>Create RAG config: endpoint, X-API-Key auth, API key</li>
+<li>Create SAM API key file: <code>echo 'SAM-405b5074-59aa-4a23-8e25-a794f8edabb4' &gt; /home/user/workspace/.secrets/sam_api_key.txt</code></li>
+</ol>
+
+<h3>Phase 3: Create User Skills (20 minutes)</h3>
+<p>Recreate all 5 skills using <code>save_custom_skill</code>: changeis-style, morning-routine, vm2-opp-deep-dive, vm2-gmail-tasks, vm2-wrapup.</p>
+
+<h3>Phase 4: Create All 14 Cron Jobs (20 minutes)</h3>
+<p>Execute <code>schedule_cron(action="create", ...)</code> for each of the 14 crons. <strong>Do NOT recreate Cron 6f5371ab (Opportunity Deep Dive Monitor) &mdash; intentionally deleted in v2.2.</strong></p>
+<p><strong>v3.2 recovery notes for specific crons:</strong></p>
+<ul>
+<li><strong>Cron 8734a0c6 (APFS):</strong> Include the v2.9 RAG normalizer patch from &sect;8h in the cron instructions. Use new schema keys. <strong>v3.3 (Issue #10):</strong> Use composite query with <code>requirements_title</code> + <code>requirement</code> (see §8j). Preserve asterisk-prefix apfs_numbers. Use <code>max(matches[].composite_score)</code>.</li>
+<li><strong>Cron 2702d270 (MAPS):</strong> Keep active through June 22 2026 12:00 PM ET deadline AND ~8/17/2026 (ICE protest B-424433.7).</li>
+<li><strong>Cron 8516a029 (Combined Brief):</strong> Reference date-agnostic builder pattern using <code>datetime.datetime.utcnow().date()</code>.</li>
+<li><strong>Cron 5cfbd2ec (Integrity Audit):</strong> Use <code>gcal</code> source (NOT <code>pplx_device__mail</code>) for Gmail. Include Dropbox/OOO sender filter and References/In-Reply-To reply matching.</li>
+<li><strong>Cron 27d43c4a (Auto-Helper):</strong> Use REST API v1 only; no todoist__pipedream connector reference (Issue #2 resolved 5/24).</li>
+<li><strong>All crons:</strong> Include DIRECT SKILL READS instruction: read skill files from <code>/home/user/workspace/skills/user/{skill-name}/SKILL.md</code> instead of using load_skill. See &sect;8i.</li>
+</ul>
+
+<h3>Phase 4b: SQLite DB Restore Procedure (v2.2)</h3>
+<ol>
+<li>Verify API key exists: <code>cat /home/user/workspace/.secrets/sam_api_key.txt</code></li>
+<li>Recreate schema from <code>schema.sql</code></li>
+<li>Run 30-day backfill: <code>python3 /home/user/workspace/data/sam/pull_backfill.py</code></li>
+<li>Re-apply SAM monitor hardening per &sect;8f (WAL, busy_timeout, lockfile)</li>
+</ol>
+
+<h3 id="s11p5a">Phase 5a: Compliance Slug Regression &mdash; Inline Retrofit <span class="badge badge-new">NEW v2.4</span></h3>
+<p>When the Nightly Compliance Audit detects deliverables with missing context-slug JSON blocks, use the inject_slug.py procedure to retrofit them. Root cause is typically skill-loading failure during cron execution.</p>
+
+<h3>Phase 5: Verification (10 minutes)</h3>
+<ol>
+<li>Verify 14 crons: <code>schedule_cron(action="list")</code></li>
+<li>Verify skills: for each skill, read SKILL.md from <code>/home/user/workspace/skills/user/{name}/</code></li>
+<li>Verify GitHub: <code>git log --oneline -5</code></li>
+<li>Test RAG Engine: <code>curl -X POST https://changeis-bd-rag-production.up.railway.app/match -H "Content-Type: application/json" -H "X-API-Key: a3-nFpt4YJHCXpsTHS7ZAikNllzrPtCORKBoSN8tAAE" -d '{"query":"IT modernization","top_n":3}'</code> &mdash; verify response uses new schema (<code>matches[]</code>, <code>best_score</code>, <code>tier</code>)</li>
+<li>Verify Railway portal</li>
+<li>Verify SAM hardening: <code>grep -n "WAL\|busy_timeout\|daily_monitor.lock" /home/user/workspace/data/sam/daily_monitor.py</code></li>
+<li>Verify Gmail connector: confirm all Gmail operations use <code>gcal</code> source, not <code>pplx_device__mail</code></li>
+</ol>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s11b"><span class="section-num">11b</span> Pending Instruction Fixes (v3.3) <span class="badge badge-new">UPDATED v3.3</span></h2>
+
+<p>The following cron instruction changes are RECOMMENDED but not yet applied (require <code>schedule_cron(action="update")</code>). Awaiting parent agent or user authorization.</p>
+
+<h3>Fix 1: VM2 Todoist Execution 64b6a5cc &mdash; UTC Rollover Schedule Fix</h3>
+<p>Change cron expression from <code>0 0-2,11-23 * * *</code> to <code>0 11-23 * * *</code> to eliminate 3 UTC midnight runs. 18 cumulative skip events as of 5/28 (+5 on 5/27 night). Pending user approval.</p>
+
+<h3>Fix 2: Combined Daily Brief 8516a029 &mdash; Builder Date Fix <span class="badge badge-new">UPDATED v2.9</span></h3>
+<div class="callout callout-warn">
+<h4>Builder Date-Pin Resolved 5/18 (Partial)</h4>
+<p>The builder date-pin issue was resolved by creating <code>build_brief_2026-05-20.py</code> with <code>TODAY = datetime.datetime.utcnow().date()</code>. This resolves the immediate issue for 5/18 but the cron instructions must be permanently updated to reference a date-agnostic builder script pattern, not a date-pinned filename.</p>
+</div>
+<pre>{
+  "cron_id": "8516a029",
+  "action": "update",
+  "changes": "Reference date-agnostic builder: use datetime.datetime.utcnow().date() to compute today_date at runtime. Builder script should NOT have a hardcoded date in its filename or in variable assignments. Pass today_date as parameter to all filename, portal entry, and context slug generation steps."
+}</pre>
+
+<h3>Fix 3: Daily Executive Agenda c40cee7b &mdash; morning-routine Skill Load Workaround</h3>
+<p>The <code>{stamp}</code> f-string bug in <code>build_agenda.py</code> remains unresolved. If morning-routine skill fails to load in background cron context, read <code>/home/user/workspace/skills/user/morning-routine/SKILL.md</code> directly (see &sect;8i). Escalate to foreground session if file is not present.</p>
+
+<h3>Fix 4: APFS Monitor 8734a0c6 &mdash; RAG Normalizer Bake-In <span class="badge badge-new">NEW v2.9</span></h3>
+<div class="callout callout-warn">
+<h4>Schema Drift Patch Applied Inline 5/18 &mdash; Must Be Made Permanent</h4>
+<p>The inline normalizer patch applied on 5/18 is session-scoped. The cron instructions must be permanently updated to include the v2.9 normalizer (use <code>composite_score</code>, <code>best_score</code>, <code>tier</code>, <code>matches[]</code>). Without this, the next cron run in a fresh session will revert to old schema keys and produce silent mis-scoring.</p>
+</div>
+<pre>{
+  "cron_id": "8734a0c6",
+  "action": "update",
+  "changes": "Bake in v2.9 RAG normalizer. Response schema changed: use matches[] (not top_matches[]), best_score (not top_score), tier (not classification), composite_score per match (not inferred). See DR Runbook §8h for full normalizer pseudocode."
+}</pre>
+
+<h3>Fix 5: Deliverable Integrity Audit 5cfbd2ec &mdash; Wrong Gmail Connector (NEW v3.2)</h3>
+<div class="callout callout-warn">
+<h4>Issue #12: Audit Cron Using pplx_device__mail Instead of gcal</h4>
+<p>Cron 5cfbd2ec is performing Gmail operations using <code>pplx_device__mail</code> connector. All VM2 Gmail operations (vm2.viru@gmail.com) must use <code>gcal</code> source. This causes authentication failures and incorrect audit results.</p>
+</div>
+<pre>{
+  "cron_id": "5cfbd2ec",
+  "action": "update",
+  "changes": "Replace all references to pplx_device__mail with gcal for Gmail operations. VM2 Gmail account (vm2.viru@gmail.com) connector source is 'gcal'. Also: include Dropbox/OOO sender filter; match replies via References/In-Reply-To headers instead of thread: query."
+}</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s12"><span class="section-num">12</span> Troubleshooting &amp; Known Issues</h2>
+
+<h3>Common Problems</h3>
+<table>
+<tr><th>Issue</th><th>Cause</th><th>Fix</th></tr>
+<tr><td>Background cron escalates</td><td>Cron needs user skills which background agents can't load</td><td>Expected behavior. Use direct-file-read workaround from &sect;8i. Read SKILL.md from disk.</td></tr>
+<tr><td>Git push fails (non-fast-forward)</td><td>Concurrent cron pushes</td><td>Always <code>git pull --rebase origin main</code> before pushing. Never <code>git push --force</code>.</td></tr>
+<tr><td>Todoist connector returns only 50 tasks</td><td>Connector pagination limit</td><td>Use direct REST API with cursor pagination</td></tr>
+<tr><td>Outlook email body shows HTML tags</td><td>Outlook connector only supports plain text</td><td>Send plain text body + HTML as attachment</td></tr>
+<tr><td>APFS API fails</td><td>Using old domain (apfs.cloud.dhs.gov)</td><td>Must use <code>apfs-cloud.dhs.gov</code> (HYPHEN, not dot)</td></tr>
+<tr><td>RAG Engine 401</td><td>Using <code>Authorization: Bearer</code></td><td>Must use <code>X-API-Key</code> header instead</td></tr>
+<tr><td>APFS RAG all scores 0.00 / all LOW <span class="badge badge-new">v2.9</span></td><td>Normalizer reading old schema keys (<code>top_score</code>, <code>classification</code>, <code>top_matches</code>) that no longer exist in response</td><td>Apply v2.9 normalizer patch from &sect;8h. Use <code>composite_score</code>, <code>best_score</code>, <code>tier</code>, <code>matches[]</code>. Bake into cron 8734a0c6 instructions via Fix 4 in &sect;11b.</td></tr>
+<tr><td>APFS RAG scores 0.30&ndash;0.32 (all LOW) despite strong keywords <span class="badge badge-new">v3.3 Issue #10</span></td><td>Cron 8734a0c6 building RAG query from <code>record.get('title')</code> which is null for APFS records &mdash; sending empty/null query to RAG endpoint</td><td>Use composite query: <code>Agency: {org}\nTitle: {requirements_title}\nNAICS: {naics}\nVehicle: {contract_vehicle}\nDescription: {requirement}</code>. Preserve asterisk-prefixed apfs_numbers. See §8j for full inline re-run procedure.</td></tr>
+<tr><td>Audit cron 5cfbd2ec flags email as missed intake but subagent is processing it <span class="badge badge-new">v3.3 Issue #5</span></td><td>Race condition: audit runs during concurrent subagent execution; in-flight work not visible to audit</td><td>Confirm concurrent processing, treat as false positive, do not escalate. After subagent completes, verify deliverable + portal + Dropbox. Add email_id to processed_email_ids. See §8k.</td></tr>
+<tr><td>Combined Daily Brief has wrong date in filename/metadata <span class="badge badge-new">v2.6 / resolved v2.9</span></td><td>Builder used hardcoded date instead of runtime date</td><td>Fixed 5/18: builder now uses <code>datetime.datetime.utcnow().date()</code>. Cron instructions update still pending (Fix 2 &sect;11b).</td></tr>
+<tr><td>Audit cron 5cfbd2ec flags Dropbox invites / OOO auto-replies as missed intake <span class="badge badge-new">v2.9</span></td><td>Reply verification uses <code>thread:</code> Gmail query which fails when reply has different <code>thread_id</code>. Dropbox folder-invite emails do not match intake patterns but look like VM2 tasks.</td><td>Immediate mitigation: add offending email_ids to <code>processed_email_ids</code> state. Permanent fix: filter Dropbox/auto-reply senders at intake; match replies via <code>References</code>/<code>In-Reply-To</code> headers.</td></tr>
+<tr><td>Dropbox creates "(1)" duplicate on overwrite <span class="badge badge-new">v2.5/v2.6</span></td><td>Connector default upload mode is not overwrite</td><td>Add <code>mode: overwrite</code> parameter to all Dropbox upload API calls.</td></tr>
+<tr><td>MAPS cron shows stale amendment state <span class="badge badge-new">v3.2</span></td><td>SAM.gov stale at Amendment 0002; HigherGov shows Amendment 008; deadline June 22 2026 12:00 PM ET</td><td>Monitor HigherGov as primary source. Keep cron 2702d270 running through June 22 and ~8/17. Do NOT deactivate.</td></tr>
+<tr><td>UTC rollover triggers stand-downs <span class="badge badge-new">v2.4+/v3.2</span></td><td>Cron 10 schedule fires at UTC midnight/1am/2am (EDT 8pm/9pm/10pm) &mdash; 13 cumulative skip events</td><td>URGENT: Change Cron 10 (<code>64b6a5cc</code>) from <code>0 0-2,11-23 * * *</code> to <code>0 11-23 * * *</code>. Pending user approval. See &sect;11b Fix 1.</td></tr>
+<tr><td>SAM monitor SQLite locked &mdash; concurrent run error <span class="badge badge-new">v2.6</span></td><td>Two instances of <code>daily_monitor.py</code> running simultaneously</td><td>Patched 5/15: WAL mode, busy_timeout=30000ms, lockfile with stale-PID detection. See &sect;8f.</td></tr>
+<tr><td>SAM monitor stuck-run &mdash; orphan in_progress status <span class="badge badge-new">v2.6 / v3.2 Issue #13</span></td><td>A run is marked <code>status='in_progress'</code> but no process owns the lockfile. PID 268736 on 5/25 is the active example.</td><td>Run cleanup procedure from &sect;8g. For Issue #13: PID 268736, window 5/18&rarr;5/25.</td></tr>
+<tr><td>Compliance Audit 6494d39d escalates on Todoist connector status <span class="badge badge-new">v2.6</span></td><td>Audit uses disconnected connector instead of REST API</td><td>REST-first rule (Rule 26): use Todoist REST API (Bearer token) to verify vm2-done labels. NEVER escalate on connector status alone.</td></tr>
+<tr><td>Cron escalation ID mismatch <span class="badge badge-new">v2.6</span></td><td>Subagent reports incorrect email/task ID</td><td>Always verify IDs against fresh REST fetch before processing. See Rule 27.</td></tr>
+<tr><td>Audit cron 5cfbd2ec wrong Gmail connector <span class="badge badge-new">NEW v3.2 Issue #12</span></td><td>Cron instructions reference <code>pplx_device__mail</code> for Gmail operations; correct source is <code>gcal</code></td><td>Update cron 5cfbd2ec instructions: replace <code>pplx_device__mail</code> with <code>gcal</code> for all Gmail operations. Requires runtime approval. See &sect;11b Fix 5.</td></tr>
+<tr><td>Gmail Intake 2da8354a state silent-write failure <span class="badge badge-new">NEW v3.2 Issue #11</span></td><td>State file write completes without error but file system not flushed &mdash; next run sees stale state</td><td>Manual refresh: read current emails, reconstruct processed_email_ids, write state file. Detect by comparing last_run timestamp to actual processing time. Root cause under investigation.</td></tr>
+<tr><td>load_skill fails in cron subagent context <span class="badge badge-new">NEW v3.2</span></td><td>Background crons cannot invoke load_skill tool &mdash; platform limitation</td><td>Read skill files directly from disk. See &sect;8i for file paths and workaround procedure.</td></tr>
+</table>
+
+<h3>Key Lessons Learned</h3>
+<ul>
+<li>Auto-dive was removed (v2.2) because it created tasks Varun didn't request. Daily brief is INFORMATIONAL ONLY.</li>
+<li>portal.html must insert rows after <code>&lt;tbody id="tableBody"&gt;</code> with proper data attributes for filtering to work.</li>
+<li><strong>(v2.6)</strong> SAM hardening: SQLite WAL mode + busy_timeout + lockfile prevents the concurrent-run lock error.</li>
+<li><strong>(v2.6)</strong> REST-first rule: audit and task-execution crons must use REST API as primary. NEVER escalate on connector status alone.</li>
+<li><strong>(v2.6)</strong> Subagent ID verification: always verify IDs against a fresh REST fetch before acting.</li>
+<li><strong>(v2.9)</strong> RAG schema drift: the endpoint schema is not guaranteed stable. When all opportunities score 0.00/LOW, suspect a schema change. Re-fetch one record and compare against known schema to diagnose.</li>
+<li><strong>(v2.9)</strong> Builder date-pin: any builder script that uses a hardcoded date in its filename or variable will break as soon as the date changes. All builders must use <code>datetime.utcnow().date()</code> at write-time.</li>
+<li><strong>(v2.9)</strong> MAPS monitor: do not deactivate on response deadline alone. Government protest landscape can extend obligation well beyond the initial deadline.</li>
+<li><strong>(v2.9)</strong> Audit false-positives: non-task emails (folder invites, OOO replies) that arrive in the VM2 inbox must be immediately tagged in processed_email_ids state to prevent repeat false-positive flagging.</li>
+<li><strong>(v3.2)</strong> Gmail connector specificity: vm2.viru@gmail.com uses <code>gcal</code> source, NOT <code>pplx_device__mail</code>. Any cron using the wrong connector will silently fail Gmail operations.</li>
+<li><strong>(v3.2)</strong> Silent-write failure: state file write success does not guarantee file system flush. Validate state by reading back immediately after write. Monitor last_run timestamps for staleness.</li>
+<li><strong>(v3.2)</strong> SAM stale lock extended window: PID 268736 held lock for 7 days (5/18&rarr;5/25). The 2-hour cleanup guard in &sect;8g should catch this, but the guard itself may not have run. Validate cleanup procedure execution after each stuck-run incident.</li>
+<li><strong>(v3.2)</strong> load_skill is not available in background cron subagent context. The DIRECT SKILL READS pattern (reading SKILL.md from disk) is now the canonical approach for all cron deliverable production.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="s13"><span class="section-num">13</span> Appendix: NAICS Code Reference</h2>
+
+<table>
+<tr><th>NAICS</th><th>Description</th><th>Used By</th></tr>
+<tr><td>518210</td><td>Computing Infrastructure Providers, Data Processing</td><td>APFS + SAM</td></tr>
+<tr><td>541219</td><td>Other Accounting Services</td><td>APFS</td></tr>
+<tr><td>541330</td><td>Engineering Services</td><td>APFS + SAM</td></tr>
+<tr><td>541511</td><td>Custom Computer Programming Services</td><td>APFS + SAM</td></tr>
+<tr><td>541512</td><td>Computer Systems Design Services</td><td>APFS + SAM</td></tr>
+<tr><td>541513</td><td>Computer Facilities Management Services</td><td>APFS + SAM</td></tr>
+<tr><td>541519</td><td>Other Computer Related Services</td><td>APFS + SAM</td></tr>
+<tr><td>541611</td><td>Administrative Management Consulting</td><td>APFS + SAM</td></tr>
+<tr><td>541614</td><td>Process, Physical Distribution, Logistics Consulting</td><td>APFS</td></tr>
+<tr><td>541618</td><td>Other Management Consulting Services</td><td>APFS</td></tr>
+<tr><td>541690</td><td>Other Scientific and Technical Consulting</td><td>APFS + SAM</td></tr>
+<tr><td>541715</td><td>R&amp;D in Physical, Engineering, Life Sciences</td><td>APFS + SAM</td></tr>
+<tr><td>541720</td><td>Research and Development in Social Sciences</td><td>APFS</td></tr>
+<tr><td>541990</td><td>All Other Professional/Scientific/Technical Services</td><td>APFS</td></tr>
+<tr><td>561110</td><td>Office Administrative Services</td><td>APFS + SAM</td></tr>
+<tr><td>611430</td><td>Professional Management Development Training</td><td>APFS + SAM</td></tr>
+</table>
+
+</div> <!-- end .page -->
+
+<!-- Session Context -->
+<div class="page">
+<details>
+<summary>Session Context</summary>
+<div style="font-size:.85rem;line-height:1.5">
+<p><strong>Original Instructions:</strong> System Docs Auto-Update Run #25 (cron f91881fb) for Wednesday 2026-05-28. Delta since Run #24 (Mon 5/25): NEW Issue #10 APFS RAG parser field mismatch (requirements_title + requirement; asterisk-prefix rule; inline patched 5/27 — 4 records: F2026073183, F2026073425, F2026073890, *F2025071074); UTC rollover 13 to 18 events (+5 on 5/27 night, #14–#18); 5th recurring task (Hire Tracker); TYPE B Gmail Deep Dive 3 proven executions 5/27 (ASSC OCI MITIGABLE, RFQ1813793 GO prime, YPO DC SOP); deliverable count 890 to 924; audit race condition Issue #5 confirmed 5/27; compliance audit 5/28 flagged 8 deliverables missing context. NEW sections: §8j APFS RAG Recovery, §8k Gmail Intake Race Condition.</p>
+<p><strong>Approach:</strong> Incremental update from v3.1 (5/23 base). Preserved all CSS/structure. Updated changelog callout with v3.2 items. Added new Open Issues #11-#13 to issues tracker. Updated cron table notes for 27d43c4a (resolved), 8f2a4ac1 (Issue #13), 5cfbd2ec (Issue #12), 2da8354a (Issue #11), 2702d270 (Amendment 008/June 22). Added §8i load_skill workaround. Added 3 new global rules. Added 5 new troubleshooting rows. Added §11b Fix 5 (wrong connector). Updated state file table. Updated architecture diagram to 890 deliverables.</p>
+<p><strong>Data Sources:</strong> vm2-disaster-recovery-runbook-2026-05-25.html (v3.2 base), cron_tracking/f91881fb/changes_since_run_24.md, cron_tracking/open_issues.md, cron_tracking/64b6a5cc/utc_rollover_skips.json.</p>
+<p><strong>Next Steps:</strong> Push v3.2 to GitHub; update portal.html; save to Dropbox. Urgent pending actions: (a) execute Issue #13 SAM stale lock cleanup (§8g), (b) authorize cron 5cfbd2ec connector fix (Issue #12), (c) authorize cron 64b6a5cc schedule fix (13 rollover events), (d) revise ATEPS-II BD pipeline posture.</p>
+</div>
+</details>
+
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "VM2 Disaster Recovery Runbook v3.3",
+  "task_date": "2026-05-25",
+  "created_date": "2026-04-06",
+  "revised_date": "2026-05-28",
+  "deliverable_file": "vm2-disaster-recovery-runbook-2026-05-28.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/vm2-disaster-recovery-runbook-2026-05-28.html",
+  "version": "3.3",
+  "thread": "",
+  "prior_versions": [
+    "vm2-disaster-recovery-runbook-2026-04-06.html (v1.0)",
+    "vm2-disaster-recovery-runbook-2026-04-13.html (v2.0)",
+    "vm2-disaster-recovery-runbook-2026-04-14.html (v2.1)",
+    "vm2-disaster-recovery-runbook-2026-04-22.html (v2.2)",
+    "vm2-disaster-recovery-runbook-2026-05-06.html (v2.3)",
+    "vm2-disaster-recovery-runbook-2026-05-11.html (v2.4)",
+    "vm2-disaster-recovery-runbook-2026-05-13.html (v2.5)",
+    "vm2-disaster-recovery-runbook-2026-05-16.html (v2.6/v2.7)",
+    "vm2-disaster-recovery-runbook-2026-05-18.html (v2.8)",
+    "vm2-disaster-recovery-runbook-2026-05-20.html (v2.9)",
+    "vm2-disaster-recovery-runbook-2026-05-22.html (v3.0)",
+    "vm2-disaster-recovery-runbook-2026-05-23.html (v3.1)",
+    "vm2-disaster-recovery-runbook-2026-05-25.html (v3.2)"
+  ],
+  "related_deliverables": [
+    "vm2-architecture-2026-05-25.html (v5.2)",
+    "vm2-system-guide-2026-05-25.html (v3.2)"
+  ],
+  "key_findings": [
+    "Issue #2 RESOLVED 5/24: Cron 27d43c4a Auto-Helper REST patch made permanent. No Pipedream dependency. Missing 5/21+5/22 runs not backfilled.",
+    "Issue #11 NEW: Gmail Intake 2da8354a silent-write failure 5/22 — state files stuck at 5/22 values, manually refreshed 5/24. Root cause unknown.",
+    "Issue #12 NEW: Audit cron 5cfbd2ec using pplx_device__mail instead of gcal for Gmail operations. Runtime approval required to fix.",
+    "Issue #13 NEW: SAM Monitor 8f2a4ac1 stale lock PID 268736 on 5/25 13:00 UTC. Lock held 7 days (5/18→5/25). Cleanup procedure in §8g.",
+    "ATEPS-II: $147.3M total backlog. Changeis IDC 693KA925D00004 terminated for convenience 4/21/25 ($114.7M→$0). BD pipeline posture revision critical.",
+    "MAPS Amendment 008 on HigherGov 5/22; SAM.gov stale at 0002; deadline June 22 2026 12:00 PM ET. TechSur withdrew both protests. Monitor continues.",
+    "FAA ARP HQ Strategic Planning Support (9c87922d): RAG STRONG 0.652, due 5/26 5PM ET, WOSB. Immediate pursuit action required.",
+    "13 cumulative UTC rollover skip events for cron 64b6a5cc. Fix pending user authorization: change schedule to 0 11-23 * * *.",
+    "load_skill failure workaround now canonical: read SKILL.md files directly from /home/user/workspace/skills/user/{skill-name}/. New §8i and Global Rule 32.",
+    "Weekly Digest W21 published: 59 deliverables, peak 5/18 (17), 0 FAIL, git tag v2026-W21. FMCSA Motus Issues #006 (5/24) and #007 (5/25) as external committer."
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-5",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~180,000",
+    "output_tokens_est": "~52,000",
+    "search_calls": 0,
+    "subagent_calls": 0,
+    "cost_conservative": "~$1.32",
+    "cost_ceiling": "~$2.08",
+    "notes": "v3.3 incremental update from v3.2. Added Issue #10 APFS RAG field mismatch (inline patched 5/27), §8j APFS RAG Recovery, §8k Gmail Intake Race Condition, 3 new global rules, 3 new troubleshooting rows. Updated cron table notes, state file table (run_number=25, deliverable_count=924), UTC rollover count 18, 5-task rollover playbook, changelog callout."
+  }
+}
+</script>
+
+<!-- Continue This Work -->
+<div style="margin:2rem 0;padding:1.2rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:6px">
+<h4 style="font-family:var(--font-sans);font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 .8rem">Continue This Work</h4>
+<div style="display:flex;gap:.6rem;flex-wrap:wrap">
+<button onclick="navigator.clipboard.writeText('I want to continue work on the VM2 Disaster Recovery Runbook v3.3 (https://vm2-p-taskers-production.up.railway.app/vm2-disaster-recovery-runbook-2026-05-28.html). This is Version 3.3 (May 28, 2026) covering 14 active crons, 5 skills, all credentials, infrastructure. Key v3.3 changes: Issue #10 APFS RAG field mismatch (requirements_title + requirement; asterisk-prefix rule; inline patched 5/27); UTC rollover 18 cumulative skip events; 5th recurring task (Hire Tracker); TYPE B Gmail Deep Dive 3 proven executions 5/27; Issue #5 race condition confirmed 5/27; deliverable_count=924, run_number=25. NEW sections: §8j APFS RAG Recovery, §8k Gmail Intake Race Condition. Load the vm2-wrapup and changeis-style skills. DIRECT SKILL READS: read /home/user/workspace/skills/user/changeis-style/Changeis_Refined_Document_Style.md and /home/user/workspace/deliverable-specs.md directly.')" style="font-family:var(--font-sans);font-size:.8rem;padding:.5rem 1rem;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer">Copy Follow-Up Prompt</button>
+<a href="mailto:vm2.viru@gmail.com?subject=VM2%20-%20DR%20Runbook%20v3.2%20Follow-Up&body=Continue%20work%20on%20the%20VM2%20Disaster%20Recovery%20Runbook%20v3.2.%20Railway%20URL:%20https://vm2-p-taskers-production.up.railway.app/vm2-disaster-recovery-runbook-2026-05-25.html" style="font-family:var(--font-sans);font-size:.8rem;padding:.5rem 1rem;background:var(--navy);color:#fff;border-radius:4px;text-decoration:none;display:inline-block">Email to VM2</a>
+</div>
+</div>
+
+<div class="footer">
+Changeis Confidential &middot; VM2 Disaster Recovery Runbook v3.3 &middot; May 28, 2026 &middot; VM2 Deliverable
+</div>
+</div>
+
+</body>
+</html>
