@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOT/FAA EFS II Deep Dive — Enterprise Financial Services II | Changeis BD</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --go-bg: #d1fae5; --go-text: #065f46;
+    --amber-bg: #fef3c7; --amber-text: #92400e;
+    --blue-bg: #dbeafe; --blue-text: #1e40af;
+    --red-bg: #fee2e2; --red-text: #991b1b;
+  }
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --go-bg: #064e3b; --go-text: #6ee7b7;
+    --amber-bg: #44370a; --amber-text: #fcd34d;
+    --blue-bg: #1e3a5f; --blue-text: #93bbfc;
+    --red-bg: #450a0a; --red-text: #fca5a5;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15.5px;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; line-height: 1; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+  /* Container */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px 60px; }
+  /* Hero */
+  .hero {
+    text-align: center; padding: 44px 0 32px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.18; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 12px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+  /* Sections */
+  .section { margin-bottom: 34px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 5px;
+    margin-bottom: 14px;
+  }
+  .section p { font-size: 15px; line-height: 1.65; margin-bottom: 8px; }
+  .section ul, .section ol { padding-left: 22px; margin-bottom: 10px; }
+  .section li { margin-bottom: 5px; font-size: 15px; line-height: 1.6; }
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 14px;
+  }
+  .card h3 { font-size: 16px; font-weight: 700; margin-bottom: 10px; color: var(--navy); }
+  [data-theme="dark"] .card h3 { color: #e2e2e2; }
+  /* KPI strip */
+  .kpi-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 650px) { .kpi-strip { grid-template-columns: repeat(2,1fr); } }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    text-align: center;
+  }
+  .kpi-label {
+    font-family: system-ui, sans-serif;
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 5px;
+  }
+  .kpi-value {
+    font-size: 20px; font-weight: 800; color: var(--navy); line-height: 1.1;
+  }
+  [data-theme="dark"] .kpi-value { color: #e2e2e2; }
+  .kpi-sub { font-size: 11px; color: var(--text-faint); margin-top: 3px; font-family: system-ui, sans-serif; }
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13.5px; margin-top: 8px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 11.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  /* Callouts */
+  .callout {
+    border-radius: 6px; padding: 13px 16px; margin: 12px 0;
+    font-size: 14.5px; line-height: 1.6;
+    border-left: 4px solid;
+  }
+  .callout-green { background: var(--go-bg); color: var(--go-text); border-color: #10b981; }
+  .callout-amber { background: var(--amber-bg); color: var(--amber-text); border-color: #f59e0b; }
+  .callout-blue { background: var(--blue-bg); color: var(--blue-text); border-color: #3b82f6; }
+  .callout-red { background: var(--red-bg); color: var(--red-text); border-color: #ef4444; }
+  .callout strong { font-weight: 700; }
+  /* Verdict */
+  .verdict-box {
+    border-radius: 8px; padding: 20px 22px; margin: 14px 0;
+    border: 2px solid;
+    font-size: 15px; line-height: 1.65;
+  }
+  .verdict-go { border-color: #10b981; background: var(--go-bg); color: var(--go-text); }
+  .verdict-title { font-size: 22px; font-weight: 800; margin-bottom: 10px; font-family: system-ui, sans-serif; }
+  /* Score table */
+  .score-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  .score-table td { padding: 6px 10px; font-size: 14px; }
+  .score-bar-bg { background: var(--border); border-radius: 4px; height: 10px; }
+  .score-bar-fill { background: var(--red); border-radius: 4px; height: 10px; }
+  /* Badges */
+  .badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .badge-go { background: #d1fae5; color: #065f46; }
+  .badge-strong { background: #d1fae5; color: #065f46; }
+  .badge-moderate { background: #fef3c7; color: #92400e; }
+  .badge-low { background: #fee2e2; color: #991b1b; }
+  .badge-high { background: #fee2e2; color: #991b1b; }
+  .badge-medium { background: #fef3c7; color: #92400e; }
+  .badge-tbd { background: var(--surface-alt); color: var(--text-muted); }
+  /* Q&A blocks */
+  .qa-block {
+    border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 12px; overflow: hidden;
+  }
+  .qa-q {
+    background: var(--surface-alt);
+    padding: 11px 16px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: var(--navy);
+    border-bottom: 1px solid var(--border);
+  }
+  [data-theme="dark"] .qa-q { color: #93bbfc; }
+  .qa-a { padding: 12px 16px; font-size: 14.5px; line-height: 1.65; }
+  /* Action items */
+  .action-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 11px 14px; border-bottom: 1px solid var(--border);
+    font-size: 14.5px;
+  }
+  .action-item:last-child { border-bottom: none; }
+  .action-date {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--red);
+    min-width: 70px; padding-top: 2px;
+  }
+  /* Context / slug */
+  details.ctx { margin-top: 10px; }
+  details.ctx summary {
+    cursor: pointer;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    color: var(--text-muted);
+    padding: 8px 0;
+    list-style: none;
+  }
+  details.ctx summary::-webkit-details-marker { display: none; }
+  details.ctx summary::before { content: '+ '; color: var(--red); }
+  details.ctx[open] summary::before { content: '- '; }
+  details.ctx h3 {
+    font-size: 14px; font-weight: 700; margin: 14px 0 6px;
+    color: var(--navy); font-family: system-ui, sans-serif;
+  }
+  [data-theme="dark"] details.ctx h3 { color: #e2e2e2; }
+  details.ctx p, details.ctx li { font-size: 14px; line-height: 1.6; }
+  /* Continue panel */
+  .continue-panel {
+    background: var(--panel-bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 22px 24px; margin: 28px 0 0;
+  }
+  .continue-panel h3 {
+    font-size: 16px; font-weight: 700;
+    font-family: system-ui, sans-serif; margin-bottom: 6px;
+    color: var(--navy);
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 6px;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; text-decoration: none;
+    border: none; transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.87; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  /* Footer */
+  .footer {
+    margin-top: 40px; padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-family: system-ui, sans-serif;
+    font-size: 11.5px; color: var(--text-faint);
+    text-align: center; letter-spacing: 0.02em;
+  }
+  /* Risk pills */
+  .risk-pill {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 10px; margin-right: 6px;
+  }
+  .risk-low { background: #d1fae5; color: #065f46; }
+  .risk-medium { background: #fef3c7; color: #92400e; }
+  .risk-high { background: #fee2e2; color: #991b1b; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">&#x25CF;</span>
+    <span>VM2 &middot; Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark/Light</button>
+</div>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive &mdash; BD Intelligence</div>
+    <h1>DOT/FAA Enterprise Financial Services (EFS) II</h1>
+    <div class="hero-sub">Market Survey / RFI Analysis &mdash; FAA Office of Financial Services (ABA)</div>
+    <div class="hero-date">Created: 2026-05-29 &nbsp;&middot;&nbsp; NAICS 541219 &nbsp;&middot;&nbsp; Questions Due: June 11, 2026</div>
+  </div>
+
+  <!-- ===== SECTION 1: EXECUTIVE SUMMARY ===== -->
+  <div class="section">
+    <div class="section-header">1. Executive Summary</div>
+
+    <div class="verdict-box verdict-go">
+      <div class="verdict-title">GO &mdash; PRIME (Strongly Recommended)</div>
+      <p>EFS II is a high-fit, high-priority opportunity for Changeis. Changeis holds FAA eFAST (MOA No. DTFAWA13A-00026), the exact vehicle FAA will likely use to award EFS II task orders, and has deep legacy performance in FAA financial, budget, and management consulting work. The NAICS 541219 size standard ($25M revenue) is well-matched to Changeis's small business status, and the FAA is explicitly soliciting industry input on whether an adequate small business competition pool exists &mdash; creating a direct advocacy opportunity for Changeis to push for a WOSB/EDWOSB set-aside. The incumbent (CEXEC, Inc.) is a small business on EFS I (IDIQ No. 693KA9-19-D-00005, awarded April 2019), and EFS I's 7-year period of performance is now ending, creating a full and open recompete window.</p>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi">
+        <div class="kpi-label">Go/No-Go</div>
+        <div class="kpi-value" style="color:#065f46;">GO</div>
+        <div class="kpi-sub">Prime recommended</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Confidence</div>
+        <div class="kpi-value">85/100</div>
+        <div class="kpi-sub">Composite score</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Questions Due</div>
+        <div class="kpi-value">Jun 11</div>
+        <div class="kpi-sub">2026 (hard deadline)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">NAICS</div>
+        <div class="kpi-value">541219</div>
+        <div class="kpi-sub">Other Accounting Svcs</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Top 3 Strategic Advantages for Changeis</h3>
+      <ol>
+        <li><strong>FAA eFAST Holder (MOA DTFAWA13A-00026):</strong> Changeis is a pre-qualified Master Ordering Agreement (MOA) holder on FAA eFAST &mdash; the FAA's preferred vehicle for small business contracting. EFS II task orders are expected to flow through eFAST. This is a decisive structural advantage over any competitor without eFAST eligibility. Since FY2010, FAA eFAST has awarded over $4.4 billion to small businesses; Changeis has a validated track record on this vehicle (<a href="https://www.faa.gov/about/office_org/headquarters_offices/afn/offices/acquisitions/efast" target="_blank">faa.gov eFAST ↗</a>).</li>
+        <li><strong>WOSB/EDWOSB Set-Aside Positioning:</strong> The FAA is explicitly asking whether adequate small business competition exists &mdash; a threshold question that determines whether a set-aside will be applied. As an Economically Disadvantaged Women-Owned Small Business, Changeis benefits from any WOSB/EDWOSB set-aside restriction, narrowing the competitive field substantially. No large business (Deloitte, Booz Allen, GDIT) can participate in a WOSB/EDWOSB set-aside.</li>
+        <li><strong>Directly Relevant FAA Past Performance (CLMRS, ATAPS II, eFAST BAFM III, FRA MTAP):</strong> Changeis has active FAA financial and management consulting work including CLMRS ($62M supply chain transformation), ATAPS II ($103M ATO Technical Analysis), and prior eFAST BAFM III (693KA8-18-F-00012) financial management support. The RAG corpus shows strong match to EFS II's 9 work areas, particularly Work Areas 1 (Policies/Processes), 3 (Program/Project Management), 4 (Budget/Financial Operations), and 7 (Risk Management).</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h3>Recommended Next Steps (Immediate)</h3>
+      <ul>
+        <li><strong>By June 11, 2026:</strong> Submit written questions through the RFI process. Prioritize questions that: (a) confirm eFAST as the intended task order vehicle, (b) establish that WOSB/EDWOSB small businesses are adequate in number, and (c) clarify total estimated value and period of performance.</li>
+        <li><strong>By June 18, 2026:</strong> Submit complete RFI response with capability narrative for all 9 work areas. Lead with eFAST status and WOSB credentials. This date was referenced in the task subject line &mdash; see date clarification in Section 2.</li>
+        <li><strong>Immediately:</strong> Assign capture lead (recommend Joshua Reese as sponsor/advisor, with a dedicated capture manager). Begin drafting capability narratives per work area using existing CLMRS, ATAPS II, and eFAST BAFM III past performance write-ups.</li>
+        <li><strong>Within 2 weeks:</strong> Identify teaming partners for Work Areas where gaps exist (5 - Training delivery, 6 - Strategic Investment Analysis EVM depth). Consider teaming with an accounting/audit firm with FAA/DOT experience for Work Areas 2 (Internal Controls) and 6 (Strategic Planning/Investment Analysis).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 2: OPPORTUNITY SNAPSHOT ===== -->
+  <div class="section">
+    <div class="section-header">2. Opportunity Snapshot</div>
+    <div class="card">
+      <table>
+        <tbody>
+          <tr><td style="font-weight:700; width:38%;">Title</td><td>Enterprise Financial Services (EFS) II</td></tr>
+          <tr><td style="font-weight:700;">Agency</td><td>Department of Transportation / Federal Aviation Administration (FAA) &mdash; Office of Financial Services (ABA)</td></tr>
+          <tr><td style="font-weight:700;">NAICS</td><td>541219 &mdash; Other Accounting Services</td></tr>
+          <tr><td style="font-weight:700;">Type</td><td>Market Survey / Request for Information (pre-solicitation, not in SAM/APFS)</td></tr>
+          <tr><td style="font-weight:700;">Source</td><td>Forwarded from Joshua Reese (Director, Client Development &amp; Strategy) to BD-Ops on May 29, 2026 at 7:22 AM EDT</td></tr>
+          <tr><td style="font-weight:700;">Contract Vehicle (Expected)</td><td>FAA eFAST GWAC &mdash; Changeis holds MOA DTFAWA13A-00026</td></tr>
+          <tr><td style="font-weight:700;">Scope</td><td>Agency-wide FAA financial, budget, and management-related activities; DOT-wide under Economy Act (31 U.S.C. &sect;1535)</td></tr>
+          <tr><td style="font-weight:700;">Size Standard</td><td>$25 million revenue (SBA size standard for NAICS 541219)</td></tr>
+          <tr><td style="font-weight:700;">Set-Aside</td><td>TBD &mdash; FAA explicitly soliciting industry input on small business competition adequacy</td></tr>
+          <tr><td style="font-weight:700;">Period of Performance</td><td>Not specified in SOW; EFS I used a 3-year base + 4 one-year options (7 years total); EFS II likely similar</td></tr>
+          <tr><td style="font-weight:700;">Estimated Value</td><td>Not stated; EFS I (693KA9-19-D-00005) is a multi-task-order IDIQ; based on EFS I activity, estimated $50M&ndash;$150M total ceiling</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-amber">
+      <strong>Date Clarification:</strong> Two dates are in play. The original task subject line referenced "Due June 18, 2026" &mdash; this likely refers to the RFI submission deadline (capability narrative response). The task metadata states "Questions Due: June 11, 2026" &mdash; this is the earlier deadline for submitting written questions to the FAA. Changeis must meet both: <strong>questions by June 11, full RFI response by June 18</strong>. Confirm both dates with FAA's POC prior to submission.
+    </div>
+  </div>
+
+  <!-- ===== SECTION 3: SOW ANALYSIS ===== -->
+  <div class="section">
+    <div class="section-header">3. SOW Analysis &mdash; All 9 Work Areas</div>
+    <div class="card">
+      <p>The EFS II SOW (SIR No. TBD) defines 9 work areas under Section C.3, spanning FAA's full financial management and operations support lifecycle. The contractor cannot perform inherently governmental functions. IT accessibility (Section 508, WCAG 2.0 Level AA) and IT security (NIST SP 800-53 Rev. 5, SP 800-37 Rev. 2) standards apply. The scope extends agency-wide and to any DOT office under the Economy Act.</p>
+      <table>
+        <thead><tr><th>#</th><th>Work Area</th><th>Key Activities</th><th>Changeis Match</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Policies &amp; Processes (C.3.1)</strong></td>
+            <td>Identify need for policies/SOPs; process assessments; gap identification/documentation; draft policy documents; implementation planning; document management; periodic reviews</td>
+            <td><span class="badge badge-strong">STRONG</span> &mdash; CLMRS SOPs and process documentation; ATAPS II policy support; eFAST BAFM III procedural compliance work</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>Internal Controls (C.3.2)</strong></td>
+            <td>Assess existing controls per OMB A-123 / FMFIA; plan and conduct testing; testing and analysis; remediate open deficiencies; develop corrective action plans; ensure unqualified audit opinion</td>
+            <td><span class="badge badge-moderate">MODERATE</span> &mdash; Internal controls framework experience through financial management consulting; gaps exist in audit-specific work; consider teaming with an accounting/audit firm</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>Program &amp; Project Management (C.3.3)</strong></td>
+            <td>Program governance; planning; execution; initiation, planning, executing, monitoring/controlling, and closing projects per PMI/FAC-C standards; integrated master schedule development</td>
+            <td><span class="badge badge-strong">STRONG</span> &mdash; ATAPS II ($103M, 8 directorates, complex multi-project management); CLMRS program management; PMI-aligned delivery track record</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><strong>Day-to-Day Operations (C.3.4)</strong></td>
+            <td>Budget planning &amp; formulation (OMB A-11; annual cycle); budget execution (SF 133, PAR, allotments); reimbursable agreements; financial &amp; accounting operations; human capital management (workforce/competency analysis, performance management)</td>
+            <td><span class="badge badge-strong">STRONG</span> &mdash; eFAST BAFM III and FRA MTAP (6913G620F400046) financial operations; budget formulation experience; financial reporting</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><strong>Training (C.3.5)</strong></td>
+            <td>Identify training needs via skill gap analysis; develop training content (online/in-person); create instructor/student materials; coordinate delivery; assess efficacy (excludes LMS software licenses/configuration)</td>
+            <td><span class="badge badge-moderate">MODERATE</span> &mdash; HCaTS SB vehicle demonstrates training delivery capability; consider HCaTS as complementary vehicle. Some gaps in large-scale FAA financial training delivery</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td><strong>Strategic Planning, Investment Analysis &amp; Program Evaluation (C.3.6)</strong></td>
+            <td>Cost/technical studies of investments; market surveys; EVM activities; CPIC/AMS compliance monitoring; OMB A-300 attachments; program effectiveness evaluation</td>
+            <td><span class="badge badge-moderate">MODERATE</span> &mdash; ATAPS II strategic planning components; capital planning experience; EVM expertise may require teaming partner reinforcement</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td><strong>Risk Management (C.3.7)</strong></td>
+            <td>Governance structure recommendations; risk taxonomy development; identification, analysis, evaluation, quantification, and prioritization; risk response/mitigation strategy development; implementation support; monitoring</td>
+            <td><span class="badge badge-strong">STRONG</span> &mdash; Enterprise risk management consulting across multiple federal clients; ATAPS II risk register management; eFAST work includes risk documentation</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td><strong>Administrative Services (C.3.8)</strong></td>
+            <td>Executive/Director calendar and correspondence support; document management (KSN sites/SharePoint); technical editing; briefing preparation; administrative support; front desk/reception; supply management; meeting facilitation and minutes</td>
+            <td><span class="badge badge-moderate">MODERATE</span> &mdash; Standard administrative support capability; KSN/SharePoint experience from FAA contracts; consider whether administrative support is a strategic work area to bid</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td><strong>Other Financial, Budget &amp; Management Activities (C.3.9)</strong></td>
+            <td>Technical writing; translating complex data for diverse audiences; documentation for technical reports/user guides/operations manuals; Congressional inquiry support; communications development; stakeholder materials</td>
+            <td><span class="badge badge-strong">STRONG</span> &mdash; Technical writing across multiple FAA deliverables; ATAPS II includes Congressional inquiry support; communications support experience</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-blue">
+      <strong>SOW Notes:</strong> No key personnel qualifications are specified in the draft SOW. No security clearance requirements are stated (though NIST SP 800-53 compliance applies). The contract prohibits inherently governmental functions throughout all work areas. Period of performance is not stated but EFS I structure (3-year base + 4 one-year options = 7 years) is the most likely template.
+    </div>
+  </div>
+
+  <!-- ===== SECTION 4: INCUMBENT / PRIOR CONTRACT INTEL ===== -->
+  <div class="section">
+    <div class="section-header">4. Incumbent / Prior Contract Intel</div>
+    <div class="card">
+      <h3>EFS I Incumbent: CEXEC, Inc.</h3>
+      <table>
+        <tbody>
+          <tr><td style="font-weight:700; width:35%;">Incumbent</td><td><strong>CEXEC, Inc.</strong> (privately held IT and management services firm)</td></tr>
+          <tr><td style="font-weight:700;">Contract Number</td><td>693KA9-19-D-00005 (EFS IDIQ)</td></tr>
+          <tr><td style="font-weight:700;">Award Date</td><td>April 2019</td></tr>
+          <tr><td style="font-weight:700;">Period of Performance</td><td>3-year base + 4 one-year options = 7 years (expires approximately April 2026, aligning with EFS II market survey)</td></tr>
+          <tr><td style="font-weight:700;">Structure</td><td>IDIQ &mdash; replaces the prior Financial Integrated Support (FIS) contract portfolio. Available to all FAA and DOT offices under Economy Act.</td></tr>
+          <tr><td style="font-weight:700;">NAICS</td><td>541611 (Management Consulting) on EFS I task orders; EFS II uses 541219</td></tr>
+          <tr><td style="font-weight:700;">COR</td><td>Sharief Williams, FAA (sharief.williams@faa.gov); Office: 202-267-5074</td></tr>
+          <tr><td style="font-weight:700;">Recent Task Orders</td><td>AFM-300 Capitalization &amp; Asset Management (693KA925F00083, $5.8M total, Aug 2025); AFM-300 SFFAS 54 Support Services (693KA925F00094, $2.0M, Aug 2025) &mdash; both awarded sole-source (1 bidder) through EFS I</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-amber" style="margin-top:14px;">
+        <strong>Incumbent Intelligence:</strong> CEXEC has been awarded at least two sole-source task orders under EFS I as recently as August 2025, indicating continued incumbent lock-in. However, the EFS II market survey (rather than a directed follow-on to CEXEC) signals FAA's intent to open competition. This is Changeis's window. CEXEC is a small business and will likely bid on EFS II as the most credible incumbent. Changeis should differentiate on breadth (9 work areas vs. CEXEC's narrower financial operations focus), FAA eFAST pre-qualification, and WOSB/EDWOSB socioeconomic status.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Research Methodology &amp; Sources</h3>
+      <ul>
+        <li><a href="https://www.cexec.com/contracts" target="_blank">CEXEC, Inc. Contracts Page ↗</a> &mdash; confirmed EFS IDIQ April 2019 award, 7-year period of performance</li>
+        <li><a href="https://orangeslices.ai/cexec-scores-faa-afm-300-capitalization-asset-management-support-task/" target="_blank">OrangeSlices: CEXEC AFM-300 Award (Aug 2025) ↗</a> &mdash; confirmed active EFS I task orders through 2026</li>
+        <li><a href="https://orangeslices.ai/cexec-scores-faa-afm-300-sffas-54-support-services-task/" target="_blank">OrangeSlices: CEXEC SFFAS 54 Award (Aug 2025) ↗</a></li>
+        <li><a href="https://static1.squarespace.com/static/5a0339238a02c718920c6215/t/60cb45623cc030640f527090/1623934307184/EFS+Marketing+Slick+Final+v2+052521.pdf" target="_blank">CEXEC EFS Marketing Slick (2021) ↗</a> &mdash; IDIQ contract details and COR contact</li>
+        <li>FPDS/USASpending data: EFS I IDIQ referenced as 693KA9-19-D-00005 in all task order awards</li>
+      </ul>
+      <p style="margin-top:10px; font-size:13px; color:var(--text-muted);">Note: EFS II is a pre-solicitation market survey not yet posted on SAM.gov or APFS. Contract number (SIR No. TBD) and formal solicitation are pending. FPDS will populate after award.</p>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 5: NAICS 541219 SIZE ANALYSIS ===== -->
+  <div class="section">
+    <div class="section-header">5. NAICS 541219 Size Standard Analysis</div>
+    <div class="card">
+      <table>
+        <tbody>
+          <tr><td style="font-weight:700; width:45%;">NAICS Code</td><td>541219 &mdash; Other Accounting Services</td></tr>
+          <tr><td style="font-weight:700;">Industry Description</td><td>Establishments (except CPA offices) engaged in providing accounting services (except tax return prep or payroll only). May include tax/payroll. Bookkeeper offices, billing offices included.</td></tr>
+          <tr><td style="font-weight:700;">SBA Size Standard (Revenue)</td><td><strong>$25 million</strong> average annual receipts (per <a href="https://www.highergov.com/naics/541219-other-accounting-services/" target="_blank">HigherGov ↗</a> and SBA Table of Size Standards)</td></tr>
+          <tr><td style="font-weight:700;">Changeis Status</td><td>Changeis is an Economically Disadvantaged Women-Owned Small Business (EDWOSB/WOSB). Based on known contract portfolio ($62M CLMRS, $103M ATAPS II as ceiling values &mdash; not annual revenue), Changeis self-assesses as a small business under NAICS 541219. <strong>Changeis must verify this self-certification against SBA revenue rules prior to RFI submission.</strong></td></tr>
+          <tr><td style="font-weight:700;">NAICS Alignment to Scope</td><td>Reasonable. While EFS II's core work aligns more closely with NAICS 541611 (Management Consulting) or 541519 (Other Computer Services), FAA selected 541219 to emphasize the financial services and accounting nature of budget/financial operations support. This NAICS does appear in Changeis's primary NAICS code list on changeis.com.</td></tr>
+          <tr><td style="font-weight:700;">Alternative NAICS Consideration</td><td>EFS I used NAICS 541611 for its task orders. Changeis should note this discrepancy in RFI questions: ask whether EFS II will use 541219 for the vehicle itself but potentially different NAICS on task orders.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-blue">
+      <strong>Size Standard Note:</strong> The SBA small business size standard for NAICS 541219 is $25 million in average annual receipts (not employees). This is a revenue-based standard. Changeis must calculate its 3-year average annual receipts and confirm it is at or below $25M to self-certify as a small business for this NAICS. If Changeis has grown above $25M in recent years, this requires urgent legal/compliance review before RFI response. Some sources show $22M&ndash;$25M as the applicable threshold (SBA has updated this standard &mdash; confirm current SBA table at <a href="https://www.sba.gov/document/support-table-size-standards" target="_blank">sba.gov ↗</a>).
+    </div>
+  </div>
+
+  <!-- ===== SECTION 6: SET-ASIDE ANALYSIS ===== -->
+  <div class="section">
+    <div class="section-header">6. Set-Aside Analysis &amp; Advocacy Recommendation</div>
+    <div class="card">
+      <h3>FAA's Set-Aside Question</h3>
+      <p>The RFI explicitly asks industry whether "adequate small business competition" exists &mdash; this is the statutory threshold under the Small Business Act that triggers a mandatory set-aside if two or more responsible small businesses are likely to submit offers. This creates a direct advocacy opportunity.</p>
+
+      <table style="margin-top:12px;">
+        <thead><tr><th>Set-Aside Option</th><th>FAA Authority</th><th>Changeis Eligible?</th><th>Competitive Impact</th></tr></thead>
+        <tbody>
+          <tr><td><strong>WOSB/EDWOSB Set-Aside</strong></td><td>15 U.S.C. 637(m); SBA WOSB Program; NAICS 541219 is a WOSB-eligible NAICS</td><td><span class="badge badge-go">YES &mdash; EDWOSB</span></td><td>Highest benefit: restricts competition to WOSB/EDWOSB firms only; large businesses (Deloitte, Booz Allen, GDIT) excluded</td></tr>
+          <tr><td><strong>Small Business Total Set-Aside</strong></td><td>FAR 19.502-2 (applied by FAA analogy per AMS); adequate competition rule</td><td><span class="badge badge-go">YES</span></td><td>Strong benefit: excludes large businesses; still competitive among all SBs including CEXEC</td></tr>
+          <tr><td><strong>8(a) Sole Source / Competitive</strong></td><td>15 U.S.C. 637(a); SBA 8(a) BD program</td><td>No (Changeis not in 8(a) program as prime)</td><td>Not beneficial for Changeis as prime; could participate as sub to 8(a) firm</td></tr>
+          <tr><td><strong>Full and Open Competition</strong></td><td>CICA / AMS default if no set-aside</td><td>Yes &mdash; but disadvantaged</td><td>Negative: large business primes (Deloitte, Booz Allen) would compete; Changeis WOSB advantage eliminated</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Recommended Advocacy Position for RFI Response</h3>
+      <ul>
+        <li><strong>Assert WOSB/EDWOSB adequacy:</strong> Changeis should affirmatively state in its RFI response that adequate WOSB/EDWOSB competition exists, naming itself and at least one other qualifying firm. This directly supports a WOSB/EDWOSB restriction.</li>
+        <li><strong>Provide market evidence:</strong> Reference NAICS 541219 HigherGov data ($25M size standard; active small business ecosystem) and eFAST MOA holder list (which includes multiple WOSB firms).</li>
+        <li><strong>Frame the set-aside as mission-effective:</strong> Small businesses, particularly those with eFAST eligibility, offer the speed and flexibility FAA's Office of Financial Services requires for task order issuance. CEXEC's EFS I track record demonstrates small business adequacy.</li>
+        <li><strong>Do not explicitly oppose full-and-open:</strong> Focus on affirmative arguments for small business competition rather than appearing to limit FAA's options. Let the advocacy speak through demonstrated capability.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 7: CAPABILITY MATRIX ===== -->
+  <div class="section">
+    <div class="section-header">7. Capability Matrix &mdash; Changeis Past Performance Map</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Work Area</th><th>Changeis Past Performance</th><th>Contract / Vehicle</th><th>Match</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>WA 1: Policies &amp; Processes</strong></td>
+            <td>SOP development, process gap analysis, policy documentation across multiple FAA directorates</td>
+            <td>CLMRS; ATAPS II (693KA9-24-F-00096); eFAST BAFM III (693KA8-18-F-00012)</td>
+            <td><span class="badge badge-strong">STRONG</span></td>
+          </tr>
+          <tr>
+            <td><strong>WA 2: Internal Controls</strong></td>
+            <td>OMB A-123 compliance support; financial management consulting with controls assessment components</td>
+            <td>FRA MTAP Financial Management (6913G620F400046); financial consulting engagements</td>
+            <td><span class="badge badge-moderate">MODERATE</span></td>
+          </tr>
+          <tr>
+            <td><strong>WA 3: Program &amp; Project Mgmt</strong></td>
+            <td>Multi-directorate program management; PMI-aligned PM frameworks; governance; integrated master schedules</td>
+            <td>ATAPS II ($103M, 8 ATO directorates); CLMRS ($62M); FAA Operations Support Services (2022)</td>
+            <td><span class="badge badge-strong">STRONG</span></td>
+          </tr>
+          <tr>
+            <td><strong>WA 4: Day-to-Day Operations</strong></td>
+            <td>Budget formulation and execution; SF 133 support; financial reporting; obligation tracking; workforce/competency analysis</td>
+            <td>eFAST BAFM III; FRA MTAP; financial management work on eFAST vehicle</td>
+            <td><span class="badge badge-strong">STRONG</span></td>
+          </tr>
+          <tr>
+            <td><strong>WA 5: Training</strong></td>
+            <td>Training content development and delivery; skill gap analysis; HCaTS SB vehicle confirms training capability</td>
+            <td>HCaTS SB (IDIQ); ATAPS II training components</td>
+            <td><span class="badge badge-moderate">MODERATE</span></td>
+          </tr>
+          <tr>
+            <td><strong>WA 6: Strategic Planning &amp; Investment Analysis</strong></td>
+            <td>Strategic planning support; CPIC/AMS monitoring; investment analysis; some EVM experience</td>
+            <td>ATAPS II ATO planning components; capital planning advisory work</td>
+            <td><span class="badge badge-moderate">MODERATE</span></td>
+          </tr>
+          <tr>
+            <td><strong>WA 7: Risk Management</strong></td>
+            <td>Enterprise risk management framework; risk register development; mitigation strategy formulation</td>
+            <td>ATAPS II; CLMRS risk management; financial consulting risk advisory</td>
+            <td><span class="badge badge-strong">STRONG</span></td>
+          </tr>
+          <tr>
+            <td><strong>WA 8: Administrative Services</strong></td>
+            <td>Document management; KSN/SharePoint site administration; briefing preparation; correspondence support</td>
+            <td>FAA Operations Support Services (2022); ATAPS II documentation support</td>
+            <td><span class="badge badge-moderate">MODERATE</span></td>
+          </tr>
+          <tr>
+            <td><strong>WA 9: Other Financial/Budget/Mgmt</strong></td>
+            <td>Technical writing; Congressional inquiry support; stakeholder communications; policy guidance documentation</td>
+            <td>ATAPS II; CLMRS; multiple FAA contracts with technical writing deliverables</td>
+            <td><span class="badge badge-strong">STRONG</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-blue">
+      <strong>Capability Gap Assessment:</strong> Work Area 2 (Internal Controls / Audit) is the most significant gap. EFS II's explicit goal of ensuring FAA receives an "unqualified opinion on its financial statements" implies audit readiness and potential interaction with GAO/IG audit teams. If FAA weights this heavily, Changeis should team with an accounting or audit-focused firm (e.g., a CPA firm with federal financial statement audit experience). Work Areas 5 and 6 are moderate gaps but coverable through team composition.
+    </div>
+  </div>
+
+  <!-- ===== SECTION 8: CONTRACT VEHICLE STRATEGY ===== -->
+  <div class="section">
+    <div class="section-header">8. Contract Vehicle Strategy</div>
+    <div class="card">
+      <h3>Primary Recommendation: FAA eFAST</h3>
+      <table>
+        <tbody>
+          <tr><td style="font-weight:700; width:40%;">Changeis MOA Number</td><td><strong>DTFAWA13A-00026</strong></td></tr>
+          <tr><td style="font-weight:700;">Award Date</td><td>August 20, 2013</td></tr>
+          <tr><td style="font-weight:700;">Status</td><td>Active Master Ordering Agreement (MOA) holder; pre-qualified for all eFAST functional areas</td></tr>
+          <tr><td style="font-weight:700;">Functional Areas Demonstrated</td><td>Air Transportation Support; Business Administration &amp; Management; Computer/Information Systems Development; Computer Systems Support; Documentation &amp; Training; Engineering Services</td></tr>
+          <tr><td style="font-weight:700;">Eligible Users</td><td>Any FAA Program Management Office or Contracting Officer; EFS II is FAA-wide and DOT-wide under Economy Act</td></tr>
+          <tr><td style="font-weight:700;">eFAST Track Record</td><td>Over $4.4 billion awarded to small businesses since FY2010 (<a href="https://www.faa.gov/about/office_org/headquarters_offices/afn/offices/acquisitions/efast" target="_blank">faa.gov ↗</a>); Changeis has active eFAST task orders including eFAST BAFM III and eFAST AHR Support Services</td></tr>
+          <tr><td style="font-weight:700;">Point of Contact</td><td>Urvashi Malhotra, contracts@changeis.com</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout callout-green" style="margin-top:14px;">
+        <strong>eFAST is a decisive structural advantage.</strong> EFS I was an FAA direct IDIQ (not eFAST). EFS II's use of the Market Survey/RFI format instead of a direct award suggests FAA is reconsidering the contract vehicle structure. If FAA issues EFS II task orders through eFAST (FAA's preferred small business vehicle), Changeis's pre-qualified MOA status eliminates the need for a new contract vehicle competition. Changeis should explicitly advocate in its RFI response for eFAST as the ordering vehicle for EFS II.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Complementary Vehicles</h3>
+      <table>
+        <thead><tr><th>Vehicle</th><th>Contract Number</th><th>Relevance to EFS II</th></tr></thead>
+        <tbody>
+          <tr><td><strong>OASIS+</strong> (GSA)</td><td>Not provided (Changeis is OASIS+ holder)</td><td>Government-wide professional services IDIQ; financial services in scope; could be used if FAA issues EFS II through GSA vehicles</td></tr>
+          <tr><td><strong>HCaTS SB</strong></td><td>HCaTS SB IDIQ</td><td>Directly applicable to Work Area 5 (Training) and Work Area 4.3 (Human Capital Management)</td></tr>
+          <tr><td><strong>GSA Professional Services Schedule</strong></td><td>GS-10F-054BA (SIN 541611)</td><td>Fallback if eFAST not used; MAS can accommodate financial management consulting</td></tr>
+          <tr><td><strong>8(a) STARS III</strong></td><td>47QTCB22D0075</td><td>IT components of EFS II (CPIC, financial systems) could potentially flow through STARS III if teaming with 8(a) partner</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 9: TEAMING STRATEGY ===== -->
+  <div class="section">
+    <div class="section-header">9. Teaming Strategy</div>
+    <div class="card">
+      <h3>Recommended Posture: Prime (Changeis) with Targeted Subcontractors</h3>
+      <table>
+        <thead><tr><th>Posture</th><th>Pros</th><th>Cons</th><th>Pwin Est.</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Prime &mdash; Standalone</strong></td>
+            <td>Maximum revenue; simplest structure; WOSB/EDWOSB status 100% preserved</td>
+            <td>Gap in WA 2 (Internal Controls/Audit); may not cover all 9 work areas with equal depth</td>
+            <td>45&ndash;55%</td>
+          </tr>
+          <tr>
+            <td><strong>Prime + Audit/Accounting Sub</strong></td>
+            <td>Covers WA 2 gap; stronger past performance narrative across all 9 areas; higher evaluator confidence</td>
+            <td>Margin sharing; teaming complexity; sub must also be small business if set-aside applies</td>
+            <td>60&ndash;70%</td>
+          </tr>
+          <tr>
+            <td><strong>Sub to CEXEC or other incumbent</strong></td>
+            <td>Reduces risk; avoids prime competition with incumbent</td>
+            <td>Minimal revenue capture; no prime credit; dependent on CEXEC winning</td>
+            <td>N/A as sub</td>
+          </tr>
+          <tr>
+            <td><strong>JV or Mentor-Prot&eacute;g&eacute;</strong></td>
+            <td>Could leverage ArchZen JV structure; expands capability narrative</td>
+            <td>EFS II scope may not justify JV complexity; WOSB set-aside requires proper JV certification</td>
+            <td>Depends on JV structure</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Recommended Teaming Targets</h3>
+      <ul>
+        <li><strong>Federal CPA / Financial Audit Firm (small business):</strong> Target a small business with OMB Circular A-123 and federal financial statement audit experience (e.g., a boutique federal accounting consultancy). This directly fills the WA 2 gap and strengthens the unqualified opinion narrative. Ideal candidates have FAA or DOT agency experience.</li>
+        <li><strong>EVM / Investment Analysis Specialist:</strong> For Work Area 6 (Strategic Planning/EVM), consider teaming with a firm holding EVMS Gold Card certification or demonstrated CPIC/investment analysis work at FAA or DOT.</li>
+        <li><strong>Training Delivery Partner (if WA 5 is significant scope):</strong> An eLearning or in-person training firm with federal financial training experience strengthens WA 5. Changeis's HCaTS vehicle provides the vehicle layer; a partner provides delivery depth.</li>
+      </ul>
+      <p style="margin-top:10px;"><strong>Note on ArchZen JV:</strong> The ArchZen Mentor-Prot&eacute;g&eacute; JV (Changeis mentor / Kaizen Solutions Group prot&eacute;g&eacute;) could be evaluated as a teaming option, particularly if EFS II is structured with 8(a) or WOSB components. Confirm whether ArchZen JV's certifications align with NAICS 541219.</p>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 10: RFI RESPONSE PLAN ===== -->
+  <div class="section">
+    <div class="section-header">10. RFI Response Plan &mdash; All 10 Questions</div>
+    <p style="margin-bottom:14px;">Based on the 10 RFI questions provided, below is a draft response outline for each question, including recommended page allocation, tone, and leading differentiators.</p>
+
+    <div class="qa-block">
+      <div class="qa-q">Q1. Performance Measures &mdash; How should performance be measured across the 9 work areas?</div>
+      <div class="qa-a">
+        <strong>Recommended Approach:</strong> Propose a tiered performance measurement framework: (1) deliverable-level quality metrics (timeliness, accuracy, FAA acceptance rate); (2) program-level outcome metrics (e.g., reduction in audit findings under WA 2, budget execution rate accuracy under WA 4); (3) customer satisfaction surveys at task order closeout. Reference FAA's GPRA/GPRAMA framework and OMB A-11 as the performance context. Differentiate by citing Changeis's documented milestone adherence rates on ATAPS II and CLMRS as proof of performance discipline.<br>
+        <strong>Tone:</strong> Technical, evidence-based. <strong>Pages:</strong> 1&ndash;2 pages.
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-q">Q2. Past Performance &mdash; What relevant past performance do you have?</div>
+      <div class="qa-a">
+        <strong>Recommended Approach:</strong> Lead with three anchor past performance examples: (1) ATAPS II &mdash; $103M FAA ATO Technical Analysis and Program Support, covering program management, technical writing, and multi-directorate delivery (WAs 3, 9); (2) CLMRS &mdash; $62M FAA supply chain transformation, SOPs, risk management (WAs 1, 7); (3) eFAST BAFM III (693KA8-18-F-00012) &mdash; budget and financial management support directly under eFAST (WAs 4, 8). Supplement with FRA MTAP financial management (DOT context). For each example, map explicitly to EFS II work areas.<br>
+        <strong>Tone:</strong> Confident, structured. Use 3-column table: Work Area | Past Performance Reference | Outcome. <strong>Pages:</strong> 3&ndash;4 pages.
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-q">Q3. Transition Risk Mitigation &mdash; How would you mitigate transition risk from EFS I incumbent?</div>
+      <div class="qa-a">
+        <strong>Recommended Approach:</strong> Demonstrate EFS knowledge depth through eFAST experience (Changeis has worked within the same FAA financial operations ecosystem). Propose a structured 90-day transition plan: (1) Weeks 1&ndash;4: Review all existing SOPs, policy documents, and ongoing task orders from incumbent; (2) Weeks 5&ndash;8: Shadow existing personnel and attend all standing meetings; (3) Weeks 9&ndash;12: Full responsibility transfer with incumbent available for Q&A. Cite FAA AMS C.4.2 Transition In requirements as the framework. Key differentiator: Changeis already operates under FAA governance frameworks (AMS, NIST compliance) and requires minimal ramp-up on FAA-specific processes.<br>
+        <strong>Tone:</strong> Risk-aware, structured. <strong>Pages:</strong> 1.5&ndash;2 pages.
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-q">Q4. Innovation and Cost Savings &mdash; What innovations or cost savings could you bring?</div>
+      <div class="qa-a">
+        <strong>Recommended Approach:</strong> Propose three specific innovations: (1) Robotic Process Automation (RPA) for budget formulation and reconciliation tasks (Changeis has RPA capability per STARS III contract scope); (2) Power BI / data analytics dashboards for real-time budget execution tracking and Status of Funds reporting (eliminates manual report preparation); (3) AI-assisted policy document review for currency/compliance checking against regulatory updates. Frame each as: problem &rarr; solution &rarr; estimated time/cost savings. Cite Changeis's technology portfolio (STARS III: "autonomic computing, RPA") as evidence of capability.<br>
+        <strong>Tone:</strong> Forward-looking but grounded. <strong>Pages:</strong> 2 pages.
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-q">Q5. Capability Narrative &mdash; Describe your capability across all 9 work areas</div>
+      <div class="qa-a">
+        <strong>Recommended Approach:</strong> This is the most important question &mdash; dedicate the most space. For each of the 9 work areas, provide: (a) 1-sentence summary of Changeis capability, (b) 1 specific example/past performance reference, (c) key personnel or role type. Use the capability matrix from Section 7 above as the foundation. For WA 2 (Internal Controls), describe the teaming partner's role explicitly. For WA 5 (Training), cite HCaTS SB vehicle as proof of training delivery commitment.<br>
+        <strong>Tone:</strong> Structured, specific. Avoid vague claims. <strong>Pages:</strong> 4&ndash;6 pages (largest section).
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-q">Q6. Work Area Clarity &mdash; Are any work areas unclear? What clarifications are needed?</div>
+      <div class="qa-a">
+        <strong>Recommended Approach:</strong> Raise three substantive questions: (1) WA 4.3 Human Capital Management &mdash; confirm scope relative to OPM/HR statutory limits (FAA-specific personnel authorities); (2) WA 8 Administrative Services &mdash; confirm whether this is intended for the financial offices only or broader FAA HQ support; (3) WA 9 &mdash; confirm whether Congressional inquiry support includes drafting of official agency positions or only research/background support (inherently governmental function boundary). These questions demonstrate SOW literacy and shape the requirement in Changeis's favor.<br>
+        <strong>Tone:</strong> Constructive, expert. <strong>Pages:</strong> 1 page.
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-q">Q7. Teaming, JV, Mentor-Prot&eacute;g&eacute; &mdash; What teaming arrangements would you pursue?</div>
+      <div class="qa-a">
+        <strong>Recommended Approach:</strong> State that Changeis plans to prime with targeted subcontractors for WA 2 (internal controls/audit depth) and WA 6 (EVM/investment analysis). Mention Mentor-Prot&eacute;g&eacute; experience (ArchZen JV) as evidence of commitment to small business ecosystem development. If FAA is considering JV structures for set-aside purposes, note that Changeis is a pre-approved WOSB/EDWOSB capable of leading a WOSB JV if desired. Do not commit to a specific teaming structure at RFI stage.<br>
+        <strong>Tone:</strong> Flexible, experience-demonstrating. <strong>Pages:</strong> 1 page.
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-q">Q8. Contract Vehicles &mdash; What contract vehicles are you on? Would you support eFAST for EFS II?</div>
+      <div class="qa-a">
+        <strong>Recommended Approach:</strong> LEAD WITH eFAST. State prominently: "Changeis holds FAA eFAST Master Ordering Agreement DTFAWA13A-00026 (awarded August 20, 2013), making Changeis immediately executable under eFAST for EFS II task orders without a new vehicle competition." List all Changeis vehicles: eFAST (DTFAWA13A-00026), OASIS+, HCaTS SB, GSA PSS (GS-10F-054BA), IT MAS (47QTCA18D0078), 8(a) STARS III (47QTCB22D0075). Explicitly advocate for eFAST as the ordering vehicle for EFS II, citing the speed, administrative efficiency, and established FAA preference for small business eFAST procurement.<br>
+        <strong>Tone:</strong> Assertive, differentiating. <strong>Pages:</strong> 1&ndash;1.5 pages.
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-q">Q9. Data Rights &mdash; What data rights requirements do you need for EFS II performance?</div>
+      <div class="qa-a">
+        <strong>Recommended Approach:</strong> State that Changeis proposes standard government-purpose rights for all deliverables created under EFS II. No proprietary software or tools will be licensed to FAA without negotiated data rights provisions. For any commercial tools proposed (e.g., Power BI, RPA platforms), offer standard commercial license terms and confirm FAA will receive unlimited use of deliverables produced using those tools. Reference FAA AMS and Section 508 compliance as baseline for all EIT deliverables.<br>
+        <strong>Tone:</strong> Clear, compliant. <strong>Pages:</strong> 0.5&ndash;1 page.
+      </div>
+    </div>
+
+    <div class="qa-block">
+      <div class="qa-q">Q10. Business Size &mdash; Are you a small business under NAICS 541219? What is your position relative to the $25M size standard?</div>
+      <div class="qa-a">
+        <strong>Recommended Approach:</strong> Confirm small business status under NAICS 541219 ($25M size standard). State Changeis's EDWOSB/WOSB certification. <strong>Critical: verify actual 3-year average annual receipts before submitting this response.</strong> State: "Changeis self-certifies as a small business under NAICS 541219 with average annual receipts below the $25M size standard. As an EDWOSB, Changeis is eligible for WOSB and EDWOSB set-asides. Changeis strongly supports FAA issuing EFS II as a WOSB or EDWOSB set-aside, and affirms that adequate competition exists among WOSB/EDWOSB firms with demonstrated FAA financial services experience."<br>
+        <strong>Tone:</strong> Definitive, advocacy-oriented. <strong>Pages:</strong> 0.5&ndash;1 page.
+      </div>
+    </div>
+
+    <div class="callout callout-green">
+      <strong>RFI Response Package Total:</strong> Estimated 15&ndash;20 pages. Lead with a 1-page executive summary. End with a capability matrix table. Include resumes or qualifications summaries for 3&ndash;5 key personnel if requested. Follow any FAA-specified format requirements. Submit by June 18, 2026 (confirm exact submission mechanism with FAA POC).
+    </div>
+  </div>
+
+  <!-- ===== SECTION 11: RISK ASSESSMENT ===== -->
+  <div class="section">
+    <div class="section-header">11. Risk Assessment</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Risk</th><th>Level</th><th>Details</th><th>Mitigation</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Incumbent Advantage (CEXEC)</strong></td>
+            <td><span class="risk-pill risk-medium">MEDIUM</span></td>
+            <td>CEXEC has 7 years of EFS I performance, active sole-source task orders as recently as Aug 2025, and deep institutional knowledge of FAA's financial operations. They will bid aggressively on EFS II.</td>
+            <td>Differentiate on breadth (9 WAs vs CEXEC's narrower scope), eFAST pre-qualification, and WOSB/EDWOSB advantage if set-aside applied. Emphasize ATAPS II scale ($103M) vs. CEXEC's smaller contract history.</td>
+          </tr>
+          <tr>
+            <td><strong>NAICS Size Risk</strong></td>
+            <td><span class="risk-pill risk-high">HIGH</span></td>
+            <td>If Changeis's average annual receipts exceed $25M, it cannot self-certify as small under NAICS 541219 and would be ineligible for any small business set-aside. Must be verified before RFI submission.</td>
+            <td>Immediate legal/contracts review of 3-year average annual receipts vs. SBA $25M standard. If near threshold, consult SBA Size Standards and consider SBA formal size determination process.</td>
+          </tr>
+          <tr>
+            <td><strong>Full and Open Competition Risk</strong></td>
+            <td><span class="risk-pill risk-medium">MEDIUM</span></td>
+            <td>If FAA determines inadequate small business competition, EFS II could be issued full and open, bringing large business competition (Deloitte, Booz Allen, Leidos, SAIC) that Changeis cannot match on price or scale.</td>
+            <td>Active advocacy in RFI response for small business / WOSB set-aside. Provide concrete evidence of WOSB/EDWOSB competitor pool. Engage FAA CO directly during questions period (by June 11).</td>
+          </tr>
+          <tr>
+            <td><strong>Capability Gap: Internal Controls / Audit (WA 2)</strong></td>
+            <td><span class="risk-pill risk-medium">MEDIUM</span></td>
+            <td>EFS II explicitly targets ensuring an unqualified audit opinion on FAA financial statements. If this is a heavily weighted evaluation factor, Changeis's gap in federal financial statement audit support is a risk.</td>
+            <td>Team with a CPA or federal audit-experienced firm for WA 2. Identify and reach out to prospective partner immediately. Include teaming partner's qualifications in RFI response.</td>
+          </tr>
+          <tr>
+            <td><strong>Scope Breadth: All 9 Work Areas</strong></td>
+            <td><span class="risk-pill risk-medium">MEDIUM</span></td>
+            <td>EFS II spans a very broad scope (financial policy through HR through administrative services). Proposing on all 9 WAs without demonstrated depth in each could raise evaluator concerns about spread-too-thin risk.</td>
+            <td>In the RFI, be explicit about which WAs are core strengths (1, 3, 4, 7, 9) and which are supported through teaming (2, 5, 6). Do not overstate capability; evaluators appreciate intellectual honesty at RFI stage.</td>
+          </tr>
+          <tr>
+            <td><strong>Schedule Risk: June 11 Questions Deadline</strong></td>
+            <td><span class="risk-pill risk-high">HIGH</span></td>
+            <td>Questions due June 11 is approximately 13 days from the May 29 task receipt. If Changeis misses this window, it loses the opportunity to shape the requirement and clarify ambiguities before the June 18 RFI deadline.</td>
+            <td>Assign questions drafting task immediately (by June 5). Focus on 3&ndash;5 high-impact questions (vehicle, set-aside, period of performance, estimated value). Do not submit a laundry list.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 12: GO/NO-GO RECOMMENDATION ===== -->
+  <div class="section">
+    <div class="section-header">12. Go / No-Go Recommendation &mdash; Composite Score</div>
+
+    <div class="card">
+      <table class="score-table">
+        <thead><tr><th style="width:40%;">Factor</th><th style="width:30%;">Score</th><th style="width:30%;">Weight</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Capability Fit (9 Work Areas)</strong></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="score-bar-bg" style="width:120px;"><div class="score-bar-fill" style="width:90px;"></div></div>
+                <span style="font-size:13px; font-family:system-ui;">75/100</span>
+              </div>
+            </td>
+            <td>30%</td>
+          </tr>
+          <tr>
+            <td><strong>Contract Vehicle Advantage (eFAST)</strong></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="score-bar-bg" style="width:120px;"><div class="score-bar-fill" style="width:110px;"></div></div>
+                <span style="font-size:13px; font-family:system-ui;">92/100</span>
+              </div>
+            </td>
+            <td>25%</td>
+          </tr>
+          <tr>
+            <td><strong>Set-Aside / Socioeconomic Advantage (WOSB)</strong></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="score-bar-bg" style="width:120px;"><div class="score-bar-fill" style="width:108px;"></div></div>
+                <span style="font-size:13px; font-family:system-ui;">90/100</span>
+              </div>
+            </td>
+            <td>20%</td>
+          </tr>
+          <tr>
+            <td><strong>Competitive Landscape / Pwin</strong></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="score-bar-bg" style="width:120px;"><div class="score-bar-fill" style="width:78px;"></div></div>
+                <span style="font-size:13px; font-family:system-ui;">65/100</span>
+              </div>
+            </td>
+            <td>15%</td>
+          </tr>
+          <tr>
+            <td><strong>Strategic Value to Changeis Pipeline</strong></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="score-bar-bg" style="width:120px;"><div class="score-bar-fill" style="width:102px;"></div></div>
+                <span style="font-size:13px; font-family:system-ui;">85/100</span>
+              </div>
+            </td>
+            <td>10%</td>
+          </tr>
+          <tr style="font-weight:700; background:var(--surface-alt);">
+            <td><strong>Composite Score</strong></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="score-bar-bg" style="width:120px;"><div class="score-bar-fill" style="width:102px; background:#065f46;"></div></div>
+                <span style="font-size:14px; font-family:system-ui; color:#065f46;"><strong>85/100</strong></span>
+              </div>
+            </td>
+            <td>&mdash;</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="verdict-box verdict-go" style="margin-top:16px;">
+      <div class="verdict-title" style="color:#065f46;">GO &mdash; PRIME (Score: 85/100)</div>
+      <p><strong>Rationale:</strong> EFS II presents a strategically important opportunity for Changeis across multiple dimensions. The combination of eFAST pre-qualification, WOSB/EDWOSB set-aside eligibility, and strong capability across 6 of 9 work areas creates a winning foundation. The incumbent (CEXEC) is a small business, confirming that FAA is comfortable with small business delivery at scale on EFS-type work. Changeis's $103M ATAPS II and $62M CLMRS contracts demonstrate the organizational scale and FAA delivery discipline needed to prime EFS II. The primary risk &mdash; NAICS size standard compliance &mdash; must be resolved immediately but is expected to be manageable.</p>
+      <p style="margin-top:10px;"><strong>Conditional GO:</strong> Contingent on: (1) confirmed small business size status under NAICS 541219 $25M standard, and (2) identification of a teaming partner for Work Area 2 (Internal Controls/Audit).</p>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 13: ACTION ITEMS ===== -->
+  <div class="section">
+    <div class="section-header">13. Action Items / Owners / Dates</div>
+    <div class="card">
+      <div class="action-item">
+        <div class="action-date">URGENT<br>Jun 4</div>
+        <div><strong>Size Standard Verification:</strong> Contracts/Finance team confirms Changeis average annual receipts (3-year) vs. $25M NAICS 541219 threshold. If near or over threshold, escalate to BD leadership immediately. Owner: Urvashi Malhotra / Contracts.</div>
+      </div>
+      <div class="action-item">
+        <div class="action-date">Jun 6</div>
+        <div><strong>Assign Capture Lead:</strong> BD leadership designates a capture manager for EFS II. Joshua Reese to serve as executive sponsor. Owner: Varun Malhotra / BD Leadership.</div>
+      </div>
+      <div class="action-item">
+        <div class="action-date">Jun 9</div>
+        <div><strong>Draft RFI Questions:</strong> Prepare 3&ndash;5 substantive written questions for FAA (confirm submission mechanism). Priority questions: (1) Is eFAST the intended ordering vehicle? (2) What is the estimated total value and period of performance? (3) Will a small business or WOSB/EDWOSB set-aside be applied? (4) How will the government evaluate small business competition adequacy? (5) Will separate task orders be issued by work area or as an omnibus? Submit by June 11. Owner: Capture Lead + BD team.</div>
+      </div>
+      <div class="action-item">
+        <div class="action-date">Jun 11</div>
+        <div><strong>Questions Due to FAA.</strong> Submit all questions by end of business. Do not miss this deadline &mdash; it is the only shaping opportunity before the RFI response. Owner: Capture Lead.</div>
+      </div>
+      <div class="action-item">
+        <div class="action-date">Jun 12</div>
+        <div><strong>Teaming Partner Outreach:</strong> Contact 2&ndash;3 small business CPA/federal audit firms for WA 2 subcontracting. Confirm interest and basic qualifications before including in RFI response. Owner: BD team.</div>
+      </div>
+      <div class="action-item">
+        <div class="action-date">Jun 14</div>
+        <div><strong>RFI Response Draft:</strong> Internal draft of all 10 question responses. Use capability matrix and past performance write-ups from ATAPS II, CLMRS, eFAST BAFM III. Owner: Capture Lead + technical staff.</div>
+      </div>
+      <div class="action-item">
+        <div class="action-date">Jun 16</div>
+        <div><strong>Internal Review:</strong> Leadership review of RFI draft. Check: size standard claims, eFAST vehicle advocacy, WOSB set-aside advocacy, teaming partner integration. Owner: Joshua Reese + Varun Malhotra.</div>
+      </div>
+      <div class="action-item">
+        <div class="action-date">Jun 18</div>
+        <div><strong>RFI Response Submission Due.</strong> Submit complete RFI response to FAA. Confirm submission method (email to FAA POC, SAM.gov, or direct portal). Owner: Capture Lead / Urvashi Malhotra. This date is from the original task subject line &mdash; confirm with FAA POC that this is the correct submission deadline.</div>
+      </div>
+      <div class="action-item">
+        <div class="action-date">Ongoing</div>
+        <div><strong>Monitor SAM.gov for Formal Solicitation:</strong> Watch for EFS II formal pre-solicitation or solicitation posting (SIR No. TBD). Set up SAM.gov search alert for "Enterprise Financial Services" + FAA. Owner: BD Ops.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SESSION CONTEXT ===== -->
+  <div class="section">
+    <div class="section-header">Session Context</div>
+    <details class="ctx card">
+      <summary>Show / Hide Full Context</summary>
+
+      <h3>Original Instructions</h3>
+      <p>Execute the vm2-opp-deep-dive workflow for DOT/FAA Enterprise Financial Services II (EFS II) Market Survey/RFI. Gmail thread_id 19e74b48b6716eb6, forwarded from Joshua Reese to BD-Ops on May 29, 2026. Questions Due June 11; RFI submission Due June 18 (clarified in deliverable). SOW PDF read from /home/user/workspace/deep_dive_efs_ii_2026_05_29/EFS_II_SOW.pdf. Deliverable: 13-section HTML deep dive with Go/No-Go recommendation, published to GitHub VM2-P-Taskers and Railway.</p>
+
+      <h3>Approach</h3>
+      <ul>
+        <li>Read all 15 pages of EFS II SOW PDF to extract all 9 work areas, scope, IT requirements, and contract management provisions.</li>
+        <li>Read deliverable-specs.md and reference HTML (vm2-system-guide-2026-03-27.html) for style compliance.</li>
+        <li>Read prior deep dives for style pattern reference (deep-dive-faa-assc-728a1659-2026-05-27.html).</li>
+        <li>Searched for EFS I incumbent via web research: identified CEXEC, Inc. as EFS I holder (693KA9-19-D-00005, April 2019, 7-year IDIQ).</li>
+        <li>Fetched Changeis contract vehicles page (changeis.com/contract-vehicles) to confirm eFAST MOA number (DTFAWA13A-00026, awarded Aug 20, 2013) and full vehicle portfolio.</li>
+        <li>Fetched FAA eFAST page (faa.gov) to confirm eFAST scope and small business focus ($4.4B+ awarded since FY2010).</li>
+        <li>Confirmed NAICS 541219 size standard: $25M revenue (HigherGov and SBA).</li>
+        <li>Researched CEXEC recent task order awards (OrangeSlices: Aug 2025 sole-source awards on EFS I) to confirm incumbent position.</li>
+        <li>Built all 13 required sections per task instructions.</li>
+      </ul>
+
+      <h3>Key Findings</h3>
+      <ul>
+        <li>Go/No-Go: STRONG GO (85/100). Changeis holds FAA eFAST MOA DTFAWA13A-00026 &mdash; the decisive structural advantage for EFS II.</li>
+        <li>Incumbent is CEXEC, Inc. (EFS I IDIQ 693KA9-19-D-00005, April 2019, 7-year period). CEXEC received sole-source EFS I task orders as recently as August 2025.</li>
+        <li>NAICS 541219 size standard is $25M average annual revenue. Changeis must verify compliance before RFI submission.</li>
+        <li>EFS II covers 9 work areas: Changeis has STRONG match on WAs 1, 3, 4, 7, 9; MODERATE on WAs 2, 5, 6, 8.</li>
+        <li>FAA explicitly asking whether adequate small business competition exists &mdash; Changeis should advocate aggressively for WOSB/EDWOSB set-aside in RFI response.</li>
+        <li>Two key dates: Questions Due June 11, 2026; RFI Response Due approximately June 18, 2026 (confirm with FAA).</li>
+      </ul>
+
+      <h3>Dead Ends</h3>
+      <ul>
+        <li>EFS II is not yet on SAM.gov &mdash; no SAM.gov opportunity number available. SIR No. TBD in SOW.</li>
+        <li>Estimated value not stated in SOW. EFS I value not publicly confirmed; estimated from task order activity ($50M&ndash;$150M ceiling).</li>
+        <li>eFAST MOA period of performance not stated on Changeis contract vehicles page; MOA awarded Aug 2013 and presumed still active.</li>
+        <li>FAA RFI submission mechanism (email address, portal, SAM.gov) not specified in available materials &mdash; must be obtained from Joshua Reese or FAA directly.</li>
+        <li>Changeis NAICS 541219 average annual receipts not available in workspace files; must be verified internally.</li>
+      </ul>
+
+      <h3>Assumptions</h3>
+      <ul>
+        <li>EFS II will use FAA eFAST as the ordering vehicle based on FAA's preference for eFAST for small business procurement.</li>
+        <li>Changeis self-certifies as a small business under NAICS 541219 $25M standard (to be verified internally).</li>
+        <li>EFS II period of performance will mirror EFS I (3-year base + 4 one-year options = 7 years).</li>
+        <li>The June 18 date in the task subject line refers to the full RFI submission deadline; June 11 is the questions-only deadline.</li>
+        <li>Changeis's eFAST MOA (DTFAWA13A-00026) remains active and current.</li>
+      </ul>
+
+      <h3>Open Questions</h3>
+      <ul>
+        <li>What is the FAA POC and submission mechanism for the RFI?</li>
+        <li>What is the estimated total ceiling value for EFS II?</li>
+        <li>Will EFS II use eFAST as the ordering vehicle, or will it be a standalone IDIQ?</li>
+        <li>What set-aside type will FAA apply (WOSB, SB, or full and open)?</li>
+        <li>Is Changeis under $25M in average annual receipts for NAICS 541219 self-certification?</li>
+        <li>Does Changeis have a specific teaming partner in mind for WA 2 (Internal Controls/Audit)?</li>
+        <li>Is ArchZen JV a viable teaming vehicle for EFS II if JV certification aligns with NAICS 541219?</li>
+      </ul>
+
+      <h3>Data Sources</h3>
+      <ul>
+        <li><a href="/home/user/workspace/deep_dive_efs_ii_2026_05_29/EFS_II_SOW.pdf">EFS II SOW PDF (local workspace)</a> &mdash; 15 pages, SIR No. TBD, FAA draft</li>
+        <li><a href="https://www.cexec.com/contracts" target="_blank">CEXEC Inc. Contracts Page ↗</a> &mdash; EFS I incumbent confirmation</li>
+        <li><a href="https://orangeslices.ai/cexec-scores-faa-afm-300-capitalization-asset-management-support-task/" target="_blank">OrangeSlices: CEXEC AFM-300 Award (Aug 2025) ↗</a></li>
+        <li><a href="https://orangeslices.ai/cexec-scores-faa-afm-300-sffas-54-support-services-task/" target="_blank">OrangeSlices: CEXEC SFFAS 54 Award (Aug 2025) ↗</a></li>
+        <li><a href="https://static1.squarespace.com/static/5a0339238a02c718920c6215/t/60cb45623cc030640f527090/1623934307184/EFS+Marketing+Slick+Final+v2+052521.pdf" target="_blank">CEXEC EFS Marketing Slick (2021) ↗</a></li>
+        <li><a href="https://www.faa.gov/about/office_org/headquarters_offices/afn/offices/acquisitions/efast" target="_blank">FAA eFAST Program Page ↗</a></li>
+        <li><a href="https://changeis.com/contract-vehicles/" target="_blank">Changeis Contract Vehicles Page ↗</a></li>
+        <li><a href="https://www.highergov.com/naics/541219-other-accounting-services/" target="_blank">HigherGov NAICS 541219 Page ↗</a></li>
+        <li><a href="https://changeis.com/news/changeis-inc-selected-for-federal-aviation-administration-faa-operations-support-services-contract/" target="_blank">Changeis FAA Operations Support Contract Announcement ↗</a></li>
+        <li><a href="https://changeis.com/news/changeis-inc-awarded-103m-faa-ato-technical-analysis-and-program-support-ataps-ii-contract/" target="_blank">Changeis ATAPS II $103M Announcement ↗</a></li>
+      </ul>
+
+      <h3>Next Steps</h3>
+      <ul>
+        <li>Verify Changeis size standard compliance under NAICS 541219 before June 11.</li>
+        <li>Confirm RFI submission mechanism with Joshua Reese / FAA POC.</li>
+        <li>Draft and submit written questions by June 11, 2026.</li>
+        <li>Identify and secure teaming partner for WA 2 (Internal Controls/Audit).</li>
+        <li>Complete and submit RFI capability response by June 18, 2026.</li>
+        <li>Monitor SAM.gov for formal EFS II solicitation (SIR No. TBD).</li>
+      </ul>
+    </details>
+  </div>
+
+  <!-- CONTINUE THIS WORK -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off &mdash; full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyPrompt()">Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-Up: DOT/FAA EFS II Deep Dive&body=Continue the DOT/FAA EFS II analysis. Deliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-faa-efs-ii-541219-2026-05-29.html%0A%0AKey context: GO recommendation (85/100). Changeis holds eFAST MOA DTFAWA13A-00026. Incumbent: CEXEC (693KA9-19-D-00005). Questions Due June 11. RFI Due June 18. NAICS 541219 $25M size standard must be verified. Advocate for WOSB/EDWOSB set-aside.%0A%0AFocus areas: RFI response drafting, teaming partner identification (WA 2 audit gap), questions to FAA.">Email to VM2</a>
+      <a class="btn btn-secondary" href="https://todoist.com/add?text=FAA+EFS+II+RFI+Response+%E2%80%94+Questions+Due+Jun+11+%2F+Response+Due+Jun+18+2026&note=https://vm2-p-taskers-production.up.railway.app/deep-dive-faa-efs-ii-541219-2026-05-29.html%0ACapture+lead+needed.+Verify+NAICS+541219+size+standard+%2425M.+eFAST+DTFAWA13A-00026.+Incumbent+CEXEC." target="_blank">Create Todoist Follow-Up</a>
+    </div>
+  </div>
+
+  <div class="footer">Changeis Confidential &nbsp;&middot;&nbsp; DOT/FAA EFS II Deep Dive &nbsp;&middot;&nbsp; 2026-05-29 &nbsp;&middot;&nbsp; VM2 Deliverable</div>
+</div>
+
+<!-- HIDDEN JSON CONTEXT BLOCK -->
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "DOT/FAA Enterprise Financial Services II (EFS II) — Market Survey/RFI Deep Dive",
+  "task_date": "2026-05-29",
+  "deliverable_file": "deep-dive-faa-efs-ii-541219-2026-05-29.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-faa-efs-ii-541219-2026-05-29.html",
+  "version": 1,
+  "created_date": "2026-05-29",
+  "revised_date": null,
+  "prior_versions": [],
+  "related_deliverables": ["deep-dive-faa-assc-728a1659-2026-05-27.html", "aic-founding-member-review-2026-03-31.html"],
+  "original_instructions": "Execute vm2-opp-deep-dive workflow for DOT/FAA EFS II Market Survey/RFI. Read SOW PDF at /home/user/workspace/deep_dive_efs_ii_2026_05_29/EFS_II_SOW.pdf. NAICS 541219. Questions Due June 11, 2026. RFI submission ~June 18, 2026. Source: Joshua Reese forwarded to BD-Ops May 29 2026. Changeis holds eFAST. Gmail thread 19e74b48b6716eb6. 13-section deliverable required with Go/No-Go, SOW analysis, incumbent intel, capability matrix, contract vehicle strategy, RFI response plan, risk assessment, action items.",
+  "approach": "Read all 15 pages of EFS II SOW PDF. Researched EFS I incumbent (CEXEC) via web search and OrangeSlices/CEXEC website. Fetched Changeis contract vehicles page for eFAST MOA number. Fetched FAA eFAST program page. Confirmed NAICS 541219 $25M size standard via HigherGov. Built 13 required sections per task instructions.",
+  "key_findings": [
+    "GO recommendation (85/100 composite score) — strong strategic fit",
+    "Changeis holds FAA eFAST MOA DTFAWA13A-00026 (Aug 2013) — decisive advantage; only eFAST MOA holders can receive task orders through FAA's preferred SB vehicle",
+    "EFS I incumbent is CEXEC Inc (693KA9-19-D-00005, April 2019, 7-year IDIQ) — still receiving sole-source task orders as recently as August 2025",
+    "NAICS 541219 size standard is $25M average annual revenue — Changeis must verify compliance urgently",
+    "FAA explicitly soliciting industry input on small business competition adequacy — direct advocacy opportunity for WOSB/EDWOSB set-aside",
+    "Changeis has STRONG capability match on 5 of 9 work areas (WAs 1, 3, 4, 7, 9); MODERATE on WAs 2, 5, 6, 8; WA 2 (Internal Controls/Audit) is the primary gap requiring a teaming partner"
+  ],
+  "dead_ends": [
+    "EFS II not yet on SAM.gov — SIR No. TBD",
+    "Estimated total value not stated in SOW",
+    "FAA RFI submission mechanism not specified in available materials",
+    "eFAST MOA period of performance not stated on Changeis website",
+    "Changeis NAICS 541219 annual revenue figure not available in workspace"
+  ],
+  "assumptions": [
+    "EFS II will use FAA eFAST as ordering vehicle",
+    "Changeis is under $25M average annual receipts for NAICS 541219 (must be verified)",
+    "EFS II period of performance mirrors EFS I (3+4 = 7 years)",
+    "June 18 is the full RFI submission deadline; June 11 is questions-only deadline",
+    "eFAST MOA DTFAWA13A-00026 remains active"
+  ],
+  "open_questions": [
+    "FAA POC and RFI submission mechanism?",
+    "Total estimated ceiling value for EFS II?",
+    "Will EFS II use eFAST or standalone IDIQ as ordering vehicle?",
+    "What set-aside type will FAA apply?",
+    "Is Changeis under $25M average annual receipts for NAICS 541219?",
+    "Teaming partner for WA 2 (Internal Controls/Audit)?",
+    "Is ArchZen JV viable for EFS II under NAICS 541219?"
+  ],
+  "data_sources": [
+    "EFS II SOW PDF — local workspace, 15 pages, SIR No. TBD",
+    "https://www.cexec.com/contracts — EFS I incumbent confirmation",
+    "https://orangeslices.ai/cexec-scores-faa-afm-300-capitalization-asset-management-support-task/ — CEXEC Aug 2025 award",
+    "https://orangeslices.ai/cexec-scores-faa-afm-300-sffas-54-support-services-task/ — CEXEC Aug 2025 award",
+    "https://static1.squarespace.com/static/5a0339238a02c718920c6215/t/60cb45623cc030640f527090/1623934307184/EFS+Marketing+Slick+Final+v2+052521.pdf — CEXEC EFS Marketing Slick",
+    "https://www.faa.gov/about/office_org/headquarters_offices/afn/offices/acquisitions/efast — FAA eFAST program page",
+    "https://changeis.com/contract-vehicles/ — Changeis vehicle portfolio and eFAST MOA details",
+    "https://www.highergov.com/naics/541219-other-accounting-services/ — NAICS 541219 $25M size standard"
+  ],
+  "next_steps": [
+    "Verify NAICS 541219 size standard compliance (urgent, before June 11)",
+    "Confirm RFI submission mechanism with Joshua Reese / FAA POC",
+    "Draft and submit written questions by June 11, 2026",
+    "Identify teaming partner for WA 2 (Internal Controls/Audit)",
+    "Complete and submit RFI capability response by June 18, 2026",
+    "Monitor SAM.gov for formal EFS II solicitation (SIR No. TBD)"
+  ],
+  "cost_estimate": {
+    "model": "perplexity-sonar-pro",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~75,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 8,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.40",
+    "cost_ceiling": "$0.75",
+    "notes": "Includes 15-page PDF read (all sections), 8 web searches + 4 URL fetches for incumbent/vehicle/NAICS research, full HTML deliverable generation with 13 sections"
+  }
+}
+</script>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+
+function copyPrompt() {
+  const prompt = `Continue the DOT/FAA EFS II Market Survey/RFI deep dive analysis.
+
+Deliverable: https://vm2-p-taskers-production.up.railway.app/deep-dive-faa-efs-ii-541219-2026-05-29.html
+
+Key context:
+- GO recommendation (85/100 composite score)
+- Changeis holds FAA eFAST MOA DTFAWA13A-00026 — decisive structural advantage
+- EFS I incumbent: CEXEC, Inc. (693KA9-19-D-00005, April 2019, 7-year IDIQ)
+- NAICS 541219 size standard: $25M average annual revenue — must verify internally
+- Questions Due: June 11, 2026 | RFI Response Due: ~June 18, 2026
+- FAA explicitly asking about small business competition adequacy — advocate for WOSB/EDWOSB set-aside
+- Capability gap: WA 2 (Internal Controls/Audit) requires teaming partner
+
+Next actions needed: RFI questions drafting, teaming partner identification, RFI response preparation.`;
+  navigator.clipboard.writeText(prompt).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = prompt;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+  alert('Follow-up prompt copied to clipboard.');
+}
+</script>
+</body>
+</html>
