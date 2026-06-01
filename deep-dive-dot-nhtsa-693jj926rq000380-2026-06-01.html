@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOT NHTSA NLEOMF Sources Sought 693JJ926RQ000380 — Deep Dive</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --slug-bg: #F6F5F2;
+    --slug-border: #D4D1CA;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --go-green: #2D7D4A;
+    --nogo-red: #B22222;
+    --caution-orange: #D97D2A;
+    --teal: #008B8B;
+    --callout-bg: #E8F4F8;
+    --callout-border: #008B8B;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --slug-bg: #1a1d25;
+    --slug-border: #333740;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --callout-bg: #1e2a35;
+    --callout-border: #008B8B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    text-align: center; padding: 48px 0 36px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 30px; font-weight: 700; color: var(--navy);
+    line-height: 1.2; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub {
+    font-size: 17px; color: var(--text-muted);
+    font-style: italic; margin-bottom: 6px;
+  }
+  .hero-date {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .section { margin-bottom: 32px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li { font-size: 15px; line-height: 1.6; }
+  .section ul { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  .section li strong { color: var(--text); }
+
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 14px; margin-top: 10px;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+
+  /* Verdict banner */
+  .verdict-banner {
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    display: flex; align-items: flex-start; gap: 16px;
+    font-family: system-ui, sans-serif;
+  }
+  .verdict-banner.go { background: #EAF5EE; border: 2px solid #2D7D4A; }
+  .verdict-banner.nogo { background: #FDF0F0; border: 2px solid #B22222; }
+  .verdict-banner.monitor { background: #FEF6EC; border: 2px solid #D97D2A; }
+  [data-theme="dark"] .verdict-banner.go { background: #1a2e20; border-color: #2D7D4A; }
+  [data-theme="dark"] .verdict-banner.nogo { background: #2a1818; border-color: #B22222; }
+  [data-theme="dark"] .verdict-banner.monitor { background: #2a2015; border-color: #D97D2A; }
+  .verdict-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+  .verdict-title {
+    font-size: 18px; font-weight: 800;
+    margin-bottom: 4px;
+    letter-spacing: 0.01em;
+  }
+  .verdict-banner.go .verdict-title { color: #2D7D4A; }
+  .verdict-banner.nogo .verdict-title { color: #B22222; }
+  .verdict-banner.monitor .verdict-title { color: #D97D2A; }
+  .verdict-rationale { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+
+  /* Callout box */
+  .callout {
+    background: var(--callout-bg);
+    border-left: 3px solid var(--callout-border);
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .callout strong { color: var(--navy); font-family: system-ui, sans-serif; }
+  [data-theme="dark"] .callout strong { color: #7eb3e0; }
+
+  /* Scoring pill */
+  .score-pill {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 3px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .score-strong { background: #EAF5EE; color: #2D7D4A; }
+  .score-solid { background: #E8EFF8; color: #2E6DA4; }
+  .score-partial { background: #FEF6EC; color: #D97D2A; }
+  .score-gap { background: #FDF0F0; color: #B22222; }
+  [data-theme="dark"] .score-strong { background: #1a2e20; color: #5dba7d; }
+  [data-theme="dark"] .score-solid { background: #1a2535; color: #7eb3e0; }
+  [data-theme="dark"] .score-partial { background: #2a2015; color: #e8a560; }
+  [data-theme="dark"] .score-gap { background: #2a1818; color: #e06060; }
+
+  /* Numbered steps */
+  .steps { counter-reset: step; margin-top: 8px; }
+  .step {
+    display: flex; gap: 12px; align-items: flex-start;
+    margin-bottom: 12px; font-size: 15px;
+  }
+  .step-num {
+    flex-shrink: 0; width: 28px; height: 28px;
+    background: var(--navy); color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    margin-top: 1px;
+  }
+  [data-theme="dark"] .step-num { background: var(--red); }
+  .step-text { flex: 1; }
+  .step-text strong { font-weight: 700; }
+
+  /* Context slug */
+  .context-section {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+  }
+  .context-toggle {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    cursor: pointer; background: none; border: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0; margin-bottom: 8px;
+  }
+  .context-toggle:hover { color: var(--text); }
+  .context-toggle .arrow { transition: transform 0.2s; display: inline-block; font-size: 10px; }
+  .context-toggle.open .arrow { transform: rotate(90deg); }
+  .context-body {
+    display: none; background: var(--slug-bg);
+    border: 1px solid var(--slug-border);
+    border-radius: 6px; padding: 16px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px; line-height: 1.55;
+    overflow-x: auto; white-space: pre-wrap;
+    color: var(--text);
+  }
+  .context-body.open { display: block; }
+
+  /* Continue Panel */
+  .continue-panel {
+    margin-top: 28px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    color: var(--navy); margin-bottom: 4px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .continue-panel .subtitle {
+    font-size: 13px; color: var(--text-muted); margin-bottom: 14px;
+  }
+  .continue-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; border: none; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-primary:hover { opacity: 0.88; color: var(--btn-text); }
+  .btn-secondary {
+    background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+  }
+  .btn-secondary:hover { background: var(--border); color: var(--btn-secondary-text); }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--navy); color: #fff;
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500;
+    padding: 10px 20px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    margin-top: 48px; padding: 20px 0;
+    border-top: 2px solid var(--border);
+    text-align: center;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+
+  .note { font-size: 13px; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+
+  .meta-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    border: 1px solid var(--border); border-radius: 4px; overflow: hidden;
+    margin-top: 10px; font-size: 14px;
+  }
+  .meta-row {
+    display: contents;
+  }
+  .meta-label {
+    background: var(--surface-alt, #F4F3F0);
+    padding: 7px 12px;
+    font-family: system-ui, sans-serif; font-weight: 600;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+  .meta-value {
+    background: var(--surface);
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  [data-theme="dark"] .meta-label { background: var(--surface-alt); }
+
+  .day-header {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--navy); margin-bottom: 6px; margin-top: 14px;
+  }
+  [data-theme="dark"] .day-header { color: #7eb3e0; }
+
+  @media (max-width: 600px) {
+    .meta-grid { grid-template-columns: 1fr; }
+    .meta-label { border-right: none; }
+    .hero h1 { font-size: 24px; }
+  }
+  @media print {
+    .topbar, .theme-toggle, .continue-panel { display: none; }
+    body { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">&#9679;</span> VM2 <span style="font-weight:400;opacity:0.7;">· Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">&#9680; Dark</button>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Deep Dive</div>
+    <h1>DOT / NHTSA &mdash; Law Enforcement and Public Safety Initiatives</h1>
+    <div class="hero-sub">Sources Sought 693JJ926RQ000380 &mdash; NLEOMF / Below 100</div>
+    <div class="hero-date">Created: 2026-06-01 &nbsp;&middot;&nbsp; Response Due: June 4, 2026 (Thursday, 2:00 PM EDT)</div>
+  </div>
+
+  <!-- Opportunity Snapshot -->
+  <div class="section">
+    <div class="section-header">Opportunity Snapshot</div>
+    <div class="meta-grid">
+      <div class="meta-row">
+        <div class="meta-label">Notice ID</div>
+        <div class="meta-value"><strong>693JJ926RQ000380</strong></div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Agency</div>
+        <div class="meta-value">DOT / NHTSA (National Highway Traffic Safety Administration)</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Action Type</div>
+        <div class="meta-value">Sources Sought &mdash; <em>no SOW attached, objectives as bullet list</em></div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">NAICS</div>
+        <div class="meta-value">541611 &mdash; Administrative Management and General Management Consulting Services ($24.5M size standard)</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">PSC</div>
+        <div class="meta-value">R408 &mdash; Support-Professional: Program Management/Support</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Set-Aside</div>
+        <div class="meta-value"><strong>None</strong> &mdash; Intended sole-source to NLEOMF; this SS is a market test</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Contract Type</div>
+        <div class="meta-value">Firm Fixed Price (FFP) &mdash; 12-month base period</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Est. Value</div>
+        <div class="meta-value">~$1M/year (prior award 693JJ920C000006: $1,004,598 &middot; 09/23/2020&ndash;06/21/2026)</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Response Deadline</div>
+        <div class="meta-value"><strong>June 4, 2026, 2:00 PM EDT</strong> &mdash; 3 days from today; 5-day window</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Contracting Officer</div>
+        <div class="meta-value">Vincent Lynch, (202) 366-9568 &mdash; <a href="mailto:vincent.lynch@dot.gov">vincent.lynch@dot.gov</a></div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Place of Performance</div>
+        <div class="meta-value">NHTSA HQ, Washington, DC 20590</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">SAM.gov</div>
+        <div class="meta-value"><a href="https://sam.gov/workspace/contract/opp/45c43f5d1a8647d1828bb65b71a1b668/view" target="_blank">View on SAM.gov</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Go / No-Go Verdict -->
+  <div class="section">
+    <div class="section-header">Go / No-Go Recommendation</div>
+
+    <div class="verdict-banner monitor">
+      <div class="verdict-icon">&#9888;</div>
+      <div>
+        <div class="verdict-title">CONDITIONAL GO &mdash; RESPOND TO INFLUENCE COMPETITION</div>
+        <div class="verdict-rationale">
+          NHTSA is signaling sole-source intent to NLEOMF/Below 100, but this Sources Sought is an explicit market survey inviting capability demonstrations to justify competition. Changeis has directly relevant SCOAR DOT past performance (communications, training, technical assistance, data dissemination) across FMCSA/Volpe TOs. The strategic play is to submit a compelling capability statement that (a) demonstrates unique qualifications and (b) seeds a competitive acquisition posture if NHTSA decides to proceed. Risk of wasted effort is low given the 3-day timeline for a capabilities statement. Go/No-Go for a full proposal if RFP issues is a separate decision.
+        </div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Factor</th><th>Assessment</th><th>Weight</th><th>Score</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Capability Fit</strong></td>
+          <td>Changeis SCOAR TOs directly match: communications materials, web content, training programs, technical assistance, data dissemination across DOT agencies</td>
+          <td>30%</td>
+          <td><span class="score-pill score-strong">Strong</span></td>
+        </tr>
+        <tr>
+          <td><strong>Incumbency Risk</strong></td>
+          <td>NLEOMF is confirmed incumbent (award 693JJ920C000006, $1M, 2020-2026). NHTSA explicitly names them as intended sole-source awardee. This is the primary risk.</td>
+          <td>25%</td>
+          <td><span class="score-pill score-gap">High Risk</span></td>
+        </tr>
+        <tr>
+          <td><strong>Set-Aside / Socioeconomic Fit</strong></td>
+          <td>NHTSA welcomes small business responses. Changeis is small business under 541611 ($24.5M standard). No 8(a)/SDVOSB/WOSB requirement stated &mdash; open field for any small business.</td>
+          <td>20%</td>
+          <td><span class="score-pill score-solid">Solid</span></td>
+        </tr>
+        <tr>
+          <td><strong>DOT Relationship</strong></td>
+          <td>Changeis holds active SCOAR IDIQ (6913G619D300022, $8.15M ceiling) with Volpe/DOT; multiple completed TOs for FMCSA, NHTSA end clients. FTA award (69319524F30173N, $753K, 2024). Known to NHTSA acquisition office.</td>
+          <td>15%</td>
+          <td><span class="score-pill score-strong">Strong</span></td>
+        </tr>
+        <tr>
+          <td><strong>3-Day Turnaround</strong></td>
+          <td>Capabilities statement (not a full proposal) is achievable in 3 days. Emily recommends SCOAR TOs as basis. Existing corporate cap statement can be adapted. Feasible with focused effort Mon-Wed.</td>
+          <td>10%</td>
+          <td><span class="score-pill score-solid">Feasible</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:16px;">
+      <strong>Strategic Reality Check:</strong> NHTSA's odds of award to a new competitor are low (HigherGov rates 15%) given NLEOMF's entrenched position and the subject-matter specialization. However, a strong capability statement forces NHTSA to either justify the sole source on record OR open competition. If competition opens, Changeis is among the strongest positioned small businesses given its DOT/SCOAR track record. The response investment is low (1-2 person-days), the upside is material.
+    </div>
+  </div>
+
+  <!-- Scope Analysis -->
+  <div class="section">
+    <div class="section-header">Scope &mdash; Full Objectives Analysis</div>
+    <p style="margin-bottom:12px;">Six discrete work objectives extracted from the PDF scope-of-work section:</p>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>Requirement Objective (verbatim from PDF)</th><th>Category</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Develop, distribute, and maintain officer-safety information, datasets, and related content with primary emphasis on traffic-related incidents.</td>
+          <td>Data / Content Management</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Create, disseminate, and update communications materials to reinforce positive safety habits (minimum: email blasts, newsletters, podcasts, graphics, and short videos).</td>
+          <td>Communications / Outreach</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Establish, manage, and sustain an active social media presence to amplify officer-safety messages and raise public awareness of roadside dangers (e.g., "Move Over").</td>
+          <td>Social Media / Digital</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Plan, host, and conduct quarterly webinars delivering updated officer-safety information, emphasizing traffic-related incidents.</td>
+          <td>Events / Training Delivery</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Design, deliver, and evaluate training programs and materials supporting law enforcement families, encouraging safe practices, and providing resources for families of officers killed in LODD incidents.</td>
+          <td>Training Program Development</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>Provide technical assistance to NHTSA, national law enforcement organizations, and Tribal, municipal, county, and university law enforcement agencies to strengthen officer-safety initiatives.</td>
+          <td>Technical Assistance / Stakeholder Engagement</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:14px;">
+      <strong>Critical Framing Note:</strong> This is specifically an officer safety / LODD prevention contract &mdash; NOT general traffic safety communications. NLEOMF's proprietary data (officer fatality registry, memorial fund relationships) and Below 100's "Five Tenets" training curriculum give the incumbent a built-in subject-matter advantage. Any capability statement must address the law enforcement community specifically, not just traffic safety broadly.
+    </div>
+  </div>
+
+  <!-- Capability Alignment Matrix -->
+  <div class="section">
+    <div class="section-header">Capability Alignment Matrix</div>
+
+    <table>
+      <thead>
+        <tr><th>Objective</th><th>Changeis Capability</th><th>Best-Fit SCOAR TO(s)</th><th>Fit Rating</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. Officer-safety data &amp; content</strong></td>
+          <td>Data collection, analysis, and dissemination across FMCSA safety programs; data-driven performance metrics and safety program analytics; content development for multiple DOT audiences</td>
+          <td>V3132127 (FMCSA Program/Comms), V3132249 (FMCSA Statistics &amp; Analysis), V3142097 (ODAPC Technical Assistance)</td>
+          <td><span class="score-pill score-solid">Solid</span></td>
+        </tr>
+        <tr>
+          <td><strong>2. Communications materials</strong><br><small>email, newsletters, podcasts, graphics, video</small></td>
+          <td>$1.8M+ across DOT communications TOs; email blast management via GovDelivery; newsletter production; graphics and web content; FHWA social/web communications; CDL Training Program communications strategy</td>
+          <td>V3132013 (Program Support &amp; Communications), V3132349 (FMCSA Outreach &amp; Email), CORPORATE (FHWA Comms)</td>
+          <td><span class="score-pill score-strong">Strong</span></td>
+        </tr>
+        <tr>
+          <td><strong>3. Social media management</strong></td>
+          <td>Daily social media management for FHWA Offices (10+ offices + Turner-Fairbank); roadway safety social content; connected vehicle/ITS social; web content management for public-facing sites</td>
+          <td>CORPORATE (FHWA Office of Communications &amp; Knowledge Mgmt, Task Order V1202052), V3132013</td>
+          <td><span class="score-pill score-strong">Strong</span></td>
+        </tr>
+        <tr>
+          <td><strong>4. Quarterly webinars</strong></td>
+          <td>Webinar planning, logistics, and delivery for FMCSA training audiences; CDL working group webinar design and delivery; hybrid event planning (Request for Proposal for Hybrid Event on V3132013)</td>
+          <td>V3132013 (CDL ELT webinar design &amp; delivery), V3132314 (State Safety Programs training support)</td>
+          <td><span class="score-pill score-solid">Solid</span></td>
+        </tr>
+        <tr>
+          <td><strong>5. Training programs for LE families</strong></td>
+          <td>E-learning (ELT) development for safety programs; training materials for multi-agency audiences; FMCSA grants management training; program evaluation frameworks &mdash; <em>gap: no specific LE family support track record</em></td>
+          <td>V3132013 (CDL ELT), V3132314 (State Safety Programs), V3132140 (FMCSA Statistics education)</td>
+          <td><span class="score-pill score-partial">Partial</span></td>
+        </tr>
+        <tr>
+          <td><strong>6. Technical assistance to Tribal/municipal/university LE</strong></td>
+          <td>Technical assistance to state and local government partners across FMCSA; stakeholder engagement; Compliance, Safety, Accountability (CSA) program TA; FMCSA State safety programs support with multi-agency outreach</td>
+          <td>V3132127 (FMCSA CSA enforcement TA), V3142097 (ODAPC TA/compliance), V3132349 (FMCSA stakeholder outreach)</td>
+          <td><span class="score-pill score-solid">Solid</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="note">Overall capability fit: 4 of 6 objectives rated Solid or Strong; 1 partial (LE family training &mdash; addressable through teaming or narrative framing). Zero gaps that cannot be narrated as adjacent experience.</p>
+  </div>
+
+  <!-- RAG Engine Results -->
+  <div class="section">
+    <div class="section-header">RAG Engine Match Results &mdash; Top SCOAR Past Performance</div>
+    <p style="margin-bottom:10px;">POST to <code>changeis-bd-rag-production.up.railway.app/match</code> returned 10 matches. Top matches relevant to this opportunity:</p>
+
+    <table>
+      <thead>
+        <tr><th>Rank</th><th>Task Order</th><th>Contract</th><th>End Clients</th><th>RAG Score</th><th>Relevance to This Opp</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>V3132127</strong></td>
+          <td>6913G621F400039</td>
+          <td>DOT, FMCSA, Volpe</td>
+          <td>0.3161</td>
+          <td>Education, training, communications, data analysis for FMCSA safety programs. Direct analog to NHTSA officer safety scope.</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>V3132140</strong></td>
+          <td>6913G621F400056</td>
+          <td>FMCSA, Volpe</td>
+          <td>0.3106</td>
+          <td>Statistics and analysis program support; data dissemination to LE/government/public; safety performance metrics.</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>V3132011</strong></td>
+          <td>6913G620F400057</td>
+          <td>DOT, FAA, FMCSA, NHTSA, Volpe</td>
+          <td>0.2877</td>
+          <td><strong>Explicitly lists NHTSA as end client.</strong> FMCSA compliance/enforcement education, training, and communications. Strongest citation for NHTSA familiarity.</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>V3132013</strong></td>
+          <td>6913G620F400041</td>
+          <td>DOT, FAA, FMCSA, Volpe</td>
+          <td>0.2180</td>
+          <td>Program support and communications; webinar design and delivery (CDL ELT); social media; GovDelivery email management. Direct capability match for Objectives 2, 3, 4.</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>V3132314</strong></td>
+          <td>N/A (SCOAR TO)</td>
+          <td>FMCSA, Volpe</td>
+          <td>0.2204</td>
+          <td>State Safety Programs support: communications materials, job aids, meeting coordination, data analysis. Maps to Objective 6 (TA to state/local partners).</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>CORPORATE</strong></td>
+          <td>Multiple</td>
+          <td>DOT, FAA, FHWA, FMCSA, FTA, Volpe</td>
+          <td>0.1615</td>
+          <td>$1.8M+ across communications TOs; FHWA Office of Communications &amp; Knowledge Management (V1202052): daily social media, graphics, newsletters. Best analog for Objectives 2 and 3.</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>V3132349</strong></td>
+          <td>6913G623F40042N</td>
+          <td>DOT, FMCSA, Volpe</td>
+          <td>0.1315</td>
+          <td>Stakeholder outreach, email calendar management via GovDelivery, programmatic communications strategies for internal/external audiences. Direct match for Objective 2 deliverables.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout" style="margin-top:12px;">
+      <strong>Primary SCOAR Contract Vehicle:</strong> 6913G619D300022 (SCOAR IDIQ, Changeis Inc., $8.154M ceiling, 2019-2023) &mdash; confirmed via Volpe.dot.gov signed contract document. Multiple successor TOs issued through 2023. This is the vehicle Emily references for the capability statement basis. Note: <strong>confirm whether SCOAR vehicle has been recompeted/extended</strong> as the 2019-2023 period suggests a possible successor award exists.
+    </div>
+  </div>
+
+  <!-- Incumbent Analysis -->
+  <div class="section">
+    <div class="section-header">Incumbent Analysis &amp; Competition Dynamics</div>
+    <table>
+      <thead>
+        <tr><th>Dimension</th><th>Detail</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Confirmed Incumbent</strong></td>
+          <td>National Law Enforcement Officers Memorial Fund (NLEOMF) &mdash; Prior Award 693JJ920C000006, $1,004,598, 09/23/2020&ndash;06/21/2026 (just expired). Exact scope: LODD data collection, classification, public outreach, officer safety education, and NHTSA mission support.</td>
+        </tr>
+        <tr>
+          <td><strong>Teaming Partner</strong></td>
+          <td>Below 100 (incorporated into NLEOMF contract structure). Holds proprietary "Five Tenets" curriculum; 20+ years of law enforcement training relationships; volunteer trainer network nationwide.</td>
+        </tr>
+        <tr>
+          <td><strong>NHTSA Intent</strong></td>
+          <td>Explicitly states intent to sole-source to NLEOMF + Below 100 "in the absence of responses from interested firms demonstrating their capability." This Sources Sought is a procedural step, not an indication of desire to compete.</td>
+        </tr>
+        <tr>
+          <td><strong>Historical Pattern</strong></td>
+          <td>2020 Sources Sought (693JJ920RQ000040) followed same pattern &mdash; sole-source notice, market survey, award to NLEOMF. The same CO (Vincent Lynch) ran both. Pattern strongly suggests repeat of 2020 outcome.</td>
+        </tr>
+        <tr>
+          <td><strong>2022 IDIQ Precedent</strong></td>
+          <td>NHTSA issued Presolicitation 693JJ923R000090 (Law Enforcement and Traffic Safety Initiatives IDIQ) in 2022 with full and open competition + small business reserve. <strong>If that IDIQ was awarded,</strong> Changeis should verify whether this scope could be placed as a task order under it. If Changeis is on that IDIQ, competitive standing changes significantly.</td>
+        </tr>
+        <tr>
+          <td><strong>Stratacomm Parallel</strong></td>
+          <td>Stratacomm holds the separate NHTSA consumer-facing communications IDIQ (~$329M ceiling, re-awarded 2025). That covers public campaigns (Click It or Ticket, etc.), NOT law enforcement-specific safety. Different spend line &mdash; no conflict.</td>
+        </tr>
+        <tr>
+          <td><strong>Competition Density</strong></td>
+          <td>Narrow pool: very few firms combine (a) DOT past performance, (b) law enforcement safety subject matter, (c) small business status, and (d) communications/training capability. Changeis is competitive if competition is opened.</td>
+        </tr>
+        <tr>
+          <td><strong>Probability Assessment</strong></td>
+          <td>~15% chance this proceeds to competitive RFP (HigherGov). ~85% NHTSA sole-sources to NLEOMF. But submitting positions Changeis for the RFP scenario and signals market presence to NHTSA CO.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3-Day Response Plan -->
+  <div class="section">
+    <div class="section-header">3-Day Response Plan &mdash; Mon June 2 Through Thu June 4 Submission</div>
+
+    <div class="day-header">Monday, June 2 &mdash; Foundation &amp; Structure</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Pull SCOAR TO documentation</strong> for V3132011, V3132127, V3132013. Extract performance period, dollar value, primary deliverables, and client POC (for past performance citations). Confirm contract numbers for each.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Confirm SCOAR vehicle status:</strong> Call Volpe Contracting to confirm whether 6913G619D300022 has been extended or succeeded by a new IDIQ. If a follow-on SCOAR vehicle exists, obtain correct contract number for capability statement header.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Check 2022 IDIQ award status</strong> (693JJ923R000090): search USAspending for awards under this solicitation. If Changeis is on the IDIQ, this changes the submission strategy from capability statement to task order proposal positioning.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text"><strong>Draft capability statement outline:</strong> Executive summary (1 para) + six objective-by-objective capability responses + past performance table + company overview. Max 5-10 pages (no page limit stated; NHTSA requests "detailed information").</div>
+      </div>
+    </div>
+
+    <div class="day-header">Tuesday, June 3 &mdash; Draft &amp; Differentiate</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-text"><strong>Write narrative for each objective:</strong> Map specific SCOAR TO deliverables to each of the 6 objectives. For Objective 5 (LE family training), consider citing adjacent experience (CDL training programs, FMCSA safety webinars) as a capability analog; or explore teaming with an organization that has direct LE family support experience.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-text"><strong>Build past performance table:</strong> List V3132011 (NHTSA end client), V3132013 (Program Support &amp; Comms), V3132314 (State Safety Programs), and FTA Information Dissemination award (69319524F30173N, $753K, 2024). Include dollar values, periods, client names.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">7</div>
+        <div class="step-text"><strong>Differentiation section:</strong> Lead with SCOAR contract vehicle credibility and DOT organizational knowledge. Emphasize that Changeis already understands NHTSA's data infrastructure, reporting frameworks, and State Highway Safety Office ecosystem. Frame as a risk-reduction argument.</div>
+      </div>
+    </div>
+
+    <div class="day-header">Wednesday, June 4 Morning &mdash; Finalize &amp; Submit</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">8</div>
+        <div class="step-text"><strong>Final review and format:</strong> Apply Changeis branding; confirm all 6 objectives addressed; verify NAICS code match (541611); confirm small business representation; add company CAGE/UEI (DUNS 831851113, UEI EBUKVBEHZJD3).</div>
+      </div>
+      <div class="step">
+        <div class="step-num">9</div>
+        <div class="step-text"><strong>Submit by 2:00 PM EDT</strong> per the response deadline. Address to Vincent Lynch (vincent.lynch@dot.gov) at NHTSA Office of Acquisition Management, 1200 New Jersey Ave SE, Room W51-30, Washington DC 20590. Confirm submission method (email vs. SAM.gov response).</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Complexity Estimate:</strong> Capability statement = 5-8 pages; addresses all 6 objectives; 4 primary SCOAR past performance citations. Effort: 1.5-2 person-days. Recommend Emily Lawrence as lead author (context on SCOAR vehicles) with VM2 support for research and formatting.
+    </div>
+  </div>
+
+  <!-- SCOAR Past Performance to Cite -->
+  <div class="section">
+    <div class="section-header">Recommended Past Performance to Cite in Capability Statement</div>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Task Order / Award</th><th>Contract Vehicle</th><th>End Client</th><th>Key Deliverables for Citation</th><th>Why Cite</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>V3132011</strong></td>
+          <td>SCOAR (6913G619D300022 series)</td>
+          <td><strong>NHTSA + FMCSA + Volpe</strong></td>
+          <td>FMCSA enforcement education, training, communications; NHTSA explicitly listed as end client</td>
+          <td>Only SCOAR TO that directly names NHTSA. Critical credentialing citation.</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>V3132013</strong> (Program Support &amp; Communications)</td>
+          <td>SCOAR</td>
+          <td>FMCSA/Volpe</td>
+          <td>CDL ELT webinar design/delivery; GovDelivery email management; communications strategy; hybrid event planning; social media support</td>
+          <td>Directly maps to Objectives 2, 3, and 4 (comms, social media, webinars). Richest deliverable set for this scope.</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>V3132349</strong> (FMCSA Outreach)</td>
+          <td>SCOAR</td>
+          <td>FMCSA/Volpe</td>
+          <td>GovDelivery subscription management, email calendar, programmatic comms strategies for internal/external audiences; outreach and stakeholder engagement</td>
+          <td>Exact analog for Objective 2 minimum deliverables (email blasts, newsletters). Cite specific GovDelivery platform experience.</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>CORPORATE / V1202052</strong> (FHWA Office of Communications &amp; Knowledge Mgmt)</td>
+          <td>SCOAR/FHWA contract</td>
+          <td>FHWA (10+ offices)</td>
+          <td>Daily social media management; graphics production; web content for public-facing DOT sites; roadway safety content; $1.8M+ communications portfolio</td>
+          <td>Demonstrates breadth and scale of communications capability. Roadway safety context is directly adjacent.</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>FTA Information Dissemination</strong> (69319524F30173N)</td>
+          <td>GSA MAS (GS10F054BA)</td>
+          <td>Federal Transit Administration</td>
+          <td>Information dissemination, program support, $753K, 2024-2029</td>
+          <td>Recent award (2024) under NAICS 541611; demonstrates active DOT performance; adds recency to past performance table.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Risk Register -->
+  <div class="section">
+    <div class="section-header">Risk Register</div>
+    <table>
+      <thead>
+        <tr><th>Risk</th><th>Level</th><th>Mitigation</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>NHTSA proceeds with sole source regardless of responses</strong></td>
+          <td><span class="score-pill score-gap">High</span></td>
+          <td>Accept as likely outcome. Treat submission as brand-building and market signal. Request copy of J&amp;A if sole source notice issues.</td>
+        </tr>
+        <tr>
+          <td><strong>SCOAR vehicle may have expired (2019-2023)</strong></td>
+          <td><span class="score-pill score-partial">Medium</span></td>
+          <td>Confirm with Volpe contracting whether follow-on SCOAR exists. Past performance on completed TOs is still citable regardless of vehicle status.</td>
+        </tr>
+        <tr>
+          <td><strong>No LE-specific subject matter experience</strong></td>
+          <td><span class="score-pill score-partial">Medium</span></td>
+          <td>Frame law enforcement safety as a subset of transportation safety communications &mdash; a space Changeis has operated in extensively. Consider teaming with an LE-focused org for RFP phase.</td>
+        </tr>
+        <tr>
+          <td><strong>NLEOMF data ownership (fatality registry)</strong></td>
+          <td><span class="score-pill score-gap">High</span></td>
+          <td>If RFP issues, this becomes a key discriminator. Address in capability statement by proposing to work with NLEOMF's data or with publicly available LODD datasets. Do not overstate data access.</td>
+        </tr>
+        <tr>
+          <td><strong>3-day turnaround quality risk</strong></td>
+          <td><span class="score-pill score-partial">Medium</span></td>
+          <td>Capability statement (not full proposal) &mdash; manageable. Prioritize depth on Objectives 2-4 where Changeis is strongest. Keep brief and evidence-heavy over verbose.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Open Questions -->
+  <div class="section">
+    <div class="section-header">Open Questions / Action Items Before Submission</div>
+    <ul>
+      <li><strong>Is Changeis on the 2022 NHTSA Law Enforcement Traffic Safety IDIQ (693JJ923R000090)?</strong> If yes, the strategic posture shifts from "capability statement competitor" to "incumbent IDIQ holder requesting task order." Check USAspending and internal award files immediately.</li>
+      <li><strong>SCOAR vehicle successor?</strong> The master contract 6913G619D300022 was 2019-2023. Verify if a new SCOAR was competed and whether Changeis is on it. Volpe Center contracts: call (617) 494-2000 or email Jeremy Garvin (referenced in TO documents).</li>
+      <li><strong>Submission format preference:</strong> PDF via email to vincent.lynch@dot.gov, or upload to SAM.gov response portal? The PDF states "received by the listed procuring office" which typically means email. Confirm with CO before June 4.</li>
+      <li><strong>Page limit?</strong> None stated. Emily/Varun to determine internal guidance; 5-8 pages is the standard for NHTSA capability statements based on prior Sources Sought notices in this program area.</li>
+      <li><strong>Teaming?</strong> If Changeis lacks direct LE community relationships, consider a teaming arrangement with a law enforcement association or Below 100-adjacent organization. This would need to be discussed and documented in the capability statement.</li>
+    </ul>
+  </div>
+
+  <!-- Session Context -->
+  <div class="context-section">
+    <button class="context-toggle" id="ctxToggle" onclick="toggleContext()">
+      <span class="arrow">&#9658;</span> Session Context
+    </button>
+    <div class="context-body" id="ctxBody">&#123;
+  "task_name": "DOT NHTSA Deep Dive 693JJ926RQ000380",
+  "task_date": "2026-06-01",
+  "created_date": "2026-06-01",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-dot-nhtsa-693jj926rq000380-2026-06-01.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-dot-nhtsa-693jj926rq000380-2026-06-01.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute vm2-opp-deep-dive workflow for NHTSA Sources Sought 693JJ926RQ000380, DOT Law Enforcement and Public Safety Initiatives. Read PDF, fetch SAM.gov posting, research NHTSA historical contracting, run RAG engine against Changeis past performance, build capability alignment matrix, Go/No-Go recommendation, list SCOAR TOs, outline 3-day response plan.",
+  "approach": "1. Read PDF (3 pages) to extract full scope, objectives, NAICS, deadline, submission instructions. 2. Fetched SAM.gov posting for additional details (confirmed sole-source intent, CO contact). 3. Searched web for NHTSA contracting history with NLEOMF, Below 100, and SCOAR vehicles. 4. Fetched Volpe SCOAR contract PDF confirming Changeis as prime holder of 6913G619D300022 ($8.15M ceiling). 5. Fetched HigherGov for incumbent analysis (confirmed NLEOMF prior award 693JJ920C000006, $1M, 2020-2026). 6. POSTed RAG engine for 100 matches; received 10 matches with SCOAR TOs as top results. 7. Built alignment matrix, go/no-go, 3-day plan.",
+  "key_findings": [
+    "NLEOMF is confirmed incumbent with $1M prior award (693JJ920C000006) covering exact same scope 2020-2026",
+    "Changeis holds SCOAR IDIQ 6913G619D300022 ($8.15M ceiling) with Volpe/DOT; SCOAR TO V3132011 explicitly lists NHTSA as end client",
+    "RAG engine returned 10 matches; top 3 are V3132127, V3132140, V3132011 (all SCOAR DOT/FMCSA/NHTSA TOs with comms, training, data scope)",
+    "SCOAR corporate capabilities summary shows $1.8M+ across communications TOs including FHWA social media, web, newsletters",
+    "2022 NHTSA Law Enforcement Traffic Safety IDIQ presolicitation (693JJ923R000090) was full and open -- potential Changeis vehicle if award was made",
+    "HigherGov rates award odds at 15% for new competitor; however, responding is low-effort and strategic for market signaling and future RFP positioning"
+  ],
+  "dead_ends": [
+    "SAM.gov posting did not return response deadline or submission format via fetch (login-gated); deadline confirmed via HigherGov (June 4, 2:00 PM EDT)",
+    "2022 IDIQ award status (693JJ923R000090) not confirmed -- USAspending search inconclusive via web search; requires direct database check",
+    "SCOAR vehicle successor status (post-2023) not confirmed -- Volpe contracting office call recommended"
+  ],
+  "assumptions": [
+    "SCOAR past performance TOs (V3132011, V3132013, V3132127, V3132314, V3132349) are citeable as Changeis past performance",
+    "Response must address all 6 capability objectives explicitly",
+    "Submission via email to Vincent Lynch based on prior NHTSA Sources Sought precedent (693JJ920RQ000040)",
+    "Changeis UEI is EBUKVBEHZJD3 (confirmed via orangeslices.ai award notice for FTA award)"
+  ],
+  "open_questions": [
+    "Is Changeis on the 2022 NHTSA Law Enforcement Traffic Safety IDIQ (693JJ923R000090)?",
+    "What is the status of the SCOAR vehicle post-2023?",
+    "Exact submission method (email vs SAM.gov portal)?",
+    "Does Changeis have any teaming relationships with LE-focused organizations for Objective 5 gap?",
+    "What is the internal budget/pricing approach for a ~$1M/year sole-source scope?"
+  ],
+  "data_sources": [
+    {"name": "Sources Sought PDF", "url": "/home/user/workspace/cron_tracking/2da8354a/attachments/Sources_Sought_693JJ926RQ000380_NLEOMF.pdf"},
+    {"name": "SAM.gov posting", "url": "https://sam.gov/workspace/contract/opp/45c43f5d1a8647d1828bb65b71a1b668/view"},
+    {"name": "HigherGov opportunity analysis", "url": "https://www.highergov.com/contract-opportunity/law-enforcement-and-public-safety-initiatives-693jj926rq000380-r-1b668/"},
+    {"name": "HigherGov 2022 IDIQ", "url": "https://www.highergov.com/contract-opportunity/law-enforcement-and-traffic-safety-initiatives-idi-693jj923r000090-p-47664/"},
+    {"name": "Volpe SCOAR contract 6913G619D300022", "url": "https://www.volpe.dot.gov/sites/volpe.dot.gov/files/2021-01/SCOAR%20Contract%206913G619D300022%20SIGNED_Redacted.pdf"},
+    {"name": "2020 NLEOMF Sources Sought (Lindsey Research)", "url": "https://lindseyresearch.com/wp-content/uploads/2020/03/Mar-26-National-Law-Enforcement-Officer-Memorial-Fund-2020.pdf"},
+    {"name": "NLEOMF NHTSA Partnership page", "url": "https://nleomf.org/officer-safety-and-wellness/nhtsa/"},
+    {"name": "Changeis FTA award (orangeslices)", "url": "https://orangeslices.ai/changeis-wins-dot-fta-information-dissemination-support-services-contract/"},
+    {"name": "Stratacomm NHTSA recompete", "url": "https://stratacomm.net/stratacomm-awarded-competitive-re-compete-for-nhtsas-national-integrated-communications-support-for-consumer-safety-campaigns/"},
+    {"name": "Changeis BD RAG Engine", "url": "https://changeis-bd-rag-production.up.railway.app/match"}
+  ],
+  "next_steps": [
+    "URGENT (Mon 6/2): Confirm SCOAR vehicle successor status via Volpe contracting",
+    "URGENT (Mon 6/2): Check USAspending for 2022 IDIQ 693JJ923R000090 award status",
+    "URGENT (Mon 6/2): Confirm submission method with Vincent Lynch (202-366-9568 / vincent.lynch@dot.gov)",
+    "Mon-Wed: Draft and review capability statement (Emily Lawrence lead)",
+    "Thu 6/4 AM: Final review and submit by 2:00 PM EDT",
+    "If RFP issues: build full proposal team; explore teaming with LE-focused org for Objective 5"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~75,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 8,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.50",
+    "cost_ceiling": "$0.95",
+    "notes": "Deep dive with PDF read, SAM.gov fetch, 3 web searches, HigherGov fetches, Volpe PDF fetch, RAG API call, HTML generation"
+  }
+&#125;</div>
+  </div>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="subtitle">Pick up exactly where this session left off &mdash; full context transfers automatically.</div>
+    <div class="continue-btns">
+      <button class="btn btn-primary" onclick="copyFollowUp()">
+        &#128203; Copy Follow-Up Prompt
+      </button>
+      <a class="btn btn-secondary" id="emailBtn" href="#">
+        &#9993; Email to VM2
+      </a>
+      <a class="btn btn-secondary" id="todoistBtn" href="#">
+        &#9745; Create Todoist Follow-Up
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Changeis Confidential &middot; DOT NHTSA NLEOMF Deep Dive 693JJ926RQ000380 &middot; 2026-06-01 &middot; VM2 Deliverable
+  </div>
+
+</div><!-- /container -->
+
+<!-- Hidden JSON block -->
+<script type="application/json" id="vm2-context-data">
+{
+  "task_name": "DOT NHTSA Deep Dive 693JJ926RQ000380",
+  "task_date": "2026-06-01",
+  "created_date": "2026-06-01",
+  "revised_date": null,
+  "deliverable_file": "deep-dive-dot-nhtsa-693jj926rq000380-2026-06-01.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-dot-nhtsa-693jj926rq000380-2026-06-01.html",
+  "version": 1,
+  "prior_versions": [],
+  "related_deliverables": [],
+  "original_instructions": "Execute vm2-opp-deep-dive for NHTSA Sources Sought 693JJ926RQ000380 DOT Law Enforcement and Public Safety Initiatives. Read PDF, fetch SAM, research incumbents/history, run RAG, build alignment matrix, Go/No-Go, list SCOAR TOs, 3-day plan.",
+  "approach": "Read 3-page PDF, fetched SAM.gov and HigherGov, fetched Volpe SCOAR contract, searched web for contracting history, POSTed RAG engine (top_n=100, received 10 matches), built all deliverable sections.",
+  "key_findings": [
+    "NLEOMF confirmed incumbent $1M award 693JJ920C000006 (2020-2026 exact same scope)",
+    "Changeis SCOAR IDIQ 6913G619D300022 confirmed with NHTSA as end client on V3132011",
+    "Top RAG TOs: V3132127 (0.316), V3132140 (0.311), V3132011 (0.288) - all DOT/FMCSA/NHTSA comms+training",
+    "SCOAR corporate portfolio: $1.8M+ communications; FHWA social media, web, newsletters",
+    "Recommendation: CONDITIONAL GO - respond to influence competition; 15% chance RFP issues"
+  ],
+  "dead_ends": [
+    "SAM.gov login-gated; deadline confirmed via HigherGov",
+    "2022 IDIQ award status unconfirmed",
+    "SCOAR vehicle successor post-2023 unconfirmed"
+  ],
+  "assumptions": [
+    "SCOAR TOs are citable as Changeis past performance",
+    "Submission via email to Vincent Lynch per prior Sources Sought precedent"
+  ],
+  "open_questions": [
+    "Is Changeis on 2022 NHTSA LE Traffic Safety IDIQ 693JJ923R000090?",
+    "SCOAR vehicle post-2023 status?",
+    "Exact submission method?"
+  ],
+  "data_sources": [
+    "Sources Sought PDF (local)",
+    "https://sam.gov/workspace/contract/opp/45c43f5d1a8647d1828bb65b71a1b668/view",
+    "https://www.highergov.com/contract-opportunity/law-enforcement-and-public-safety-initiatives-693jj926rq000380-r-1b668/",
+    "https://www.volpe.dot.gov/sites/volpe.dot.gov/files/2021-01/SCOAR%20Contract%206913G619D300022%20SIGNED_Redacted.pdf",
+    "https://changeis-bd-rag-production.up.railway.app/match"
+  ],
+  "next_steps": [
+    "Mon 6/2: Confirm SCOAR vehicle status + 2022 IDIQ award status",
+    "Mon 6/2: Confirm submission method with CO Vincent Lynch",
+    "Mon-Wed: Draft capability statement (Emily Lawrence lead)",
+    "Thu 6/4 by 2PM EDT: Submit"
+  ],
+  "cost_estimate": {
+    "model": "claude-sonnet-4-6",
+    "model_pricing": "$3/$15 per 1M tokens",
+    "input_tokens_est": "~75,000",
+    "output_tokens_est": "~12,000",
+    "search_calls": 8,
+    "subagent_calls": 0,
+    "cost_conservative": "$0.50",
+    "cost_ceiling": "$0.95",
+    "notes": "Deep dive: PDF read + SAM.gov + HigherGov x2 + Volpe PDF + web searches x3 + RAG API + HTML output"
+  }
+}
+</script>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    if (html.getAttribute('data-theme') === 'dark') {
+      html.setAttribute('data-theme', 'light');
+      btn.textContent = '\u25D1 Dark';
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      btn.textContent = '\u25D1 Light';
+    }
+  }
+
+  function toggleContext() {
+    const toggle = document.getElementById('ctxToggle');
+    const body = document.getElementById('ctxBody');
+    toggle.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  const DELIVERABLE_URL = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-dot-nhtsa-693jj926rq000380-2026-06-01.html';
+  const FOLLOW_UP_PROMPT = `I need to continue work on the DOT NHTSA NLEOMF Sources Sought Deep Dive.
+
+Previous deliverable with full context:
+${DELIVERABLE_URL}
+
+Please read the deliverable above (especially the Session Context JSON at the bottom) and pick up where the last session left off.
+
+Open questions from last session:
+- Is Changeis on the 2022 NHTSA Law Enforcement Traffic Safety IDIQ (693JJ923R000090)?
+- What is the status of the SCOAR vehicle post-2023?
+- Exact submission method (email vs SAM.gov portal)?
+
+Suggested next steps:
+- Confirm SCOAR vehicle status with Volpe contracting
+- Check USAspending for 2022 IDIQ award status
+- Draft capability statement using V3132011, V3132013, V3132349, V3132127 as past performance
+- Submit by June 4, 2:00 PM EDT
+
+My additional instructions:
+[TYPE YOUR FOLLOW-UP REQUEST HERE]`;
+
+  function copyFollowUp() {
+    navigator.clipboard.writeText(FOLLOW_UP_PROMPT).then(() => {
+      showToast('Follow-up prompt copied - paste into a new VM2 session');
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = FOLLOW_UP_PROMPT;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Follow-up prompt copied - paste into a new VM2 session');
+    });
+  }
+
+  const emailSubject = encodeURIComponent('VM2 Follow-Up: DOT NHTSA NLEOMF Deep Dive 693JJ926RQ000380');
+  const emailBody = encodeURIComponent(`VM2 FOLLOW-UP\n\nPrevious deliverable: ${DELIVERABLE_URL}\n\nContinue this work. Read the Session Context at the bottom of the deliverable for full context.\n\nAdditional instructions:\n[TYPE YOUR FOLLOW-UP REQUEST HERE]`);
+  document.getElementById('emailBtn').href = `mailto:vm2.viru@gmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+  const todoistTitle = encodeURIComponent('Follow up: DOT NHTSA NLEOMF Deep Dive 693JJ926RQ000380');
+  const todoistBody = encodeURIComponent(`Ref: ${DELIVERABLE_URL}`);
+  document.getElementById('todoistBtn').href = `https://todoist.com/app/task?content=${todoistTitle}&description=${todoistBody}&labels=vm2`;
+</script>
+
+</body>
+</html>
