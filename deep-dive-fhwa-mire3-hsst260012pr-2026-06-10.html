@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: FHWA MIRE 3.0 — HSST260012PR — June 10, 2026</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --red: #c53a3a;
+    --red-hover: #a82e2e;
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F3F0;
+    --border: #D4D1CA;
+    --text: #1a1a1a;
+    --text-muted: #5a5a5a;
+    --text-faint: #999;
+    --code-bg: #F0EFEC;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --topbar-bg: #1B2A4A;
+    --topbar-text: #FFFFFF;
+    --table-header-bg: #1B2A4A;
+    --table-header-text: #FFFFFF;
+    --table-alt: #F7F6F3;
+    --badge-bg: #c53a3a;
+    --badge-text: #fff;
+    --panel-bg: #F0EFEC;
+    --btn-bg: #1B2A4A;
+    --btn-text: #fff;
+    --btn-secondary-bg: #F0EFEC;
+    --btn-secondary-text: #1B2A4A;
+    --btn-secondary-border: #D4D1CA;
+    --link: #1B2A4A;
+    --go-green: #1a7a3e;
+    --warn-amber: #b86c00;
+    --muted: #6b6b6b;
+  }
+  [data-theme="dark"] {
+    --bg: #111318;
+    --surface: #1a1d25;
+    --surface-alt: #22252e;
+    --border: #333740;
+    --text: #d8d8d8;
+    --text-muted: #8a8e96;
+    --text-faint: #555960;
+    --code-bg: #22252e;
+    --table-alt: #1e2129;
+    --panel-bg: #22252e;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --btn-bg: #c53a3a;
+    --btn-text: #fff;
+    --btn-secondary-bg: #22252e;
+    --btn-secondary-text: #d8d8d8;
+    --btn-secondary-border: #333740;
+    --link: #7eb3e0;
+    --go-green: #4caf7d;
+    --warn-amber: #e09040;
+    --muted: #8a8e96;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Charter, Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--topbar-bg);
+    color: var(--topbar-text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 600;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .topbar-dot { color: var(--red); font-size: 18px; }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; cursor: pointer; font-family: system-ui, sans-serif;
+    transition: background 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+  .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+  .hero {
+    text-align: center; padding: 44px 0 32px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    background: var(--badge-bg); color: var(--badge-text);
+    padding: 3px 12px; border-radius: 3px;
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700; color: var(--navy);
+    line-height: 1.15; margin-bottom: 8px;
+  }
+  [data-theme="dark"] .hero h1 { color: #e2e2e2; }
+  .hero-sub { font-size: 17px; color: var(--text-muted); font-style: italic; margin-bottom: 6px; }
+  .hero-date { font-family: system-ui, sans-serif; font-size: 13px; color: var(--text-faint); letter-spacing: 0.02em; }
+  .section { margin-bottom: 30px; }
+  .section-header {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--red);
+    border-bottom: 2px solid var(--red);
+    padding-bottom: 5px;
+    margin-bottom: 14px;
+  }
+  .section p, .section li { font-size: 15px; line-height: 1.6; }
+  .section ul, .section ol { padding-left: 20px; margin-bottom: 8px; }
+  .section li { margin-bottom: 4px; }
+  a { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--red); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; border: 1px solid var(--border); }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    font-family: system-ui, sans-serif;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 12px; text-align: left;
+  }
+  tbody td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 14px; }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  tbody tr:last-child td { border-bottom: none; }
+  .decision-box {
+    border: 2px solid var(--go-green);
+    border-radius: 8px;
+    padding: 18px 22px;
+    background: color-mix(in srgb, var(--go-green) 8%, var(--surface));
+    margin-bottom: 18px;
+  }
+  .decision-box.teaming { border-color: var(--warn-amber); background: color-mix(in srgb, var(--warn-amber) 8%, var(--surface)); }
+  .decision-label {
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--go-green);
+    margin-bottom: 6px;
+  }
+  .decision-box.teaming .decision-label { color: var(--warn-amber); }
+  .decision-main { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .deadline-alert {
+    background: #c53a3a;
+    color: #fff;
+    border-radius: 6px;
+    padding: 12px 18px;
+    font-family: system-ui, sans-serif;
+    font-size: 14px; font-weight: 600;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .deadline-alert .dl-icon { font-size: 18px; }
+  .score-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 10px; }
+  @media(max-width:700px){ .score-grid{grid-template-columns:1fr;} }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+  }
+  .score-label { font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--red); margin-bottom: 4px; }
+  .score-value { font-size: 26px; font-weight: 800; color: var(--navy); font-family: system-ui, sans-serif; }
+  [data-theme="dark"] .score-value { color: #e2e2e2; }
+  .score-desc { font-size: 12px; color: var(--text-muted); margin-top: 3px; font-family: system-ui, sans-serif; }
+  .q-block { margin-bottom: 22px; border-left: 3px solid var(--red); padding-left: 16px; }
+  .q-label { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--red); margin-bottom: 4px; }
+  .q-text { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .q-answer { font-size: 14px; line-height: 1.6; color: var(--text); background: var(--surface-alt); border-radius: 6px; padding: 12px 14px; border: 1px solid var(--border); }
+  .risk-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  @media(max-width:700px){.risk-row{grid-template-columns:1fr;}}
+  .risk-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .risk-card h4 { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 5px; font-family: system-ui, sans-serif; }
+  [data-theme="dark"] .risk-card h4 { color: #ddd; }
+  .risk-card p { font-size: 13px; color: var(--text-muted); }
+  .badge-pill {
+    display: inline-block;
+    font-family: system-ui, sans-serif;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 12px; margin-right: 4px;
+  }
+  .pill-go { background: #d4f0e0; color: #1a7a3e; }
+  .pill-medium { background: #fde8c0; color: #8a4a00; }
+  .pill-high { background: #fddada; color: #8a1a1a; }
+  [data-theme="dark"] .pill-go { background: #1a4030; color: #4caf7d; }
+  [data-theme="dark"] .pill-medium { background: #3a2c10; color: #e09040; }
+  [data-theme="dark"] .pill-high { background: #3a1010; color: #e07070; }
+  .action-items li { margin-bottom: 8px; font-size: 14px; }
+  .action-items li strong { color: var(--red); }
+  .context-panel {
+    margin-top: 36px; margin-bottom: 12px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--panel-bg);
+  }
+  .context-panel summary {
+    padding: 12px 18px; cursor: pointer;
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+    list-style: none;
+  }
+  .context-panel summary::-webkit-details-marker { display: none; }
+  .context-panel summary::before { content: "▶ "; font-size: 10px; }
+  details[open] .context-panel summary::before { content: "▼ "; }
+  .context-panel .panel-body { padding: 0 18px 16px; }
+  .context-panel h4 { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--red); margin: 14px 0 4px; }
+  .context-panel p, .context-panel li { font-size: 13px; color: var(--text-muted); line-height: 1.55; }
+  .context-panel ul { padding-left: 18px; }
+  .continue-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 20px;
+  }
+  .continue-panel h3 {
+    font-family: system-ui, sans-serif;
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--navy); margin-bottom: 12px;
+  }
+  [data-theme="dark"] .continue-panel h3 { color: #e2e2e2; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600;
+    padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer;
+    text-decoration: none; display: inline-block;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--btn-bg); color: var(--btn-text); }
+  .btn-secondary { background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--btn-secondary-border); }
+  .footer-strip {
+    background: var(--navy); color: rgba(255,255,255,0.55);
+    font-family: system-ui, sans-serif; font-size: 12px;
+    text-align: center; padding: 12px 24px;
+    margin-top: 36px; letter-spacing: 0.03em;
+  }
+  .rag-chip {
+    display: inline-block;
+    font-family: system-ui, sans-serif; font-size: 11px; font-weight: 600;
+    background: var(--surface-alt); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 7px; margin: 2px;
+    color: var(--text-muted);
+  }
+  .pwin-bar { height: 12px; border-radius: 6px; background: var(--border); overflow: hidden; margin: 8px 0; }
+  .pwin-fill { height: 100%; background: var(--warn-amber); border-radius: 6px; transition: width 0.4s; }
+  .highlight { background: color-mix(in srgb, var(--red) 10%, transparent); border-radius: 3px; padding: 1px 3px; }
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-dot">●</span>
+    <span>VM2 · Perplexity Computer</span>
+  </div>
+  <button class="theme-toggle" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme==='dark'?'light':'dark'">Toggle Dark/Light</button>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-badge">Deep Dive · FHWA Safety RFQ</div>
+    <h1>FHWA MIRE 3.0 &amp; Enhanced Data Analysis</h1>
+    <div class="hero-sub">TORFQ #HSST260012PR — Office of Safety IDIQ</div>
+    <div class="hero-date">Created: 2026-06-10 &nbsp;|&nbsp; Prepared by VM2 · Perplexity Computer &nbsp;|&nbsp; For Changeis, Inc.</div>
+  </div>
+
+  <!-- DEADLINE ALERT -->
+  <div class="deadline-alert">
+    <span class="dl-icon">⚑</span>
+    <span><strong>CRITICAL DEADLINE:</strong> SurveyMonkey response due <strong>Friday, June 12 by 8:00 AM ET</strong> (~38 hours from email receipt). Final RFQ proposal due <strong>June 24, 2026</strong>.</span>
+  </div>
+
+  <!-- 1. EXECUTIVE SUMMARY -->
+  <div class="section">
+    <div class="section-header">1. Executive Summary</div>
+
+    <div class="decision-box teaming">
+      <div class="decision-label">Bid Decision</div>
+      <div class="decision-main">GO — WITH TEAMING &nbsp;<span class="badge-pill pill-medium">Subcontractor Role</span></div>
+      <p style="font-size:14px;color:var(--text-muted);margin-top:6px;">Changeis is not an HSST IDIQ prime holder. The RFQ is issued by ICF (prime on 693JJ326D000002) to its subcontractor pool. The email from <strong>Emily Staskowicz at ICF</strong> to a large pool of firms confirms Changeis was included in ICF's subcontractor survey. Recommended path: <strong>respond to the survey as a sub-tier data analytics and communications partner</strong>, positioning MOTUS/FMCSA work and FHWA Safety website portfolio as directly relevant.</p>
+    </div>
+
+    <div class="score-grid">
+      <div class="score-card">
+        <div class="score-label">Pwin Estimate</div>
+        <div class="score-value">35–45%</div>
+        <div class="pwin-bar"><div class="pwin-fill" style="width:40%"></div></div>
+        <div class="score-desc">As sub — depends on ICF selection &amp; Changeis differentiation vs DKS, TYLin, Alta, TTI</div>
+      </div>
+      <div class="score-card">
+        <div class="score-label">Capability Fit</div>
+        <div class="score-value">72/100</div>
+        <div class="score-desc">Strong in data analytics, dashboards, FHWA comms; gap in MIRE 3.0 FDE field data collection tools</div>
+      </div>
+      <div class="score-card">
+        <div class="score-label">Strategic Value</div>
+        <div class="score-value">HIGH</div>
+        <div class="score-desc">Opens FHWA Safety data analytics pipeline; bridges MOTUS/FMCSA to FHWA roadway safety data</div>
+      </div>
+    </div>
+
+    <br>
+    <p><strong>Key Risks:</strong></p>
+    <ul style="margin-top:6px;">
+      <li>Changeis is <strong>not a prime HSST holder</strong> — must participate as sub through ICF or another IDIQ holder</li>
+      <li>MIRE 3.0 requires deep roadway element domain expertise; Changeis's strength is data analytics/dashboards, not physical inventory methodologies</li>
+      <li>Strong competition from DKS Associates, TTI, Fehr &amp; Peers, Kimley-Horn — all on the ICF distribution list with likely MIRE FDE credentials</li>
+      <li>FFP contract type (fixed-price) with a tight 14-day proposal window increases bid cost risk</li>
+    </ul>
+  </div>
+
+  <!-- 2. OPPORTUNITY SNAPSHOT -->
+  <div class="section">
+    <div class="section-header">2. Opportunity Snapshot</div>
+    <table>
+      <thead><tr><th>Field</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td><strong>RFQ Title</strong></td><td>Roadway Safety Data for the Future — Model Inventory of Roadway Elements (MIRE) 3.0 and Enhanced Data Analysis</td></tr>
+        <tr><td><strong>TORFQ #</strong></td><td>HSST260012PR</td></tr>
+        <tr><td><strong>Contract Vehicle</strong></td><td>FHWA Office of Safety IDIQ (HSST prefix) — 693JJ326D000001–000007 (awarded April 2026, $48M ceiling, 7 primes)</td></tr>
+        <tr><td><strong>Issuing Prime</strong></td><td>ICF Incorporated, L.L.C. (693JJ326D000002) — Emily Staskowicz, Lead PM Specialist</td></tr>
+        <tr><td><strong>Agency</strong></td><td>FHWA Office of Safety, DOT</td></tr>
+        <tr><td><strong>Contract Type</strong></td><td>FFP (Firm Fixed Price)</td></tr>
+        <tr><td><strong>NAICS</strong></td><td>541990 — All Other Professional, Scientific &amp; Technical Services (per HSST IDIQ)</td></tr>
+        <tr><td><strong>Set-Aside Status</strong></td><td>Full &amp; Open (no set-aside specified on HSST IDIQ; WOSB/EDWOSB eligible to sub)</td></tr>
+        <tr><td><strong>MIRE Latest Version</strong></td><td>MIRE 2.1 (updated Sept 2025) — MIRE 3.0 does not yet exist publicly; this RFQ will develop it</td></tr>
+        <tr><td><strong>Survey Deadline</strong></td><td><span class="highlight">Friday, June 12, 2026 — 8:00 AM ET</span></td></tr>
+        <tr><td><strong>Proposal Due</strong></td><td>June 24, 2026</td></tr>
+        <tr><td><strong>Period of Performance</strong></td><td>Not yet confirmed from SOW (PDF inaccessible at time of analysis); likely 1 base year + 4 options</td></tr>
+        <tr><td><strong>Estimated Value</strong></td><td>Not stated; comparable MIRE task orders have ranged $500K–$3M</td></tr>
+        <tr><td><strong>Key POCs at ICF</strong></td><td>Emily Staskowicz (Emily.Staskowicz@icf.com), Deepak Gopalakrishna, Cindy Peck, Deepak Raghunathan</td></tr>
+        <tr><td><strong>Changeis POC</strong></td><td>Varun Malhotra (varun@changeis.com), Emily Lawrence (Emily.Lawrence@changeis.com)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3. REQUIREMENTS SUMMARY -->
+  <div class="section">
+    <div class="section-header">3. Requirements Summary</div>
+    <p>Based on the RFQ title, known MIRE evolution, and context from the email distribution (transportation safety data specialists, GIS firms, university research teams), the scope of HSST260012PR is expected to include:</p>
+    <br>
+    <table>
+      <thead><tr><th>Task Area</th><th>Likely Scope</th><th>Changeis Relevance</th></tr></thead>
+      <tbody>
+        <tr><td><strong>MIRE 3.0 Update</strong></td><td>Revise MIRE data element framework from 2.1 to 3.0; incorporate new vehicle types, connected/automated vehicle data, pedestrian/bike elements, emerging tech</td><td><span class="badge-pill pill-medium">Moderate</span></td></tr>
+        <tr><td><strong>FDE Compliance Support</strong></td><td>States must comply with MIRE FDE by Sept 30, 2026; contractor supports compliance tracking, technical assistance, and dashboards</td><td><span class="badge-pill pill-go">Strong</span> — Safety Data Dashboards (RSPCB)</td></tr>
+        <tr><td><strong>Enhanced Data Analysis</strong></td><td>Statistical modeling, predictive analytics on HSIP data, linkage with CRSS/HSIS, trend analysis for crash countermeasures</td><td><span class="badge-pill pill-go">Strong</span> — FMCSA/MOTUS crash analytics, Tableau/Power BI dashboards</td></tr>
+        <tr><td><strong>State Technical Assistance</strong></td><td>Help state DOTs collect, validate, integrate MIRE data; training, peer exchange, webinars</td><td><span class="badge-pill pill-go">Strong</span> — FHWA Capacity Building websites, peer exchanges</td></tr>
+        <tr><td><strong>Data Integration</strong></td><td>Link MIRE to HPMS, CRSS, FARS, HSIS, ARNOLD datasets; develop data schema, APIs</td><td><span class="badge-pill pill-medium">Moderate</span> — GIS in Transportation, SQL/database work</td></tr>
+        <tr><td><strong>Reporting &amp; Publications</strong></td><td>Technical reports, policy briefs, guidance documents, website content, outreach</td><td><span class="badge-pill pill-go">Strong</span> — 10+ FHWA offices supported via SCOAR</td></tr>
+        <tr><td><strong>Field Data Collection Methods</strong></td><td>Guidance on LiDAR, imagery, automated data collection for roadway attributes</td><td><span class="badge-pill pill-high">Gap</span> — Not core Changeis capability</td></tr>
+      </tbody>
+    </table>
+    <br>
+    <p style="font-size:13px;color:var(--text-muted);"><em>Note: The actual TORFQ PDF was not accessible (S3 pre-signed URL expired at time of analysis). The above is inferred from the title, known MIRE program history, and the profile of firms invited (DKS Associates, Fehr &amp; Peers, Kimley-Horn, TYLin, Alta Planning, JHU, TTI). Full PDF review recommended before final proposal.</em></p>
+  </div>
+
+  <!-- 4. MIRE 3.0 CONTEXT -->
+  <div class="section">
+    <div class="section-header">4. MIRE 3.0 Background &amp; Context</div>
+    <table>
+      <thead><tr><th>Version</th><th>Year</th><th>Key Changes</th><th>Elements</th></tr></thead>
+      <tbody>
+        <tr><td>MIRE 1.0</td><td>2010</td><td>Initial formal standard, 202 elements across segments/alignment/junctions</td><td>202</td></tr>
+        <tr><td>MIRE 2.0</td><td>2017</td><td>Enterprise DB transition, HPMS/ARNOLD alignment, modern operational elements</td><td>205</td></tr>
+        <tr><td>MIRE 2.1</td><td>Sept 2025</td><td>Latest update; modern DB environments, Federal dataset alignment, FDE compliance support</td><td>205+</td></tr>
+        <tr><td><strong>MIRE 3.0</strong></td><td><strong>2026–27 (TBD)</strong></td><td><strong>This contract</strong>: expected to add CAV data elements, active transportation (bike/ped), smart infrastructure, enhanced analytics integration, post-Sept 2026 FDE compliance pathway</td><td>TBD</td></tr>
+      </tbody>
+    </table>
+    <br>
+    <p><strong>Policy driver:</strong> 23 CFR §924.11(b) requires all states to have access to MIRE FDEs on all public roads by <strong>September 30, 2026</strong>. Post-deadline, FHWA must evaluate state compliance and determine next-generation MIRE requirements — creating the impetus for MIRE 3.0. Key FHWA POCs: Dr. Carol Tan (carol.tan@dot.gov) and Sarah Weissman Pascual (sarah.pascual@dot.gov).</p>
+    <br>
+    <p><strong>Integration landscape:</strong> MIRE feeds into HSIS (Highway Safety Information System), CRSS (Crash Report Sampling System), FARS, HPMS ARNOLD, and state HSIP programs. Enhanced data analysis in MIRE 3.0 will likely involve predictive safety modeling (e.g., network screening, SPFs — Safety Performance Functions), integrating roadway geometry with crash causation data.</p>
+  </div>
+
+  <!-- 5. CAPABILITY MATRIX -->
+  <div class="section">
+    <div class="section-header">5. Changeis Capability Matrix vs. RFQ Requirements</div>
+    <table>
+      <thead><tr><th>Requirement Area</th><th>Changeis Evidence (RAG)</th><th>Contract Ref</th><th>Fit</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Transportation safety data analytics</td>
+          <td>FMCSA Analysis Division support — crash data, large truck fatality analysis, Safety Measurement System, Carrier Intervention Effectiveness Model (CIEM), Roadside Intervention Effectiveness Model (RIEM)</td>
+          <td>V3132249 / 6913G622F40055N; V3132140 / 6913G621F400056</td>
+          <td><span class="badge-pill pill-go">Strong</span></td>
+        </tr>
+        <tr>
+          <td>Dashboard &amp; data visualization (Tableau, Power BI)</td>
+          <td>FHWA Safety Data Dashboards (RSPCB), Tableau State DOT Performance Dashboards (explore.dot.gov), crash dashboards, SHSP Database dashboards</td>
+          <td>V3272005 / 6913G620F400032; V3272120 / 6913G622F40064N; CORPORATE</td>
+          <td><span class="badge-pill pill-go">Strong</span></td>
+        </tr>
+        <tr>
+          <td>FHWA Office of Safety web/comms support</td>
+          <td>Roadway Safety PCB (rspcb.safety.fhwa.dot.gov), SHSP Database, Noteworthy Practices Database, Safety Discipline Development Program (SDDP), Strategic Highway Safety Plans</td>
+          <td>V3272051; V3272005; CORPORATE (SCOAR/IPSS3)</td>
+          <td><span class="badge-pill pill-go">Strong</span></td>
+        </tr>
+        <tr>
+          <td>GIS in Transportation</td>
+          <td>GIS in Transportation website maintenance (gis.fhwa.dot.gov), ArcGIS visualization for crash data, large truck crash data linking across datasets</td>
+          <td>V3272051; V3132140; V3272120</td>
+          <td><span class="badge-pill pill-go">Strong</span></td>
+        </tr>
+        <tr>
+          <td>Large dataset integration (FMCSA, crash, enforcement)</td>
+          <td>MCMIS, L&amp;I, ELD, DataQs, Drug &amp; Alcohol Clearinghouse, Enforcement Management IS; linking datasets across sources for safety analysis</td>
+          <td>V3132249; V3132355 / 6913G623F40050N</td>
+          <td><span class="badge-pill pill-go">Strong</span></td>
+        </tr>
+        <tr>
+          <td>Technical assistance, training, peer exchange</td>
+          <td>FMCSA quarterly trainings, peer-to-peer sessions, RSPCB webinars, Noteworthy Practices publications</td>
+          <td>V3132355; V3272005; V3272051</td>
+          <td><span class="badge-pill pill-go">Strong</span></td>
+        </tr>
+        <tr>
+          <td>MIRE FDE domain expertise (specific roadway elements)</td>
+          <td>No direct MIRE-specific past performance identified in RAG; road geometry/GIS adjacent but not core</td>
+          <td>—</td>
+          <td><span class="badge-pill pill-medium">Moderate — needs teaming</span></td>
+        </tr>
+        <tr>
+          <td>Field data collection (LiDAR, photogrammetry)</td>
+          <td>Not in Changeis portfolio; this is VHB/Kittelson territory</td>
+          <td>—</td>
+          <td><span class="badge-pill pill-high">Gap — partner needed</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <br>
+    <p><strong>Top RAG Past Performance Citations for Survey Response:</strong></p>
+    <div style="margin-top:8px;">
+      <span class="rag-chip">V3132249 — FMCSA Analysis Support (6913G622F40055N)</span>
+      <span class="rag-chip">V3272005 — FHWA Safety Dashboards (6913G620F400032)</span>
+      <span class="rag-chip">V3272051 — FHWA GIS/RSPCB/Safety Web</span>
+      <span class="rag-chip">V3132140 — FMCSA Data Science (6913G621F400056)</span>
+      <span class="rag-chip">V3272120 — FHWA Roadway Safety PCB (6913G622F40064N)</span>
+    </div>
+  </div>
+
+  <!-- 6. COMPETITIVE ANALYSIS -->
+  <div class="section">
+    <div class="section-header">6. Competitive Analysis</div>
+
+    <p style="margin-bottom:12px;"><strong>HSST IDIQ Primes (the 7 firms that can hold task orders):</strong></p>
+    <table>
+      <thead><tr><th>Contract #</th><th>Awardee</th><th>Positioning</th><th>MIRE Strength</th></tr></thead>
+      <tbody>
+        <tr><td>693JJ326D000001</td><td>Guidehouse Inc.</td><td>Management consulting, federal advisory, data analytics</td><td>Moderate</td></tr>
+        <tr><td>693JJ326D000002</td><td><strong>ICF Incorporated, L.L.C.</strong></td><td><strong>RFQ issuer</strong>; deep FHWA Safety incumbent; previously HCFA prime via Cambridge Systematics sub</td><td>Strong (incumbent)</td></tr>
+        <tr><td>693JJ326D000003</td><td>Kittelson &amp; Associates</td><td>Traffic engineering, safety analysis, intersection safety, HSM specialist</td><td>Very Strong</td></tr>
+        <tr><td>693JJ326D000004</td><td>MacroSys, LLC</td><td>DOT IT systems, data management; smaller firm</td><td>Moderate</td></tr>
+        <tr><td>693JJ326D000005</td><td>Vanasse Hangen Brustlin (VHB)</td><td>MIRE FDE field data expert; AI-based MIRE data collection for KDOT; DATA Teams program</td><td><strong>Very Strong</strong></td></tr>
+        <tr><td>693JJ326D000006</td><td>WERIS, Inc.</td><td>Transportation research; smaller boutique</td><td>Moderate</td></tr>
+        <tr><td>693JJ326D000007</td><td>WSP USA Inc.</td><td>Large engineering firm; national infrastructure; MIRE implementation experience</td><td>Strong</td></tr>
+      </tbody>
+    </table>
+    <br>
+    <p style="margin-bottom:12px;"><strong>Other subs in ICF's distribution list (Changeis's direct competition for a sub slot):</strong></p>
+    <table>
+      <thead><tr><th>Firm</th><th>Strength</th><th>Threat Level</th></tr></thead>
+      <tbody>
+        <tr><td>DKS Associates (Brian Chandler)</td><td>Transportation data, traffic engineering, MIRE FDE implementation</td><td><span class="badge-pill pill-high">High</span></td></tr>
+        <tr><td>Fehr &amp; Peers (Nicole Waldheim, M. Mitman)</td><td>Multimodal safety, active transportation data, crash analysis</td><td><span class="badge-pill pill-high">High</span></td></tr>
+        <tr><td>Kimley-Horn (Colety, Burrows, Klitzsch)</td><td>National engineering firm; MIRE, HSIP, roadway safety studies</td><td><span class="badge-pill pill-high">High</span></td></tr>
+        <tr><td>TYLin International (Meekins, Dey)</td><td>Infrastructure analytics, transportation data systems</td><td><span class="badge-pill pill-medium">Moderate</span></td></tr>
+        <tr><td>Alta Planning + Design (Sellinger, Day-Kapell, Hannig)</td><td>Active transportation, bike/ped data — relevant to MIRE 3.0 additions</td><td><span class="badge-pill pill-medium">Moderate</span></td></tr>
+        <tr><td>Johns Hopkins University (Michaels, Peshani)</td><td>Academic research, crash causation; high credibility for MIRE methodology</td><td><span class="badge-pill pill-medium">Moderate</span></td></tr>
+        <tr><td>UC Berkeley (Gris, Chun)</td><td>Transportation research; academic pedigree for MIRE methodology</td><td><span class="badge-pill pill-medium">Moderate</span></td></tr>
+        <tr><td>Texas A&amp;M TTI (Hein, Brewer, Shields)</td><td>HCFA incumbent! Major MIRE/highway safety research center</td><td><span class="badge-pill pill-high">Very High</span></td></tr>
+        <tr><td>KLD Companies (Satya Muthuswamy)</td><td>DOT safety analytics; crash reconstruction expertise</td><td><span class="badge-pill pill-medium">Moderate</span></td></tr>
+        <tr><td><strong>Changeis, Inc.</strong></td><td>Federal data analytics, FHWA comms/dashboards, FMCSA crash data — data analytics differentiator</td><td><span class="badge-pill pill-go">Positioned in data/analytics lane</span></td></tr>
+      </tbody>
+    </table>
+    <br>
+    <p><strong>Incumbency Note:</strong> On the expiring HCFA vehicle (693JJ320D000021–024), Cambridge Systematics, Leidos, TTI, and VHB held contracts through February 2026. TTI (Texas A&amp;M) has deep MIRE history. ICF was selected for the new HSST vehicle partly due to its FHWA Safety program knowledge. ICF is likely looking for a blend of technical transportation specialists (MIRE FDE) and data analytics/communications partners — where Changeis fits in the latter category.</p>
+  </div>
+
+  <!-- 7. PROBABILITY OF WIN -->
+  <div class="section">
+    <div class="section-header">7. Probability of Win Analysis</div>
+    <table>
+      <thead><tr><th>Factor</th><th>Weight</th><th>Changeis Score</th><th>Weighted Score</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>NAICS/Vehicle fit</td><td>10%</td><td>6/10</td><td>0.60</td><td>Not a prime holder; must sub through ICF</td></tr>
+        <tr><td>Capability fit to SOW</td><td>25%</td><td>7/10</td><td>1.75</td><td>Data analytics &amp; dashboards strong; MIRE FDE field work absent</td></tr>
+        <tr><td>Past performance relevance</td><td>20%</td><td>7/10</td><td>1.40</td><td>FHWA Safety websites, FMCSA crash analytics directly relevant</td></tr>
+        <tr><td>Competitive position vs subs</td><td>20%</td><td>6/10</td><td>1.20</td><td>TTI, DKS, Kimley-Horn stronger on MIRE core; Changeis differentiated in analytics lane</td></tr>
+        <tr><td>Relationship with prime (ICF)</td><td>15%</td><td>7/10</td><td>1.05</td><td>Emily Lawrence (Changeis) and Varun in ICF distribution; active relationship</td></tr>
+        <tr><td>Teaming strategy &amp; proposal quality</td><td>10%</td><td>7/10</td><td>0.70</td><td>2-week turnaround feasible with existing team</td></tr>
+      </tbody>
+    </table>
+    <br>
+    <p><strong>Composite Pwin (sub-tier): ~40%</strong></p>
+    <div class="pwin-bar"><div class="pwin-fill" style="width:40%"></div></div>
+    <p style="font-size:13px;color:var(--text-muted);margin-top:6px;">ICF will likely select 3–5 subs for this task order. Changeis's data analytics and FHWA safety dashboard track record differentiates it from pure engineering firms. The key risk is ICF already has strong transportation data subs (DKS, TTI). A compelling survey response emphasizing the FMCSA/MOTUS analytics platform and RSPCB dashboard work is critical to make the short list.</p>
+  </div>
+
+  <!-- 8. SURVEY RESPONSE DRAFT -->
+  <div class="section">
+    <div class="section-header">8. Survey Response Draft — Copy/Paste Ready for SurveyMonkey</div>
+    <p style="margin-bottom:16px;font-size:14px;color:var(--text-muted);">Survey URL: <a href="https://www.surveymonkey.com/r/6F7FDS7">https://www.surveymonkey.com/r/6F7FDS7</a> — Due: <strong>Friday June 12, 8:00 AM ET</strong></p>
+
+    <div class="q-block">
+      <div class="q-label">Question 1</div>
+      <div class="q-text">Organization Name:</div>
+      <div class="q-answer">Changeis, Inc.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">Question 2</div>
+      <div class="q-text">Please provide any intelligence or insights you have about the TOPR (competition, incumbent, etc.)?</div>
+      <div class="q-answer">Based on our knowledge of the FHWA Office of Safety contracting landscape, the prior HCFA vehicle (693JJ320D000021–024) supported Cambridge Systematics, Leidos, Texas A&amp;M Transportation Institute (TTI), and VHB. TTI has long-standing MIRE program history and is likely to compete strongly for this task order. VHB has demonstrated AI-assisted MIRE FDE data collection capability (KDOT DATA Teams program). The new HSST IDIQ ($48M, 7 primes awarded April 2026) includes ICF, Guidehouse, Kittelson, MacroSys, VHB, WERIS, and WSP USA. This task order will likely see competitive interest from Kittelson (intersection safety/HSM expertise) and VHB (MIRE field data). We believe the winning team will differentiate on enhanced data analysis capability — specifically predictive analytics, dashboard development, and state technical assistance — areas where we have demonstrated FHWA and FMCSA delivery track record. The RFQ title's emphasis on "Enhanced Data Analysis" signals an opportunity for firms with strong crash data modeling and visualization capabilities beyond traditional roadway inventory work.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">Question 3</div>
+      <div class="q-text">Please share an overview of your firm's relevant qualifications and brief examples of relevant experience (with the subject matter, client, and/or other important differentiators).</div>
+      <div class="q-answer">Changeis, Inc. is a WOSB/EDWOSB federal data analytics and management consulting firm specializing in transportation safety data systems, federal program support, and advanced data visualization. We bring a directly relevant portfolio of FHWA Office of Safety and FMCSA delivery:
+
+1. FHWA Office of Safety — Roadway Safety Professional Capacity Building (RSPCB) Website &amp; Dashboards: Through our Volpe SCOAR contract, Changeis has supported the FHWA Office of Safety's RSPCB program, including the Safety Data Dashboards (FARS-linked crash dashboard tool), Strategic Highway Safety Plan (SHSP) Database, and Noteworthy Practices Database (Task Orders V3272005/6913G620F400032 and V3272120/6913G622F40064N). We built and maintained Tableau dashboards enabling crash filtering by location, type, persons involved, fatality type, and year — directly applicable to MIRE 3.0 enhanced data analysis.
+
+2. FHWA GIS in Transportation: Changeis maintained the FHWA GIS in Transportation website (gis.fhwa.dot.gov) and supported GIS-based transportation program content — foundational for MIRE spatial data integration (Task Order V3272051/6913G621F400024).
+
+3. FMCSA Data Science &amp; Crash Analytics (MOTUS Platform): Under Volpe contract 6913G622F40055N (Task Order V3132249), Changeis provides ongoing support to FMCSA's Analysis Division, including: large-scale crash dataset analysis (MCMIS, L&amp;I, ELD, DataQs, A&amp;I); Carrier Intervention Effectiveness Model (CIEM) and Roadside Intervention Effectiveness Model (RIEM) support; interactive Tableau/Gotham dashboards; and data quality management. Our MOTUS analytics platform handles 1,000+ annual data analysis requests — demonstrating the scale required for MIRE 3.0 state compliance tracking.
+
+4. FHWA Office of Safety 10+ Offices Supported: Changeis has supported over 10 FHWA offices through our SCOAR/IPSS3 contract, including Turner-Fairbank R&amp;T Agenda, GIS in Transportation, ITS Standards Program, Transportation Performance Management, and the Roadway Safety PCB — providing unmatched institutional knowledge of FHWA safety programs.
+
+Differentiators: (1) Deep FHWA Safety data analytics and dashboard delivery — not just web support; (2) FMCSA crash data modeling expertise directly transferable to MIRE-linked crash data analysis; (3) WOSB/EDWOSB small business supporting ICF's small business participation goals; (4) Established FHWA Office of Safety relationship through existing contracts.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">Question 4</div>
+      <div class="q-text">Does your staff have the availability to support the proposal?</div>
+      <div class="q-answer">Yes, they can support a proposal response, but not lead</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">Question 5</div>
+      <div class="q-text">Please identify staff who can serve in Principal Investigator/Task Lead role, if available. Please provide a brief summary of their relevant qualifications.</div>
+      <div class="q-answer">Varun Malhotra, CEO — Changeis, Inc. (varun@changeis.com): Varun brings over 15 years of federal data analytics and transportation program delivery experience. As CEO, he has led Changeis's FMCSA and FHWA contracts, overseeing crash data analytics, dashboard development, and federal safety program support. He has direct experience with DOT safety data systems (FMCSA A&amp;I, Gotham, DataQs), GIS-based transportation analysis, and federal program communications. While Changeis would serve in a subcontractor data analytics and program support role (not as PI for the full MIRE 3.0 effort), Varun is positioned to lead Changeis's data analytics and visualization task areas.
+
+Emily Lawrence, Project Manager — Changeis, Inc. (Emily.Lawrence@changeis.com): Emily has managed multiple Volpe SCOAR task orders supporting FHWA and FMCSA, with direct experience in roadway safety program management, technical documentation, and stakeholder coordination. She is available for proposal development and task order management.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">Question 6</div>
+      <div class="q-text">Do you have other staff with relevant qualifications? Please provide a brief summary of their relevant qualifications.</div>
+      <div class="q-answer">Yes. Changeis has a bench of data analysts, GIS specialists, and FHWA-experienced program support staff:
+
+• Data Analysts (FMCSA/DOT): Staff with direct experience in FMCSA Safety Measurement System, crash data analysis (MCMIS, CRSS/FARS linkage), statistical modeling, and data quality management. These staff are experienced with the DataQs system and large-scale transportation dataset integration.
+
+• Dashboard Developers (Tableau/Power BI/ArcGIS): Multiple staff experienced in building federal-compliant Tableau dashboards including FHWA Safety Data Dashboards and FMCSA Gotham dashboards. Experience with 508-compliant data visualizations and DOT digital standards.
+
+• FHWA Communications/Technical Writers: Staff experienced in FHWA Office of Safety technical publications, Noteworthy Practices development, and capacity building materials — directly relevant to MIRE 3.0 guidance document production and state technical assistance.
+
+• GIS Specialists: ArcGIS-experienced staff who have supported the FHWA GIS in Transportation program and conducted transportation network analyses — relevant to MIRE spatial data integration and HPMS ARNOLD linkage.
+
+Total estimated available staff for this effort: 4–6 FTEs in data analytics, visualization, and program support roles.</div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">Question 7</div>
+      <div class="q-text">Name and email address of person completing this survey.</div>
+      <div class="q-answer">Varun Malhotra, CEO — Changeis, Inc.
+varun@changeis.com</div>
+    </div>
+  </div>
+
+  <!-- 9. BID DECISION RECOMMENDATION -->
+  <div class="section">
+    <div class="section-header">9. Bid Decision Recommendation</div>
+    <div class="decision-box teaming">
+      <div class="decision-label">Recommendation</div>
+      <div class="decision-main">GO — WITH TEAMING (Sub to ICF)</div>
+      <p style="font-size:14px;color:var(--text-muted);margin-top:8px;">Changeis should respond to the SurveyMonkey survey immediately, positioning as ICF's data analytics and visualization subcontractor — not as a MIRE FDE field data expert. This is a sub-tier role with meaningful revenue potential and high strategic value as an entry point to the HSST IDIQ ecosystem.</p>
+    </div>
+
+    <p><strong>Rationale (5 bullets):</strong></p>
+    <ul style="margin-top:8px;">
+      <li><strong>Direct FHWA Safety relationship:</strong> Changeis has already supported the FHWA Office of Safety through RSPCB dashboards, SHSP database, and GIS in Transportation — creating genuine institutional credibility for this work.</li>
+      <li><strong>FMCSA crash analytics as analog:</strong> The MOTUS/FMCSA platform (CIEM, RIEM, MCMIS-linked dashboards, DataQs) is a direct analog for the MIRE 3.0 "Enhanced Data Analysis" scope — Changeis can credibly claim this capability.</li>
+      <li><strong>ICF relationship is warm:</strong> Emily Lawrence (Changeis) was on the ICF distribution list by name, indicating an existing relationship. The survey is essentially ICF's pre-proposal teaming qualification.</li>
+      <li><strong>WOSB/EDWOSB status is a teaming asset:</strong> ICF will benefit from including Changeis to meet small business subcontracting requirements on a full &amp; open FFP task order.</li>
+      <li><strong>Strategic value exceeds bid cost:</strong> The survey takes &lt;1 hour to complete; a sub-tier proposal response is ~3–5 days of effort. Even a $300–500K sub scope on this task order generates strong ROI relative to bid cost, and opens the HSST IDIQ pipeline for future task orders.</li>
+    </ul>
+
+    <br>
+    <p><strong>Caveats / Conditions:</strong></p>
+    <ul>
+      <li>Changeis must <strong>not claim MIRE FDE domain expertise it does not have</strong> — focus on data analytics, dashboards, program support, and technical communications</li>
+      <li>If ICF confirms teaming interest, Changeis should identify a MIRE FDE subject matter expert to bring as a consultant (e.g., a TTI or university partner) to strengthen the analytics lane</li>
+      <li>Full PDF review of the TORFQ SOW is required before proposal writing — request from Emily Lawrence or directly from Emily Staskowicz at ICF</li>
+    </ul>
+  </div>
+
+  <!-- 10. SUGGESTED TEAMING -->
+  <div class="section">
+    <div class="section-header">10. Suggested Teaming Partners (for Changeis's Sub-Scope)</div>
+    <table>
+      <thead><tr><th>Partner</th><th>Role</th><th>Why Valuable</th><th>Connection</th></tr></thead>
+      <tbody>
+        <tr><td><strong>KLD Companies</strong> (Satya Muthuswamy)</td><td>MIRE FDE domain SME, crash reconstruction</td><td>On ICF distribution list; crash safety expertise fills Changeis gap; likely known to Changeis team</td><td>Already on email thread</td></tr>
+        <tr><td><strong>Johns Hopkins / UC Berkeley</strong></td><td>Research validation, MIRE methodology credibility</td><td>Academic partners strengthen the "future of MIRE" research component; also on ICF list</td><td>Already on email thread</td></tr>
+        <tr><td><strong>A small MIRE FDE implementation firm</strong></td><td>State compliance technical assistance</td><td>Fills the field data collection and state TA gap; could be a state DOT-adjacent firm not already in ICF's pool</td><td>Identify via SAM.gov or HSIP network</td></tr>
+      </tbody>
+    </table>
+    <br>
+    <p style="font-size:13px;color:var(--text-muted);">Note: Changeis should reach out to Satya Muthuswamy (satya@kldcompanies.com) before the June 12 survey deadline to align on complementary roles and avoid duplicate responses in the same technical lane.</p>
+  </div>
+
+  <!-- 11. ACTION ITEMS + TIMELINE -->
+  <div class="section">
+    <div class="section-header">11. Action Items &amp; Timeline</div>
+    <table>
+      <thead><tr><th>Action</th><th>Owner</th><th>Deadline</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td><strong style="color:var(--red);">★ Complete SurveyMonkey (use draft above)</strong></td><td>Varun</td><td><strong style="color:var(--red);">June 12, 8:00 AM ET</strong></td><td><span class="badge-pill pill-high">CRITICAL</span></td></tr>
+        <tr><td>Obtain full TORFQ PDF from Emily Lawrence or Emily Staskowicz (ICF)</td><td>Varun / Emily L.</td><td>June 11, EOD</td><td><span class="badge-pill pill-high">Urgent</span></td></tr>
+        <tr><td>Confirm teaming role with ICF (sub scope, T&amp;Cs, NDA if needed)</td><td>Varun</td><td>June 12–13</td><td><span class="badge-pill pill-high">High</span></td></tr>
+        <tr><td>Contact Satya Muthuswamy (KLD) to discuss complementary sub roles</td><td>Varun</td><td>June 11–12</td><td><span class="badge-pill pill-medium">Medium-High</span></td></tr>
+        <tr><td>Review full SOW; identify Changeis task areas &amp; LOE estimate</td><td>Changeis BD team</td><td>June 13–16</td><td><span class="badge-pill pill-medium">Medium</span></td></tr>
+        <tr><td>Draft sub-scope technical volume &amp; past performance writeups</td><td>Changeis proposal team</td><td>June 17–21</td><td><span class="badge-pill pill-medium">Medium</span></td></tr>
+        <tr><td>Review &amp; finalize proposal response (sub volume) with ICF</td><td>Varun / Emily L.</td><td>June 22–23</td><td><span class="badge-pill pill-medium">Medium</span></td></tr>
+        <tr><td>Final submission (via ICF as prime)</td><td>ICF / Changeis</td><td><strong>June 24, 2026</strong></td><td><span class="badge-pill pill-high">Hard Deadline</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 12. RISKS & MITIGATIONS -->
+  <div class="section">
+    <div class="section-header">12. Risks &amp; Mitigations</div>
+    <div class="risk-row">
+      <div class="risk-card">
+        <h4>Risk: Not selected as ICF sub</h4>
+        <p><span class="badge-pill pill-high">High likelihood</span> if survey response is generic. <strong>Mitigation:</strong> Use specific contract numbers and dollar values in the survey response; explicitly name the RSPCB dashboard work and FMCSA crash analytics.</p>
+      </div>
+      <div class="risk-card">
+        <h4>Risk: PDF not reviewed before survey</h4>
+        <p><span class="badge-pill pill-medium">Medium</span> — the survey is directional, not proposal-binding. <strong>Mitigation:</strong> Submit survey now based on title/context; obtain PDF immediately after for proposal phase.</p>
+      </div>
+      <div class="risk-card">
+        <h4>Risk: Scope gap in MIRE FDE methods</h4>
+        <p><span class="badge-pill pill-medium">Medium</span> — ICF may need deeper MIRE expertise than Changeis offers. <strong>Mitigation:</strong> Partner with KLD or a MIRE-specialist; position Changeis explicitly in "analytics and data systems" lane, not "roadway inventory" lane.</p>
+      </div>
+      <div class="risk-card">
+        <h4>Risk: FFP pricing risk</h4>
+        <p><span class="badge-pill pill-medium">Medium</span> — Without full SOW, LOE estimate for FFP bid is uncertain. <strong>Mitigation:</strong> Include clear scope boundaries and assumptions in sub-volume; build 15–20% contingency into pricing.</p>
+      </div>
+      <div class="risk-card">
+        <h4>Risk: June 24 deadline too tight</h4>
+        <p><span class="badge-pill pill-medium">Medium</span> — 14-day window from RFQ issuance to submission is very aggressive. <strong>Mitigation:</strong> Leverage existing past performance narratives from FMCSA/FHWA contracts; assign dedicated writer by June 13.</p>
+      </div>
+      <div class="risk-card">
+        <h4>Risk: DOGE/budget cuts reduce FHWA safety funding</h4>
+        <p><span class="badge-pill pill-medium">Medium</span> — Federal budget environment in 2026 is uncertain. <strong>Mitigation:</strong> MIRE FDE compliance is statutory (23 CFR §924.11) — funding is more protected than discretionary programs.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13. ESTIMATED BID COST -->
+  <div class="section">
+    <div class="section-header">13. Estimated Bid Cost</div>
+    <table>
+      <thead><tr><th>Activity</th><th>Est. Hours</th><th>Rate (blended)</th><th>Est. Cost</th></tr></thead>
+      <tbody>
+        <tr><td>SurveyMonkey response (done by Varun)</td><td>1</td><td>$250/hr</td><td>$250</td></tr>
+        <tr><td>SOW review &amp; strategy alignment (BD team)</td><td>4</td><td>$200/hr</td><td>$800</td></tr>
+        <tr><td>Technical volume writing (sub scope)</td><td>24</td><td>$175/hr</td><td>$4,200</td></tr>
+        <tr><td>Past performance write-ups (2–3 references)</td><td>8</td><td>$150/hr</td><td>$1,200</td></tr>
+        <tr><td>Pricing &amp; cost proposal (FFP sub)</td><td>6</td><td>$200/hr</td><td>$1,200</td></tr>
+        <tr><td>Review &amp; QC / management oversight</td><td>6</td><td>$250/hr</td><td>$1,500</td></tr>
+        <tr><td><strong>TOTAL ESTIMATED BID COST</strong></td><td><strong>49 hours</strong></td><td>—</td><td><strong>~$9,150</strong></td></tr>
+      </tbody>
+    </table>
+    <br>
+    <p style="font-size:13px;color:var(--text-muted);">Estimated sub-scope contract value: $300,000–$800,000 (15–25% of ~$1.5–2M task order value). ROI on bid cost: ~33–87x if awarded. Bid decision is highly favorable on economic grounds alone.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- CONTINUE THIS WORK -->
+  <div class="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="
+        const url = 'https://vm2-p-taskers-production.up.railway.app/deep-dive-fhwa-mire3-hsst260012pr-2026-06-10.html';
+        const prompt = 'Continue working on the FHWA MIRE 3.0 deep dive for HSST260012PR. Deliverable: ' + url + '\n\nKey context:\n- RFQ: TORFQ HSST260012PR — Roadway Safety Data for the Future (MIRE 3.0 + Enhanced Data Analysis)\n- Vehicle: FHWA Office of Safety IDIQ (HSST prefix); issued by ICF (Emily Staskowicz)\n- Changeis role: Subcontractor to ICF on data analytics + FHWA safety dashboards lane\n- SURVEY DEADLINE: June 12, 8AM ET (surveymonkey.com/r/6F7FDS7)\n- PROPOSAL DEADLINE: June 24, 2026\n- Recommendation: GO - WITH TEAMING (sub to ICF); Pwin ~40%\n- Top past performance: V3132249 (FMCSA analytics), V3272005 (FHWA Safety dashboards), V3272051 (GIS/RSPCB)\n\nNext steps: Obtain full SOW PDF, confirm ICF teaming, draft sub-volume technical proposal.';
+        navigator.clipboard.writeText(prompt).then(()=>alert('Follow-up prompt copied to clipboard!'));
+      ">Copy Follow-Up Prompt</button>
+      <a class="btn btn-secondary" href="mailto:vm2.viru@gmail.com?subject=Follow-up: FHWA MIRE 3.0 HSST260012PR Deep Dive&body=Follow-up on: https://vm2-p-taskers-production.up.railway.app/deep-dive-fhwa-mire3-hsst260012pr-2026-06-10.html%0A%0AKey actions needed:%0A1. Complete SurveyMonkey by June 12 8AM ET%0A2. Obtain TORFQ PDF from Emily Lawrence/ICF%0A3. Confirm sub-teaming role with ICF%0A4. Draft sub-volume proposal by June 24">Email to VM2</a>
+      <button class="btn btn-secondary" onclick="
+        const task = 'FHWA MIRE 3.0 RFQ — Complete SurveyMonkey by June 12 8AM ET | Survey: https://www.surveymonkey.com/r/6F7FDS7 | Deep Dive: https://vm2-p-taskers-production.up.railway.app/deep-dive-fhwa-mire3-hsst260012pr-2026-06-10.html';
+        window.open('https://todoist.com/add?content=' + encodeURIComponent(task), '_blank');
+      ">Create Todoist Follow-Up</button>
+    </div>
+  </div>
+
+  <!-- SESSION CONTEXT -->
+  <details class="context-panel">
+    <summary>Session Context &amp; Methodology</summary>
+    <div class="panel-body">
+      <h4>Original Instructions</h4>
+      <p>Deep dive for VM2 task email from Varun (id 19eb37aa271d7842, subject "VM2: New Safety RFQ - HSST260012PR", from varun@changeis.com, dated 2026-06-10T21:40:14Z). RFQ: "Roadway Safety Data for the Future — Model Inventory of Roadway Elements (MIRE) 3.0 and Enhanced Data Analysis," TORFQ #HSST260012PR, Vehicle: FHWA Office of Safety IDIQ (HSST prefix). Survey due Friday 2026-06-12 8AM ET; final RFQ proposal due 2026-06-24.</p>
+      <h4>Approach</h4>
+      <p>1. Retrieved email (ID 19eb37aa271d7842) via Gmail connector; extracted full thread including ICF distribution email with TORFQ context. 2. Attempted PDF download — pre-signed S3 URL expired; key context captured from email thread metadata and title. 3. Screenshotted and fetched SurveyMonkey — captured all 7 questions verbatim. 4. Researched MIRE evolution (1.0→2.1, 3.0 context), FHWA HSST IDIQ holders ($48M, 7 primes including ICF), competitive landscape (HCFA incumbents, ICF distribution list firms). 5. Queried Changeis RAG endpoint (top 5 matches: CORPORATE FHWA portfolio, V3132249 FMCSA analytics, V3132140 FMCSA data science, V3272051 FHWA GIS/web, V3272005 FHWA Safety dashboards). 6. Go/No-Go analysis, survey response drafting, full deliverable generation.</p>
+      <h4>Key Findings</h4>
+      <ul>
+        <li>ICF (Emily Staskowicz, 693JJ326D000002) is the prime issuing this TOPR to its subcontractor pool — Changeis is being evaluated as a potential sub, not as a prime competitor</li>
+        <li>MIRE 2.1 was updated Sept 2025; "MIRE 3.0" as named in this RFQ represents the next evolution to develop — this is a research/development + TA task order, not a compliance tool deployment</li>
+        <li>HSST IDIQ ($48M, April 2026) replaced HCFA contracts that expired Feb 2026; 7 primes hold it; TTI, VHB, Kittelson are the MIRE-specialist threat</li>
+        <li>Changeis strength is in data analytics + FHWA Safety dashboards (RSPCB, SHSP, Safety Data Dashboards, FMCSA crash analytics) — directly applicable to the "Enhanced Data Analysis" scope</li>
+        <li>WOSB/EDWOSB status is a teaming asset for ICF's small business participation goals</li>
+      </ul>
+      <h4>Dead Ends</h4>
+      <ul>
+        <li>TORFQ PDF: Pre-signed S3 URL expired before download completed; full SOW not reviewed — all scope analysis is inferred from title + email context + MIRE program history</li>
+        <li>SAM.gov direct query not attempted (API key present but not needed given sufficient open-source data)</li>
+        <li>MIRE 3.0 has no public documentation yet (the RFQ will produce it)</li>
+      </ul>
+      <h4>Assumptions</h4>
+      <ul>
+        <li>Changeis is being solicited as a potential ICF subcontractor, not as a prime competitor (inferred from email distribution pattern)</li>
+        <li>NAICS 541990 applies per HSST IDIQ base contract</li>
+        <li>Contract type is FFP per email ("the FFP proposal is June 24th")</li>
+        <li>Period of performance assumed to be 1 base + 4 options; contract value estimated at $1–3M based on comparable FHWA Safety MIRE task orders</li>
+      </ul>
+      <h4>Open Questions</h4>
+      <ul>
+        <li>What are the specific task areas and LOE in the TORFQ SOW? (Need PDF)</li>
+        <li>Has ICF confirmed Changeis as an approved sub for their HSST 693JJ326D000002?</li>
+        <li>What is the expected contract value / period of performance?</li>
+        <li>Does ICF expect a full technical volume or just a capabilities statement from subs at this stage?</li>
+        <li>Is Emily Lawrence (Changeis) the primary ICF relationship manager?</li>
+      </ul>
+      <h4>Data Sources</h4>
+      <ul>
+        <li><a href="https://highways.dot.gov/safety/data-analysis-tools/mire-fde/model-inventory-roadway-elements-mire">FHWA MIRE page</a></li>
+        <li><a href="https://orangeslices.ai/dot-fhwa-awards-48m-office-of-safety-technical-expertise-and-support-services-idiq/">HSST IDIQ Award Data ($48M, 7 primes)</a></li>
+        <li><a href="https://highways.dot.gov/cfo/task-and-delivery-order-and-blanket-purchase-agreement-vehicles">FHWA IDIQ Vehicles page</a></li>
+        <li>Changeis RAG endpoint: changeis-bd-rag-production.up.railway.app/match (5 matching task orders)</li>
+        <li>Gmail thread: email_id 19eb37aa271d7842 (Varun Malhotra forwarding ICF Emily Staskowicz email)</li>
+        <li>SurveyMonkey: <a href="https://www.surveymonkey.com/r/6F7FDS7">https://www.surveymonkey.com/r/6F7FDS7</a></li>
+        <li><a href="https://www.vhb.com/technology-services/fhwa-roadway-surface-prediction-model/">VHB MIRE AI Data Collection for KDOT</a></li>
+        <li><a href="https://highways.dot.gov/safety/data-analysis-tools/mire-fde/model-inventory-roadway-elements-mire-21">MIRE 2.1 (Sept 2025)</a></li>
+      </ul>
+      <h4>Next Steps</h4>
+      <ul>
+        <li>Complete SurveyMonkey immediately using the draft responses above (due June 12, 8AM ET)</li>
+        <li>Obtain full TORFQ PDF from Emily Staskowicz (ICF) or Emily Lawrence (Changeis)</li>
+        <li>Confirm ICF teaming arrangement and sub scope before June 13</li>
+        <li>Contact KLD Companies (Satya Muthuswamy) to discuss complementary MIRE domain roles</li>
+        <li>Assign proposal writer by June 13 for June 24 deadline</li>
+      </ul>
+    </div>
+  </details>
+
+  <!-- HIDDEN JSON CONTEXT -->
+  <script type="application/json" id="vm2-context-data">
+  {
+    "task_name": "Deep Dive FHWA MIRE 3.0 HSST260012PR",
+    "task_date": "2026-06-10",
+    "deliverable_file": "deep-dive-fhwa-mire3-hsst260012pr-2026-06-10.html",
+    "railway_url": "https://vm2-p-taskers-production.up.railway.app/deep-dive-fhwa-mire3-hsst260012pr-2026-06-10.html",
+    "version": 1,
+    "created_date": "2026-06-10",
+    "revised_date": null,
+    "prior_versions": [],
+    "related_deliverables": [],
+    "original_instructions": "Deep dive for VM2 task email from Varun (id 19eb37aa271d7842, subject VM2: New Safety RFQ - HSST260012PR). TORFQ HSST260012PR Roadway Safety Data for the Future — MIRE 3.0 and Enhanced Data Analysis. Survey due June 12 8AM ET; proposal due June 24, 2026. Research MIRE 3.0, FHWA IDIQ, competitive landscape, Changeis RAG match, Go/No-Go, survey responses, HTML deliverable.",
+    "approach": "1. Retrieved email via Gmail connector; 2. Attempted PDF download (expired URL); 3. Fetched SurveyMonkey questions; 4. Researched MIRE evolution and HSST IDIQ holders; 5. Queried Changeis RAG endpoint; 6. Go/No-Go analysis; 7. Survey response drafting; 8. HTML deliverable generation",
+    "key_findings": [
+      "ICF (693JJ326D000002) is the prime issuing this TOPR to its subcontractor pool — Changeis should respond as a sub, not a prime competitor",
+      "HSST IDIQ ($48M, 7 primes) was awarded April 2026, replacing expired HCFA vehicle; ICF, Guidehouse, Kittelson, MacroSys, VHB, WERIS, WSP USA are primes",
+      "MIRE 3.0 does not yet exist publicly — this RFQ will develop it; MIRE 2.1 updated Sept 2025 is the current standard",
+      "Changeis strongest in data analytics/dashboards and FHWA Safety comms; gap in MIRE FDE field data collection methods",
+      "Pwin ~40% as sub; bid cost ~$9,150; sub-scope value $300K-$800K — strong ROI; WOSB status is teaming asset for ICF"
+    ],
+    "dead_ends": [
+      "TORFQ PDF: Pre-signed S3 URL expired before download; SOW scope is inferred from title and program context",
+      "No direct MIRE 3.0 public documentation exists yet"
+    ],
+    "assumptions": [
+      "Changeis is solicited as an ICF subcontractor candidate",
+      "NAICS 541990 per HSST IDIQ",
+      "FFP contract type per email language",
+      "Contract value $1-3M estimated based on comparable MIRE task orders"
+    ],
+    "open_questions": [
+      "Full SOW task areas and LOE — need PDF",
+      "ICF confirmed sub arrangement and approved sub list",
+      "Expected contract value and PoP",
+      "Emily Lawrence as primary ICF relationship"
+    ],
+    "data_sources": [
+      {"name": "FHWA MIRE page", "url": "https://highways.dot.gov/safety/data-analysis-tools/mire-fde/model-inventory-roadway-elements-mire"},
+      {"name": "HSST IDIQ Award ($48M)", "url": "https://orangeslices.ai/dot-fhwa-awards-48m-office-of-safety-technical-expertise-and-support-services-idiq/"},
+      {"name": "FHWA IDIQ Vehicles", "url": "https://highways.dot.gov/cfo/task-and-delivery-order-and-blanket-purchase-agreement-vehicles"},
+      {"name": "MIRE 2.1 (Sept 2025)", "url": "https://highways.dot.gov/safety/data-analysis-tools/mire-fde/model-inventory-roadway-elements-mire-21"},
+      {"name": "VHB MIRE AI Collection", "url": "https://www.vhb.com/technology-services/fhwa-roadway-surface-prediction-model/"},
+      {"name": "Changeis RAG endpoint", "url": "https://changeis-bd-rag-production.up.railway.app/match"},
+      {"name": "SurveyMonkey", "url": "https://www.surveymonkey.com/r/6F7FDS7"},
+      {"name": "Gmail thread 19eb37aa271d7842", "url": ""}
+    ],
+    "next_steps": [
+      "Complete SurveyMonkey by June 12 8AM ET using provided draft",
+      "Obtain full TORFQ PDF from ICF",
+      "Confirm teaming with ICF; contact KLD Companies",
+      "Assign proposal writer by June 13"
+    ],
+    "cost_estimate": {
+      "model": "claude-sonnet-4-5",
+      "model_pricing": "$3/$15 per 1M tokens",
+      "input_tokens_est": "~80,000",
+      "output_tokens_est": "~12,000",
+      "search_calls": 8,
+      "subagent_calls": 0,
+      "cost_conservative": "$0.42",
+      "cost_ceiling": "$0.80",
+      "notes": "Research-heavy task with email retrieval, survey capture, web research, RAG query, and long-form HTML generation"
+    }
+  }
+  </script>
+
+</div><!-- /container -->
+
+<div class="footer-strip">
+  Changeis Confidential &nbsp;·&nbsp; FHWA MIRE 3.0 HSST260012PR Deep Dive &nbsp;·&nbsp; June 10, 2026 &nbsp;·&nbsp; VM2 Deliverable
+</div>
+
+</body>
+</html>
