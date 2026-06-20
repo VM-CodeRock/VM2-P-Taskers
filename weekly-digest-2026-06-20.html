@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VM2 Weekly Digest — Week 25 (Jun 14–20, 2026)</title>
+<style>
+  :root {
+    --bg: #f6f8fc;
+    --card: #ffffff;
+    --card2: #f0f4fa;
+    --text: #111827;
+    --muted: #4b5563;
+    --accent: #0B2545;
+    --accent2: #1a4a8a;
+    --border: #e5e7eb;
+    --success: #166534;
+    --success-bg: #dcfce7;
+    --warn: #92400e;
+    --warn-bg: #fef3c7;
+    --fail: #991b1b;
+    --fail-bg: #fee2e2;
+    --info: #1e40af;
+    --info-bg: #dbeafe;
+    --topbar: #0B2545;
+  }
+  [data-theme="dark"] {
+    --bg: #0b0f16;
+    --card: #121a26;
+    --card2: #0f172a;
+    --text: #e7eefc;
+    --muted: #a8b6d6;
+    --border: #26324a;
+    --success: #86efac;
+    --success-bg: #14532d;
+    --warn: #fcd34d;
+    --warn-bg: #451a03;
+    --fail: #fca5a5;
+    --fail-bg: #450a0a;
+    --info: #93c5fd;
+    --info-bg: #1e3a5f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .topbar {
+    background: var(--topbar);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-brand { font-weight: 700; font-size: 17px; letter-spacing: .02em; }
+  .topbar-sub { font-size: 12px; opacity: .7; margin-top: 2px; }
+  .toggle-btn {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background .2s;
+  }
+  .toggle-btn:hover { background: rgba(255,255,255,.22); }
+  .container { max-width: 980px; margin: 0 auto; padding: 28px 20px 60px; }
+  .header-block {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+  }
+  .header-block h1 { margin: 0 0 8px; font-size: 26px; font-weight: 700; }
+  .header-meta { font-size: 13px; opacity: .78; display: flex; gap: 20px; flex-wrap: wrap; }
+  .header-meta span::before { content: "· "; }
+  .header-meta span:first-child::before { content: ""; }
+  .section { margin: 0 0 32px; }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 6px;
+    margin: 0 0 18px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  [data-theme="dark"] .section-title { color: #7eb3f7; border-color: #7eb3f7; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 0 0 16px;
+  }
+  .card h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; }
+  .exec-summary ul { margin: 0; padding-left: 20px; }
+  .exec-summary ul li { margin-bottom: 8px; }
+  .exec-summary ul li strong { color: var(--accent); }
+  [data-theme="dark"] .exec-summary ul li strong { color: #93c5fd; }
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin: 0 0 24px;
+  }
+  .kpi {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    text-align: center;
+  }
+  .kpi-number { font-size: 32px; font-weight: 800; color: var(--accent); }
+  [data-theme="dark"] .kpi-number { color: #7eb3f7; }
+  .kpi-label { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead tr { background: var(--card2); }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  tr:hover { background: var(--card2); }
+  td a { color: var(--accent2); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  [data-theme="dark"] td a { color: #7eb3f7; }
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-brief { background: #dbeafe; color: #1e40af; }
+  .badge-monitoring { background: #e0f2fe; color: #075985; }
+  .badge-deep-dive { background: #ede9fe; color: #5b21b6; }
+  .badge-compliance { background: #fef3c7; color: #92400e; }
+  .badge-report { background: #dcfce7; color: #166534; }
+  .badge-analysis { background: #f3e8ff; color: #6b21a8; }
+  [data-theme="dark"] .badge-brief { background: #1e3a5f; color: #93c5fd; }
+  [data-theme="dark"] .badge-monitoring { background: #0c3055; color: #7dd3fc; }
+  [data-theme="dark"] .badge-deep-dive { background: #2e1065; color: #c4b5fd; }
+  [data-theme="dark"] .badge-compliance { background: #451a03; color: #fcd34d; }
+  [data-theme="dark"] .badge-report { background: #14532d; color: #86efac; }
+  [data-theme="dark"] .badge-analysis { background: #2e1065; color: #d8b4fe; }
+  .alert {
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    font-size: 14px;
+  }
+  .alert-pass { background: var(--success-bg); color: var(--success); border: 1px solid rgba(22,101,52,.2); }
+  .alert-fail { background: var(--fail-bg); color: var(--fail); border: 1px solid rgba(153,27,27,.2); }
+  .alert-warn { background: var(--warn-bg); color: var(--warn); border: 1px solid rgba(146,64,14,.2); }
+  .alert-info { background: var(--info-bg); color: var(--info); border: 1px solid rgba(30,64,175,.2); }
+  .alert strong { font-weight: 700; }
+  .action-table tr.overdue td { background: #fff1f2; }
+  [data-theme="dark"] .action-table tr.overdue td { background: #450a0a22; }
+  .highlights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .highlight-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .highlight-card .hc-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
+  .highlight-card .hc-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .highlight-card .hc-body { font-size: 13px; color: var(--muted); }
+  .continue-panel {
+    background: var(--card);
+    border: 2px solid var(--accent);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin: 32px 0 0;
+  }
+  [data-theme="dark"] .continue-panel { border-color: #7eb3f7; }
+  .continue-panel h3 { margin: 0 0 12px; font-size: 16px; font-weight: 700; color: var(--accent); }
+  [data-theme="dark"] .continue-panel h3 { color: #93c5fd; }
+  .continue-panel .cp-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 16px; font-size: 13px; }
+  .continue-panel .cp-meta dt { font-weight: 600; color: var(--muted); margin-bottom: 2px; }
+  .continue-panel .cp-meta dd { margin: 0; }
+  .continue-panel pre { background: var(--card2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 12px; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
+  .continue-cta { background: var(--accent); color: #fff; border-radius: 8px; padding: 12px 18px; font-size: 14px; margin-top: 14px; }
+  [data-theme="dark"] .continue-cta { background: #1a4a8a; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  @media (max-width: 600px) {
+    .topbar { flex-wrap: wrap; gap: 10px; }
+    .header-block { padding: 20px; }
+    .header-block h1 { font-size: 20px; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="topbar-brand">VM2 · Perplexity Computer</div>
+    <div class="topbar-sub">Weekly Digest — Week 25</div>
+  </div>
+  <button class="toggle-btn" onclick="toggleTheme()">Toggle Dark/Light</button>
+</div>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header-block">
+    <h1>VM2 Weekly Digest — Week 25</h1>
+    <div class="header-meta">
+      <span>Jun 14–20, 2026</span>
+      <span>Created 2026-06-20</span>
+      <span>Revised —</span>
+      <span>Operations / VM2-P-Taskers</span>
+      <span>Est. Cost: $6.50</span>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-number">23</div>
+      <div class="kpi-label">Total Commits</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-number">12</div>
+      <div class="kpi-label">Portal Deliverables</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-number">4</div>
+      <div class="kpi-label">FMCSA Issues</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-number">4</div>
+      <div class="kpi-label">Rule 6 Failures (Remediated)</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-number">9</div>
+      <div class="kpi-label">Action Items Carry-Fwd</div>
+    </div>
+  </div>
+
+  <!-- Executive Summary -->
+  <div class="section">
+    <div class="section-title">Executive Summary</div>
+    <div class="card exec-summary">
+      <ul>
+        <li><strong>MAPS Amendments 0009 / 0010:</strong> Army MAPS recompete entered a critical amendment cycle. A SAM clarification on Jun 16 loosened scorecard item #6 footnote; Amendment 0010 (republished Jun 19) carries a revised response deadline of Mon Jun 22, 12 PM ET. Bid/no-bid remains open.</li>
+        <li><strong>DOT eBuy RFI1817956 Deep Dive:</strong> Jun 17 user-requested analysis of the Department of Transportation eBuy economic development RFI. Capability statement due Thu Jun 26, 5 PM ET. eBuy ledger tracked 37 new events across the week (Jun 14–19).</li>
+        <li><strong>GSA GSAR LLM Clause &amp; AI Policy:</strong> GSA Elimination/Optimization/Automation Handbook analysis (Jun 15) surfaced an emerging GSAR clause regulating LLM use on federal contracts; AIC/BNATCS FAA alignment analysis (Jun 15) cross-referenced LAN26214 statutory text — both with direct Changeis contract implications.</li>
+        <li><strong>CISA BOD 26-04 / LiteLLM Patch:</strong> AI Daily briefs (Jun 17, Jun 20) flagged CISA Binding Operational Directive 26-04 requiring patching of LiteLLM vulnerabilities by Mon Jun 22 — directly relevant to Changeis AI infrastructure.</li>
+        <li><strong>Anthropic + OpenAI Dual S-1 Race:</strong> AI Daily coverage tracked simultaneous S-1 filing signals from Anthropic and OpenAI; Claude 4 Opus and GPT-5 competitive positioning relevant to VM2 model selection and contract tooling posture.</li>
+        <li><strong>Evans F00053 Escalation / Cavan G.8.3 Overdue Items:</strong> Evans F00053 escalation is 45 days old (15+ days past the 30-day threshold); Cavan G.8.3 counsel briefing is 9+ days overdue. Both carry-forward as top-priority action items requiring owner response by next week.</li>
+        <li><strong>ATEPS-II SDB-1 Termination Finding:</strong> Jun 20 SAM check confirmed continued ATEPS-II activity; earlier Jun 17 check surfaced the Changeis SDB-1 termination-for-convenience finding on the ATEPS-II award — flagged for G.8.3 counsel review.</li>
+        <li><strong>YPO DC Pipeline Status:</strong> Jun 15 YPO weekly backlog reviewed 8+ active pipeline relationships; SAVES SIR go/no-go decision due Tue Jun 23 is the next gate event.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Deliverables Produced -->
+  <div class="section">
+    <div class="section-title">Deliverables Produced</div>
+
+    <div class="kpi-row" style="margin-bottom:18px;">
+      <div class="kpi"><div class="kpi-number">5</div><div class="kpi-label">Daily Briefs</div></div>
+      <div class="kpi"><div class="kpi-number">4</div><div class="kpi-label">FMCSA Monitoring Issues</div></div>
+      <div class="kpi"><div class="kpi-number">1</div><div class="kpi-label">Deep Dive</div></div>
+      <div class="kpi"><div class="kpi-number">2</div><div class="kpi-label">FAA/ATEPS Checks</div></div>
+      <div class="kpi"><div class="kpi-number">2</div><div class="kpi-label">Research/Analysis</div></div>
+      <div class="kpi"><div class="kpi-number">1</div><div class="kpi-label">YPO Report</div></div>
+    </div>
+
+    <div class="card" style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Domain</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2026-06-20</td>
+            <td>AI Daily Brief — Jun 20, 2026</td>
+            <td><span class="badge badge-brief">Daily Brief</span></td>
+            <td>AI/Tech</td>
+            <td><a href="ai-daily-2026-06-20.html">ai-daily-2026-06-20.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-20</td>
+            <td>ATEPS-II SAM Check — Jun 20, 2026</td>
+            <td><span class="badge badge-monitoring">Monitoring</span></td>
+            <td>FAA</td>
+            <td><a href="ateps-ii-sam-check-2026-06-20.html">ateps-ii-sam-check-2026-06-20.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-20</td>
+            <td>Nightly Compliance Audit — 2026-06-19</td>
+            <td><span class="badge badge-compliance">Compliance</span></td>
+            <td>Operations</td>
+            <td><a href="compliance-audit-2026-06-19.html">compliance-audit-2026-06-19.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-19</td>
+            <td>Changeis Daily Brief — 2026-06-19</td>
+            <td><span class="badge badge-brief">Daily Brief</span></td>
+            <td>Changeis</td>
+            <td><a href="changeis-daily-brief-2026-06-19.html">changeis-daily-brief-2026-06-19.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-19</td>
+            <td>FMCSA Motus Media Monitor — Issue #032</td>
+            <td><span class="badge badge-monitoring">Monitoring</span></td>
+            <td>FMCSA</td>
+            <td><a href="fmcsa-motus-media-monitor.html">fmcsa-motus-media-monitor.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-18</td>
+            <td>Changeis Daily Brief — 2026-06-18</td>
+            <td><span class="badge badge-brief">Daily Brief</span></td>
+            <td>Changeis</td>
+            <td><a href="changeis-daily-brief-2026-06-18.html">changeis-daily-brief-2026-06-18.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-18</td>
+            <td>FMCSA Motus Media Monitor — Issue #031</td>
+            <td><span class="badge badge-monitoring">Monitoring</span></td>
+            <td>FMCSA</td>
+            <td><a href="fmcsa-motus-media-monitor.html">fmcsa-motus-media-monitor.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-17</td>
+            <td>DOT eBuy RFI1817956 Deep Dive</td>
+            <td><span class="badge badge-deep-dive">Deep Dive</span></td>
+            <td>DOT / eBuy</td>
+            <td><a href="deep-dive-dot-econdev-rfi1817956-2026-06-17.html">deep-dive-dot-econdev-rfi1817956-2026-06-17.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-17</td>
+            <td>Changeis Daily Brief — 2026-06-17</td>
+            <td><span class="badge badge-brief">Daily Brief</span></td>
+            <td>Changeis</td>
+            <td><a href="changeis-daily-brief-2026-06-17.html">changeis-daily-brief-2026-06-17.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-17</td>
+            <td>AI Daily — Jun 17, 2026</td>
+            <td><span class="badge badge-brief">Daily Brief</span></td>
+            <td>AI/Tech</td>
+            <td><a href="ai-daily-2026-06-17.html">ai-daily-2026-06-17.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-17</td>
+            <td>FMCSA Motus Media Monitor — Issue #030</td>
+            <td><span class="badge badge-monitoring">Monitoring</span></td>
+            <td>FMCSA</td>
+            <td><a href="fmcsa-motus-media-monitor.html">fmcsa-motus-media-monitor.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-17</td>
+            <td>ATEPS-II SAM Check — Jun 17, 2026</td>
+            <td><span class="badge badge-monitoring">Monitoring</span></td>
+            <td>FAA</td>
+            <td><a href="ateps-ii-sam-check-2026-06-17.html">ateps-ii-sam-check-2026-06-17.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-17</td>
+            <td>FAA SAM Daily — Jun 17, 2026</td>
+            <td><span class="badge badge-monitoring">Monitoring</span></td>
+            <td>FAA</td>
+            <td><a href="faa-sam-daily-2026-06-17.html">faa-sam-daily-2026-06-17.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-17</td>
+            <td>G2X FedCiv — Jun 17, 2026</td>
+            <td><span class="badge badge-monitoring">Monitoring</span></td>
+            <td>FedCiv / G2X</td>
+            <td><a href="g2x-fedciv-2026-06-17.html">g2x-fedciv-2026-06-17.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-16</td>
+            <td>Changeis Daily Brief — 2026-06-16</td>
+            <td><span class="badge badge-brief">Daily Brief</span></td>
+            <td>Changeis</td>
+            <td><a href="changeis-daily-brief-2026-06-16.html">changeis-daily-brief-2026-06-16.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-16</td>
+            <td>FMCSA Motus Media Monitor — Issue #029</td>
+            <td><span class="badge badge-monitoring">Monitoring</span></td>
+            <td>FMCSA</td>
+            <td><a href="fmcsa-motus-media-monitor.html">fmcsa-motus-media-monitor.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-15</td>
+            <td>GSA EOA Handbook Analysis</td>
+            <td><span class="badge badge-analysis">Analysis</span></td>
+            <td>GSA / Acquisition</td>
+            <td><a href="gsa-eoa-handbook-analysis-2026-06-15.html">gsa-eoa-handbook-analysis-2026-06-15.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-15</td>
+            <td>AIC / BNATCS FAA Alignment Analysis</td>
+            <td><span class="badge badge-analysis">Analysis</span></td>
+            <td>FAA / AIC</td>
+            <td><a href="aic-bnatcs-alignment-analysis-2026-06-15.html">aic-bnatcs-alignment-analysis-2026-06-15.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-15</td>
+            <td>Changeis Daily Brief — 2026-06-15</td>
+            <td><span class="badge badge-brief">Daily Brief</span></td>
+            <td>Changeis</td>
+            <td><a href="changeis-daily-brief-2026-06-15.html">changeis-daily-brief-2026-06-15.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-15</td>
+            <td>FMCSA Motus Media Monitor — Issue #028</td>
+            <td><span class="badge badge-monitoring">Monitoring</span></td>
+            <td>FMCSA</td>
+            <td><a href="fmcsa-motus-media-monitor.html">fmcsa-motus-media-monitor.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-15</td>
+            <td>YPO DC Weekly Backlog — Jun 15, 2026</td>
+            <td><span class="badge badge-report">Report</span></td>
+            <td>YPO / Business Dev</td>
+            <td><a href="ypo-backlog-2026-06-15.html">ypo-backlog-2026-06-15.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-14</td>
+            <td>Changeis Daily Brief — 2026-06-14</td>
+            <td><span class="badge badge-brief">Daily Brief</span></td>
+            <td>Changeis</td>
+            <td><a href="changeis-daily-brief-2026-06-14.html">changeis-daily-brief-2026-06-14.html</a></td>
+          </tr>
+          <tr>
+            <td>2026-06-14</td>
+            <td>FMCSA Motus Media Monitor — Issue #027</td>
+            <td><span class="badge badge-monitoring">Monitoring</span></td>
+            <td>FMCSA</td>
+            <td><a href="fmcsa-motus-media-monitor.html">fmcsa-motus-media-monitor.html</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Highlights & Key Findings -->
+  <div class="section">
+    <div class="section-title">Highlights &amp; Key Findings</div>
+    <div class="highlights-grid">
+
+      <div class="highlight-card">
+        <div class="hc-label">Army MAPS — Amendments 0009/0010</div>
+        <div class="hc-title">SAM Clarification + Amendment 0010 Issued</div>
+        <div class="hc-body">Jun 16: SAM posted a clarification (not formal amendment) loosening scorecard item #6 footnote language. Jun 19: MAPS monitor detected SAM republish as Amendment 0010 with revised submission deadline Mon Jun 22, 12 PM ET. Bid/no-bid decision gate open. The <a href="army-maps-bid-decision-2026-04-14.html">Army MAPS bid decision tracker</a> was updated twice this week.</div>
+      </div>
+
+      <div class="highlight-card">
+        <div class="hc-label">DOT eBuy RFI1817956</div>
+        <div class="hc-title">Deep Dive + 37 Ledger Events</div>
+        <div class="hc-body">Jun 17 <a href="deep-dive-dot-econdev-rfi1817956-2026-06-17.html">user-requested deep dive</a> on DOT Economic Development Oversight RFI1817956 produced full capability statement framework. eBuy ledger accumulated 37 new events Jun 14–19 across 7 cron runs, with a weekly reconciliation catching 3 missed events from Jun 15.</div>
+      </div>
+
+      <div class="highlight-card">
+        <div class="hc-label">GSA / FAA Regulatory Intelligence</div>
+        <div class="hc-title">GSAR LLM Clause + AIC/BNATCS Statutory Alignment</div>
+        <div class="hc-body">The <a href="gsa-eoa-handbook-analysis-2026-06-15.html">GSA EOA Handbook analysis</a> surfaced a forthcoming GSAR clause regulating LLM procurement use. The <a href="aic-bnatcs-alignment-analysis-2026-06-15.html">AIC/BNATCS alignment analysis</a> was enriched with LAN26214 full statutory text, identifying 3 alignment gaps for Changeis' FAA portfolio.</div>
+      </div>
+
+      <div class="highlight-card">
+        <div class="hc-label">CISA BOD 26-04</div>
+        <div class="hc-title">LiteLLM Patch Deadline Mon Jun 22</div>
+        <div class="hc-body">AI Daily briefs (Jun 17, Jun 20) consistently flagged CISA Binding Operational Directive 26-04 mandating patch/mitigate for LiteLLM CVEs by Jun 22. Directly affects Changeis AI infrastructure and any federal client environments using LiteLLM as an AI gateway.</div>
+      </div>
+
+      <div class="highlight-card">
+        <div class="hc-label">AI Market Intelligence</div>
+        <div class="hc-title">Anthropic + OpenAI Dual S-1 Signals</div>
+        <div class="hc-body">Week 25 AI Daily coverage tracked simultaneous IPO/S-1 filing signals from both Anthropic (Claude 4 Opus) and OpenAI (GPT-5), with competitive implications for VM2 model strategy. Claude and GPT-5 model selection posture should be reviewed before contract tooling commits.</div>
+      </div>
+
+      <div class="highlight-card">
+        <div class="hc-label">ATEPS-II / FAA</div>
+        <div class="hc-title">SDB-1 Termination Finding Confirmed</div>
+        <div class="hc-body">Jun 17 <a href="ateps-ii-sam-check-2026-06-17.html">ATEPS-II SAM check</a> confirmed the Changeis SDB-1 termination-for-convenience finding on the ATEPS-II award. Jun 20 SAM check confirmed continued ATEPS-II activity. G.8.3 counsel briefing is 9+ days overdue against this finding.</div>
+      </div>
+
+      <div class="highlight-card">
+        <div class="hc-label">FMCSA Motus — Issues #027–#032</div>
+        <div class="hc-title">Six Consecutive Daily Monitor Issues</div>
+        <div class="hc-body">FMCSA Motus Media Monitor ran every day Jun 14–19, issues #027 through #032. The Jun 19 issue (commit 533e36e) was authored as "VM2" rather than "VM2-Perplexity" — flagged as stale-cron signal in the Jun 19 compliance audit. No content errors detected.</div>
+      </div>
+
+      <div class="highlight-card">
+        <div class="hc-label">YPO DC Pipeline</div>
+        <div class="hc-title">Backlog Reviewed — SAVES SIR Next Gate</div>
+        <div class="hc-body">The <a href="ypo-backlog-2026-06-15.html">Jun 15 YPO weekly backlog</a> reviewed 8+ active pipeline relationships. SAVES SIR go/no-go is the nearest pipeline gate event (Tue Jun 23). FAA WJHTC Vendor Day (Wed Jul 1) and FAA EFS II Market Survey (Thu Jul 2) are the following week's primary business development events.</div>
+      </div>
+
+      <div class="highlight-card">
+        <div class="hc-label">G2X FedCiv Monitor</div>
+        <div class="hc-title">Jun 17 Execution — Federal Civilian Coverage</div>
+        <div class="hc-body">The <a href="g2x-fedciv-2026-06-17.html">G2X FedCiv Jun 17 monitor</a> ran with its associated recurring state update (commit 386efe0). Federal civilian pipeline coverage continues weekly.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Compliance Summary -->
+  <div class="section">
+    <div class="section-title">Compliance Summary</div>
+
+    <div class="alert alert-pass">
+      <strong>Sat Jun 13 Audit — PASS:</strong> All rules passed. No failures recorded in the Jun 13 nightly compliance report. System entered Week 25 in a clean state.
+    </div>
+
+    <div class="alert alert-fail">
+      <strong>Fri Jun 19/20 Nightly Audit — 4 Rule 6 Failures Detected:</strong> The nightly compliance audit (commit 65c941e, 2026-06-20) identified missing context slug markers (literal <code>context_slug</code> / <code>deliverable</code> / <code>cost_estimate</code> tokens) in 4 files: <code>changeis-daily-brief-2026-06-19.html</code>, <code>ebuy-ledger.html</code>, <code>ebuy-portal-widget.html</code>, and <code>army-maps-bid-decision-2026-04-14.html</code>.
+    </div>
+
+    <div class="alert alert-pass">
+      <strong>Remediation Complete — Commit 5821830 (2026-06-20):</strong> All 4 Rule 6 failures remediated in commit 5821830 by injecting compliant context slug marker blocks into each affected file. Rule 7 (index.html redirect stub, 222 bytes) remained intact throughout the week. No StaticCrypt violations detected (Rule 3).
+    </div>
+
+    <div class="alert alert-warn">
+      <strong>FMCSA Stale-Cron Signal:</strong> Commit 533e36e (FMCSA Motus Media Monitor Issue #032, Jun 19) was authored as <code>VM2</code> rather than the required <code>VM2-Perplexity</code>. This matches the stale-cron signal pattern per deliverable-specs.md §7. No content corruption or encryption violation was associated, but the FMCSA cron workflow should be reviewed to enforce the correct git author identity.
+    </div>
+
+    <div class="card" style="overflow-x:auto; margin-top:14px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Rule</th>
+            <th>Description</th>
+            <th>Status (Week 25)</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Rule 1</td>
+            <td>Portal.html entry for all deliverables</td>
+            <td><span class="badge badge-brief" style="background:#dcfce7;color:#166534;">PASS</span></td>
+            <td>One missing entry (Jun 19 brief) fixed same day</td>
+          </tr>
+          <tr>
+            <td>Rule 2</td>
+            <td>Deliverables exist in repo (GitHub Pages)</td>
+            <td><span class="badge badge-brief" style="background:#dcfce7;color:#166534;">PASS</span></td>
+            <td>All deliverables committed and deployed</td>
+          </tr>
+          <tr>
+            <td>Rule 3</td>
+            <td>No StaticCrypt encryption</td>
+            <td><span class="badge badge-brief" style="background:#dcfce7;color:#166534;">PASS</span></td>
+            <td>No violations detected all week</td>
+          </tr>
+          <tr>
+            <td>Rule 4</td>
+            <td>Dropbox export</td>
+            <td><span class="badge badge-brief" style="background:#dcfce7;color:#166534;">PASS</span></td>
+            <td>Exports executed for all weekly deliverables</td>
+          </tr>
+          <tr>
+            <td>Rule 5</td>
+            <td>Todoist vm2-done labeling</td>
+            <td><span class="badge badge-brief" style="background:#dcfce7;color:#166534;">PASS</span></td>
+            <td>0 unclosed tasks detected</td>
+          </tr>
+          <tr>
+            <td>Rule 6</td>
+            <td>Context slug markers (literal, not &amp;quot;-escaped)</td>
+            <td><span class="badge" style="background:#fef3c7;color:#92400e;">FIXED</span></td>
+            <td>4 failures in Jun 19 audit; all remediated commit 5821830 Jun 20</td>
+          </tr>
+          <tr>
+            <td>Rule 7</td>
+            <td>index.html = 222-byte redirect stub</td>
+            <td><span class="badge badge-brief" style="background:#dcfce7;color:#166534;">PASS</span></td>
+            <td>Stub intact; never modified</td>
+          </tr>
+          <tr>
+            <td>Cron Author</td>
+            <td>Git author = VM2-Perplexity</td>
+            <td><span class="badge" style="background:#fef3c7;color:#92400e;">WARN</span></td>
+            <td>FMCSA cron commits 533e36e, bc170d9, 75b1d04, c131e33, 97a389b authored as "VM2" — stale-cron signal</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Action Items Carry-Forward -->
+  <div class="section">
+    <div class="section-title">Action Items Carry-Forward</div>
+    <div class="card" style="overflow-x:auto;">
+      <table class="action-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Deadline</th>
+            <th>Owner</th>
+            <th>Status</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="overdue">
+            <td><strong>Evans F00053 Escalation</strong> — 45 days since filing; 15+ days past 30-day threshold</td>
+            <td>OVERDUE</td>
+            <td>Varun / Legal</td>
+            <td><span class="badge" style="background:#fee2e2;color:#991b1b;">OVERDUE</span></td>
+            <td>Daily briefs</td>
+          </tr>
+          <tr class="overdue">
+            <td><strong>Cavan G.8.3 Counsel Briefing</strong> — ATEPS-II SDB-1 termination finding; 9+ days overdue</td>
+            <td>OVERDUE</td>
+            <td>Varun / Legal</td>
+            <td><span class="badge" style="background:#fee2e2;color:#991b1b;">OVERDUE</span></td>
+            <td>ATEPS-II SAM checks</td>
+          </tr>
+          <tr>
+            <td><strong>MAPS Amendment 0010 Response</strong> — Army MAPS recompete submission</td>
+            <td>Mon Jun 22, 12:00 PM ET</td>
+            <td>Proposal team</td>
+            <td><span class="badge" style="background:#fee2e2;color:#991b1b;">URGENT</span></td>
+            <td><a href="army-maps-bid-decision-2026-04-14.html">MAPS tracker</a></td>
+          </tr>
+          <tr>
+            <td><strong>CISA BOD 26-04 LiteLLM Patch</strong> — CVE remediation deadline</td>
+            <td>Mon Jun 22</td>
+            <td>IT / DevOps</td>
+            <td><span class="badge" style="background:#fee2e2;color:#991b1b;">URGENT</span></td>
+            <td>AI Daily Jun 17, Jun 20</td>
+          </tr>
+          <tr>
+            <td><strong>SAVES SIR Go/No-Go</strong> — Pipeline decision gate</td>
+            <td>Tue Jun 23</td>
+            <td>BD / Varun</td>
+            <td><span class="badge" style="background:#fef3c7;color:#92400e;">PENDING</span></td>
+            <td><a href="ypo-backlog-2026-06-15.html">YPO backlog</a></td>
+          </tr>
+          <tr>
+            <td><strong>FHWA MIRE 3.0 Final</strong></td>
+            <td>Wed Jun 24</td>
+            <td>Programs</td>
+            <td><span class="badge" style="background:#fef3c7;color:#92400e;">PENDING</span></td>
+            <td>Daily briefs</td>
+          </tr>
+          <tr>
+            <td><strong>DOT eBuy RFI1817956 Capability Statement</strong></td>
+            <td>Thu Jun 26, 5:00 PM ET</td>
+            <td>BD / Proposal team</td>
+            <td><span class="badge" style="background:#fef3c7;color:#92400e;">PENDING</span></td>
+            <td><a href="deep-dive-dot-econdev-rfi1817956-2026-06-17.html">eBuy deep dive</a></td>
+          </tr>
+          <tr>
+            <td><strong>FAA WJHTC Vendor Day</strong></td>
+            <td>Wed Jul 1</td>
+            <td>BD / Varun</td>
+            <td><span class="badge" style="background:#dbeafe;color:#1e40af;">UPCOMING</span></td>
+            <td>YPO / AI Daily</td>
+          </tr>
+          <tr>
+            <td><strong>FAA EFS II Market Survey</strong></td>
+            <td>Thu Jul 2</td>
+            <td>BD / Programs</td>
+            <td><span class="badge" style="background:#dbeafe;color:#1e40af;">UPCOMING</span></td>
+            <td><a href="faa-sam-daily-2026-06-17.html">FAA SAM daily</a></td>
+          </tr>
+          <tr>
+            <td><strong>FMCSA Cron Author Fix</strong> — Standardize git author to VM2-Perplexity for all FMCSA cron commits</td>
+            <td>Ongoing</td>
+            <td>VM2 / DevOps</td>
+            <td><span class="badge" style="background:#fef3c7;color:#92400e;">OPEN</span></td>
+            <td>Compliance audit Jun 19</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Continue This Work Panel -->
+  <div class="continue-panel" id="continue-panel">
+    <h3>Continue This Work</h3>
+    <div class="cp-meta">
+      <div>
+        <dt>Deliverable</dt>
+        <dd>VM2 Weekly Digest — Week 25 (Jun 14–20, 2026)</dd>
+      </div>
+      <div>
+        <dt>File</dt>
+        <dd class="mono">weekly-digest-2026-06-20.html</dd>
+      </div>
+      <div>
+        <dt>Created</dt>
+        <dd>2026-06-20</dd>
+      </div>
+      <div>
+        <dt>Revised</dt>
+        <dd>—</dd>
+      </div>
+      <div>
+        <dt>Est. Cost</dt>
+        <dd>$6.50 (multi-source synthesis + git/portal analysis)</dd>
+      </div>
+      <div>
+        <dt>Live URL</dt>
+        <dd><a href="https://vm2-p-taskers-production.up.railway.app/weekly-digest-2026-06-20.html" target="_blank">vm2-p-taskers-production.up.railway.app</a></dd>
+      </div>
+    </div>
+    <strong>Original Instructions:</strong>
+    <pre>Generate the VM2 Weekly Digest for Week 25 (June 14-20, 2026). DELIVERABLE FILENAME: weekly-digest-2026-06-20.html. TITLE: "VM2 Weekly Digest — Week 25 (Jun 14–20, 2026)". Include executive summary covering: MAPS Amendment 0009/0010, DOT eBuy deep dive, GSA GSAR LLM clause, CISA BOD 26-04 LiteLLM, Anthropic+OpenAI dual S-1 race, Evans F00053 escalation 45 days, ATEPS-II Changeis SDB-1 termination finding, YPO pipeline status. Deliverables produced table, Highlights & Key Findings, Compliance summary (Sat 6/13 audit pass; Fri 6/19 nightly audit found 4 Rule 6 failures remediated commit 5821830 on 6/20; FMCSA stale-cron signal), Action items carry-forward. Cost estimate $6.50.</pre>
+    <div class="continue-cta">
+      To refine or extend this digest, email VM2 with subject: <strong>[VM2] weekly-digest-2026-06-20 — [your request]</strong>, or follow up in the parent session with additional context.
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script type="application/json" id="context-slug">
+{
+  "context_slug": "weekly-digest-2026-w25",
+  "task_name": "VM2 Weekly Digest — Week 25 (Jun 14–20, 2026)",
+  "task_date": "2026-06-20",
+  "deliverable_file": "weekly-digest-2026-06-20.html",
+  "deliverable": "https://vm2-p-taskers-production.up.railway.app/weekly-digest-2026-06-20.html",
+  "railway_url": "https://vm2-p-taskers-production.up.railway.app/weekly-digest-2026-06-20.html",
+  "version": 1,
+  "prior_versions": ["weekly-digest-2026-06-13.html"],
+  "created_date": "2026-06-20",
+  "revised_date": null,
+  "related_deliverables": [
+    "changeis-daily-brief-2026-06-14.html",
+    "changeis-daily-brief-2026-06-15.html",
+    "changeis-daily-brief-2026-06-16.html",
+    "changeis-daily-brief-2026-06-17.html",
+    "changeis-daily-brief-2026-06-18.html",
+    "changeis-daily-brief-2026-06-19.html",
+    "ai-daily-2026-06-17.html",
+    "ai-daily-2026-06-20.html",
+    "deep-dive-dot-econdev-rfi1817956-2026-06-17.html",
+    "ateps-ii-sam-check-2026-06-17.html",
+    "ateps-ii-sam-check-2026-06-20.html",
+    "faa-sam-daily-2026-06-17.html",
+    "fmcsa-motus-media-monitor.html",
+    "gsa-eoa-handbook-analysis-2026-06-15.html",
+    "aic-bnatcs-alignment-analysis-2026-06-15.html",
+    "ypo-backlog-2026-06-15.html",
+    "g2x-fedciv-2026-06-17.html",
+    "compliance-audit-2026-06-19.html",
+    "army-maps-bid-decision-2026-04-14.html"
+  ],
+  "original_instructions": "Generate the VM2 Weekly Digest for Week 25 (June 14-20, 2026). DELIVERABLE FILENAME: weekly-digest-2026-06-20.html. TITLE: VM2 Weekly Digest — Week 25 (Jun 14–20, 2026). Include executive summary covering MAPS Amendment 0009/0010, DOT eBuy deep dive, GSA GSAR LLM clause, CISA BOD 26-04 LiteLLM, Anthropic+OpenAI dual S-1 race, Evans F00053 escalation 45 days, ATEPS-II Changeis SDB-1 termination finding, YPO pipeline status. Deliverables produced table with count by type, Highlights and Key Findings, Compliance summary, Action items carry-forward. Cost $6.50.",
+  "approach": "Pulled VM2-P-Taskers repo; ran git log --since 2026-06-14 to enumerate 23 commits across 7 days; parsed portal.html for 12 data-date entries in range; grouped by type (daily briefs, FMCSA monitoring, deep dive, FAA/ATEPS, GSA/FAA analysis, YPO, compliance); synthesized executive summary from commit messages and deliverable content; incorporated compliance audit findings from compliance-audit-2026-06-19.html (4 Rule 6 failures, remediation commit 5821830, FMCSA stale-cron signal); compiled 9 action items with deadlines.",
+  "key_findings": [
+    "MAPS Amendment 0010 issued Jun 19 with Mon Jun 22 12PM ET response deadline",
+    "DOT eBuy RFI1817956 deep dive produced; capability statement due Jun 26",
+    "GSA GSAR LLM clause surfaced in EOA Handbook analysis — federal contract implication",
+    "CISA BOD 26-04 LiteLLM patch deadline Mon Jun 22 — urgent for Changeis AI infra",
+    "4 Rule 6 context slug failures in Jun 19 audit; all remediated commit 5821830 Jun 20",
+    "FMCSA cron commits 533e36e, bc170d9, 75b1d04, c131e33, 97a389b authored as VM2 not VM2-Perplexity",
+    "Evans F00053 escalation 45 days / 15+ days overdue; Cavan G.8.3 counsel briefing 9+ days overdue",
+    "23 total commits; 12 portal deliverables; 37 eBuy ledger events this week"
+  ],
+  "dead_ends": [],
+  "cost_estimate": {
+    "amount_usd": 6.50,
+    "compute": "Multi-source synthesis: git log analysis (23 commits), portal.html parsing (12 entries), compliance audit review, action item compilation across 8 deliverable domains",
+    "currency": "USD"
+  }
+}
+</script>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  if (html.getAttribute('data-theme') === 'dark') {
+    html.removeAttribute('data-theme');
+  } else {
+    html.setAttribute('data-theme', 'dark');
+  }
+}
+// Auto dark mode
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  document.documentElement.setAttribute('data-theme', 'dark');
+}
+</script>
+</body>
+</html>
